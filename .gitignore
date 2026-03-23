@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.bun/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Tauri
+apps/app/src-tauri/target/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Turbo
+.turbo/
+
+# Logs
+*.log
+npm-debug.log*
+bun-error.log
+
+# Lockfiles (keep bun.lockb, ignore others)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Test coverage
+coverage/
