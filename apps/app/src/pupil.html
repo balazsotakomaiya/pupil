@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pupil — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@700&family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:          #0a0a0a;
+    --bg-subtle:   #111;
+    --bg-elevated: #161616;
+    --border:       #1e1e1e;
+    --border-hover: #333;
+    --ruler:        #2a2a2a;
+    --text-primary:   #ededed;
+    --text-secondary: #888;
+    --text-tertiary:  #555;
+    --accent: #ededed;
+    --success: #10b981;
+    --success-dim: #10b98115;
+    --radius:    8px;
+    --radius-lg: 12px;
+    --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* ══════════════════════════════════
+     RULER OVERLAY
+     ══════════════════════════════════ */
+  .rulers {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+    overflow: hidden;
+  }
+
+  .ruler-v {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--ruler) 0px, var(--ruler) 1px,
+      transparent 1px, transparent 5px
+    );
+  }
+  .ruler-v.left  { left: 0; }
+  .ruler-v.right { right: 0; }
+  .ruler-v.content-left  { left: max(32px, calc((100vw - 960px) / 2)); }
+  .ruler-v.content-right { right: max(32px, calc((100vw - 960px) / 2)); }
+
+  .ruler-h {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--ruler) 0px, var(--ruler) 1px,
+      transparent 1px, transparent 5px
+    );
+  }
+  .ruler-h.top    { top: 0; }
+  .ruler-h.bottom { bottom: 0; }
+
+  /* Full-width section dividers */
+  .ruler-divider {
+    height: 1px;
+    /* stretch beyond the 960 column to viewport edges */
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--ruler) 0px, var(--ruler) 1px,
+      transparent 1px, transparent 5px
+    );
+  }
+
+  /* ══════════════════════════════════
+     TITLEBAR — desktop app top chrome
+     ══════════════════════════════════ */
+  .titlebar {
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    /* draggable region for Tauri */
+    -webkit-app-region: drag;
+    user-select: none;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .titlebar-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .titlebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    -webkit-app-region: no-drag;
+  }
+
+  .titlebar-logo-text {
+    font-family: "Syne", var(--font-sans);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  .titlebar-sep {
+    width: 1px;
+    height: 18px;
+    background: var(--border);
+  }
+
+  .titlebar-tabs {
+    display: flex;
+    gap: 2px;
+    -webkit-app-region: no-drag;
+  }
+
+  .titlebar-tab {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    padding: 5px 11px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+  }
+  .titlebar-tab:hover { color: var(--text-secondary); }
+  .titlebar-tab.active {
+    color: var(--text-primary);
+    background: var(--bg-elevated);
+  }
+
+  .titlebar-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    -webkit-app-region: no-drag;
+  }
+
+  .titlebar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .titlebar-btn:hover {
+    color: var(--text-secondary);
+    border-color: var(--border-hover);
+    background: rgba(255,255,255,0.03);
+  }
+  .titlebar-btn svg { width: 14px; height: 14px; }
+
+  .titlebar-btn-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 30px;
+    padding: 0 11px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-tertiary);
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .titlebar-btn-label:hover {
+    color: var(--text-secondary);
+    border-color: var(--border-hover);
+    background: rgba(255,255,255,0.03);
+  }
+  .titlebar-btn-label svg { width: 13px; height: 13px; opacity: 0.5; }
+
+  /* ── Eye SVG ── */
+  .eye-logo { flex-shrink: 0; display: block; }
+  .eye-shape { animation: blink 4s ease-in-out infinite; }
+  .eye-iris { animation: iris-blink 4s ease-in-out infinite; transform-origin: 26px 26px; }
+  .eye-pupil-g { animation: pupil-hide 4s ease-in-out infinite; transform-origin: 26px 26px; }
+  .eye-pupil { animation: look 4s ease-in-out infinite; }
+
+  @keyframes blink {
+    0%,16%,24%,34%,42%,100% { d: path("M 2 26 C 12 10, 40 10, 50 26 C 40 42, 12 42, 2 26 Z"); }
+    18.5%,21.5% { d: path("M 2 26 C 12 23, 40 23, 50 26 C 40 29, 12 29, 2 26 Z"); }
+    36.5%,39.5% { d: path("M 2 26 C 12 23, 40 23, 50 26 C 40 29, 12 29, 2 26 Z"); }
+  }
+  @keyframes iris-blink {
+    0%,16%,24%,34%,42%,100% { transform: scaleY(1); opacity: 1; }
+    18.5%,21.5% { transform: scaleY(0.1); opacity: 0; }
+    36.5%,39.5% { transform: scaleY(0.1); opacity: 0; }
+  }
+  @keyframes pupil-hide {
+    0%,16%,24%,34%,42%,100% { transform: scaleY(1); opacity: 1; }
+    18.5%,21.5% { transform: scaleY(0); opacity: 0; }
+    36.5%,39.5% { transform: scaleY(0); opacity: 0; }
+  }
+  @keyframes look {
+    0%,42% { transform: translateX(0); }
+    58% { transform: translateX(3px); }
+    74% { transform: translateX(-2px); }
+    90%,100% { transform: translateX(0); }
+  }
+
+  /* ══════════════════════════════════
+     PAGE COLUMN
+     ══════════════════════════════════ */
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  /* ══════════════════════════════════
+     STUDY CTA — the main action
+     ══════════════════════════════════ */
+  .study-section {
+    padding: 56px 0 48px;
+  }
+
+  .study-card {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 36px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    transition: border-color 0.2s;
+  }
+  .study-card:hover { border-color: var(--border-hover); }
+
+  .study-left {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .study-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .study-eyebrow .live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .study-headline {
+    font-size: clamp(24px, 3vw, 36px);
+    font-weight: 600;
+    letter-spacing: -0.8px;
+    line-height: 1.15;
+  }
+
+  .study-headline .num {
+    /* same color, just differentiated by weight context */
+  }
+
+  .study-sub {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    max-width: 400px;
+  }
+
+  .study-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .study-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--bg);
+    background: var(--text-primary);
+    border: none;
+    border-radius: var(--radius);
+    padding: 12px 28px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    letter-spacing: -0.2px;
+  }
+  .study-btn:hover { opacity: 0.85; }
+
+  .study-btn-secondary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 18px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .study-btn-secondary:hover {
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+    background: rgba(255,255,255,0.03);
+  }
+
+  .study-breakdown {
+    display: flex;
+    gap: 24px;
+    margin-top: 14px;
+  }
+
+  .study-breakdown-item {
+    font-size: 13px;
+    color: var(--text-tertiary);
+  }
+  .study-breakdown-item strong {
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  /* ══════════════════════════════════
+     STATS
+     ══════════════════════════════════ */
+  .stats-section { padding: 40px 0; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .stat-card {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 22px;
+    transition: border-color 0.2s;
+  }
+  .stat-card:hover { border-color: var(--border-hover); }
+
+  .stat-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-tertiary);
+    margin-bottom: 10px;
+  }
+
+  .stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-value .unit {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    letter-spacing: 0;
+    margin-left: 2px;
+  }
+
+  .stat-sub {
+    font-size: 13px;
+    color: var(--text-tertiary);
+  }
+  .stat-sub .up {
+    color: var(--success);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  /* ══════════════════════════════════
+     SECTION HEADS
+     ══════════════════════════════════ */
+  .section { padding: 40px 0; }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-tertiary);
+  }
+
+  .btn-ghost {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .btn-ghost:hover {
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+    background: rgba(255,255,255,0.04);
+  }
+  .btn-ghost svg { width: 14px; height: 14px; opacity: 0.5; }
+
+  /* ══════════════════════════════════
+     SPACE CARDS
+     ══════════════════════════════════ */
+  .spaces-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  .space-card {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .space-card:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-elevated);
+  }
+
+  .space-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .space-name {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+  }
+
+  .space-source {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+  }
+
+  .space-streak {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .space-streak .streak-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--success);
+  }
+
+  .space-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 20px;
+  }
+
+  .space-meta {
+    display: flex;
+    gap: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .space-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .space-meta-val {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+
+  .space-meta-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  .due-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .due-indicator .due-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--success);
+  }
+
+  /* ══════════════════════════════════
+     STREAK + ACTIVITY — side by side
+     ══════════════════════════════════ */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* ── Streak Calendar ── */
+  .streak-wrap {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    transition: border-color 0.2s;
+  }
+  .streak-wrap:hover { border-color: var(--border-hover); }
+
+  .streak-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+
+  .streak-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .streak-count {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+  .streak-count strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .streak-grid {
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    grid-template-rows: repeat(7, 1fr);
+    gap: 3px;
+    grid-auto-flow: column;
+  }
+
+  .streak-cell {
+    aspect-ratio: 1;
+    border-radius: 3px;
+    background: var(--bg-elevated);
+    border: 1px solid transparent;
+    min-width: 0;
+  }
+  .streak-cell.studied {
+    background: #ededed18;
+    border-color: #ededed25;
+  }
+  .streak-cell.today {
+    border-color: var(--text-tertiary);
+  }
+  .streak-cell.today.studied {
+    background: var(--success-dim);
+    border-color: var(--success);
+  }
+
+  .streak-legend {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    justify-content: flex-end;
+  }
+  .streak-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--text-tertiary);
+  }
+  .streak-legend-swatch {
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+  }
+
+  /* ── Activity ── */
+  .activity-wrap {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .activity-wrap:hover { border-color: var(--border-hover); }
+
+  .activity-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .activity-header-bar .ah-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .activity-header-bar .ah-link {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .activity-header-bar .ah-link:hover { color: var(--text-secondary); }
+
+  .activity-row {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 11px 20px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .activity-row:last-child { border-bottom: none; }
+  .activity-row:hover { background: var(--bg-elevated); }
+
+  .activity-time {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  .activity-desc {
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .activity-desc strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .activity-type {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  /* ══════════════════════════════════
+     SCROLLBAR
+     ══════════════════════════════════ */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+  /* ══════════════════════════════════
+     RESPONSIVE
+     ══════════════════════════════════ */
+  @media (max-width: 768px) {
+    .spaces-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .bottom-grid { grid-template-columns: 1fr; }
+    .study-card { flex-direction: column; align-items: flex-start; padding: 28px; }
+    .study-right { width: 100%; }
+    .study-btn { width: 100%; justify-content: center; }
+  }
+
+  @media (max-width: 640px) {
+    .page { padding: 0 20px; }
+    .titlebar { padding: 0 12px; }
+    .titlebar-tabs { gap: 0; }
+    .titlebar-tab { padding: 5px 8px; font-size: 12px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* bottom breathing room */
+  .page-end { height: 64px; }
+</style>
+</head>
+<body>
+
+<!-- Ruler Overlay -->
+<div class="rulers">
+  <div class="ruler-v left"></div>
+  <div class="ruler-v right"></div>
+  <div class="ruler-v content-left"></div>
+  <div class="ruler-v content-right"></div>
+  <div class="ruler-h top"></div>
+  <div class="ruler-h bottom"></div>
+</div>
+
+<!-- Titlebar -->
+<div class="titlebar">
+  <div class="titlebar-left">
+    <div class="titlebar-logo">
+      <svg class="eye-logo" width="24" height="24" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+        <path class="eye-shape" d="M 2 26 C 12 10, 40 10, 50 26 C 40 42, 12 42, 2 26 Z"
+              fill="none" stroke="#ededed" stroke-width="2.8" stroke-linejoin="round"/>
+        <circle class="eye-iris" cx="26" cy="26" r="9" fill="none" stroke="#ededed" stroke-width="2"/>
+        <g class="eye-pupil-g"><circle class="eye-pupil" cx="26" cy="26" r="3.5" fill="#ededed"/></g>
+      </svg>
+      <span class="titlebar-logo-text">pupil</span>
+    </div>
+
+    <div class="titlebar-sep"></div>
+
+    <div class="titlebar-tabs">
+      <span class="titlebar-tab active">Dashboard</span>
+      <span class="titlebar-tab">All Cards</span>
+      <span class="titlebar-tab">Import</span>
+      <span class="titlebar-tab">Settings</span>
+    </div>
+  </div>
+
+  <div class="titlebar-right">
+    <button class="titlebar-btn-label">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 2v10M2 7h10"/></svg>
+      New Space
+    </button>
+    <button class="titlebar-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="7" cy="7" r="5"/><path d="M10.5 10.5L14 14"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- Study CTA -->
+  <div class="study-section">
+    <div class="study-card">
+      <div class="study-left">
+        <div class="study-eyebrow">
+          <span class="live-dot"></span>
+          Ready to study
+        </div>
+        <div class="study-headline">42 cards due today</div>
+        <div class="study-sub">Across 5 spaces. 18 already reviewed — 24 remaining. Most overdue in Machine Learning and World History.</div>
+        <div class="study-breakdown">
+          <span class="study-breakdown-item"><strong>18</strong> Machine Learning</span>
+          <span class="study-breakdown-item"><strong>11</strong> World History</span>
+          <span class="study-breakdown-item"><strong>7</strong> Rust</span>
+          <span class="study-breakdown-item"><strong>6</strong> other</span>
+        </div>
+      </div>
+      <div class="study-right">
+        <button class="study-btn-secondary">Per space</button>
+        <button class="study-btn">Study all →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ruler-divider"></div>
+
+  <!-- Stats -->
+  <div class="stats-section">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-eyebrow">Total cards</div>
+        <div class="stat-value">847</div>
+        <div class="stat-sub"><span class="up">↑ 23</span> this week</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-eyebrow">Studied today</div>
+        <div class="stat-value">18 <span class="unit">/ 42</span></div>
+        <div class="stat-sub">due remaining</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-eyebrow">Retention</div>
+        <div class="stat-value">87<span class="unit">%</span></div>
+        <div class="stat-sub"><span class="up">↑ 3%</span> vs last month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-eyebrow">Streak</div>
+        <div class="stat-value">14 <span class="unit">days</span></div>
+        <div class="stat-sub">personal best</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ruler-divider"></div>
+
+  <!-- Spaces -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-label">Spaces</span>
+      <button class="btn-ghost">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 2v10M2 7h10"/></svg>
+        New Space
+      </button>
+    </div>
+
+    <div class="spaces-grid">
+
+      <div class="space-card">
+        <div class="space-top">
+          <span class="space-name">Machine Learning</span>
+          <span class="space-streak"><span class="streak-dot"></span> 12d</span>
+        </div>
+        <div class="space-desc">Neural networks, gradient descent, transformers, attention mechanisms, loss functions.</div>
+        <div class="space-meta">
+          <div class="space-meta-item"><span class="space-meta-val">234</span><span class="space-meta-label">cards</span></div>
+          <div class="space-meta-item"><span class="space-meta-val"><span class="due-indicator"><span class="due-dot"></span> 18</span></span><span class="space-meta-label">due</span></div>
+          <div class="space-meta-item"><span class="space-meta-val">91%</span><span class="space-meta-label">retention</span></div>
+          <div class="space-meta-item"><span class="space-source">ai · 3d ago</span></div>
+        </div>
+      </div>
+
+      <div class="space-card">
+        <div class="space-top">
+          <span class="space-name">Rust Ownership</span>
+          <span class="space-streak"><span class="streak-dot"></span> 14d</span>
+        </div>
+        <div class="space-desc">Borrow checker, lifetimes, move semantics, smart pointers, interior mutability.</div>
+        <div class="space-meta">
+          <div class="space-meta-item"><span class="space-meta-val">89</span><span class="space-meta-label">cards</span></div>
+          <div class="space-meta-item"><span class="space-meta-val"><span class="due-indicator"><span class="due-dot"></span> 7</span></span><span class="space-meta-label">due</span></div>
+          <div class="space-meta-item"><span class="space-meta-val">84%</span><span class="space-meta-label">retention</span></div>
+          <div class="space-meta-item"><span class="space-source">manual · 2w</span></div>
+        </div>
+      </div>
+
+      <div class="space-card">
+        <div class="space-top">
+          <span class="space-name">World History</span>
+          <span class="space-streak"><span class="streak-dot"></span> 8d</span>
+        </div>
+        <div class="space-desc">Ancient civilizations, revolutions, world wars, Cold War, colonialism, treaties.</div>
+        <div class="space-meta">
+          <div class="space-meta-item"><span class="space-meta-val">312</span><span class="space-meta-label">cards</span></div>
+          <div class="space-meta-item"><span class="space-meta-val"><span class="due-indicator"><span class="due-dot"></span> 11</span></span><span class="space-meta-label">due</span></div>
+          <div class="space-meta-item"><span class="space-meta-val">79%</span><span class="space-meta-label">retention</span></div>
+          <div class="space-meta-item"><span class="space-source">anki · 1mo</span></div>
+        </div>
+      </div>
+
+      <div class="space-card">
+        <div class="space-top">
+          <span class="space-name">Music Theory</span>
+          <span class="space-streak"></span>
+        </div>
+        <div class="space-desc">Intervals, chord voicings, modes, harmonic analysis, voice leading.</div>
+        <div class="space-meta">
+          <div class="space-meta-item"><span class="space-meta-val">67</span><span class="space-meta-label">cards</span></div>
+          <div class="space-meta-item"><span class="space-meta-val"><span class="due-indicator"><span class="due-dot"></span> 4</span></span><span class="space-meta-label">due</span></div>
+          <div class="space-meta-item"><span class="space-meta-val">92%</span><span class="space-meta-label">retention</span></div>
+          <div class="space-meta-item"><span class="space-source">ai · 5d ago</span></div>
+        </div>
+      </div>
+
+      <div class="space-card">
+        <div class="space-top">
+          <span class="space-name">Biochemistry</span>
+          <span class="space-streak"><span class="streak-dot"></span> 3d</span>
+        </div>
+        <div class="space-desc">Amino acids, enzyme kinetics, metabolic pathways, protein folding, DNA replication.</div>
+        <div class="space-meta">
+          <div class="space-meta-item"><span class="space-meta-val">145</span><span class="space-meta-label">cards</span></div>
+          <div class="space-meta-item"><span class="space-meta-val"><span class="due-indicator"><span class="due-dot"></span> 2</span></span><span class="space-meta-label">due</span></div>
+          <div class="space-meta-item"><span class="space-meta-val">88%</span><span class="space-meta-label">retention</span></div>
+          <div class="space-meta-item"><span class="space-source">anki · 2w</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="ruler-divider"></div>
+
+  <!-- Streak + Activity — side by side -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-label">Activity</span>
+    </div>
+
+    <div class="bottom-grid">
+
+      <!-- Streak Calendar -->
+      <div class="streak-wrap">
+        <div class="streak-header">
+          <span class="streak-title">Study calendar</span>
+          <span class="streak-count"><strong>14 day</strong> streak</span>
+        </div>
+        <div class="streak-grid" id="streakGrid"></div>
+        <div class="streak-legend">
+          <div class="streak-legend-item"><div class="streak-legend-swatch" style="background:var(--bg-elevated)"></div>No study</div>
+          <div class="streak-legend-item"><div class="streak-legend-swatch" style="background:#ededed18;border:1px solid #ededed25"></div>Studied</div>
+          <div class="streak-legend-item"><div class="streak-legend-swatch" style="background:var(--success-dim);border:1px solid var(--success)"></div>Today</div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="activity-wrap">
+        <div class="activity-header-bar">
+          <span class="ah-title">Recent</span>
+          <span class="ah-link">View all →</span>
+        </div>
+        <div class="activity-row">
+          <span class="activity-time">2m ago</span>
+          <span class="activity-desc">Studied <strong>18 cards</strong> in ML</span>
+          <span class="activity-type">study</span>
+        </div>
+        <div class="activity-row">
+          <span class="activity-time">1h ago</span>
+          <span class="activity-desc">Generated <strong>15 cards</strong> — architectures</span>
+          <span class="activity-type">ai gen</span>
+        </div>
+        <div class="activity-row">
+          <span class="activity-time">3h ago</span>
+          <span class="activity-desc">Studied <strong>12 cards</strong> in Rust</span>
+          <span class="activity-type">study</span>
+        </div>
+        <div class="activity-row">
+          <span class="activity-time">Yest.</span>
+          <span class="activity-desc">Imported <strong>145 cards</strong> from .apkg</span>
+          <span class="activity-type">import</span>
+        </div>
+        <div class="activity-row">
+          <span class="activity-time">Yest.</span>
+          <span class="activity-desc">Studied <strong>31 cards</strong> global</span>
+          <span class="activity-type">study</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="page-end"></div>
+</div>
+
+<script>
+  // Streak: 16 cols × 7 rows = 112 days
+  const grid = document.getElementById('streakGrid');
+  const total = 16 * 7;
+  const studied = new Set();
+  for (let i = 0; i < 14; i++) studied.add(i);
+  [16,17,19,22,23,24,25,28,29,33,34,38,39,40,44,48,49,51,55,56,60,63,67,70,71,74,78,82,85,89,90,95,100,105].forEach(d => studied.add(d));
+
+  for (let i = total - 1; i >= 0; i--) {
+    const c = document.createElement('div');
+    c.className = 'streak-cell';
+    if (studied.has(i)) c.classList.add('studied');
+    if (i === 0) c.classList.add('today');
+    grid.appendChild(c);
+  }
+</script>
+</body>
+</html>
