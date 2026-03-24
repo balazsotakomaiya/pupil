@@ -4,10 +4,11 @@ import type { SpaceCardData } from "./types";
 
 type SpacesSectionProps = {
   onOpenCreateDialog: () => void;
+  onOpenSpace: (spaceId: string) => void;
   spaces: SpaceCardData[];
 };
 
-export function SpacesSection({ onOpenCreateDialog, spaces }: SpacesSectionProps) {
+export function SpacesSection({ onOpenCreateDialog, onOpenSpace, spaces }: SpacesSectionProps) {
   return (
     <section className="section">
       <div className="section-head">
@@ -20,7 +21,7 @@ export function SpacesSection({ onOpenCreateDialog, spaces }: SpacesSectionProps
 
       <div className="spaces-grid">
         {spaces.map((space) => (
-          <SpaceCard key={space.id} space={space} />
+          <SpaceCard key={space.id} onOpen={() => onOpenSpace(space.id)} space={space} />
         ))}
       </div>
     </section>

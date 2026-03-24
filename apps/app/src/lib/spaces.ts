@@ -13,7 +13,28 @@ export type SpaceSummary = {
   updatedAt: number;
 };
 
-const WEB_STORAGE_KEY = "pupil.web.spaces";
+type StoredWebSpace = {
+  id: string;
+  name: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
+type StoredWebCard = {
+  id: string;
+  spaceId: string;
+  front: string;
+  back: string;
+  tags: string[];
+  source: "manual" | "ai" | "anki";
+  state: number;
+  due: number;
+  createdAt: number;
+  updatedAt: number;
+};
+
+const WEB_SPACE_STORAGE_KEY = "pupil.web.spaces";
+const WEB_CARD_STORAGE_KEY = "pupil.web.cards";
 
 export async function listSpaces(): Promise<SpaceSummary[]> {
   if (isTauriRuntime()) {
@@ -29,23 +50,20 @@ export async function createSpace(input: { name: string }): Promise<SpaceSummary
   }
 
   const name = normalizeSpaceName(input.name);
-  const spaces = readWebSpaces();
+  const spaces = readStoredWebSpaces();
   ensureUniqueSpaceName(spaces, name);
 
   const now = Date.now();
-  const createdSpace: SpaceSummary = {
-    id: createWebId(),
+  const createdSpace: StoredWebSpace = {
+    id: createWebId("space"),
     name,
-    cardCount: 0,
-    dueTodayCount: 0,
-    streak: 0,
     createdAt: now,
     updatedAt: now,
   };
 
-  writeWebSpaces([createdSpace, ...spaces]);
+  writeStoredWebSpaces([createdSpace, ...spaces]);
 
-  return createdSpace;
+  return toSpaceSummary(createdSpace, readStoredWebCards(), now);
 }
 
 export async function renameSpace(input: { id: string; name: string }): Promise<SpaceSummary> {
@@ -57,7 +75,7 @@ export async function renameSpace(input: { id: string; name: string }): Promise<
   }
 
   const name = normalizeSpaceName(input.name);
-  const spaces = readWebSpaces();
+  const spaces = readStoredWebSpaces();
   const nextIndex = spaces.findIndex((space) => space.id === input.id);
 
   if (nextIndex === -1) {
@@ -66,16 +84,16 @@ export async function renameSpace(input: { id: string; name: string }): Promise<
 
   ensureUniqueSpaceName(spaces, name, input.id);
 
-  const nextSpace: SpaceSummary = {
+  const nextSpace: StoredWebSpace = {
     ...spaces[nextIndex],
     name,
     updatedAt: Date.now(),
   };
 
   spaces[nextIndex] = nextSpace;
-  writeWebSpaces(spaces);
+  writeStoredWebSpaces(spaces);
 
-  return nextSpace;
+  return toSpaceSummary(nextSpace, readStoredWebCards(), Date.now());
 }
 
 export async function deleteSpace(input: { id: string }): Promise<void> {
@@ -84,14 +102,15 @@ export async function deleteSpace(input: { id: string }): Promise<void> {
     return;
   }
 
-  const spaces = readWebSpaces();
+  const spaces = readStoredWebSpaces();
   const nextSpaces = spaces.filter((space) => space.id !== input.id);
 
   if (nextSpaces.length === spaces.length) {
     throw new Error("Space not found.");
   }
 
-  writeWebSpaces(nextSpaces);
+  writeStoredWebSpaces(nextSpaces);
+  writeStoredWebCards(readStoredWebCards().filter((card) => card.spaceId !== input.id));
 }
 
 function normalizeSpaceName(name: string): string {
@@ -108,7 +127,7 @@ function normalizeSpaceName(name: string): string {
   return trimmed;
 }
 
-function ensureUniqueSpaceName(spaces: SpaceSummary[], name: string, ignoreId?: string): void {
+function ensureUniqueSpaceName(spaces: StoredWebSpace[], name: string, ignoreId?: string): void {
   const normalizedName = normalizeAsciiLower(name);
   const conflict = spaces.some(
     (space) => space.id !== ignoreId && normalizeAsciiLower(space.name) === normalizedName,
@@ -124,11 +143,35 @@ function normalizeAsciiLower(value: string): string {
 }
 
 function readWebSpaces(): SpaceSummary[] {
+  const spaces = readStoredWebSpaces();
+  const cards = readStoredWebCards();
+  const now = Date.now();
+
+  return spaces
+    .map((space) => toSpaceSummary(space, cards, now))
+    .sort((left, right) => right.updatedAt - left.updatedAt || right.createdAt - left.createdAt);
+}
+
+function toSpaceSummary(space: StoredWebSpace, cards: StoredWebCard[], now: number): SpaceSummary {
+  const matchingCards = cards.filter((card) => card.spaceId === space.id);
+
+  return {
+    id: space.id,
+    name: space.name,
+    cardCount: matchingCards.length,
+    dueTodayCount: matchingCards.filter((card) => card.due <= now).length,
+    streak: 0,
+    createdAt: space.createdAt,
+    updatedAt: space.updatedAt,
+  };
+}
+
+function readStoredWebSpaces(): StoredWebSpace[] {
   if (typeof window === "undefined" || !window.localStorage) {
     return [];
   }
 
-  const raw = window.localStorage.getItem(WEB_STORAGE_KEY);
+  const raw = window.localStorage.getItem(WEB_SPACE_STORAGE_KEY);
 
   if (!raw) {
     return [];
@@ -142,14 +185,14 @@ function readWebSpaces(): SpaceSummary[] {
     }
 
     return parsed
-      .filter(isSpaceSummary)
+      .filter(isStoredWebSpace)
       .sort((left, right) => right.updatedAt - left.updatedAt || right.createdAt - left.createdAt);
   } catch {
     return [];
   }
 }
 
-function writeWebSpaces(spaces: SpaceSummary[]): void {
+function writeStoredWebSpaces(spaces: StoredWebSpace[]): void {
   if (typeof window === "undefined" || !window.localStorage) {
     return;
   }
@@ -158,31 +201,81 @@ function writeWebSpaces(spaces: SpaceSummary[]): void {
     (left, right) => right.updatedAt - left.updatedAt || right.createdAt - left.createdAt,
   );
 
-  window.localStorage.setItem(WEB_STORAGE_KEY, JSON.stringify(nextSpaces));
+  window.localStorage.setItem(WEB_SPACE_STORAGE_KEY, JSON.stringify(nextSpaces));
 }
 
-function createWebId(): string {
+function readStoredWebCards(): StoredWebCard[] {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return [];
+  }
+
+  const raw = window.localStorage.getItem(WEB_CARD_STORAGE_KEY);
+
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.filter(isStoredWebCard);
+  } catch {
+    return [];
+  }
+}
+
+function writeStoredWebCards(cards: StoredWebCard[]): void {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return;
+  }
+
+  window.localStorage.setItem(WEB_CARD_STORAGE_KEY, JSON.stringify(cards));
+}
+
+function createWebId(prefix: string): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }
 
-  return `space-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function isSpaceSummary(value: unknown): value is SpaceSummary {
+function isStoredWebSpace(value: unknown): value is StoredWebSpace {
   if (!value || typeof value !== "object") {
     return false;
   }
 
-  const space = value as Partial<SpaceSummary>;
+  const space = value as Partial<StoredWebSpace>;
 
   return (
     typeof space.id === "string" &&
     typeof space.name === "string" &&
-    typeof space.cardCount === "number" &&
-    typeof space.dueTodayCount === "number" &&
-    typeof space.streak === "number" &&
     typeof space.createdAt === "number" &&
     typeof space.updatedAt === "number"
+  );
+}
+
+function isStoredWebCard(value: unknown): value is StoredWebCard {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const card = value as Partial<StoredWebCard>;
+
+  return (
+    typeof card.id === "string" &&
+    typeof card.spaceId === "string" &&
+    typeof card.front === "string" &&
+    typeof card.back === "string" &&
+    Array.isArray(card.tags) &&
+    typeof card.source === "string" &&
+    typeof card.state === "number" &&
+    typeof card.due === "number" &&
+    typeof card.createdAt === "number" &&
+    typeof card.updatedAt === "number"
   );
 }

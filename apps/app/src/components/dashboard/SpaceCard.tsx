@@ -1,12 +1,13 @@
 import type { SpaceCardData } from "./types";
 
 type SpaceCardProps = {
+  onOpen: () => void;
   space: SpaceCardData;
 };
 
-export function SpaceCard({ space }: SpaceCardProps) {
+export function SpaceCard({ onOpen, space }: SpaceCardProps) {
   return (
-    <article className="space-card">
+    <button className="space-card" onClick={onOpen} type="button">
       <div className="space-top">
         <span className="space-name">{space.name}</span>
         {space.streakLabel ? (
@@ -38,6 +39,6 @@ export function SpaceCard({ space }: SpaceCardProps) {
           </div>
         ))}
       </div>
-    </article>
+    </button>
   );
 }

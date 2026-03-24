@@ -1,6 +1,6 @@
 use nanoid::nanoid;
 use rusqlite::{ffi::ErrorCode, params, Connection};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -44,6 +44,46 @@ struct SpaceSummary {
     streak: i64,
     created_at: i64,
     updated_at: i64,
+}
+
+#[derive(Clone)]
+struct CardIdentity {
+    space_id: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CardSummary {
+    id: String,
+    space_id: String,
+    space_name: String,
+    front: String,
+    back: String,
+    tags: Vec<String>,
+    source: String,
+    state: i64,
+    due: i64,
+    created_at: i64,
+    updated_at: i64,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateCardInput {
+    space_id: String,
+    front: String,
+    back: String,
+    tags: Vec<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateCardInput {
+    id: String,
+    space_id: String,
+    front: String,
+    back: String,
+    tags: Vec<String>,
 }
 
 const SPACE_NAME_MAX_LENGTH: usize = 80;
@@ -105,6 +145,36 @@ fn delete_space(app: AppHandle, id: String) -> Result<(), String> {
     delete_space_row(&connection, &id).map_err(map_storage_error)
 }
 
+#[tauri::command]
+fn list_cards(app: AppHandle, space_id: Option<String>) -> Result<Vec<CardSummary>, String> {
+    let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+
+    list_card_summaries(&connection, space_id.as_deref()).map_err(map_card_storage_error)
+}
+
+#[tauri::command]
+fn create_card(app: AppHandle, input: CreateCardInput) -> Result<CardSummary, String> {
+    let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+    let normalized = normalize_card_input(&input.space_id, &input.front, &input.back, &input.tags)?;
+
+    create_card_row(&mut connection, normalized).map_err(map_card_storage_error)
+}
+
+#[tauri::command]
+fn update_card(app: AppHandle, input: UpdateCardInput) -> Result<CardSummary, String> {
+    let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+    let normalized = normalize_card_update_input(&input)?;
+
+    update_card_row(&mut connection, normalized).map_err(map_card_storage_error)
+}
+
+#[tauri::command]
+fn delete_card(app: AppHandle, id: String) -> Result<(), String> {
+    let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+
+    delete_card_row(&mut connection, &id).map_err(map_card_storage_error)
+}
+
 pub fn run() {
     tauri::Builder::default()
         .menu(|app| build_app_menu(app))
@@ -121,7 +191,11 @@ pub fn run() {
             list_spaces,
             create_space,
             rename_space,
-            delete_space
+            delete_space,
+            list_cards,
+            create_card,
+            update_card,
+            delete_card
         ])
         .run(tauri::generate_context!())
         .expect("error while running pupil app");
@@ -461,6 +535,206 @@ fn delete_space_row(connection: &Connection, id: &str) -> rusqlite::Result<()> {
     Ok(())
 }
 
+fn list_card_summaries(
+    connection: &Connection,
+    space_id: Option<&str>,
+) -> rusqlite::Result<Vec<CardSummary>> {
+    let mut statement = connection.prepare(
+        "
+        SELECT cards.id,
+               cards.space_id,
+               spaces.name,
+               cards.front,
+               cards.back,
+               cards.tags,
+               cards.source,
+               cards.state,
+               cards.due,
+               cards.created_at,
+               cards.updated_at
+        FROM cards
+        INNER JOIN spaces ON spaces.id = cards.space_id
+        WHERE (?1 IS NULL OR cards.space_id = ?1)
+        ORDER BY cards.updated_at DESC, cards.created_at DESC, cards.front COLLATE NOCASE ASC
+        ",
+    )?;
+    let rows = statement.query_map([space_id], map_card_summary_row)?;
+
+    rows.collect()
+}
+
+fn fetch_card_identity(connection: &Connection, id: &str) -> rusqlite::Result<CardIdentity> {
+    connection.query_row(
+        "
+        SELECT space_id
+        FROM cards
+        WHERE id = ?1
+        ",
+        [id],
+        |row| Ok(CardIdentity { space_id: row.get(0)? }),
+    )
+}
+
+fn fetch_card_summary(connection: &Connection, id: &str) -> rusqlite::Result<CardSummary> {
+    connection.query_row(
+        "
+        SELECT cards.id,
+               cards.space_id,
+               spaces.name,
+               cards.front,
+               cards.back,
+               cards.tags,
+               cards.source,
+               cards.state,
+               cards.due,
+               cards.created_at,
+               cards.updated_at
+        FROM cards
+        INNER JOIN spaces ON spaces.id = cards.space_id
+        WHERE cards.id = ?1
+        ",
+        [id],
+        map_card_summary_row,
+    )
+}
+
+fn map_card_summary_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<CardSummary> {
+    let tags_json = row.get::<_, Option<String>>(5)?;
+
+    Ok(CardSummary {
+        id: row.get(0)?,
+        space_id: row.get(1)?,
+        space_name: row.get(2)?,
+        front: row.get(3)?,
+        back: row.get(4)?,
+        tags: decode_tags(tags_json)?,
+        source: row.get(6)?,
+        state: row.get(7)?,
+        due: row.get(8)?,
+        created_at: row.get(9)?,
+        updated_at: row.get(10)?,
+    })
+}
+
+fn create_card_row(
+    connection: &mut Connection,
+    input: NormalizedCardInput,
+) -> rusqlite::Result<CardSummary> {
+    fetch_space_identity(connection, &input.space_id)?;
+
+    let id = nanoid!(12);
+    let timestamp = now_ms();
+    let tags_json = encode_tags(&input.tags)?;
+    let transaction = connection.transaction()?;
+
+    transaction.execute(
+        "
+        INSERT INTO cards (
+          id,
+          space_id,
+          front,
+          back,
+          tags,
+          source,
+          state,
+          due,
+          stability,
+          difficulty,
+          elapsed_days,
+          scheduled_days,
+          reps,
+          lapses,
+          last_review,
+          created_at,
+          updated_at
+        )
+        VALUES (?1, ?2, ?3, ?4, ?5, 'manual', 0, ?6, 0, 0, 0, 0, 0, 0, NULL, ?6, ?6)
+        ",
+        params![id, input.space_id, input.front, input.back, tags_json, timestamp],
+    )?;
+    touch_space(&transaction, &input.space_id, timestamp)?;
+    transaction.commit()?;
+
+    fetch_card_summary(connection, &id)
+}
+
+fn update_card_row(
+    connection: &mut Connection,
+    input: NormalizedCardUpdateInput,
+) -> rusqlite::Result<CardSummary> {
+    let existing = fetch_card_identity(connection, &input.id)?;
+    fetch_space_identity(connection, &input.space_id)?;
+
+    let timestamp = now_ms();
+    let tags_json = encode_tags(&input.tags)?;
+    let transaction = connection.transaction()?;
+    let updated_rows = transaction.execute(
+        "
+        UPDATE cards
+        SET space_id = ?1,
+            front = ?2,
+            back = ?3,
+            tags = ?4,
+            updated_at = ?5
+        WHERE id = ?6
+        ",
+        params![
+            input.space_id,
+            input.front,
+            input.back,
+            tags_json,
+            timestamp,
+            input.id
+        ],
+    )?;
+
+    if updated_rows == 0 {
+        return Err(rusqlite::Error::QueryReturnedNoRows);
+    }
+
+    touch_space(&transaction, &existing.space_id, timestamp)?;
+    if existing.space_id != input.space_id {
+        touch_space(&transaction, &input.space_id, timestamp)?;
+    }
+
+    transaction.commit()?;
+
+    fetch_card_summary(connection, &input.id)
+}
+
+fn delete_card_row(connection: &mut Connection, id: &str) -> rusqlite::Result<()> {
+    let existing = fetch_card_identity(connection, id)?;
+    let timestamp = now_ms();
+    let transaction = connection.transaction()?;
+    let deleted_rows = transaction.execute("DELETE FROM cards WHERE id = ?1", [id])?;
+
+    if deleted_rows == 0 {
+        return Err(rusqlite::Error::QueryReturnedNoRows);
+    }
+
+    touch_space(&transaction, &existing.space_id, timestamp)?;
+    transaction.commit()?;
+
+    Ok(())
+}
+
+fn touch_space(connection: &Connection, space_id: &str, timestamp: i64) -> rusqlite::Result<()> {
+    let touched_rows = connection.execute(
+        "
+        UPDATE spaces
+        SET updated_at = ?1
+        WHERE id = ?2
+        ",
+        params![timestamp, space_id],
+    )?;
+
+    if touched_rows == 0 {
+        return Err(rusqlite::Error::QueryReturnedNoRows);
+    }
+
+    Ok(())
+}
+
 fn normalize_space_name(name: &str) -> Result<String, String> {
     let trimmed = name.trim();
 
@@ -478,6 +752,106 @@ fn normalize_space_name(name: &str) -> Result<String, String> {
     Ok(trimmed.to_string())
 }
 
+struct NormalizedCardInput {
+    space_id: String,
+    front: String,
+    back: String,
+    tags: Vec<String>,
+}
+
+struct NormalizedCardUpdateInput {
+    id: String,
+    space_id: String,
+    front: String,
+    back: String,
+    tags: Vec<String>,
+}
+
+fn normalize_card_input(
+    space_id: &str,
+    front: &str,
+    back: &str,
+    tags: &[String],
+) -> Result<NormalizedCardInput, String> {
+    let normalized_space_id = normalize_required_identifier(space_id, "Space")?;
+
+    Ok(NormalizedCardInput {
+        space_id: normalized_space_id,
+        front: normalize_card_text(front, "Front")?,
+        back: normalize_card_text(back, "Back")?,
+        tags: normalize_tags(tags),
+    })
+}
+
+fn normalize_card_update_input(input: &UpdateCardInput) -> Result<NormalizedCardUpdateInput, String> {
+    Ok(NormalizedCardUpdateInput {
+        id: normalize_required_identifier(&input.id, "Card")?,
+        space_id: normalize_required_identifier(&input.space_id, "Space")?,
+        front: normalize_card_text(&input.front, "Front")?,
+        back: normalize_card_text(&input.back, "Back")?,
+        tags: normalize_tags(&input.tags),
+    })
+}
+
+fn normalize_required_identifier(value: &str, label: &str) -> Result<String, String> {
+    let trimmed = value.trim();
+
+    if trimmed.is_empty() {
+        return Err(format!("{label} identifier is required."));
+    }
+
+    Ok(trimmed.to_string())
+}
+
+fn normalize_card_text(value: &str, label: &str) -> Result<String, String> {
+    let trimmed = value.trim();
+
+    if trimmed.is_empty() {
+        return Err(format!("{label} can't be empty."));
+    }
+
+    Ok(trimmed.to_string())
+}
+
+fn normalize_tags(tags: &[String]) -> Vec<String> {
+    let mut normalized = Vec::new();
+
+    for tag in tags {
+        let trimmed = tag.trim();
+
+        if trimmed.is_empty() || normalized.iter().any(|existing| existing == trimmed) {
+            continue;
+        }
+
+        normalized.push(trimmed.to_string());
+    }
+
+    normalized
+}
+
+fn encode_tags(tags: &[String]) -> rusqlite::Result<Option<String>> {
+    if tags.is_empty() {
+        return Ok(None);
+    }
+
+    serde_json::to_string(tags)
+        .map(Some)
+        .map_err(|error| rusqlite::Error::ToSqlConversionFailure(Box::new(error)))
+}
+
+fn decode_tags(tags_json: Option<String>) -> rusqlite::Result<Vec<String>> {
+    match tags_json {
+        Some(json) if !json.trim().is_empty() => serde_json::from_str(&json).map_err(|error| {
+            rusqlite::Error::FromSqlConversionFailure(
+                json.len(),
+                rusqlite::types::Type::Text,
+                Box::new(error),
+            )
+        }),
+        _ => Ok(Vec::new()),
+    }
+}
+
 fn map_storage_error(error: rusqlite::Error) -> String {
     match error {
         rusqlite::Error::SqliteFailure(sqlite_error, _)
@@ -492,6 +866,18 @@ fn map_storage_error(error: rusqlite::Error) -> String {
             "The requested change violates a database constraint.".to_string()
         }
         rusqlite::Error::QueryReturnedNoRows => "Space not found.".to_string(),
+        other => other.to_string(),
+    }
+}
+
+fn map_card_storage_error(error: rusqlite::Error) -> String {
+    match error {
+        rusqlite::Error::SqliteFailure(sqlite_error, _)
+            if sqlite_error.code == ErrorCode::ConstraintViolation =>
+        {
+            "The requested change violates a database constraint.".to_string()
+        }
+        rusqlite::Error::QueryReturnedNoRows => "Card or space not found.".to_string(),
         other => other.to_string(),
     }
 }

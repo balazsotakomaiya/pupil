@@ -1,21 +1,32 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { AppTitlebar, type AppTab } from "./components/app-shell";
+import { CardsScreen } from "./components/cards";
 import {
   Dashboard,
+  NewSpaceDialog,
+  RulersOverlay,
   type ActivityItem,
-  type DashboardTab,
   type SpaceCardData,
   type StatCardData,
   type StreakCellData,
   type StudySummary,
 } from "./components/dashboard";
+import { SpaceDetailsScreen } from "./components/space-details";
+import {
+  createCard,
+  deleteCard,
+  listCards,
+  updateCard,
+  type CardRecord,
+} from "./lib/cards";
 import { loadBootstrapState } from "./lib/bootstrap";
 import { createSpace, listSpaces, type SpaceSummary } from "./lib/spaces";
 
-const DASHBOARD_TABS: DashboardTab[] = [
-  { label: "Dashboard", active: true },
-  { label: "All Cards" },
-  { label: "Import" },
-  { label: "Settings" },
+const APP_TABS: AppTab[] = [
+  { id: "dashboard", label: "Dashboard" },
+  { id: "cards", label: "All Cards" },
+  { id: "import", label: "Import" },
+  { id: "settings", label: "Settings" },
 ];
 
 const FALLBACK_STUDY_SUMMARY: StudySummary = {
@@ -155,9 +166,13 @@ const FALLBACK_STREAK_OFFSETS = [
 ];
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState<AppTab["id"]>("dashboard");
   const [bootstrapError, setBootstrapError] = useState<string | null>(null);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [spaces, setSpaces] = useState<SpaceSummary[]>([]);
+  const [cards, setCards] = useState<CardRecord[]>([]);
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
+  const [isMutatingCards, setIsMutatingCards] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState("");
   const [newSpaceError, setNewSpaceError] = useState<string | null>(null);
@@ -169,10 +184,11 @@ export default function App() {
     async function initialize() {
       try {
         await loadBootstrapState();
-        const nextSpaces = await listSpaces();
+        const [nextSpaces, nextCards] = await Promise.all([listSpaces(), listCards()]);
 
         if (!cancelled) {
           setSpaces(nextSpaces);
+          setCards(nextCards);
         }
       } catch (nextError: unknown) {
         if (!cancelled) {
@@ -202,6 +218,63 @@ export default function App() {
   const spaceCards = hasRealSpaces ? buildSpaceCards(spaces, now) : FALLBACK_SPACES;
   const activity = hasRealSpaces ? buildActivity(spaces, now) : FALLBACK_ACTIVITY;
   const streakCells = buildStreakCells(hasRealSpaces ? longestStreak : 14, hasRealSpaces);
+  const selectedSpace =
+    selectedSpaceId !== null ? spaces.find((space) => space.id === selectedSpaceId) ?? null : null;
+
+  async function refreshSpaces() {
+    setSpaces(await listSpaces());
+  }
+
+  async function handleCreateCard(input: {
+    back: string;
+    front: string;
+    spaceId: string;
+    tags: string[];
+  }) {
+    setIsMutatingCards(true);
+
+    try {
+      const createdCard = await createCard(input);
+      setCards((currentCards) => sortCardRecords([createdCard, ...currentCards]));
+      await refreshSpaces();
+    } finally {
+      setIsMutatingCards(false);
+    }
+  }
+
+  async function handleUpdateCard(input: {
+    back: string;
+    front: string;
+    id: string;
+    spaceId: string;
+    tags: string[];
+  }) {
+    setIsMutatingCards(true);
+
+    try {
+      const updatedCard = await updateCard(input);
+      setCards((currentCards) =>
+        sortCardRecords(
+          currentCards.map((card) => (card.id === updatedCard.id ? updatedCard : card)),
+        ),
+      );
+      await refreshSpaces();
+    } finally {
+      setIsMutatingCards(false);
+    }
+  }
+
+  async function handleDeleteCard(input: { id: string }) {
+    setIsMutatingCards(true);
+
+    try {
+      await deleteCard(input);
+      setCards((currentCards) => currentCards.filter((card) => card.id !== input.id));
+      await refreshSpaces();
+    } finally {
+      setIsMutatingCards(false);
+    }
+  }
 
   async function handleCreateSpaceSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -236,6 +309,14 @@ export default function App() {
     setNewSpaceError(null);
   }
 
+  function handleOpenSpace(spaceId: string) {
+    setSelectedSpaceId(spaceId);
+  }
+
+  function handleCloseSpaceDetails() {
+    setSelectedSpaceId(null);
+  }
+
   return (
     <main className="app-shell">
       {bootstrapError ? (
@@ -249,26 +330,89 @@ export default function App() {
           <p>Preparing the app shell.</p>
         </section>
       ) : (
-        <Dashboard
-          activity={activity}
-          isCreateDialogOpen={isCreateDialogOpen}
-          isCreatingSpace={isCreatingSpace}
-          newSpaceError={newSpaceError}
-          newSpaceName={newSpaceName}
-          onCloseCreateDialog={handleCloseCreateDialog}
-          onCreateNameChange={setNewSpaceName}
-          onOpenCreateDialog={handleOpenCreateDialog}
-          onStudyPrimaryAction={hasRealSpaces ? undefined : handleOpenCreateDialog}
-          onSubmitCreateDialog={handleCreateSpaceSubmit}
-          spaces={spaceCards}
-          stats={stats}
-          streakCells={streakCells}
-          streakCount={longestStreak}
-          studySummary={studySummary}
-          tabs={DASHBOARD_TABS}
-        />
+        <>
+          <RulersOverlay />
+
+          <div className="dashboard-shell">
+            {selectedSpace ? (
+              <SpaceDetailsScreen
+                cards={cards}
+                isMutating={isMutatingCards}
+                onBack={handleCloseSpaceDetails}
+                onCreateCard={handleCreateCard}
+                onDeleteCard={handleDeleteCard}
+                onUpdateCard={handleUpdateCard}
+                space={selectedSpace}
+              />
+            ) : (
+              <>
+                <AppTitlebar
+                  activeTab={activeTab}
+                  onOpenCreateDialog={handleOpenCreateDialog}
+                  onSelectTab={setActiveTab}
+                  tabs={APP_TABS}
+                />
+
+                {activeTab === "dashboard" ? (
+                  <Dashboard
+                    activity={activity}
+                    onOpenCreateDialog={handleOpenCreateDialog}
+                    onOpenSpace={handleOpenSpace}
+                    onStudyPrimaryAction={hasRealSpaces ? undefined : handleOpenCreateDialog}
+                    spaces={spaceCards}
+                    stats={stats}
+                    streakCells={streakCells}
+                    streakCount={longestStreak}
+                    studySummary={studySummary}
+                  />
+                ) : activeTab === "cards" ? (
+                  <CardsScreen
+                    cards={cards}
+                    isMutating={isMutatingCards}
+                    onCreateCard={handleCreateCard}
+                    onDeleteCard={handleDeleteCard}
+                    onOpenCreateDialog={handleOpenCreateDialog}
+                    onUpdateCard={handleUpdateCard}
+                    spaces={spaces}
+                  />
+                ) : (
+                  <PlaceholderScreen tab={activeTab} />
+                )}
+              </>
+            )}
+          </div>
+
+          {isCreateDialogOpen ? (
+            <NewSpaceDialog
+              error={newSpaceError}
+              isSubmitting={isCreatingSpace}
+              onChange={setNewSpaceName}
+              onClose={handleCloseCreateDialog}
+              onSubmit={handleCreateSpaceSubmit}
+              value={newSpaceName}
+            />
+          ) : null}
+        </>
       )}
     </main>
+  );
+}
+
+function PlaceholderScreen({ tab }: { tab: "import" | "settings" }) {
+  return (
+    <div className="page cards-page">
+      <section className="section">
+        <div className="placeholder-panel">
+          <span className="section-label">{tab}</span>
+          <h2>{tab === "import" ? "Anki import is next" : "AI provider settings are next"}</h2>
+          <p>
+            {tab === "import"
+              ? "Chunk 4 in the Phase 1 spec covers .apkg import, deck mapping, normalization, and duplicate handling."
+              : "Chunk 9 in the Phase 1 spec covers model selection, API key storage, and provider testing."}
+          </p>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -277,7 +421,9 @@ function buildStudySummary(spaces: SpaceSummary[]): StudySummary {
   const totalCards = spaces.reduce((sum, space) => sum + space.cardCount, 0);
   const dueSpaces = [...spaces]
     .filter((space) => space.dueTodayCount > 0)
-    .sort((left, right) => right.dueTodayCount - left.dueTodayCount || right.updatedAt - left.updatedAt);
+    .sort(
+      (left, right) => right.dueTodayCount - left.dueTodayCount || right.updatedAt - left.updatedAt,
+    );
 
   if (totalDueToday === 0) {
     const largestSpaces = [...spaces]
@@ -303,8 +449,11 @@ function buildStudySummary(spaces: SpaceSummary[]): StudySummary {
     label: space.name,
     value: space.dueTodayCount,
   }));
-  const remainingDue = dueSpaces.slice(3).reduce((sum, space) => sum + space.dueTodayCount, 0);
-  const breakdown = remainingDue > 0 ? [...topBreakdown, { label: "other", value: remainingDue }] : topBreakdown;
+  const remainingDue = dueSpaces
+    .slice(3)
+    .reduce((sum, space) => sum + space.dueTodayCount, 0);
+  const breakdown =
+    remainingDue > 0 ? [...topBreakdown, { label: "other", value: remainingDue }] : topBreakdown;
   const leadingNames = dueSpaces.slice(0, 2).map((space) => space.name);
 
   return {
@@ -325,7 +474,9 @@ function buildStudySummary(spaces: SpaceSummary[]): StudySummary {
 function buildStats(spaces: SpaceSummary[], now: number, longestStreak: number): StatCardData[] {
   const totalCards = spaces.reduce((sum, space) => sum + space.cardCount, 0);
   const dueToday = spaces.reduce((sum, space) => sum + space.dueTodayCount, 0);
-  const touchedThisWeek = spaces.filter((space) => now - space.updatedAt < 7 * 24 * 60 * 60 * 1000).length;
+  const touchedThisWeek = spaces.filter(
+    (space) => now - space.updatedAt < 7 * 24 * 60 * 60 * 1000,
+  ).length;
   const spacesWithDue = spaces.filter((space) => space.dueTodayCount > 0).length;
 
   return [
@@ -355,9 +506,7 @@ function buildStats(spaces: SpaceSummary[], now: number, longestStreak: number):
 
 function buildSpaceCards(spaces: SpaceSummary[], now: number): SpaceCardData[] {
   return [...spaces]
-    .sort((left, right) => {
-      return right.dueTodayCount - left.dueTodayCount || right.updatedAt - left.updatedAt;
-    })
+    .sort((left, right) => right.dueTodayCount - left.dueTodayCount || right.updatedAt - left.updatedAt)
     .map((space) => ({
       id: space.id,
       name: space.name,
@@ -474,6 +623,12 @@ function buildSpaceDescription(space: SpaceSummary): string {
 
 function sortSpaces(spaces: SpaceSummary[]): SpaceSummary[] {
   return [...spaces].sort(
+    (left, right) => right.updatedAt - left.updatedAt || right.createdAt - left.createdAt,
+  );
+}
+
+function sortCardRecords(cards: CardRecord[]): CardRecord[] {
+  return [...cards].sort(
     (left, right) => right.updatedAt - left.updatedAt || right.createdAt - left.createdAt,
   );
 }

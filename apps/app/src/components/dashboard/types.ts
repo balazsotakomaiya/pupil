@@ -1,8 +1,3 @@
-export type DashboardTab = {
-  label: string;
-  active?: boolean;
-};
-
 export type StudyBreakdownItem = {
   label: string;
   value: number;
