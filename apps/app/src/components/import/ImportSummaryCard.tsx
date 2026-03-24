@@ -1,17 +1,13 @@
 import { FileSuccessIcon, ViewIcon } from "./ImportIcons";
-import type { ImportDeckBreakdownItem } from "./types";
+import type { ImportSummaryModel } from "./types";
 
 type ImportSummaryCardProps = {
-  deckBreakdown: ImportDeckBreakdownItem[];
+  model: ImportSummaryModel;
   onOpenCards: () => void;
   onStudyNow: () => void;
 };
 
-export function ImportSummaryCard({
-  deckBreakdown,
-  onOpenCards,
-  onStudyNow,
-}: ImportSummaryCardProps) {
+export function ImportSummaryCard({ model, onOpenCards, onStudyNow }: ImportSummaryCardProps) {
   return (
     <div className="import-summary">
       <div className="import-summary-top">
@@ -20,8 +16,8 @@ export function ImportSummaryCard({
             <FileSuccessIcon />
           </div>
           <div>
-            <div className="import-summary-headline">biochemistry_complete.apkg</div>
-            <div className="import-summary-meta">Imported 3 hours ago · 2.8 MB</div>
+            <div className="import-summary-headline">{model.fileName}</div>
+            <div className="import-summary-meta">{model.metaLabel}</div>
           </div>
         </div>
 
@@ -44,12 +40,12 @@ export function ImportSummaryCard({
           <span className="col-right">Total</span>
         </div>
 
-        {deckBreakdown.map((deck) => (
+        {model.deckBreakdown.map((deck) => (
           <div className="deck-row" key={deck.deckName}>
             <span className="deck-name">{deck.deckName}</span>
-            <span className="deck-val imported">{deck.imported}</span>
-            <span className="deck-val">{deck.skipped}</span>
-            <span className="deck-val">{deck.total}</span>
+            <span className="deck-val imported">{deck.importedCount}</span>
+            <span className="deck-val">{deck.skippedCount}</span>
+            <span className="deck-val">{deck.totalCount}</span>
           </div>
         ))}
       </div>

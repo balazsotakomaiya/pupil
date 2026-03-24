@@ -1,29 +1,35 @@
-import { useRef, useState, type ChangeEvent, type DragEvent } from "react";
+import { useMemo, useRef, useState, type ChangeEvent, type DragEvent } from "react";
+import { importApkgFile, readImportHistory, type ImportExecutionResult } from "../../lib/imports";
 import { ImportDropZone } from "./ImportDropZone";
 import { ImportHistoryTable } from "./ImportHistoryTable";
 import { ImportNotesCard } from "./ImportNotesCard";
 import { ImportProgressCard } from "./ImportProgressCard";
 import { ImportSummaryCard } from "./ImportSummaryCard";
 import type {
-  ImportDeckBreakdownItem,
   ImportHistoryItem,
   ImportProgressModel,
+  ImportSummaryModel,
 } from "./types";
 
 type ImportScreenProps = {
+  onImportComplete: () => Promise<void>;
   onOpenCards: () => void;
   onStudyNow: () => void;
 };
 
-const LAST_IMPORT_BREAKDOWN: ImportDeckBreakdownItem[] = [
-  { deckName: "Amino Acids", imported: 62, skipped: 3, total: 65 },
-  { deckName: "Enzyme Kinetics", imported: 48, skipped: 0, total: 48 },
-  { deckName: "Metabolic Pathways", imported: 35, skipped: 12, total: 47 },
-];
+const FALLBACK_SUMMARY: ImportSummaryModel = {
+  deckBreakdown: [
+    { deckName: "Amino Acids", importedCount: 62, skippedCount: 3, totalCount: 65 },
+    { deckName: "Enzyme Kinetics", importedCount: 48, skippedCount: 0, totalCount: 48 },
+    { deckName: "Metabolic Pathways", importedCount: 35, skippedCount: 12, totalCount: 47 },
+  ],
+  fileName: "biochemistry_complete.apkg",
+  metaLabel: "Imported 3 hours ago · 2.8 MB",
+};
 
-const IMPORT_HISTORY: ImportHistoryItem[] = [
+const FALLBACK_HISTORY: ImportHistoryItem[] = [
   {
-    cards: 145,
+    cardsImported: 145,
     dateLabel: "3h ago",
     duplicateCount: 15,
     fileName: "biochemistry_complete.apkg",
@@ -31,7 +37,7 @@ const IMPORT_HISTORY: ImportHistoryItem[] = [
     statusLabel: "complete",
   },
   {
-    cards: 312,
+    cardsImported: 312,
     dateLabel: "Mar 20",
     duplicateCount: 0,
     fileName: "world_history_ap.apkg",
@@ -39,7 +45,7 @@ const IMPORT_HISTORY: ImportHistoryItem[] = [
     statusLabel: "complete",
   },
   {
-    cards: 89,
+    cardsImported: 89,
     dateLabel: "Mar 18",
     duplicateCount: 4,
     fileName: "french_vocab_b2.apkg",
@@ -47,7 +53,7 @@ const IMPORT_HISTORY: ImportHistoryItem[] = [
     statusLabel: "complete",
   },
   {
-    cards: 0,
+    cardsImported: 0,
     dateLabel: "Mar 15",
     duplicateCount: 0,
     fileName: "organic_chem_reactions.apkg",
@@ -55,7 +61,7 @@ const IMPORT_HISTORY: ImportHistoryItem[] = [
     statusLabel: "corrupt file",
   },
   {
-    cards: 89,
+    cardsImported: 89,
     dateLabel: "Mar 10",
     duplicateCount: 0,
     fileName: "rust_ownership_basics.apkg",
@@ -86,19 +92,29 @@ const FALLBACK_ACTIVE_IMPORT: ImportProgressModel = {
   statusVariant: "parsing",
 };
 
-export function ImportScreen({ onOpenCards, onStudyNow }: ImportScreenProps) {
+export function ImportScreen({
+  onImportComplete,
+  onOpenCards,
+  onStudyNow,
+}: ImportScreenProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedFileError, setSelectedFileError] = useState<string | null>(null);
-
-  const activeImportModel = buildActiveImportModel(selectedFile, selectedFileError);
+  const storedHistory = useMemo(() => readImportHistory(), []);
+  const [activeImportModel, setActiveImportModel] = useState<ImportProgressModel>(() =>
+    storedHistory[0] ? buildCompletedProgressModel(storedHistory[0]) : FALLBACK_ACTIVE_IMPORT,
+  );
+  const [lastImportModel, setLastImportModel] = useState<ImportSummaryModel>(() =>
+    storedHistory[0] ? buildSummaryModel(storedHistory[0]) : FALLBACK_SUMMARY,
+  );
+  const [historyItems, setHistoryItems] = useState<ImportHistoryItem[]>(() =>
+    storedHistory.length > 0 ? storedHistory.map(buildHistoryItem) : FALLBACK_HISTORY,
+  );
 
   function handleBrowse() {
     fileInputRef.current?.click();
   }
 
-  function handleFileSelection(file: File | null) {
+  async function handleImport(file: File | null) {
     setIsDragOver(false);
 
     if (!file) {
@@ -106,17 +122,28 @@ export function ImportScreen({ onOpenCards, onStudyNow }: ImportScreenProps) {
     }
 
     if (!file.name.toLowerCase().endsWith(".apkg")) {
-      setSelectedFile(file);
-      setSelectedFileError("Only .apkg files are supported");
+      setActiveImportModel(buildUnsupportedModel(file, "Only .apkg files are supported"));
       return;
     }
 
-    setSelectedFile(file);
-    setSelectedFileError(null);
+    try {
+      const result = await importApkgFile(file, setActiveImportModel);
+      setLastImportModel(buildSummaryModel(result));
+      const nextHistory = readImportHistory();
+      setHistoryItems(nextHistory.length > 0 ? nextHistory.map(buildHistoryItem) : FALLBACK_HISTORY);
+      await onImportComplete();
+    } catch (error: unknown) {
+      setActiveImportModel(
+        buildUnsupportedModel(
+          file,
+          error instanceof Error ? error.message : "Failed to import the selected package",
+        ),
+      );
+    }
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    handleFileSelection(event.target.files?.[0] ?? null);
+    void handleImport(event.target.files?.[0] ?? null);
     event.target.value = "";
   }
 
@@ -142,7 +169,7 @@ export function ImportScreen({ onOpenCards, onStudyNow }: ImportScreenProps) {
 
   function handleDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
-    handleFileSelection(event.dataTransfer.files?.[0] ?? null);
+    void handleImport(event.dataTransfer.files?.[0] ?? null);
   }
 
   return (
@@ -178,7 +205,7 @@ export function ImportScreen({ onOpenCards, onStudyNow }: ImportScreenProps) {
         </div>
 
         <ImportSummaryCard
-          deckBreakdown={LAST_IMPORT_BREAKDOWN}
+          model={lastImportModel}
           onOpenCards={onOpenCards}
           onStudyNow={onStudyNow}
         />
@@ -191,7 +218,7 @@ export function ImportScreen({ onOpenCards, onStudyNow }: ImportScreenProps) {
           <span className="section-label">History</span>
         </div>
 
-        <ImportHistoryTable items={IMPORT_HISTORY} />
+        <ImportHistoryTable items={historyItems} />
       </section>
 
       <div className="ruler-divider" />
@@ -205,47 +232,106 @@ export function ImportScreen({ onOpenCards, onStudyNow }: ImportScreenProps) {
   );
 }
 
-function buildActiveImportModel(
-  selectedFile: File | null,
-  selectedFileError: string | null,
-): ImportProgressModel {
-  if (!selectedFile) {
-    return FALLBACK_ACTIVE_IMPORT;
-  }
-
-  if (selectedFileError) {
-    return {
-      details: [
-        { label: "file selected", value: formatFileSize(selectedFile.size) },
-        { label: "supported format", value: ".apkg only" },
-        { label: "status", value: selectedFileError },
-      ],
-      fileName: selectedFile.name,
-      fileSubtext: `${formatFileSize(selectedFile.size)} · unsupported file type`,
-      progress: 100,
-      statusLabel: "Unsupported",
-      statusVariant: "error",
-    };
-  }
-
+function buildSummaryModel(result: ImportExecutionResult): ImportSummaryModel {
   return {
-    details: [
-      { label: "file selected", value: formatFileSize(selectedFile.size) },
-      { label: "import mode", value: "text only" },
-      { accent: "success", label: "target scheduler", value: "FSRS-5" },
-    ],
-    fileName: selectedFile.name,
-    fileSubtext: `${formatFileSize(selectedFile.size)} · awaiting parser`,
-    progress: 12,
-    statusLabel: "Queued",
-    statusVariant: "queued",
+    deckBreakdown: result.decks.map((deck) => ({
+      deckName: deck.deckName,
+      importedCount: deck.importedCount,
+      skippedCount: deck.skippedCount,
+      totalCount: deck.totalCount,
+    })),
+    fileName: result.sourceFileName,
+    metaLabel: `Imported ${formatRelativeTime(result.importedAt)} · ${formatFileSize(result.fileSize)}`,
   };
 }
 
-function formatFileSize(bytes: number): string {
+function buildHistoryItem(result: ImportExecutionResult): ImportHistoryItem {
+  return {
+    cardsImported: result.importedCount,
+    dateLabel: formatHistoryDate(result.importedAt),
+    duplicateCount: result.duplicateCount,
+    fileName: result.sourceFileName,
+    status: result.status,
+    statusLabel: result.statusLabel,
+  };
+}
+
+function buildCompletedProgressModel(result: ImportExecutionResult): ImportProgressModel {
+  return {
+    details: [
+      { accent: "success", label: "cards imported", value: formatNumber(result.importedCount) },
+      { label: "duplicates skipped", value: formatNumber(result.duplicateCount) },
+      { label: "decks touched", value: formatNumber(result.deckCount) },
+    ],
+    fileName: result.sourceFileName,
+    fileSubtext: `${formatFileSize(result.fileSize)} · imported ${formatRelativeTime(result.importedAt)}`,
+    progress: 100,
+    statusLabel: "Complete",
+    statusVariant: "complete",
+  };
+}
+
+function buildUnsupportedModel(file: File, message: string): ImportProgressModel {
+  return {
+    details: [
+      { label: "file selected", value: formatFileSize(file.size) },
+      { label: "supported format", value: ".apkg only" },
+      { label: "status", value: message },
+    ],
+    fileName: file.name,
+    fileSubtext: `${formatFileSize(file.size)} · import failed`,
+    progress: 100,
+    statusLabel: "Error",
+    statusVariant: "error",
+  };
+}
+
+function formatFileSize(bytes: number) {
   if (bytes < 1024 * 1024) {
     return `${(bytes / 1024).toFixed(1)} KB`;
   }
 
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("en-US").format(value);
+}
+
+function formatRelativeTime(timestamp: number) {
+  const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / (60 * 1000)));
+
+  if (minutes < 60) {
+    return minutes <= 1 ? "just now" : `${minutes}m ago`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+
+  const days = Math.floor(hours / 24);
+
+  if (days < 7) {
+    return `${days}d ago`;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "short",
+  }).format(timestamp);
+}
+
+function formatHistoryDate(timestamp: number) {
+  const hours = Math.floor((Date.now() - timestamp) / (60 * 60 * 1000));
+
+  if (hours < 24) {
+    return formatRelativeTime(timestamp);
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "short",
+  }).format(timestamp);
 }

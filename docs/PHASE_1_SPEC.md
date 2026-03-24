@@ -8,8 +8,8 @@ Chunk tracker:
 - [x] Chunk 0. Monorepo scaffold + site landing page
 - [x] Chunk 1. SQLite schema + migration layer
 - [x] Chunk 2. Spaces CRUD
-- [ ] Chunk 3. Manual card creation + storage
-- [ ] Chunk 4. Anki import (.apkg)
+- [x] Chunk 3. Manual card creation + storage
+- [x] Chunk 4. Anki import (.apkg)
 - [ ] Chunk 5. AI card generation + approval flow
 - [ ] Chunk 6. Study session + FSRS engine (per-space + global)
 - [ ] Chunk 7. Stats (per-space + global)

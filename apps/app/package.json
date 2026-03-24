@@ -13,8 +13,10 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2.4.0",
+    "jszip": "^3.10.1",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "sql.js": "^1.14.1"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.4.1",

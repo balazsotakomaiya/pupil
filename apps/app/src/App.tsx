@@ -11,6 +11,8 @@ import {
   type StreakCellData,
   type StudySummary,
 } from "./components/dashboard";
+import { ImportScreen } from "./components/import";
+import { SettingsScreen } from "./components/settings";
 import { SpaceDetailsScreen } from "./components/space-details";
 import {
   createCard,
@@ -221,8 +223,10 @@ export default function App() {
   const selectedSpace =
     selectedSpaceId !== null ? spaces.find((space) => space.id === selectedSpaceId) ?? null : null;
 
-  async function refreshSpaces() {
-    setSpaces(await listSpaces());
+  async function refreshAppData() {
+    const [nextSpaces, nextCards] = await Promise.all([listSpaces(), listCards()]);
+    setSpaces(nextSpaces);
+    setCards(nextCards);
   }
 
   async function handleCreateCard(input: {
@@ -236,7 +240,7 @@ export default function App() {
     try {
       const createdCard = await createCard(input);
       setCards((currentCards) => sortCardRecords([createdCard, ...currentCards]));
-      await refreshSpaces();
+      await refreshAppData();
     } finally {
       setIsMutatingCards(false);
     }
@@ -258,7 +262,7 @@ export default function App() {
           currentCards.map((card) => (card.id === updatedCard.id ? updatedCard : card)),
         ),
       );
-      await refreshSpaces();
+      await refreshAppData();
     } finally {
       setIsMutatingCards(false);
     }
@@ -270,7 +274,7 @@ export default function App() {
     try {
       await deleteCard(input);
       setCards((currentCards) => currentCards.filter((card) => card.id !== input.id));
-      await refreshSpaces();
+      await refreshAppData();
     } finally {
       setIsMutatingCards(false);
     }
@@ -310,6 +314,7 @@ export default function App() {
   }
 
   function handleOpenSpace(spaceId: string) {
+    window.scrollTo({ top: 0, behavior: "auto" });
     setSelectedSpaceId(spaceId);
   }
 
@@ -375,8 +380,16 @@ export default function App() {
                     onUpdateCard={handleUpdateCard}
                     spaces={spaces}
                   />
+                ) : activeTab === "import" ? (
+                  <ImportScreen
+                    onImportComplete={refreshAppData}
+                    onOpenCards={() => setActiveTab("cards")}
+                    onStudyNow={() => setActiveTab("dashboard")}
+                  />
+                ) : activeTab === "settings" ? (
+                  <SettingsScreen cardsCount={cards.length} spacesCount={spaces.length} />
                 ) : (
-                  <PlaceholderScreen tab={activeTab} />
+                  <div className="page cards-page" />
                 )}
               </>
             )}
@@ -395,24 +408,6 @@ export default function App() {
         </>
       )}
     </main>
-  );
-}
-
-function PlaceholderScreen({ tab }: { tab: "import" | "settings" }) {
-  return (
-    <div className="page cards-page">
-      <section className="section">
-        <div className="placeholder-panel">
-          <span className="section-label">{tab}</span>
-          <h2>{tab === "import" ? "Anki import is next" : "AI provider settings are next"}</h2>
-          <p>
-            {tab === "import"
-              ? "Chunk 4 in the Phase 1 spec covers .apkg import, deck mapping, normalization, and duplicate handling."
-              : "Chunk 9 in the Phase 1 spec covers model selection, API key storage, and provider testing."}
-          </p>
-        </div>
-      </section>
-    </div>
   );
 }
 

@@ -1,17 +1,23 @@
 export type ImportDeckBreakdownItem = {
   deckName: string;
-  imported: number;
-  skipped: number;
-  total: number;
+  importedCount: number;
+  skippedCount: number;
+  totalCount: number;
 };
 
 export type ImportHistoryItem = {
-  cards: number;
+  cardsImported: number;
   dateLabel: string;
   duplicateCount: number;
   fileName: string;
   status: "complete" | "partial";
   statusLabel: string;
+};
+
+export type ImportSummaryModel = {
+  deckBreakdown: ImportDeckBreakdownItem[];
+  fileName: string;
+  metaLabel: string;
 };
 
 export type ImportStatusVariant = "parsing" | "complete" | "error" | "queued";
