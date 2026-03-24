@@ -4,6 +4,7 @@ use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use tauri::menu::{MenuBuilder, SubmenuBuilder};
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Manager};
 
@@ -106,6 +107,7 @@ fn delete_space(app: AppHandle, id: String) -> Result<(), String> {
 
 pub fn run() {
     tauri::Builder::default()
+        .menu(|app| build_app_menu(app))
         .setup(|app| {
             let database_path = database_path(app.handle())?;
             let backup_created = run_migrations(app.handle(), &database_path)?;
@@ -123,6 +125,52 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running pupil app");
+}
+
+fn build_app_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
+    #[cfg(target_os = "macos")]
+    let app_menu = Some(
+        SubmenuBuilder::new(app, "Pupil")
+            .about(None)
+            .separator()
+            .services()
+            .separator()
+            .hide()
+            .hide_others()
+            .show_all()
+            .separator()
+            .quit()
+            .build()?,
+    );
+
+    #[cfg(not(target_os = "macos"))]
+    let app_menu: Option<tauri::menu::Submenu<tauri::Wry>> = None;
+
+    let edit_menu = SubmenuBuilder::new(app, "Edit")
+        .cut()
+        .copy()
+        .paste()
+        .select_all()
+        .build()?;
+
+    let window_menu = SubmenuBuilder::new(app, "Window")
+        .minimize()
+        .maximize()
+        .separator()
+        .close_window()
+        .build()?;
+
+    let mut builder = MenuBuilder::new(app);
+
+    #[cfg(target_os = "macos")]
+    if let Some(app_menu) = &app_menu {
+        builder = builder.item(app_menu);
+    }
+
+    builder
+        .item(&edit_menu)
+        .item(&window_menu)
+        .build()
 }
 
 struct BootstrapStatus {

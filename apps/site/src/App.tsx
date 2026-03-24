@@ -97,7 +97,7 @@ export default function App() {
           target="_blank"
           rel="noopener noreferrer"
         >
-          open source
+          Balazs Otakomaiya
         </a>
       </footer>
     </>
