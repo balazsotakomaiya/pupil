@@ -1,0 +1,28 @@
+import { PlusIcon } from "./PlusIcon";
+import { SpaceCard } from "./SpaceCard";
+import type { SpaceCardData } from "./types";
+
+type SpacesSectionProps = {
+  onOpenCreateDialog: () => void;
+  spaces: SpaceCardData[];
+};
+
+export function SpacesSection({ onOpenCreateDialog, spaces }: SpacesSectionProps) {
+  return (
+    <section className="section">
+      <div className="section-head">
+        <span className="section-label">Spaces</span>
+        <button className="btn-ghost" onClick={onOpenCreateDialog} type="button">
+          <PlusIcon />
+          New Space
+        </button>
+      </div>
+
+      <div className="spaces-grid">
+        {spaces.map((space) => (
+          <SpaceCard key={space.id} space={space} />
+        ))}
+      </div>
+    </section>
+  );
+}

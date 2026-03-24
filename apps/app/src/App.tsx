@@ -7,7 +7,7 @@ import {
   type StatCardData,
   type StreakCellData,
   type StudySummary,
-} from "./components/Dashboard";
+} from "./components/dashboard";
 import { loadBootstrapState } from "./lib/bootstrap";
 import { createSpace, listSpaces, type SpaceSummary } from "./lib/spaces";
 
