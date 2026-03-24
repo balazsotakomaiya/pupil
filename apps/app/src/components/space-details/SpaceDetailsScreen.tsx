@@ -18,6 +18,8 @@ type SpaceDetailsScreenProps = {
   onBack: () => void;
   onCreateCard: (input: { back: string; front: string; spaceId: string; tags: string[] }) => Promise<void>;
   onDeleteCard: (input: { id: string }) => Promise<void>;
+  onOpenAiGenerate: () => void;
+  onStartStudy: () => void;
   onUpdateCard: (input: {
     back: string;
     front: string;
@@ -36,6 +38,8 @@ export function SpaceDetailsScreen({
   onBack,
   onCreateCard,
   onDeleteCard,
+  onOpenAiGenerate,
+  onStartStudy,
   onUpdateCard,
   space,
 }: SpaceDetailsScreenProps) {
@@ -44,6 +48,7 @@ export function SpaceDetailsScreen({
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editorSuccessPulseTick, setEditorSuccessPulseTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const now = Date.now();
@@ -88,7 +93,7 @@ export function SpaceDetailsScreen({
     }
   }, [editingCardId, space.id, spaceCards]);
 
-  async function handleSubmit() {
+  async function handleSubmit(options: { keepOpen: boolean }) {
     setError(null);
 
     try {
@@ -106,7 +111,12 @@ export function SpaceDetailsScreen({
       }
 
       resetDraft(space.id, setDraft, setEditingCardId, setError);
-      setIsEditorOpen(false);
+
+      if (editingCardId || !options.keepOpen) {
+        setIsEditorOpen(false);
+      } else {
+        setEditorSuccessPulseTick((currentTick) => currentTick + 1);
+      }
     } catch (nextError: unknown) {
       setError(nextError instanceof Error ? nextError.message : "Failed to save card.");
     }
@@ -173,6 +183,7 @@ export function SpaceDetailsScreen({
     <>
       <SpaceDetailsTitlebar
         onBack={onBack}
+        onOpenAiGenerate={onOpenAiGenerate}
         onOpenNewCard={handleOpenNewCard}
         spaceName={space.name}
       />
@@ -211,7 +222,7 @@ export function SpaceDetailsScreen({
               <button className="study-btn-secondary" onClick={onBack} type="button">
                 Dashboard
               </button>
-              <button className="study-btn" type="button">
+              <button className="study-btn" onClick={onStartStudy} type="button">
                 Study this space →
               </button>
             </div>
@@ -379,7 +390,7 @@ export function SpaceDetailsScreen({
                 <PlusIcon />
                 New Card
               </button>
-              <button className="btn-ghost" type="button">
+              <button className="btn-ghost" onClick={onOpenAiGenerate} type="button">
                 <GenerateIcon />
                 AI Generate
               </button>
@@ -418,7 +429,8 @@ export function SpaceDetailsScreen({
         onChange={(patch) => setDraft((currentDraft) => ({ ...currentDraft, ...patch, spaceId: space.id }))}
         onClose={handleCloseEditor}
         onDelete={handleDelete}
-        onSubmit={() => void handleSubmit()}
+        onSubmit={(options) => void handleSubmit(options)}
+        successPulseTick={editorSuccessPulseTick}
         spaces={[space]}
       />
     </>
@@ -710,8 +722,10 @@ function PlusIcon() {
 
 function GenerateIcon() {
   return (
-    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M11.5 7.5L7 12l-4.5-4.5M7 12V2" />
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4">
+      <path d="M8 1.75l.8 2.6a1 1 0 00.67.67l2.6.8-2.6.8a1 1 0 00-.67.67L8 10.9l-.8-2.61a1 1 0 00-.67-.67l-2.6-.8 2.6-.8a1 1 0 00.67-.67L8 1.75z" />
+      <path d="M12.75 9.75l.39 1.29a.7.7 0 00.47.47l1.29.39-1.29.39a.7.7 0 00-.47.47l-.39 1.29-.39-1.29a.7.7 0 00-.47-.47l-1.29-.39 1.29-.39a.7.7 0 00.47-.47l.39-1.29z" />
+      <path d="M3 10.75l.3.99a.6.6 0 00.4.4l.99.3-.99.3a.6.6 0 00-.4.4L3 14.13l-.3-.99a.6.6 0 00-.4-.4l-.99-.3.99-.3a.6.6 0 00.4-.4l.3-.99z" />
     </svg>
   );
 }

@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pupil — AI Generate</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0a0a0a;--bg-subtle:#111;--bg-elevated:#161616;
+    --border:#1e1e1e;--border-hover:#333;--ruler:#2a2a2a;
+    --text-primary:#ededed;--text-secondary:#888;--text-tertiary:#555;
+    --success:#10b981;--success-dim:#10b98115;
+    --warn:#f59e0b;--danger:#ef4444;--danger-dim:#ef444415;
+    --radius:8px;--radius-lg:12px;
+    --font-sans:"Inter",-apple-system,BlinkMacSystemFont,sans-serif;
+    --font-mono:"JetBrains Mono","SF Mono","Fira Code",monospace;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans);font-size:15px;line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden}
+
+  .rulers{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
+  .ruler-v{position:absolute;top:0;bottom:0;width:1px;background-image:repeating-linear-gradient(to bottom,var(--ruler) 0px,var(--ruler) 1px,transparent 1px,transparent 5px)}
+  .ruler-v.left{left:0}.ruler-v.right{right:0}
+  .ruler-v.content-left{left:max(32px,calc((100vw - 960px)/2))}
+  .ruler-v.content-right{right:max(32px,calc((100vw - 960px)/2))}
+  .ruler-h{position:absolute;left:0;right:0;height:1px;background-image:repeating-linear-gradient(to right,var(--ruler) 0px,var(--ruler) 1px,transparent 1px,transparent 5px)}
+  .ruler-h.top{top:0}.ruler-h.bottom{bottom:0}
+  .ruler-divider{height:1px;margin-left:calc(-50vw + 50%);margin-right:calc(-50vw + 50%);background-image:repeating-linear-gradient(to right,var(--ruler) 0px,var(--ruler) 1px,transparent 1px,transparent 5px)}
+
+  /* ═══ TITLEBAR ═══ */
+  .titlebar{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;-webkit-app-region:drag;user-select:none;position:sticky;top:0;z-index:100;background:rgba(10,10,10,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+  .titlebar-left{display:flex;align-items:center;gap:16px}
+  .titlebar-logo{display:flex;align-items:center;gap:7px;-webkit-app-region:no-drag}
+  .titlebar-logo-text{font-family:"Syne",var(--font-sans);font-size:17px;font-weight:700;letter-spacing:-0.5px;color:var(--text-primary);line-height:1}
+  .titlebar-sep{width:1px;height:18px;background:var(--border)}
+  .back-btn{display:flex;align-items:center;gap:6px;-webkit-app-region:no-drag;font-size:13px;font-weight:500;color:var(--text-tertiary);cursor:pointer;transition:color 0.15s}
+  .back-btn:hover{color:var(--text-secondary)}
+  .back-btn svg{width:14px;height:14px}
+  .breadcrumb-name{font-size:13px;font-weight:600;color:var(--text-primary);-webkit-app-region:no-drag}
+  .titlebar-right{display:flex;align-items:center;gap:8px;-webkit-app-region:no-drag}
+
+  .eye-logo{flex-shrink:0;display:block}
+  .eye-shape{animation:blink 4s ease-in-out infinite}.eye-iris{animation:iris-blink 4s ease-in-out infinite;transform-origin:26px 26px}.eye-pupil-g{animation:pupil-hide 4s ease-in-out infinite;transform-origin:26px 26px}.eye-pupil{animation:look 4s ease-in-out infinite}
+  @keyframes blink{0%,16%,24%,34%,42%,100%{d:path("M 2 26 C 12 10, 40 10, 50 26 C 40 42, 12 42, 2 26 Z")}18.5%,21.5%{d:path("M 2 26 C 12 23, 40 23, 50 26 C 40 29, 12 29, 2 26 Z")}36.5%,39.5%{d:path("M 2 26 C 12 23, 40 23, 50 26 C 40 29, 12 29, 2 26 Z")}}
+  @keyframes iris-blink{0%,16%,24%,34%,42%,100%{transform:scaleY(1);opacity:1}18.5%,21.5%{transform:scaleY(0.1);opacity:0}36.5%,39.5%{transform:scaleY(0.1);opacity:0}}
+  @keyframes pupil-hide{0%,16%,24%,34%,42%,100%{transform:scaleY(1);opacity:1}18.5%,21.5%{transform:scaleY(0);opacity:0}36.5%,39.5%{transform:scaleY(0);opacity:0}}
+  @keyframes look{0%,42%{transform:translateX(0)}58%{transform:translateX(3px)}74%{transform:translateX(-2px)}90%,100%{transform:translateX(0)}}
+
+  /* ═══ PAGE — wider for the form ═══ */
+  .page{max-width:860px;margin:0 auto;padding:0 32px}
+
+  .state-view{display:none}
+  .state-view.active{display:block}
+
+  /* ═══ NO KEY ═══ */
+  .no-key-section{padding:80px 0;text-align:center}
+  .no-key-icon{width:56px;height:56px;border-radius:14px;background:var(--bg-subtle);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 24px}
+  .no-key-icon svg{width:24px;height:24px;color:var(--text-tertiary)}
+  .no-key-title{font-size:18px;font-weight:600;letter-spacing:-0.3px;margin-bottom:8px}
+  .no-key-desc{font-size:14px;color:var(--text-secondary);line-height:1.6;max-width:380px;margin:0 auto 24px}
+  .no-key-btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-sans);font-size:13px;font-weight:600;color:var(--bg);background:var(--text-primary);border:none;border-radius:var(--radius);padding:10px 22px;cursor:pointer;transition:opacity 0.15s}
+  .no-key-btn:hover{opacity:0.85}
+  .no-key-btn svg{width:14px;height:14px}
+  .no-key-hint{font-size:12px;color:var(--text-tertiary);margin-top:16px;line-height:1.5}
+  .no-key-hint code{font-family:var(--font-mono);font-size:11px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:3px;padding:0 4px}
+
+  /* ═══ FORM ═══ */
+  .form-section{padding:48px 0 40px}
+  .form-title{font-size:18px;font-weight:600;letter-spacing:-0.3px;margin-bottom:4px}
+  .form-desc{font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:32px}
+
+  .field-group{display:flex;flex-direction:column;gap:28px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field-label{font-size:13px;font-weight:600;color:var(--text-primary)}
+  .field-hint{font-size:12px;color:var(--text-tertiary);line-height:1.4}
+
+  .topic-input{
+    width:100%;padding:16px 18px;min-height:88px;
+    background:var(--bg-subtle);border:1px solid var(--border);
+    border-radius:var(--radius-lg);color:var(--text-primary);
+    font-family:var(--font-sans);font-size:16px;line-height:1.55;
+    resize:none;outline:none;transition:border-color 0.15s;
+    font-weight:500;letter-spacing:-0.15px;
+  }
+  .topic-input::placeholder{color:var(--text-tertiary);font-weight:400}
+  .topic-input:focus{border-color:var(--border-hover)}
+
+  /* Space selector */
+  .select-wrap{position:relative}
+  .select-input{
+    appearance:none;-webkit-appearance:none;
+    height:38px;padding:0 36px 0 14px;width:100%;
+    background:var(--bg-subtle);border:1px solid var(--border);
+    border-radius:var(--radius);color:var(--text-primary);
+    font-family:var(--font-sans);font-size:13px;
+    outline:none;cursor:pointer;transition:border-color 0.15s;
+  }
+  .select-input:focus{border-color:var(--border-hover)}
+  .select-input option{background:var(--bg-subtle);color:var(--text-primary)}
+  .select-chevron{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-tertiary)}
+  .select-chevron svg{width:13px;height:13px}
+
+  /* Three-column config row */
+  .config-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+
+  .chip-group{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{
+    font-family:var(--font-sans);font-size:12.5px;font-weight:500;
+    color:var(--text-tertiary);padding:6px 16px;border-radius:999px;
+    border:1px solid var(--border);background:transparent;
+    cursor:pointer;transition:color 0.15s,border-color 0.15s,background 0.15s;user-select:none;
+  }
+  .chip:hover{color:var(--text-secondary);border-color:var(--border-hover)}
+  .chip.active{color:var(--text-primary);border-color:var(--border-hover);background:var(--bg-elevated)}
+
+  /* Count: stepper + auto toggle */
+  .count-row{display:flex;align-items:center;gap:12px}
+
+  .count-stepper{
+    display:flex;align-items:center;
+    border:1px solid var(--border);border-radius:var(--radius);
+    overflow:hidden;background:var(--bg-subtle);
+    transition:opacity 0.2s;
+  }
+  .count-stepper.disabled{opacity:0.25;pointer-events:none}
+
+  .count-btn{
+    display:flex;align-items:center;justify-content:center;
+    width:34px;height:34px;background:transparent;border:none;
+    color:var(--text-tertiary);cursor:pointer;transition:color 0.15s,background 0.15s;
+  }
+  .count-btn:hover{color:var(--text-secondary);background:var(--bg-elevated)}
+  .count-btn svg{width:14px;height:14px}
+  .count-value{
+    width:42px;text-align:center;
+    font-family:var(--font-mono);font-size:14px;font-weight:600;
+    color:var(--text-primary);
+    border-left:1px solid var(--border);border-right:1px solid var(--border);
+    height:34px;line-height:34px;
+  }
+
+  .auto-toggle{
+    display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;
+  }
+  .auto-toggle-label{font-size:12.5px;font-weight:500;color:var(--text-tertiary);transition:color 0.15s;white-space:nowrap}
+  .auto-toggle:hover .auto-toggle-label{color:var(--text-secondary)}
+  .auto-toggle.active .auto-toggle-label{color:var(--text-secondary)}
+
+  .toggle-track{width:28px;height:16px;border-radius:8px;background:var(--bg-elevated);border:1px solid var(--border);position:relative;flex-shrink:0;transition:background 0.2s,border-color 0.2s}
+  .toggle-thumb{width:10px;height:10px;border-radius:50%;background:var(--text-tertiary);position:absolute;top:2px;left:2px;transition:transform 0.2s,background 0.2s}
+  .auto-toggle.active .toggle-track{background:#10b98125;border-color:#10b98140}
+  .auto-toggle.active .toggle-thumb{transform:translateX(12px);background:var(--success)}
+
+  /* Bottom row: generate + model */
+  .form-bottom{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:16px;
+  }
+
+  .generate-btn{
+    display:flex;align-items:center;gap:8px;
+    font-family:var(--font-sans);font-size:14px;font-weight:600;
+    color:var(--bg);background:var(--text-primary);
+    border:none;border-radius:var(--radius);padding:12px 28px;
+    cursor:pointer;transition:opacity 0.15s;letter-spacing:-0.2px;
+    flex-shrink:0;
+  }
+  .generate-btn:hover{opacity:0.85}
+  .generate-btn svg{width:16px;height:16px}
+
+  /* Model indicator — clickable with green underline */
+  .model-indicator{
+    display:flex;align-items:center;gap:8px;
+    font-family:var(--font-mono);font-size:11px;font-weight:500;
+    color:var(--text-tertiary);
+  }
+
+  .model-link{
+    display:flex;align-items:center;gap:6px;
+    color:var(--success);
+    text-decoration:none;
+    border-bottom:1px dashed #10b98160;
+    padding-bottom:1px;
+    cursor:pointer;
+    transition:color 0.15s,border-color 0.15s;
+  }
+  .model-link:hover{color:#34d399;border-color:#34d39980}
+  .model-link .model-dot{
+    width:5px;height:5px;border-radius:50%;
+    background:var(--success);flex-shrink:0;
+  }
+
+  .model-sep{color:var(--text-tertiary);opacity:0.3}
+  .model-endpoint{color:var(--text-tertiary)}
+
+  .model-change-btn{
+    display:flex;align-items:center;justify-content:center;
+    width:22px;height:22px;border-radius:5px;
+    border:1px solid var(--border);background:transparent;
+    color:var(--text-tertiary);cursor:pointer;
+    transition:color 0.15s,border-color 0.15s;
+    flex-shrink:0;
+  }
+  .model-change-btn:hover{color:var(--text-secondary);border-color:var(--border-hover)}
+  .model-change-btn svg{width:10px;height:10px}
+
+  /* ═══ LOADING ═══ */
+  .loading-section{padding:120px 0;display:flex;flex-direction:column;align-items:center;text-align:center}
+  .loading-spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--text-primary);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:24px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-title{font-size:15px;font-weight:600;letter-spacing:-0.2px;margin-bottom:6px}
+  .loading-desc{font-size:13px;color:var(--text-secondary)}
+  .loading-model{font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary);margin-top:16px;display:flex;align-items:center;gap:6px}
+
+  /* ═══ ERROR ═══ */
+  .error-section{padding:80px 0;display:flex;flex-direction:column;align-items:center;text-align:center}
+  .error-icon{width:48px;height:48px;border-radius:12px;background:var(--danger-dim);border:1px solid #ef444425;display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+  .error-icon svg{width:20px;height:20px;color:var(--danger)}
+  .error-title{font-size:15px;font-weight:600;margin-bottom:6px}
+  .error-desc{font-size:13px;color:var(--text-secondary);max-width:360px;margin-bottom:20px;line-height:1.5}
+  .error-detail{font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary);background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--radius);padding:8px 16px;margin-bottom:20px;max-width:400px;word-break:break-all}
+  .error-actions{display:flex;gap:8px}
+  .error-btn{display:flex;align-items:center;gap:5px;font-family:var(--font-sans);font-size:13px;font-weight:500;color:var(--text-secondary);background:transparent;border:1px solid var(--border);border-radius:var(--radius);padding:8px 18px;cursor:pointer;transition:color 0.15s,border-color 0.15s,background 0.15s}
+  .error-btn:hover{color:var(--text-primary);border-color:var(--border-hover);background:rgba(255,255,255,0.03)}
+  .error-btn.primary{color:var(--bg);background:var(--text-primary);border:none;font-weight:600;transition:opacity 0.15s}
+  .error-btn.primary:hover{opacity:0.85}
+
+  /* ═══ REVIEW TRAY ═══ */
+  .review-section{padding:40px 0}
+  .review-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+  .review-header-left{display:flex;flex-direction:column;gap:4px}
+  .review-title{font-size:16px;font-weight:600;letter-spacing:-0.2px}
+  .review-count{font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary)}
+  .review-count strong{color:var(--text-secondary);font-weight:600}
+  .review-bulk-actions{display:flex;gap:6px}
+  .bulk-btn{display:flex;align-items:center;gap:5px;font-family:var(--font-sans);font-size:12px;font-weight:500;color:var(--text-tertiary);background:transparent;border:1px solid var(--border);border-radius:6px;padding:5px 12px;cursor:pointer;transition:color 0.15s,border-color 0.15s}
+  .bulk-btn:hover{color:var(--text-secondary);border-color:var(--border-hover)}
+  .bulk-btn svg{width:12px;height:12px}
+  .review-list{display:flex;flex-direction:column;gap:8px}
+
+  .review-card{background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:border-color 0.2s,opacity 0.3s}
+  .review-card:hover{border-color:var(--border-hover)}
+  .review-card.discarded{opacity:0.3;pointer-events:none}
+  .review-card-body{padding:20px 24px}
+  .review-card-front{font-size:14px;font-weight:600;letter-spacing:-0.2px;margin-bottom:8px}
+  .review-card-back{font-size:13px;line-height:1.6;color:var(--text-secondary)}
+  .review-card-back strong{color:var(--text-primary);font-weight:600}
+  .review-card-back em{font-style:italic}
+  .review-card-back code{font-family:var(--font-mono);font-size:11px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:3px;padding:0 4px}
+  .review-card-actions{display:flex;align-items:center;justify-content:space-between;padding:10px 24px;border-top:1px solid var(--border);background:rgba(255,255,255,0.01)}
+  .review-card-num{font-family:var(--font-mono);font-size:10px;font-weight:500;color:var(--text-tertiary);letter-spacing:0.3px}
+  .review-card-btns{display:flex;gap:4px}
+  .rc-btn{display:flex;align-items:center;gap:4px;font-family:var(--font-sans);font-size:11px;font-weight:500;color:var(--text-tertiary);background:transparent;border:1px solid var(--border);border-radius:5px;padding:4px 10px;cursor:pointer;transition:color 0.15s,border-color 0.15s,background 0.15s}
+  .rc-btn:hover{color:var(--text-secondary);border-color:var(--border-hover);background:rgba(255,255,255,0.02)}
+  .rc-btn svg{width:11px;height:11px}
+  .rc-btn.approve{color:var(--success);border-color:#10b98130}
+  .rc-btn.approve:hover{background:var(--success-dim);border-color:#10b98150}
+  .rc-btn.approved{color:var(--success);background:var(--success-dim);border-color:#10b98130;pointer-events:none}
+
+  .save-bar{position:sticky;bottom:0;left:0;right:0;padding:16px 0 24px;background:linear-gradient(transparent,var(--bg) 30%);display:flex;align-items:center;justify-content:space-between;z-index:10}
+  .save-bar-info{font-size:13px;color:var(--text-secondary)}.save-bar-info strong{color:var(--text-primary);font-weight:600}
+  .save-bar-btn{display:flex;align-items:center;gap:6px;font-family:var(--font-sans);font-size:14px;font-weight:600;color:var(--bg);background:var(--text-primary);border:none;border-radius:var(--radius);padding:10px 24px;cursor:pointer;transition:opacity 0.15s;letter-spacing:-0.1px}
+  .save-bar-btn:hover{opacity:0.85}
+  .save-bar-btn svg{width:14px;height:14px}
+
+  /* ═══ INFO ICON ═══ */
+  .info-btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:16px;height:16px;border-radius:50%;
+    border:1px solid var(--border);background:transparent;
+    color:var(--text-tertiary);cursor:pointer;
+    transition:color 0.15s,border-color 0.15s,background 0.15s;
+    padding:0;margin-left:4px;vertical-align:middle;
+    position:relative;top:-1px;
+  }
+  .info-btn:hover{color:var(--text-secondary);border-color:var(--border-hover);background:var(--bg-elevated)}
+  .info-btn svg{width:10px;height:10px}
+
+  /* ═══ MODAL ═══ */
+  .modal-overlay{
+    position:fixed;inset:0;z-index:300;
+    background:rgba(0,0,0,0.6);
+    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    display:none;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  .modal-overlay.open{display:flex}
+
+  .modal{
+    width:100%;max-width:520px;
+    background:var(--bg-subtle);
+    border:1px solid var(--border-hover);
+    border-radius:16px;
+    box-shadow:0 24px 64px rgba(0,0,0,0.5);
+    overflow:hidden;
+    animation:modalIn 0.2s cubic-bezier(0.16,1,0.3,1);
+  }
+  @keyframes modalIn{
+    0%{opacity:0;transform:scale(0.96) translateY(8px)}
+    100%{opacity:1;transform:scale(1) translateY(0)}
+  }
+
+  .modal-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:20px 24px 16px;
+  }
+  .modal-title{font-size:15px;font-weight:600;letter-spacing:-0.2px}
+  .modal-close{
+    display:flex;align-items:center;justify-content:center;
+    width:28px;height:28px;border-radius:6px;
+    border:1px solid var(--border);background:transparent;
+    color:var(--text-tertiary);cursor:pointer;
+    transition:color 0.15s,border-color 0.15s,background 0.15s;
+  }
+  .modal-close:hover{color:var(--text-secondary);border-color:var(--border-hover);background:rgba(255,255,255,0.03)}
+  .modal-close svg{width:13px;height:13px}
+
+  .modal-body{padding:0 24px 24px}
+
+  .style-explain{
+    display:flex;flex-direction:column;gap:16px;
+  }
+
+  .style-card{
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-lg);
+    padding:18px 20px;
+    transition:border-color 0.2s;
+  }
+  .style-card:hover{border-color:var(--border-hover)}
+
+  .style-card-header{
+    display:flex;align-items:center;gap:8px;
+    margin-bottom:8px;
+  }
+  .style-card-name{font-size:14px;font-weight:600;letter-spacing:-0.1px}
+  .style-card-badge{
+    font-family:var(--font-mono);font-size:9px;font-weight:500;
+    text-transform:uppercase;letter-spacing:0.5px;
+    color:var(--text-tertiary);
+    background:var(--bg-subtle);border:1px solid var(--border);
+    border-radius:4px;padding:1px 7px;
+  }
+
+  .style-card-desc{
+    font-size:13px;line-height:1.5;color:var(--text-secondary);
+    margin-bottom:14px;
+  }
+
+  .style-card-example{
+    background:var(--bg-subtle);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:12px 16px;
+  }
+
+  .style-example-label{
+    font-family:var(--font-mono);font-size:9px;font-weight:500;
+    text-transform:uppercase;letter-spacing:1px;
+    color:var(--text-tertiary);
+    margin-bottom:6px;
+  }
+
+  .style-example-pair{
+    display:grid;grid-template-columns:auto 1fr;gap:4px 10px;
+    font-size:12.5px;line-height:1.5;
+  }
+  .style-example-side{
+    font-family:var(--font-mono);font-size:10px;font-weight:500;
+    color:var(--text-tertiary);text-transform:uppercase;
+    letter-spacing:0.3px;padding-top:1px;
+  }
+  .style-example-text{color:var(--text-secondary)}
+  .style-example-text strong{color:var(--text-primary);font-weight:600}
+  .style-example-text .blank{
+    display:inline-block;
+    border-bottom:1.5px solid var(--text-tertiary);
+    width:36px;height:1em;vertical-align:bottom;
+    margin:0 1px;
+  }
+
+  /* ═══ DEBUG BAR ═══ */
+  .debug-bar{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;background:var(--bg-elevated);border:1px solid var(--border-hover);border-radius:999px;padding:3px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
+  .debug-btn{font-family:var(--font-mono);font-size:10px;font-weight:500;color:var(--text-tertiary);background:transparent;border:none;border-radius:999px;padding:5px 12px;cursor:pointer;transition:color 0.15s,background 0.15s;white-space:nowrap}
+  .debug-btn:hover{color:var(--text-secondary)}
+  .debug-btn.active{color:var(--text-primary);background:var(--bg-subtle)}
+  .debug-label{font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);opacity:0.5;padding:0 8px;white-space:nowrap}
+
+  ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--border-hover)}
+  .page-end{height:80px}
+
+  @media(max-width:768px){.config-row{grid-template-columns:1fr 1fr}.config-row .field:last-child{grid-column:1/-1}}
+  @media(max-width:640px){.page{padding:0 20px}.titlebar{padding:0 12px}.config-row{grid-template-columns:1fr}.form-bottom{flex-direction:column;align-items:flex-start}.generate-btn{width:100%;justify-content:center}.review-card-body{padding:16px 18px}.review-card-actions{padding:8px 18px}}
+</style>
+</head>
+<body>
+
+<div class="rulers">
+  <div class="ruler-v left"></div><div class="ruler-v right"></div>
+  <div class="ruler-v content-left"></div><div class="ruler-v content-right"></div>
+  <div class="ruler-h top"></div><div class="ruler-h bottom"></div>
+</div>
+
+<div class="titlebar">
+  <div class="titlebar-left">
+    <div class="titlebar-logo">
+      <svg class="eye-logo" width="24" height="24" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+        <path class="eye-shape" d="M 2 26 C 12 10, 40 10, 50 26 C 40 42, 12 42, 2 26 Z" fill="none" stroke="#ededed" stroke-width="2.8" stroke-linejoin="round"/>
+        <circle class="eye-iris" cx="26" cy="26" r="9" fill="none" stroke="#ededed" stroke-width="2"/>
+        <g class="eye-pupil-g"><circle class="eye-pupil" cx="26" cy="26" r="3.5" fill="#ededed"/></g>
+      </svg>
+      <span class="titlebar-logo-text">pupil</span>
+    </div>
+    <div class="titlebar-sep"></div>
+    <div class="back-btn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3L5 8l5 5"/></svg>Machine Learning</div>
+    <div class="titlebar-sep"></div>
+    <span class="breadcrumb-name">AI Generate</span>
+  </div>
+  <div class="titlebar-right"></div>
+</div>
+
+<div class="page">
+
+  <!-- ═══ NO KEY ═══ -->
+  <div class="state-view" id="state-nokey">
+    <div class="no-key-section">
+      <div class="no-key-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></div>
+      <div class="no-key-title">API key required</div>
+      <div class="no-key-desc">AI generation needs an API key from Anthropic, OpenAI, or any compatible provider. Your key is stored encrypted on this device and never logged.</div>
+      <button class="no-key-btn" onclick="switchState('form')"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 2v10M2 7h10"/></svg>Add API key in Settings</button>
+      <div class="no-key-hint">Supported: <code>api.anthropic.com</code> · <code>api.openai.com</code> · any OpenAI-compatible endpoint</div>
+    </div>
+  </div>
+
+  <!-- ═══ FORM ═══ -->
+  <div class="state-view active" id="state-form">
+    <div class="form-section">
+      <div class="form-title">Generate flashcards</div>
+      <div class="form-desc">Describe what you want to learn. Pupil generates cards you review and approve before saving.</div>
+
+      <div class="field-group">
+
+        <!-- Topic -->
+        <div class="field">
+          <label class="field-label">Topic</label>
+          <textarea class="topic-input" placeholder="e.g. The transformer architecture — self-attention, multi-head attention, positional encoding, layer normalization…"></textarea>
+          <div class="field-hint">Be specific. The more context you give, the better the cards.</div>
+        </div>
+
+        <!-- Space -->
+        <div class="field">
+          <label class="field-label">Space</label>
+          <div class="select-wrap">
+            <select class="select-input">
+              <option selected>Machine Learning</option>
+              <option>Rust Ownership</option>
+              <option>World History</option>
+              <option>Music Theory</option>
+              <option>Biochemistry</option>
+              <option disabled>──────────</option>
+              <option>+ Create new space</option>
+            </select>
+            <div class="select-chevron"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5l3 3 3-3"/></svg></div>
+          </div>
+        </div>
+
+        <!-- Three-col config: Difficulty, Style, Count -->
+        <div class="config-row">
+          <div class="field">
+            <label class="field-label">Difficulty</label>
+            <div class="chip-group" id="difficultyChips">
+              <button class="chip active" onclick="selectChip(this,'difficultyChips')">Beginner</button>
+              <button class="chip" onclick="selectChip(this,'difficultyChips')">Intermediate</button>
+              <button class="chip" onclick="selectChip(this,'difficultyChips')">Advanced</button>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">Style <button class="info-btn" onclick="openModal()" title="What do these mean?"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M6 8.5v.01M6 4a1.25 1.25 0 011.12 1.82L6 7.25" stroke-linecap="round" stroke-linejoin="round"/></svg></button></label>
+            <div class="chip-group" id="styleChips">
+              <button class="chip" onclick="selectChip(this,'styleChips')">Concept</button>
+              <button class="chip active" onclick="selectChip(this,'styleChips')">Q&A</button>
+              <button class="chip" onclick="selectChip(this,'styleChips')">Cloze</button>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label">Count</label>
+            <div class="count-row">
+              <div class="count-stepper" id="countStepper">
+                <button class="count-btn" onclick="adjustCount(-1)"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h8"/></svg></button>
+                <div class="count-value" id="countVal">10</div>
+                <button class="count-btn" onclick="adjustCount(1)"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3v8M3 7h8"/></svg></button>
+              </div>
+              <div class="auto-toggle" id="autoToggle" onclick="toggleAuto()">
+                <span class="auto-toggle-label">Auto</span>
+                <div class="toggle-track"><div class="toggle-thumb"></div></div>
+              </div>
+            </div>
+            <div class="field-hint" id="countHint">Or let the AI decide how many cards the topic needs.</div>
+          </div>
+        </div>
+
+        <!-- Bottom: generate + model -->
+        <div class="form-bottom">
+          <button class="generate-btn" id="genBtn" onclick="switchState('loading')">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15l2-6L14 3l-6 8-2 6z"/><circle cx="10.5" cy="7.5" r="1"/></svg>
+            <span id="genBtnLabel">Generate 10 cards</span>
+          </button>
+          <div class="model-indicator">
+            <span class="model-link" onclick="alert('→ Settings > AI Provider')">
+              <span class="model-dot"></span>
+              claude-sonnet-4-6
+            </span>
+            <span class="model-sep">·</span>
+            <span class="model-endpoint">api.anthropic.com</span>
+            <button class="model-change-btn" onclick="alert('→ Settings > AI Provider')" title="Change model">
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="2.5" cy="6" r="1"/><circle cx="6" cy="6" r="1"/><circle cx="9.5" cy="6" r="1"/></svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LOADING ═══ -->
+  <div class="state-view" id="state-loading">
+    <div class="loading-section">
+      <div class="loading-spinner"></div>
+      <div class="loading-title" id="loadingTitle">Generating cards…</div>
+      <div class="loading-desc">Asking the model about transformer architectures</div>
+      <div class="loading-model"><span style="width:5px;height:5px;border-radius:50%;background:var(--success)"></span>claude-sonnet-4-6</div>
+    </div>
+  </div>
+
+  <!-- ═══ ERROR ═══ -->
+  <div class="state-view" id="state-error">
+    <div class="error-section">
+      <div class="error-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="8"/><path d="M10 6v5M10 13.5v.5"/></svg></div>
+      <div class="error-title">Generation failed</div>
+      <div class="error-desc">The API returned an error. This usually means the key is invalid, the model is unavailable, or the provider is down.</div>
+      <div class="error-detail">401 Unauthorized — invalid x-api-key</div>
+      <div class="error-actions">
+        <button class="error-btn" onclick="switchState('form')">Edit prompt</button>
+        <button class="error-btn primary" onclick="switchState('loading')">Retry</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ REVIEW ═══ -->
+  <div class="state-view" id="state-review">
+    <div class="review-section">
+      <div class="review-header">
+        <div class="review-header-left">
+          <div class="review-title">Review generated cards</div>
+          <div class="review-count"><strong id="approvedCount">0</strong> approved · <strong id="discardedCount">0</strong> discarded · <strong>10</strong> total</div>
+        </div>
+        <div class="review-bulk-actions">
+          <button class="bulk-btn" onclick="bulkAction('discard')"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 2l8 8M10 2L2 10"/></svg>Discard all</button>
+          <button class="bulk-btn" onclick="bulkAction('approve')" style="color:var(--success);border-color:#10b98130"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6l3 3 5-5.5"/></svg>Approve all</button>
+        </div>
+      </div>
+      <div class="review-list" id="reviewList"></div>
+      <div class="save-bar">
+        <div class="save-bar-info"><strong id="saveCount">0</strong> cards ready to save to Machine Learning</div>
+        <button class="save-bar-btn" onclick="alert('→ Saved!')"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 7l3 3 6-6.5"/></svg>Save approved cards</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-end"></div>
+</div>
+
+<!-- Style explanation modal -->
+<div class="modal-overlay" id="styleModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Card styles</span>
+      <button class="modal-close" onclick="closeModal()">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3l8 8M11 3L3 11"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="style-explain">
+
+        <div class="style-card">
+          <div class="style-card-header">
+            <span class="style-card-name">Concept</span>
+            <span class="style-card-badge">Term → Definition</span>
+          </div>
+          <div class="style-card-desc">The front names a concept. The back gives a clear, self-contained definition. Best for vocabulary, terminology, and building foundational knowledge.</div>
+          <div class="style-card-example">
+            <div class="style-example-label">Example</div>
+            <div class="style-example-pair">
+              <span class="style-example-side">F</span>
+              <span class="style-example-text"><strong>Gradient descent</strong></span>
+              <span class="style-example-side">B</span>
+              <span class="style-example-text">An optimization algorithm that iteratively adjusts parameters in the direction of steepest decrease of the loss function.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="style-card">
+          <div class="style-card-header">
+            <span class="style-card-name">Q&A</span>
+            <span class="style-card-badge">Question → Answer</span>
+          </div>
+          <div class="style-card-desc">The front asks a specific question targeting one fact. The back gives a concise, direct answer. Best for testing understanding and application.</div>
+          <div class="style-card-example">
+            <div class="style-example-label">Example</div>
+            <div class="style-example-pair">
+              <span class="style-example-side">F</span>
+              <span class="style-example-text"><strong>Why do transformers use positional encoding?</strong></span>
+              <span class="style-example-side">B</span>
+              <span class="style-example-text">Because self-attention is permutation-invariant — it has no built-in notion of token order.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="style-card">
+          <div class="style-card-header">
+            <span class="style-card-name">Cloze</span>
+            <span class="style-card-badge">Fill in the blank</span>
+          </div>
+          <div class="style-card-desc">The front is a sentence with a key term replaced by a blank. The back gives the missing term plus a short explanation. Best for memorizing specific facts, names, and values.</div>
+          <div class="style-card-example">
+            <div class="style-example-label">Example</div>
+            <div class="style-example-pair">
+              <span class="style-example-side">F</span>
+              <span class="style-example-text">The scaling factor in attention is 1 / √<span class="blank"></span></span>
+              <span class="style-example-side">B</span>
+              <span class="style-example-text"><strong>dₖ</strong> — the dimension of the key vectors. Prevents dot products from growing too large.</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Debug -->
+<div class="debug-bar">
+  <span class="debug-label">State:</span>
+  <button class="debug-btn" onclick="switchState('nokey')">No Key</button>
+  <button class="debug-btn active" onclick="switchState('form')">Form</button>
+  <button class="debug-btn" onclick="switchState('loading')">Loading</button>
+  <button class="debug-btn" onclick="switchState('error')">Error</button>
+  <button class="debug-btn" onclick="switchState('review')">Review</button>
+</div>
+
+<script>
+  function switchState(id) {
+    document.querySelectorAll('.state-view').forEach(v => v.classList.remove('active'));
+    document.getElementById('state-' + id).classList.add('active');
+    document.querySelectorAll('.debug-btn').forEach(b => b.classList.remove('active'));
+    if (event?.target?.classList?.contains('debug-btn')) event.target.classList.add('active');
+    if (id === 'review') buildReviewCards();
+    if (id === 'loading') {
+      const auto = document.getElementById('autoToggle').classList.contains('active');
+      document.getElementById('loadingTitle').textContent = auto ? 'Generating cards…' : `Generating ${cardCount} cards…`;
+    }
+  }
+
+  // Count
+  let cardCount = 10;
+  let autoCount = false;
+
+  function adjustCount(d) {
+    cardCount = Math.max(1, Math.min(30, cardCount + d));
+    document.getElementById('countVal').textContent = cardCount;
+    updateGenLabel();
+  }
+
+  function toggleAuto() {
+    const t = document.getElementById('autoToggle');
+    t.classList.toggle('active');
+    autoCount = t.classList.contains('active');
+    document.getElementById('countStepper').classList.toggle('disabled', autoCount);
+    document.getElementById('countHint').textContent = autoCount
+      ? 'The AI will decide how many cards this topic needs.'
+      : 'Or let the AI decide how many cards the topic needs.';
+    updateGenLabel();
+  }
+
+  function updateGenLabel() {
+    document.getElementById('genBtnLabel').textContent = autoCount
+      ? 'Generate cards'
+      : `Generate ${cardCount} cards`;
+  }
+
+  function selectChip(chip, groupId) {
+    document.querySelectorAll(`#${groupId} .chip`).forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+  }
+
+  // Modal
+  function openModal() { document.getElementById('styleModal').classList.add('open'); }
+  function closeModal() { document.getElementById('styleModal').classList.remove('open'); }
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Escape' && document.getElementById('styleModal').classList.contains('open')) {
+      e.preventDefault(); closeModal();
+    }
+  });
+
+  // Review tray
+  const generatedCards = [
+    { front: 'What is self-attention in a transformer?', back: 'A mechanism that computes a weighted sum of all positions in a sequence. Each weight reflects relevance between tokens, using **query**, **key**, and **value** projections with scaled dot-product: `softmax(QKᵀ / √dₖ) × V`.' },
+    { front: 'What is the purpose of multi-head attention?', back: 'It allows the model to attend to information from **different representation subspaces** simultaneously. Each head learns different relationship aspects between tokens.' },
+    { front: 'Why do transformers need positional encoding?', back: 'Self-attention is **permutation-invariant** — it has no built-in notion of order. Positional encodings inject sequence position information, typically using sine/cosine functions.' },
+    { front: 'What does layer normalization do in a transformer?', back: 'Normalizes activations across the **feature dimension** per sample, stabilizing training. Applied before or after each sub-layer depending on the variant.' },
+    { front: 'Define _____ as the operation that prevents attending to future tokens', back: '**Causal masking** (masked self-attention). Sets attention weights to −∞ for future positions before softmax, ensuring autoregressive generation.' },
+    { front: 'What are the three projections in scaled dot-product attention?', back: '**Query (Q)**, **Key (K)**, and **Value (V)**. Q and K determine attention weights via dot product; V carries content that gets aggregated.' },
+    { front: 'How does the feed-forward network in a transformer block work?', back: 'A two-layer MLP applied per position: `FFN(x) = W₂ · ReLU(W₁x + b₁) + b₂`. Inner dimension is typically **4× model dimension**.' },
+    { front: 'What is the scaling factor in scaled dot-product attention?', back: '`1 / √dₖ` where dₖ is key dimension. Without scaling, large dot products push softmax into regions with **vanishing gradients**.' },
+    { front: 'Encoder vs decoder in the original transformer?', back: '**Encoder**: bidirectional self-attention (all positions). **Decoder**: causal masking (past only) + cross-attention to encoder outputs. Both stack N identical layers.' },
+    { front: 'Why did "Attention Is All You Need" replace RNNs?', back: 'Transformers process all positions **in parallel** instead of sequentially. Self-attention captures long-range dependencies more directly than RNNs, which suffer from vanishing gradients.' },
+  ];
+
+  const cardStates = new Array(generatedCards.length).fill('pending');
+
+  function renderMd(t) {
+    return t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>').replace(/`(.+?)`/g, '<code>$1</code>').replace(/_____/g, '<span style="border-bottom:2px solid var(--text-tertiary);padding:0 14px;display:inline-block;height:1em;vertical-align:bottom"></span>');
+  }
+
+  function buildReviewCards() {
+    const list = document.getElementById('reviewList');
+    list.innerHTML = generatedCards.map((c, i) => `
+      <div class="review-card ${cardStates[i]==='discarded'?'discarded':''}" id="rc-${i}">
+        <div class="review-card-body">
+          <div class="review-card-front">${renderMd(c.front)}</div>
+          <div class="review-card-back">${renderMd(c.back)}</div>
+        </div>
+        <div class="review-card-actions">
+          <span class="review-card-num">${i+1} of ${generatedCards.length}</span>
+          <div class="review-card-btns">
+            <button class="rc-btn" onclick="cardAction(${i},'regenerate')"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 6a5 5 0 019-2.5M11 6a5 5 0 01-9 2.5"/><path d="M10 1v3h-3M2 11V8h3"/></svg>Regenerate</button>
+            <button class="rc-btn" onclick="cardAction(${i},'discard')"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg>Discard</button>
+            <button class="rc-btn ${cardStates[i]==='approved'?'approved':'approve'}" onclick="cardAction(${i},'approve')"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6l3 3 5-5.5"/></svg>${cardStates[i]==='approved'?'Approved':'Approve'}</button>
+          </div>
+        </div>
+      </div>`).join('');
+    updateCounts();
+  }
+
+  function cardAction(i, a) {
+    if (a==='approve') cardStates[i]='approved';
+    else if (a==='discard') cardStates[i]='discarded';
+    else if (a==='regenerate') cardStates[i]='pending';
+    buildReviewCards();
+  }
+
+  function bulkAction(a) {
+    for (let i=0;i<cardStates.length;i++){
+      if (a==='approve'&&cardStates[i]!=='discarded') cardStates[i]='approved';
+      if (a==='discard') cardStates[i]='discarded';
+    }
+    buildReviewCards();
+  }
+
+  function updateCounts() {
+    const approved=cardStates.filter(s=>s==='approved').length;
+    const discarded=cardStates.filter(s=>s==='discarded').length;
+    document.getElementById('approvedCount').textContent=approved;
+    document.getElementById('discardedCount').textContent=discarded;
+    document.getElementById('saveCount').textContent=approved;
+  }
+</script>
+
+</body>
+</html>

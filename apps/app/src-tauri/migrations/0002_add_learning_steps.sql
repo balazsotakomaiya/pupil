@@ -1,0 +1,2 @@
+ALTER TABLE cards
+ADD COLUMN learning_steps INTEGER NOT NULL DEFAULT 0;

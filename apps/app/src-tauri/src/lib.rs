@@ -5,9 +5,9 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use tauri::menu::{MenuBuilder, SubmenuBuilder};
+use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::path::BaseDirectory;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 type AppResult<T> = Result<T, Box<dyn std::error::Error>>;
 
@@ -64,6 +64,14 @@ struct CardSummary {
     source: String,
     state: i64,
     due: i64,
+    stability: f64,
+    difficulty: f64,
+    elapsed_days: i64,
+    scheduled_days: i64,
+    learning_steps: i64,
+    reps: i64,
+    lapses: i64,
+    last_review: Option<i64>,
     created_at: i64,
     updated_at: i64,
 }
@@ -75,6 +83,7 @@ struct CreateCardInput {
     front: String,
     back: String,
     tags: Vec<String>,
+    source: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -85,6 +94,34 @@ struct UpdateCardInput {
     front: String,
     back: String,
     tags: Vec<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ReviewCardInput {
+    id: String,
+    grade: i64,
+    state: i64,
+    due: i64,
+    stability: f64,
+    difficulty: f64,
+    elapsed_days: i64,
+    scheduled_days: i64,
+    learning_steps: i64,
+    reps: i64,
+    lapses: i64,
+    last_review: i64,
+    review_log: ReviewCardLogInput,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ReviewCardLogInput {
+    state: i64,
+    due: i64,
+    elapsed_days: Option<i64>,
+    scheduled_days: i64,
+    review_time: i64,
 }
 
 #[derive(Deserialize)]
@@ -125,10 +162,15 @@ struct ImportDeckResult {
 }
 
 const SPACE_NAME_MAX_LENGTH: usize = 80;
+const DEVELOPER_RESET_ONBOARDING_MENU_ID: &str = "developer.reset_onboarding";
+const DEVELOPER_RESET_ONBOARDING_EVENT: &str = "developer://reset-onboarding";
 
 const MIGRATIONS: &[Migration] = &[Migration {
     id: "0001_init",
     sql: include_str!("../migrations/0001_init.sql"),
+}, Migration {
+    id: "0002_add_learning_steps",
+    sql: include_str!("../migrations/0002_add_learning_steps.sql"),
 }];
 
 #[tauri::command]
@@ -193,7 +235,13 @@ fn list_cards(app: AppHandle, space_id: Option<String>) -> Result<Vec<CardSummar
 #[tauri::command]
 fn create_card(app: AppHandle, input: CreateCardInput) -> Result<CardSummary, String> {
     let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
-    let normalized = normalize_card_input(&input.space_id, &input.front, &input.back, &input.tags)?;
+    let normalized = normalize_card_input(
+        &input.space_id,
+        &input.front,
+        &input.back,
+        &input.tags,
+        input.source.as_deref(),
+    )?;
 
     create_card_row(&mut connection, normalized).map_err(map_card_storage_error)
 }
@@ -214,6 +262,14 @@ fn delete_card(app: AppHandle, id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn review_card(app: AppHandle, input: ReviewCardInput) -> Result<CardSummary, String> {
+    let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+    let normalized = normalize_review_card_input(&input)?;
+
+    review_card_row(&mut connection, normalized).map_err(map_card_storage_error)
+}
+
+#[tauri::command]
 fn import_anki_cards(app: AppHandle, input: ImportAnkiInput) -> Result<ImportAnkiResult, String> {
     let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
     let normalized_cards = normalize_import_anki_cards(&input.cards)?;
@@ -225,6 +281,11 @@ fn import_anki_cards(app: AppHandle, input: ImportAnkiInput) -> Result<ImportAnk
 pub fn run() {
     tauri::Builder::default()
         .menu(|app| build_app_menu(app))
+        .on_menu_event(|app, event| {
+            if event.id().as_ref() == DEVELOPER_RESET_ONBOARDING_MENU_ID {
+                let _ = app.emit(DEVELOPER_RESET_ONBOARDING_EVENT, ());
+            }
+        })
         .setup(|app| {
             let database_path = database_path(app.handle())?;
             let backup_created = run_migrations(app.handle(), &database_path)?;
@@ -243,6 +304,7 @@ pub fn run() {
             create_card,
             update_card,
             delete_card,
+            review_card,
             import_anki_cards
         ])
         .run(tauri::generate_context!())
@@ -282,11 +344,32 @@ fn build_app_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry
         .close_window()
         .build()?;
 
+    #[cfg(debug_assertions)]
+    let developer_menu = {
+        let reset_onboarding =
+            MenuItemBuilder::with_id(DEVELOPER_RESET_ONBOARDING_MENU_ID, "Reset Onboarding")
+                .accelerator("CmdOrCtrl+Shift+O")
+                .build(app)?;
+
+        Some(
+            SubmenuBuilder::new(app, "Developer")
+                .item(&reset_onboarding)
+                .build()?,
+        )
+    };
+
+    #[cfg(not(debug_assertions))]
+    let developer_menu: Option<tauri::menu::Submenu<tauri::Wry>> = None;
+
     let mut builder = MenuBuilder::new(app);
 
     #[cfg(target_os = "macos")]
     if let Some(app_menu) = &app_menu {
         builder = builder.item(app_menu);
+    }
+
+    if let Some(developer_menu) = &developer_menu {
+        builder = builder.item(developer_menu);
     }
 
     builder
@@ -598,6 +681,14 @@ fn list_card_summaries(
                cards.source,
                cards.state,
                cards.due,
+               cards.stability,
+               cards.difficulty,
+               cards.elapsed_days,
+               cards.scheduled_days,
+               cards.learning_steps,
+               cards.reps,
+               cards.lapses,
+               cards.last_review,
                cards.created_at,
                cards.updated_at
         FROM cards
@@ -635,6 +726,14 @@ fn fetch_card_summary(connection: &Connection, id: &str) -> rusqlite::Result<Car
                cards.source,
                cards.state,
                cards.due,
+               cards.stability,
+               cards.difficulty,
+               cards.elapsed_days,
+               cards.scheduled_days,
+               cards.learning_steps,
+               cards.reps,
+               cards.lapses,
+               cards.last_review,
                cards.created_at,
                cards.updated_at
         FROM cards
@@ -659,8 +758,16 @@ fn map_card_summary_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<CardSummary
         source: row.get(6)?,
         state: row.get(7)?,
         due: row.get(8)?,
-        created_at: row.get(9)?,
-        updated_at: row.get(10)?,
+        stability: row.get(9)?,
+        difficulty: row.get(10)?,
+        elapsed_days: row.get(11)?,
+        scheduled_days: row.get(12)?,
+        learning_steps: row.get(13)?,
+        reps: row.get(14)?,
+        lapses: row.get(15)?,
+        last_review: row.get(16)?,
+        created_at: row.get(17)?,
+        updated_at: row.get(18)?,
     })
 }
 
@@ -690,15 +797,24 @@ fn create_card_row(
           difficulty,
           elapsed_days,
           scheduled_days,
+          learning_steps,
           reps,
           lapses,
           last_review,
           created_at,
           updated_at
         )
-        VALUES (?1, ?2, ?3, ?4, ?5, 'manual', 0, ?6, 0, 0, 0, 0, 0, 0, NULL, ?6, ?6)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7, 0, 0, 0, 0, 0, 0, 0, NULL, ?7, ?7)
         ",
-        params![id, input.space_id, input.front, input.back, tags_json, timestamp],
+        params![
+            id,
+            input.space_id,
+            input.front,
+            input.back,
+            tags_json,
+            input.source,
+            timestamp
+        ],
     )?;
     touch_space(&transaction, &input.space_id, timestamp)?;
     transaction.commit()?;
@@ -766,6 +882,83 @@ fn delete_card_row(connection: &mut Connection, id: &str) -> rusqlite::Result<()
     Ok(())
 }
 
+fn review_card_row(
+    connection: &mut Connection,
+    input: NormalizedReviewCardInput,
+) -> rusqlite::Result<CardSummary> {
+    let existing = fetch_card_identity(connection, &input.id)?;
+    let transaction = connection.transaction()?;
+    let updated_rows = transaction.execute(
+        "
+        UPDATE cards
+        SET state = ?1,
+            due = ?2,
+            stability = ?3,
+            difficulty = ?4,
+            elapsed_days = ?5,
+            scheduled_days = ?6,
+            learning_steps = ?7,
+            reps = ?8,
+            lapses = ?9,
+            last_review = ?10,
+            updated_at = ?11
+        WHERE id = ?12
+        ",
+        params![
+            input.state,
+            input.due,
+            input.stability,
+            input.difficulty,
+            input.elapsed_days,
+            input.scheduled_days,
+            input.learning_steps,
+            input.reps,
+            input.lapses,
+            input.last_review,
+            input.review_log.review_time,
+            input.id
+        ],
+    )?;
+
+    if updated_rows == 0 {
+        return Err(rusqlite::Error::QueryReturnedNoRows);
+    }
+
+    transaction.execute(
+        "
+        INSERT INTO review_logs (
+          id,
+          card_id,
+          space_id,
+          grade,
+          state,
+          due,
+          elapsed_days,
+          scheduled_days,
+          review_time
+        )
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+        ",
+        params![
+            nanoid!(12),
+            input.id,
+            existing.space_id,
+            input.grade,
+            input.review_log.state,
+            input.review_log.due,
+            input.review_log.elapsed_days,
+            input.review_log.scheduled_days,
+            input.review_log.review_time
+        ],
+    )?;
+    upsert_study_day(&transaction, Some(&existing.space_id), input.review_log.review_time)?;
+    upsert_study_day(&transaction, None, input.review_log.review_time)?;
+    touch_space(&transaction, &existing.space_id, input.review_log.review_time)?;
+    transaction.commit()?;
+
+    fetch_card_summary(connection, &input.id)
+}
+
 fn touch_space(connection: &Connection, space_id: &str, timestamp: i64) -> rusqlite::Result<()> {
     let touched_rows = connection.execute(
         "
@@ -779,6 +972,22 @@ fn touch_space(connection: &Connection, space_id: &str, timestamp: i64) -> rusql
     if touched_rows == 0 {
         return Err(rusqlite::Error::QueryReturnedNoRows);
     }
+
+    Ok(())
+}
+
+fn upsert_study_day(
+    connection: &Connection,
+    space_id: Option<&str>,
+    review_time: i64,
+) -> rusqlite::Result<()> {
+    connection.execute(
+        "
+        INSERT OR IGNORE INTO study_days (space_id, day)
+        VALUES (?1, date(?2 / 1000, 'unixepoch', 'localtime'))
+        ",
+        params![space_id, review_time],
+    )?;
 
     Ok(())
 }
@@ -805,6 +1014,7 @@ struct NormalizedCardInput {
     front: String,
     back: String,
     tags: Vec<String>,
+    source: String,
 }
 
 struct NormalizedCardUpdateInput {
@@ -813,6 +1023,30 @@ struct NormalizedCardUpdateInput {
     front: String,
     back: String,
     tags: Vec<String>,
+}
+
+struct NormalizedReviewCardInput {
+    id: String,
+    grade: i64,
+    state: i64,
+    due: i64,
+    stability: f64,
+    difficulty: f64,
+    elapsed_days: i64,
+    scheduled_days: i64,
+    learning_steps: i64,
+    reps: i64,
+    lapses: i64,
+    last_review: i64,
+    review_log: NormalizedReviewCardLogInput,
+}
+
+struct NormalizedReviewCardLogInput {
+    state: i64,
+    due: i64,
+    elapsed_days: Option<i64>,
+    scheduled_days: i64,
+    review_time: i64,
 }
 
 struct NormalizedImportAnkiCardInput {
@@ -836,6 +1070,7 @@ fn normalize_card_input(
     front: &str,
     back: &str,
     tags: &[String],
+    source: Option<&str>,
 ) -> Result<NormalizedCardInput, String> {
     let normalized_space_id = normalize_required_identifier(space_id, "Space")?;
 
@@ -844,7 +1079,15 @@ fn normalize_card_input(
         front: normalize_card_text(front, "Front")?,
         back: normalize_card_text(back, "Back")?,
         tags: normalize_tags(tags),
+        source: normalize_card_source(source)?,
     })
+}
+
+fn normalize_card_source(source: Option<&str>) -> Result<String, String> {
+    match source.unwrap_or("manual") {
+        "manual" | "ai" | "anki" => Ok(source.unwrap_or("manual").to_string()),
+        _ => Err("Card source must be manual, ai, or anki.".to_string()),
+    }
 }
 
 fn normalize_card_update_input(input: &UpdateCardInput) -> Result<NormalizedCardUpdateInput, String> {
@@ -854,6 +1097,36 @@ fn normalize_card_update_input(input: &UpdateCardInput) -> Result<NormalizedCard
         front: normalize_card_text(&input.front, "Front")?,
         back: normalize_card_text(&input.back, "Back")?,
         tags: normalize_tags(&input.tags),
+    })
+}
+
+fn normalize_review_card_input(input: &ReviewCardInput) -> Result<NormalizedReviewCardInput, String> {
+    Ok(NormalizedReviewCardInput {
+        id: normalize_required_identifier(&input.id, "Card")?,
+        grade: normalize_grade(input.grade)?,
+        state: normalize_card_state(input.state)?,
+        due: normalize_timestamp(input.due, "Due")?,
+        stability: normalize_non_negative_number(input.stability, "Stability")?,
+        difficulty: normalize_non_negative_number(input.difficulty, "Difficulty")?,
+        elapsed_days: normalize_non_negative_integer(input.elapsed_days, "Elapsed days")?,
+        scheduled_days: normalize_non_negative_integer(input.scheduled_days, "Scheduled days")?,
+        learning_steps: normalize_non_negative_integer(input.learning_steps, "Learning steps")?,
+        reps: normalize_non_negative_integer(input.reps, "Reps")?,
+        lapses: normalize_non_negative_integer(input.lapses, "Lapses")?,
+        last_review: normalize_timestamp(input.last_review, "Last review")?,
+        review_log: NormalizedReviewCardLogInput {
+            state: normalize_card_state(input.review_log.state)?,
+            due: normalize_timestamp(input.review_log.due, "Review due")?,
+            elapsed_days: match input.review_log.elapsed_days {
+                Some(value) => Some(normalize_non_negative_integer(value, "Review elapsed days")?),
+                None => None,
+            },
+            scheduled_days: normalize_non_negative_integer(
+                input.review_log.scheduled_days,
+                "Review scheduled days",
+            )?,
+            review_time: normalize_timestamp(input.review_log.review_time, "Review time")?,
+        },
     })
 }
 
@@ -881,6 +1154,46 @@ fn normalize_required_identifier(value: &str, label: &str) -> Result<String, Str
     }
 
     Ok(trimmed.to_string())
+}
+
+fn normalize_grade(value: i64) -> Result<i64, String> {
+    if (1..=4).contains(&value) {
+        return Ok(value);
+    }
+
+    Err("Grade must be between 1 and 4.".to_string())
+}
+
+fn normalize_card_state(value: i64) -> Result<i64, String> {
+    if (0..=3).contains(&value) {
+        return Ok(value);
+    }
+
+    Err("Card state must be between 0 and 3.".to_string())
+}
+
+fn normalize_timestamp(value: i64, label: &str) -> Result<i64, String> {
+    if value > 0 {
+        return Ok(value);
+    }
+
+    Err(format!("{label} must be a positive timestamp."))
+}
+
+fn normalize_non_negative_integer(value: i64, label: &str) -> Result<i64, String> {
+    if value >= 0 {
+        return Ok(value);
+    }
+
+    Err(format!("{label} must be zero or greater."))
+}
+
+fn normalize_non_negative_number(value: f64, label: &str) -> Result<f64, String> {
+    if value.is_finite() && value >= 0.0 {
+        return Ok(value);
+    }
+
+    Err(format!("{label} must be a finite non-negative number."))
 }
 
 fn normalize_card_text(value: &str, label: &str) -> Result<String, String> {
@@ -1101,13 +1414,14 @@ fn insert_imported_anki_card(
           difficulty,
           elapsed_days,
           scheduled_days,
+          learning_steps,
           reps,
           lapses,
           last_review,
           created_at,
           updated_at
         )
-        VALUES (?1, ?2, ?3, ?4, ?5, 'anki', 0, ?6, 0, 0, 0, 0, 0, 0, NULL, ?6, ?6)
+        VALUES (?1, ?2, ?3, ?4, ?5, 'anki', 0, ?6, 0, 0, 0, 0, 0, 0, 0, NULL, ?6, ?6)
         ",
         params![id, space_id, front, back, tags_json, timestamp],
     )?;

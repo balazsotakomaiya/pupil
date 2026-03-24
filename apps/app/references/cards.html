@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pupil — All Cards</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:          #0a0a0a;
+    --bg-subtle:   #111;
+    --bg-elevated: #161616;
+    --border:       #1e1e1e;
+    --border-hover: #333;
+    --ruler:        #2a2a2a;
+    --text-primary:   #ededed;
+    --text-secondary: #888;
+    --text-tertiary:  #555;
+    --accent: #ededed;
+    --success: #10b981;
+    --success-dim: #10b98115;
+    --radius:    8px;
+    --radius-lg: 12px;
+    --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* ═══ RULERS ═══ */
+  .rulers { position: fixed; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
+  .ruler-v {
+    position: absolute; top: 0; bottom: 0; width: 1px;
+    background-image: repeating-linear-gradient(to bottom, var(--ruler) 0px, var(--ruler) 1px, transparent 1px, transparent 5px);
+  }
+  .ruler-v.left { left: 0; }
+  .ruler-v.right { right: 0; }
+  .ruler-v.content-left { left: max(32px, calc((100vw - 960px) / 2)); }
+  .ruler-v.content-right { right: max(32px, calc((100vw - 960px) / 2)); }
+  .ruler-h {
+    position: absolute; left: 0; right: 0; height: 1px;
+    background-image: repeating-linear-gradient(to right, var(--ruler) 0px, var(--ruler) 1px, transparent 1px, transparent 5px);
+  }
+  .ruler-h.top { top: 0; }
+  .ruler-h.bottom { bottom: 0; }
+  .ruler-divider {
+    height: 1px;
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+    background-image: repeating-linear-gradient(to right, var(--ruler) 0px, var(--ruler) 1px, transparent 1px, transparent 5px);
+  }
+
+  /* ═══ TITLEBAR ═══ */
+  .titlebar {
+    height: 52px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px; -webkit-app-region: drag; user-select: none;
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .titlebar-left { display: flex; align-items: center; gap: 20px; }
+  .titlebar-logo { display: flex; align-items: center; gap: 7px; -webkit-app-region: no-drag; }
+  .titlebar-logo-text {
+    font-family: "Syne", var(--font-sans); font-size: 17px; font-weight: 700;
+    letter-spacing: -0.5px; color: var(--text-primary); line-height: 1;
+  }
+  .titlebar-sep { width: 1px; height: 18px; background: var(--border); }
+  .titlebar-tabs { display: flex; gap: 2px; -webkit-app-region: no-drag; }
+  .titlebar-tab {
+    font-size: 12.5px; font-weight: 500; color: var(--text-tertiary);
+    padding: 5px 11px; border-radius: 5px; cursor: pointer; transition: color 0.15s, background 0.15s;
+  }
+  .titlebar-tab:hover { color: var(--text-secondary); }
+  .titlebar-tab.active { color: var(--text-primary); background: var(--bg-elevated); }
+  .titlebar-right { display: flex; align-items: center; gap: 6px; -webkit-app-region: no-drag; }
+  .titlebar-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; color: var(--text-tertiary); cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .titlebar-btn:hover { color: var(--text-secondary); border-color: var(--border-hover); background: rgba(255,255,255,0.03); }
+  .titlebar-btn svg { width: 14px; height: 14px; }
+  .titlebar-btn-label {
+    display: flex; align-items: center; gap: 5px; height: 30px; padding: 0 11px;
+    border-radius: 6px; border: 1px solid var(--border); background: transparent;
+    color: var(--text-tertiary); font-family: var(--font-sans); font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .titlebar-btn-label:hover { color: var(--text-secondary); border-color: var(--border-hover); background: rgba(255,255,255,0.03); }
+  .titlebar-btn-label svg { width: 13px; height: 13px; opacity: 0.5; }
+
+  /* Eye */
+  .eye-logo { flex-shrink: 0; display: block; }
+  .eye-shape { animation: blink 4s ease-in-out infinite; }
+  .eye-iris { animation: iris-blink 4s ease-in-out infinite; transform-origin: 26px 26px; }
+  .eye-pupil-g { animation: pupil-hide 4s ease-in-out infinite; transform-origin: 26px 26px; }
+  .eye-pupil { animation: look 4s ease-in-out infinite; }
+  @keyframes blink {
+    0%,16%,24%,34%,42%,100% { d: path("M 2 26 C 12 10, 40 10, 50 26 C 40 42, 12 42, 2 26 Z"); }
+    18.5%,21.5% { d: path("M 2 26 C 12 23, 40 23, 50 26 C 40 29, 12 29, 2 26 Z"); }
+    36.5%,39.5% { d: path("M 2 26 C 12 23, 40 23, 50 26 C 40 29, 12 29, 2 26 Z"); }
+  }
+  @keyframes iris-blink {
+    0%,16%,24%,34%,42%,100% { transform: scaleY(1); opacity: 1; }
+    18.5%,21.5% { transform: scaleY(0.1); opacity: 0; }
+    36.5%,39.5% { transform: scaleY(0.1); opacity: 0; }
+  }
+  @keyframes pupil-hide {
+    0%,16%,24%,34%,42%,100% { transform: scaleY(1); opacity: 1; }
+    18.5%,21.5% { transform: scaleY(0); opacity: 0; }
+    36.5%,39.5% { transform: scaleY(0); opacity: 0; }
+  }
+  @keyframes look {
+    0%,42% { transform: translateX(0); }
+    58% { transform: translateX(3px); }
+    74% { transform: translateX(-2px); }
+    90%,100% { transform: translateX(0); }
+  }
+
+  /* ═══ PAGE ═══ */
+  .page { max-width: 960px; margin: 0 auto; padding: 0 32px; }
+
+  /* ═══ TOOLBAR ═══ */
+  .toolbar-section { padding: 40px 0 0; }
+
+  .toolbar-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .toolbar-top-left {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .toolbar-top-left .section-label {
+    font-family: var(--font-mono);
+    font-size: 12px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--text-tertiary);
+  }
+
+  .card-count {
+    font-family: var(--font-mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--text-tertiary);
+  }
+  .card-count strong {
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .toolbar-top-right {
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .btn-ghost {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+    color: var(--text-secondary); padding: 6px 14px; border-radius: 6px;
+    border: 1px solid var(--border); background: transparent; cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .btn-ghost:hover { color: var(--text-primary); border-color: var(--border-hover); background: rgba(255,255,255,0.04); }
+  .btn-ghost svg { width: 14px; height: 14px; opacity: 0.5; }
+
+  /* Search bar */
+  .search-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .search-input-wrap {
+    flex: 1;
+    position: relative;
+  }
+
+  .search-input-wrap svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 15px; height: 15px;
+    color: var(--text-tertiary);
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    height: 38px;
+    padding: 0 14px 0 40px;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-input::placeholder { color: var(--text-tertiary); }
+  .search-input:focus { border-color: var(--border-hover); }
+
+  .sort-btn {
+    display: flex; align-items: center; gap: 5px;
+    height: 38px; padding: 0 14px;
+    background: var(--bg-subtle); border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+    color: var(--text-tertiary); cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .sort-btn:hover { border-color: var(--border-hover); color: var(--text-secondary); }
+  .sort-btn svg { width: 12px; height: 12px; opacity: 0.5; }
+
+  /* Filters */
+  .filter-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+
+  .filter-chip {
+    display: flex; align-items: center; gap: 5px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    font-family: var(--font-sans);
+    font-size: 12px; font-weight: 500;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    user-select: none;
+  }
+  .filter-chip:hover { color: var(--text-secondary); border-color: var(--border-hover); }
+  .filter-chip.active {
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+    background: var(--bg-elevated);
+  }
+
+  .filter-chip .chip-count {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-tertiary);
+  }
+
+  .filter-sep {
+    width: 1px; height: 22px; background: var(--border);
+    margin: 0 4px; align-self: center;
+  }
+
+  /* ═══ CARD LIST ═══ */
+  .card-list-section { padding: 0 0 40px; }
+
+  .card-list {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  /* Column header */
+  .card-list-header {
+    display: grid;
+    grid-template-columns: 1fr 130px 80px 72px 90px 32px;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 20px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+  }
+  .card-list-header .col-right { text-align: right; }
+
+  /* Card row */
+  .card-row {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .card-row:last-child { border-bottom: none; }
+  .card-row:hover { background: rgba(255,255,255,0.015); }
+
+  .card-row-main {
+    display: grid;
+    grid-template-columns: 1fr 130px 80px 72px 90px 32px;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 20px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .card-front {
+    font-size: 13.5px; font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: -0.1px;
+  }
+
+  .card-space {
+    font-size: 12px; font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-state {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-tertiary);
+  }
+  .card-state.state-new { color: var(--text-secondary); }
+  .card-state.state-review { color: var(--success); }
+
+  .card-source {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-tertiary);
+  }
+
+  .card-due {
+    font-family: var(--font-mono);
+    font-size: 11px; font-weight: 500;
+    color: var(--text-tertiary);
+    text-align: right;
+    white-space: nowrap;
+  }
+  .card-due.overdue {
+    color: var(--text-secondary);
+  }
+  .card-due .due-dot {
+    display: inline-block;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--success);
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+
+  .card-chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary);
+    transition: transform 0.15s, color 0.15s;
+  }
+  .card-chevron svg { width: 14px; height: 14px; }
+  .card-row.expanded .card-chevron { transform: rotate(90deg); color: var(--text-secondary); }
+
+  /* Expanded panel */
+  .card-expanded {
+    display: none;
+    padding: 0 20px 16px;
+  }
+  .card-row.expanded .card-expanded { display: block; }
+
+  .card-expanded-inner {
+    background: var(--bg-elevated);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-left: 0;
+  }
+
+  .card-qa {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 16px;
+  }
+
+  .card-qa-side {}
+
+  .card-qa-label {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+  }
+
+  .card-qa-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-primary);
+  }
+  .card-qa-text.back-text { color: var(--text-secondary); }
+
+  .card-expanded-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+  .meta-item strong {
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .tag {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 500;
+    color: var(--text-tertiary);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 7px;
+    letter-spacing: 0.2px;
+  }
+
+  .card-expanded-actions {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+  }
+
+  .action-btn {
+    display: flex; align-items: center; gap: 4px;
+    font-family: var(--font-sans); font-size: 12px; font-weight: 500;
+    color: var(--text-tertiary);
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 5px; padding: 4px 10px; cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .action-btn:hover { color: var(--text-secondary); border-color: var(--border-hover); }
+  .action-btn svg { width: 12px; height: 12px; }
+
+  /* ═══ EMPTY STATE ═══ */
+  .empty-state {
+    padding: 80px 20px;
+    text-align: center;
+  }
+  .empty-state p {
+    font-size: 14px;
+    color: var(--text-tertiary);
+  }
+
+  /* ═══ PAGINATION ═══ */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0;
+  }
+
+  .pagination-info {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  .pagination-btns {
+    display: flex; gap: 4px;
+  }
+
+  .page-btn {
+    display: flex; align-items: center; justify-content: center;
+    min-width: 30px; height: 28px; padding: 0 8px;
+    border-radius: 5px; border: 1px solid var(--border);
+    background: transparent;
+    font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+    color: var(--text-tertiary); cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .page-btn:hover { color: var(--text-secondary); border-color: var(--border-hover); }
+  .page-btn.active { color: var(--text-primary); background: var(--bg-elevated); border-color: var(--border-hover); }
+  .page-btn:disabled { opacity: 0.3; cursor: default; }
+
+  /* ═══ SCROLLBAR ═══ */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+  .page-end { height: 64px; }
+
+  /* ═══ RESPONSIVE ═══ */
+  @media (max-width: 768px) {
+    .card-list-header { grid-template-columns: 1fr 80px 70px 32px; }
+    .card-list-header .col-source, .card-list-header .col-due { display: none; }
+    .card-row-main { grid-template-columns: 1fr 80px 70px 32px; }
+    .card-row-main .card-source, .card-row-main .card-due { display: none; }
+    .card-qa { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 640px) {
+    .page { padding: 0 20px; }
+    .titlebar { padding: 0 12px; }
+    .card-list-header { grid-template-columns: 1fr 70px 32px; }
+    .card-list-header .col-space, .card-list-header .col-source, .card-list-header .col-due { display: none; }
+    .card-row-main { grid-template-columns: 1fr 70px 32px; }
+    .card-row-main .card-space, .card-row-main .card-source, .card-row-main .card-due { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Rulers -->
+<div class="rulers">
+  <div class="ruler-v left"></div>
+  <div class="ruler-v right"></div>
+  <div class="ruler-v content-left"></div>
+  <div class="ruler-v content-right"></div>
+  <div class="ruler-h top"></div>
+  <div class="ruler-h bottom"></div>
+</div>
+
+<!-- Titlebar -->
+<div class="titlebar">
+  <div class="titlebar-left">
+    <div class="titlebar-logo">
+      <svg class="eye-logo" width="24" height="24" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+        <path class="eye-shape" d="M 2 26 C 12 10, 40 10, 50 26 C 40 42, 12 42, 2 26 Z"
+              fill="none" stroke="#ededed" stroke-width="2.8" stroke-linejoin="round"/>
+        <circle class="eye-iris" cx="26" cy="26" r="9" fill="none" stroke="#ededed" stroke-width="2"/>
+        <g class="eye-pupil-g"><circle class="eye-pupil" cx="26" cy="26" r="3.5" fill="#ededed"/></g>
+      </svg>
+      <span class="titlebar-logo-text">pupil</span>
+    </div>
+    <div class="titlebar-sep"></div>
+    <div class="titlebar-tabs">
+      <span class="titlebar-tab">Dashboard</span>
+      <span class="titlebar-tab active">All Cards</span>
+      <span class="titlebar-tab">Import</span>
+      <span class="titlebar-tab">Settings</span>
+    </div>
+  </div>
+  <div class="titlebar-right">
+    <button class="titlebar-btn-label">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 2v10M2 7h10"/></svg>
+      New Card
+    </button>
+    <button class="titlebar-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="3.5" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="8" cy="12.5" r="1.5"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- Toolbar -->
+  <div class="toolbar-section">
+    <div class="toolbar-top">
+      <div class="toolbar-top-left">
+        <span class="section-label">All Cards</span>
+        <span class="card-count"><strong>847</strong> cards · <strong>42</strong> due</span>
+      </div>
+    </div>
+
+    <!-- Search + Sort -->
+    <div class="search-row">
+      <div class="search-input-wrap">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="7" cy="7" r="5"/><path d="M10.5 10.5L14 14"/>
+        </svg>
+        <input type="text" class="search-input" placeholder="Search cards by front, back, or tags…">
+      </div>
+      <button class="sort-btn">
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h8M2 6h5M2 9h3"/></svg>
+        Due date
+      </button>
+    </div>
+
+    <!-- Filter chips -->
+    <div class="filter-row">
+      <!-- State filters -->
+      <button class="filter-chip active">All</button>
+      <button class="filter-chip">New <span class="chip-count">312</span></button>
+      <button class="filter-chip">Learning <span class="chip-count">89</span></button>
+      <button class="filter-chip">Review <span class="chip-count">401</span></button>
+      <button class="filter-chip">Relearning <span class="chip-count">45</span></button>
+
+      <div class="filter-sep"></div>
+
+      <!-- Source filters -->
+      <button class="filter-chip">Manual <span class="chip-count">198</span></button>
+      <button class="filter-chip">AI <span class="chip-count">292</span></button>
+      <button class="filter-chip">Anki <span class="chip-count">357</span></button>
+
+      <div class="filter-sep"></div>
+
+      <!-- Space filter -->
+      <button class="filter-chip">
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" style="width:11px;height:11px;opacity:0.5"><rect x="1" y="1" width="4" height="4" rx="0.5"/><rect x="7" y="1" width="4" height="4" rx="0.5"/><rect x="1" y="7" width="4" height="4" rx="0.5"/><rect x="7" y="7" width="4" height="4" rx="0.5"/></svg>
+        Space
+      </button>
+    </div>
+  </div>
+
+  <div class="ruler-divider"></div>
+
+  <!-- Card List -->
+  <div class="card-list-section" style="padding-top: 24px;">
+
+    <div class="card-list">
+
+      <!-- Header -->
+      <div class="card-list-header">
+        <span>Front</span>
+        <span class="col-space">Space</span>
+        <span>State</span>
+        <span class="col-source">Source</span>
+        <span class="col-due col-right">Due</span>
+        <span></span>
+      </div>
+
+      <!-- Row 1 — expanded to show the pattern -->
+      <div class="card-row expanded" onclick="this.classList.toggle('expanded')">
+        <div class="card-row-main">
+          <span class="card-front">What is the vanishing gradient problem?</span>
+          <span class="card-space">Machine Learning</span>
+          <span class="card-state state-review">Review</span>
+          <span class="card-source">AI</span>
+          <span class="card-due overdue"><span class="due-dot"></span>2h ago</span>
+          <span class="card-chevron"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4l4 4-4 4"/></svg></span>
+        </div>
+        <div class="card-expanded">
+          <div class="card-expanded-inner">
+            <div class="card-qa">
+              <div class="card-qa-side">
+                <div class="card-qa-label">Front</div>
+                <div class="card-qa-text">What is the vanishing gradient problem?</div>
+              </div>
+              <div class="card-qa-side">
+                <div class="card-qa-label">Back</div>
+                <div class="card-qa-text back-text">When gradients become extremely small as they're propagated backward through many layers, earlier layers learn very slowly or stop learning entirely. Common in deep networks using sigmoid or tanh activations. Mitigated by ReLU, residual connections, or batch normalization.</div>
+              </div>
+            </div>
+            <div class="card-expanded-meta">
+              <span class="meta-item"><strong>12</strong> reps</span>
+              <span class="meta-item"><strong>1</strong> lapse</span>
+              <span class="meta-item"><strong>92%</strong> retention</span>
+              <span class="tag">deep-learning</span>
+              <span class="tag">optimization</span>
+              <div class="card-expanded-actions">
+                <button class="action-btn">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7.5 2L10 4.5M2.5 9.5L9 3l-2 5-4.5 1.5z"/></svg>
+                  Edit
+                </button>
+                <button class="action-btn">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3"/></svg>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2 -->
+      <div class="card-row" onclick="this.classList.toggle('expanded')">
+        <div class="card-row-main">
+          <span class="card-front">Explain the difference between ownership and borrowing in Rust</span>
+          <span class="card-space">Rust Ownership</span>
+          <span class="card-state state-review">Review</span>
+          <span class="card-source">Manual</span>
+          <span class="card-due overdue"><span class="due-dot"></span>4h ago</span>
+          <span class="card-chevron"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4l4 4-4 4"/></svg></span>
+        </div>
+        <div class="card-expanded">
+          <div class="card-expanded-inner">
+            <div class="card-qa">
+              <div class="card-qa-side">
+                <div class="card-qa-label">Front</div>
+                <div class="card-qa-text">Explain the difference between ownership and borrowing in Rust</div>
+              </div>
+              <div class="card-qa-side">
+                <div class="card-qa-label">Back</div>
+                <div class="card-qa-text back-text">Ownership means a value has exactly one owner; when the owner goes out of scope, the value is dropped. Borrowing creates a reference (&T or &mut T) that lets you use a value without taking ownership. Borrows are checked at compile time: multiple shared borrows OR one mutable borrow, never both.</div>
+              </div>
+            </div>
+            <div class="card-expanded-meta">
+              <span class="meta-item"><strong>8</strong> reps</span>
+              <span class="meta-item"><strong>0</strong> lapses</span>
+              <span class="meta-item"><strong>100%</strong> retention</span>
+              <span class="tag">ownership</span>
+              <span class="tag">borrowing</span>
+              <div class="card-expanded-actions">
+                <button class="action-btn">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7.5 2L10 4.5M2.5 9.5L9 3l-2 5-4.5 1.5z"/></svg>
+                  Edit
+                </button>
+                <button class="action-btn">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3"/></svg>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3 -->
+      <div class="card-row" onclick="this.classList.toggle('expanded')">
+        <div class="card-row-main">
+          <span class="card-front">What was the Treaty of Westphalia (1648)?</span>
+          <span class="card-space">World History</span>
+          <span class="card-state">Learning</span>
+          <span class="card-source">Anki</span>
+          <span class="card-due overdue"><span class="due-dot"></span>1d ago</span>
+          <span class="card-chevron"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4l4 4-4 4"/></svg></span>
+        </div>
+        <div class="card-expanded">
+          <div class="card-expanded-inner">
+            <div class="card-qa">
+              <div class="card-qa-side">
+                <div class="card-qa-label">Front</div>
+                <div class="card-qa-text">What was the Treaty of Westphalia (1648)?</div>
+              </div>
+              <div class="card-qa-side">
+                <div class="card-qa-label">Back</div>
+                <div class="card-qa-text back-text">A series of peace treaties that ended the Thirty Years' War in Europe. Established the principle of state sovereignty and the modern concept of nation-states. Marked the decline of the Holy Roman Empire as a political force.</div>
+              </div>
+            </div>
+            <div class="card-expanded-meta">
+              <span class="meta-item"><strong>3</strong> reps</span>
+              <span class="meta-item"><strong>2</strong> lapses</span>
+              <span class="meta-item"><strong>67%</strong> retention</span>
+              <span class="tag">treaties</span>
+              <span class="tag">17th-century</span>
+              <div class="card-expanded-actions">
+                <button class="action-btn">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7.5 2L10 4.5M2.5 9.5L9 3l-2 5-4.5 1.5z"/></svg>
+                  Edit
+                </button>
+                <button class="action-btn">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3"/></svg>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 4 -->
+      <div class="card-row" onclick="this.classList.toggle('expanded')">
+        <div class="card-row-main">
+          <span class="card-front">What interval defines a perfect fifth?</span>
+          <span class="card-space">Music Theory</span>
+          <span class="card-state state-new">New</span>
+          <span class="card-source">AI</span>
+          <span class="card-due">—</span>
+          <span class="card-chevron"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4l4 4-4 4"/></svg></span>
+        </div>
+        <div class="card-expanded">
+          <div class="card-expanded-inner">
+            <div class="card-qa">
+              <div class="card-qa-side">
+                <div class="card-qa-label">Front</div>
+                <div class="card-qa-text">What interval defines a perfect fifth?</div>
+              </div>
+              <div class="card-qa-side">
+                <div class="card-qa-label">Back</div>
+                <div class="card-qa-text back-text">Seven semitones (half steps). For example, C to G. The frequency ratio is 3:2, making it one of the most consonant intervals after the octave and unison.</div>
+              </div>
+            </div>
+            <div class="card-expanded-meta">
+              <span class="meta-item"><strong>0</strong> reps</span>
+              <span class="meta-item"><strong>0</strong> lapses</span>
+              <span class="tag">intervals</span>
+              <div class="card-expanded-actions">
+                <button class="action-btn">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7.5 2L10 4.5M2.5 9.5L9 3l-2 5-4.5 1.5z"/></svg>
+                  Edit
+                </button>
+                <button class="action-btn">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3"/></svg>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 5 -->
+      <div class="card-row" onclick="this.classList.toggle('expanded')">
+        <div class="card-row-main">
+          <span class="card-front">What is the Krebs cycle's primary output?</span>
+          <span class="card-space">Biochemistry</span>
+          <span class="card-state state-review">Review</span>
+          <span class="card-source">Anki</span>
+          <span class="card-due">in 3d</span>
+          <span class="card-chevron"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4l4 4-4 4"/></svg></span>
+        </div>
+        <div class="card-expanded">
+          <div class="card-expanded-inner">
+            <div class="card-qa">
+              <div class="card-qa-side">
+                <div class="card-qa-label">Front</div>
+                <div class="card-qa-text">What is the Krebs cycle's primary output?</div>
+              </div>
+              <div class="card-qa-side">
+                <div class="card-qa-label">Back</div>
+                <div class="card-qa-text back-text">Per turn: 3 NADH, 1 FADH2, 1 GTP (≈ATP), and 2 CO2. The cycle runs twice per glucose molecule. NADH and FADH2 donate electrons to the electron transport chain for oxidative phosphorylation.</div>
+              </div>
+            </div>
+            <div class="card-expanded-meta">
+              <span class="meta-item"><strong>6</strong> reps</span>
+              <span class="meta-item"><strong>0</strong> lapses</span>
+              <span class="meta-item"><strong>100%</strong> retention</span>
+              <span class="tag">metabolism</span>
+              <span class="tag">krebs</span>
+              <div class="card-expanded-actions">
+                <button class="action-btn">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7.5 2L10 4.5M2.5 9.5L9 3l-2 5-4.5 1.5z"/></svg>
+                  Edit
+                </button>
+                <button class="action-btn">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3"/></svg>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 6 -->
+      <div class="card-row" onclick="this.classList.toggle('expanded')">
+        <div class="card-row-main">
+          <span class="card-front">Define _____ as the process of adjusting model weights to minimize loss</span>
+          <span class="card-space">Machine Learning</span>
+          <span class="card-state">Relearning</span>
+          <span class="card-source">AI</span>
+          <span class="card-due overdue"><span class="due-dot"></span>30m ago</span>
+          <span class="card-chevron"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4l4 4-4 4"/></svg></span>
+        </div>
+        <div class="card-expanded">
+          <div class="card-expanded-inner">
+            <div class="card-qa">
+              <div class="card-qa-side">
+                <div class="card-qa-label">Front</div>
+                <div class="card-qa-text">Define _____ as the process of adjusting model weights to minimize loss</div>
+              </div>
+              <div class="card-qa-side">
+                <div class="card-qa-label">Back</div>
+                <div class="card-qa-text back-text">Training (or optimization). The model iteratively updates its weights using an optimization algorithm (e.g., SGD, Adam) to reduce the difference between predicted and actual outputs as measured by a loss function.</div>
+              </div>
+            </div>
+            <div class="card-expanded-meta">
+              <span class="meta-item"><strong>5</strong> reps</span>
+              <span class="meta-item"><strong>3</strong> lapses</span>
+              <span class="meta-item"><strong>60%</strong> retention</span>
+              <span class="tag">cloze</span>
+              <span class="tag">fundamentals</span>
+              <div class="card-expanded-actions">
+                <button class="action-btn">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7.5 2L10 4.5M2.5 9.5L9 3l-2 5-4.5 1.5z"/></svg>
+                  Edit
+                </button>
+                <button class="action-btn">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3"/></svg>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 7 -->
+      <div class="card-row" onclick="this.classList.toggle('expanded')">
+        <div class="card-row-main">
+          <span class="card-front">What causes a move in Rust versus a copy?</span>
+          <span class="card-space">Rust Ownership</span>
+          <span class="card-state state-new">New</span>
+          <span class="card-source">Manual</span>
+          <span class="card-due">—</span>
+          <span class="card-chevron"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4l4 4-4 4"/></svg></span>
+        </div>
+        <div class="card-expanded">
+          <div class="card-expanded-inner">
+            <div class="card-qa">
+              <div class="card-qa-side">
+                <div class="card-qa-label">Front</div>
+                <div class="card-qa-text">What causes a move in Rust versus a copy?</div>
+              </div>
+              <div class="card-qa-side">
+                <div class="card-qa-label">Back</div>
+                <div class="card-qa-text back-text">Types that implement the Copy trait (integers, floats, bools, char, tuples of Copy types) are copied on assignment. All other types are moved — the original binding becomes invalid. Heap-allocated types like String, Vec, and Box are moved because copying their data would be expensive and implicit.</div>
+              </div>
+            </div>
+            <div class="card-expanded-meta">
+              <span class="meta-item"><strong>0</strong> reps</span>
+              <span class="meta-item"><strong>0</strong> lapses</span>
+              <span class="tag">move-semantics</span>
+              <span class="tag">copy-trait</span>
+              <div class="card-expanded-actions">
+                <button class="action-btn">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7.5 2L10 4.5M2.5 9.5L9 3l-2 5-4.5 1.5z"/></svg>
+                  Edit
+                </button>
+                <button class="action-btn">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3"/></svg>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 8 -->
+      <div class="card-row" onclick="this.classList.toggle('expanded')">
+        <div class="card-row-main">
+          <span class="card-front">Name the 20 standard amino acids' three-letter abbreviations</span>
+          <span class="card-space">Biochemistry</span>
+          <span class="card-state state-review">Review</span>
+          <span class="card-source">Anki</span>
+          <span class="card-due">in 1d</span>
+          <span class="card-chevron"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4l4 4-4 4"/></svg></span>
+        </div>
+        <div class="card-expanded">
+          <div class="card-expanded-inner">
+            <div class="card-qa">
+              <div class="card-qa-side">
+                <div class="card-qa-label">Front</div>
+                <div class="card-qa-text">Name the 20 standard amino acids' three-letter abbreviations</div>
+              </div>
+              <div class="card-qa-side">
+                <div class="card-qa-label">Back</div>
+                <div class="card-qa-text back-text">Ala, Arg, Asn, Asp, Cys, Gln, Glu, Gly, His, Ile, Leu, Lys, Met, Phe, Pro, Ser, Thr, Trp, Tyr, Val. Grouped by side chain: nonpolar (Gly, Ala, Val, Leu, Ile, Pro, Phe, Trp, Met), polar uncharged (Ser, Thr, Cys, Tyr, Asn, Gln), positively charged (Lys, Arg, His), negatively charged (Asp, Glu).</div>
+              </div>
+            </div>
+            <div class="card-expanded-meta">
+              <span class="meta-item"><strong>14</strong> reps</span>
+              <span class="meta-item"><strong>1</strong> lapse</span>
+              <span class="meta-item"><strong>93%</strong> retention</span>
+              <span class="tag">amino-acids</span>
+              <div class="card-expanded-actions">
+                <button class="action-btn">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7.5 2L10 4.5M2.5 9.5L9 3l-2 5-4.5 1.5z"/></svg>
+                  Edit
+                </button>
+                <button class="action-btn">
+                  <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3"/></svg>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination">
+      <span class="pagination-info">Showing 1–8 of 847</span>
+      <div class="pagination-btns">
+        <button class="page-btn" disabled>
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" style="width:11px;height:11px"><path d="M7 2L3 6l4 4"/></svg>
+        </button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">…</button>
+        <button class="page-btn">106</button>
+        <button class="page-btn">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" style="width:11px;height:11px"><path d="M5 2l4 4-4 4"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-end"></div>
+</div>
+
+</body>
+</html>

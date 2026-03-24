@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pupil — Import</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0a0a0a;--bg-subtle:#111;--bg-elevated:#161616;
+    --border:#1e1e1e;--border-hover:#333;--ruler:#2a2a2a;
+    --text-primary:#ededed;--text-secondary:#888;--text-tertiary:#555;
+    --accent:#ededed;--success:#10b981;--success-dim:#10b98115;
+    --radius:8px;--radius-lg:12px;
+    --font-sans:"Inter",-apple-system,BlinkMacSystemFont,sans-serif;
+    --font-mono:"JetBrains Mono","SF Mono","Fira Code",monospace;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans);font-size:15px;line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden}
+
+  /* ═══ RULERS ═══ */
+  .rulers{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
+  .ruler-v{position:absolute;top:0;bottom:0;width:1px;background-image:repeating-linear-gradient(to bottom,var(--ruler) 0px,var(--ruler) 1px,transparent 1px,transparent 5px)}
+  .ruler-v.left{left:0}.ruler-v.right{right:0}
+  .ruler-v.content-left{left:max(32px,calc((100vw - 960px)/2))}
+  .ruler-v.content-right{right:max(32px,calc((100vw - 960px)/2))}
+  .ruler-h{position:absolute;left:0;right:0;height:1px;background-image:repeating-linear-gradient(to right,var(--ruler) 0px,var(--ruler) 1px,transparent 1px,transparent 5px)}
+  .ruler-h.top{top:0}.ruler-h.bottom{bottom:0}
+  .ruler-divider{height:1px;margin-left:calc(-50vw + 50%);margin-right:calc(-50vw + 50%);background-image:repeating-linear-gradient(to right,var(--ruler) 0px,var(--ruler) 1px,transparent 1px,transparent 5px)}
+
+  /* ═══ TITLEBAR ═══ */
+  .titlebar{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;-webkit-app-region:drag;user-select:none;position:sticky;top:0;z-index:100;background:rgba(10,10,10,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+  .titlebar-left{display:flex;align-items:center;gap:20px}
+  .titlebar-logo{display:flex;align-items:center;gap:7px;-webkit-app-region:no-drag}
+  .titlebar-logo-text{font-family:"Syne",var(--font-sans);font-size:17px;font-weight:700;letter-spacing:-0.5px;color:var(--text-primary);line-height:1}
+  .titlebar-sep{width:1px;height:18px;background:var(--border)}
+  .titlebar-tabs{display:flex;gap:2px;-webkit-app-region:no-drag}
+  .titlebar-tab{font-size:12.5px;font-weight:500;color:var(--text-tertiary);padding:5px 11px;border-radius:5px;cursor:pointer;transition:color 0.15s,background 0.15s}
+  .titlebar-tab:hover{color:var(--text-secondary)}
+  .titlebar-tab.active{color:var(--text-primary);background:var(--bg-elevated)}
+  .titlebar-right{display:flex;align-items:center;gap:6px;-webkit-app-region:no-drag}
+  .titlebar-btn{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text-tertiary);cursor:pointer;transition:color 0.15s,border-color 0.15s,background 0.15s}
+  .titlebar-btn:hover{color:var(--text-secondary);border-color:var(--border-hover);background:rgba(255,255,255,0.03)}
+  .titlebar-btn svg{width:14px;height:14px}
+
+  /* Eye */
+  .eye-logo{flex-shrink:0;display:block}
+  .eye-shape{animation:blink 4s ease-in-out infinite}
+  .eye-iris{animation:iris-blink 4s ease-in-out infinite;transform-origin:26px 26px}
+  .eye-pupil-g{animation:pupil-hide 4s ease-in-out infinite;transform-origin:26px 26px}
+  .eye-pupil{animation:look 4s ease-in-out infinite}
+  @keyframes blink{0%,16%,24%,34%,42%,100%{d:path("M 2 26 C 12 10, 40 10, 50 26 C 40 42, 12 42, 2 26 Z")}18.5%,21.5%{d:path("M 2 26 C 12 23, 40 23, 50 26 C 40 29, 12 29, 2 26 Z")}36.5%,39.5%{d:path("M 2 26 C 12 23, 40 23, 50 26 C 40 29, 12 29, 2 26 Z")}}
+  @keyframes iris-blink{0%,16%,24%,34%,42%,100%{transform:scaleY(1);opacity:1}18.5%,21.5%{transform:scaleY(0.1);opacity:0}36.5%,39.5%{transform:scaleY(0.1);opacity:0}}
+  @keyframes pupil-hide{0%,16%,24%,34%,42%,100%{transform:scaleY(1);opacity:1}18.5%,21.5%{transform:scaleY(0);opacity:0}36.5%,39.5%{transform:scaleY(0);opacity:0}}
+  @keyframes look{0%,42%{transform:translateX(0)}58%{transform:translateX(3px)}74%{transform:translateX(-2px)}90%,100%{transform:translateX(0)}}
+
+  /* ═══ PAGE ═══ */
+  .page{max-width:960px;margin:0 auto;padding:0 32px}
+  .section{padding:40px 0}
+
+  .section-label{
+    font-family:var(--font-mono);font-size:12px;font-weight:500;
+    text-transform:uppercase;letter-spacing:1.5px;color:var(--text-tertiary);
+  }
+
+  /* ═══ DROP ZONE ═══ */
+  .import-hero{padding:56px 0 48px}
+
+  .drop-zone{
+    position:relative;
+    border:1px dashed var(--border-hover);
+    border-radius:var(--radius-lg);
+    padding:72px 40px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color 0.2s,background 0.2s;
+  }
+  .drop-zone:hover{
+    border-color:var(--text-tertiary);
+    background:rgba(255,255,255,0.015);
+  }
+  .drop-zone.drag-over{
+    border-color:var(--text-secondary);
+    background:rgba(255,255,255,0.03);
+  }
+
+  .drop-zone-icon{
+    width:56px;height:56px;
+    border-radius:14px;
+    background:var(--bg-subtle);
+    border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:4px;
+  }
+  .drop-zone-icon svg{width:24px;height:24px;color:var(--text-tertiary)}
+
+  .drop-zone-title{
+    font-size:15px;font-weight:600;
+    letter-spacing:-0.2px;
+    color:var(--text-primary);
+  }
+
+  .drop-zone-desc{
+    font-size:13px;line-height:1.5;
+    color:var(--text-secondary);
+    max-width:380px;
+  }
+
+  .drop-zone-hint{
+    font-family:var(--font-mono);
+    font-size:11px;font-weight:500;
+    color:var(--text-tertiary);
+    background:var(--bg-subtle);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:4px 14px;
+    margin-top:4px;
+    letter-spacing:0.3px;
+  }
+
+  .drop-zone-browse{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:var(--font-sans);font-size:13px;font-weight:500;
+    color:var(--text-secondary);
+    padding:8px 18px;border-radius:var(--radius);
+    border:1px solid var(--border);background:transparent;
+    cursor:pointer;transition:color 0.15s,border-color 0.15s,background 0.15s;
+    margin-top:8px;
+  }
+  .drop-zone-browse:hover{color:var(--text-primary);border-color:var(--border-hover);background:rgba(255,255,255,0.04)}
+  .drop-zone-browse svg{width:14px;height:14px;opacity:0.5}
+
+  /* ═══ IMPORT STATES (shown one at a time in practice) ═══ */
+  .import-states{
+    display:flex;flex-direction:column;gap:16px;
+    padding-bottom:8px;
+  }
+
+  /* Parsing / in-progress card */
+  .import-progress-card{
+    background:var(--bg-subtle);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:28px;
+    transition:border-color 0.2s;
+  }
+  .import-progress-card:hover{border-color:var(--border-hover)}
+
+  .import-progress-top{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:20px;
+  }
+
+  .import-file-info{display:flex;align-items:center;gap:12px}
+
+  .import-file-icon{
+    width:40px;height:40px;border-radius:10px;
+    background:var(--bg-elevated);border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .import-file-icon svg{width:18px;height:18px;color:var(--text-tertiary)}
+
+  .import-file-name{font-size:14px;font-weight:600;letter-spacing:-0.2px}
+  .import-file-size{
+    font-family:var(--font-mono);font-size:11px;font-weight:500;
+    color:var(--text-tertiary);margin-top:1px;
+  }
+
+  .import-status-badge{
+    font-family:var(--font-mono);font-size:10px;font-weight:500;
+    text-transform:uppercase;letter-spacing:0.5px;
+    padding:4px 12px;border-radius:999px;
+  }
+  .import-status-badge.parsing{
+    color:var(--text-secondary);
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+  }
+  .import-status-badge.complete{
+    color:var(--success);
+    background:var(--success-dim);
+    border:1px solid #10b98130;
+  }
+  .import-status-badge.error{
+    color:var(--text-secondary);
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+  }
+
+  /* Progress bar */
+  .progress-bar-wrap{
+    height:3px;border-radius:2px;
+    background:var(--bg-elevated);
+    overflow:hidden;
+    margin-bottom:16px;
+  }
+  .progress-bar{
+    height:100%;border-radius:2px;
+    background:var(--text-tertiary);
+    transition:width 0.4s ease;
+  }
+  .progress-bar.done{background:var(--success)}
+
+  .import-progress-details{
+    display:flex;gap:24px;flex-wrap:wrap;
+  }
+  .import-detail{
+    font-size:13px;color:var(--text-tertiary);
+  }
+  .import-detail strong{
+    color:var(--text-secondary);font-weight:600;
+  }
+  .import-detail .val-success{color:var(--success)}
+
+  /* ═══ COMPLETED — summary card ═══ */
+  .import-summary{
+    background:var(--bg-subtle);border:1px solid var(--border);
+    border-radius:var(--radius-lg);overflow:hidden;
+    transition:border-color 0.2s;
+  }
+  .import-summary:hover{border-color:var(--border-hover)}
+
+  .import-summary-top{
+    padding:24px 28px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+
+  .import-summary-left{display:flex;align-items:center;gap:12px}
+
+  .import-summary-headline{
+    font-size:14px;font-weight:600;letter-spacing:-0.2px;
+  }
+  .import-summary-meta{
+    font-size:12px;color:var(--text-tertiary);margin-top:2px;
+  }
+
+  .import-summary-actions{display:flex;gap:6px}
+
+  .import-summary-btn{
+    display:flex;align-items:center;gap:5px;
+    font-family:var(--font-sans);font-size:12px;font-weight:500;
+    color:var(--text-tertiary);background:transparent;
+    border:1px solid var(--border);border-radius:5px;
+    padding:5px 12px;cursor:pointer;
+    transition:color 0.15s,border-color 0.15s;
+  }
+  .import-summary-btn:hover{color:var(--text-secondary);border-color:var(--border-hover)}
+  .import-summary-btn svg{width:12px;height:12px}
+
+  .import-summary-btn.primary{
+    color:var(--bg);background:var(--text-primary);
+    border:none;font-weight:600;
+    transition:opacity 0.15s;
+  }
+  .import-summary-btn.primary:hover{opacity:0.85}
+
+  /* Deck breakdown table inside summary */
+  .deck-breakdown{border-top:1px solid var(--border)}
+
+  .deck-breakdown-header{
+    display:grid;
+    grid-template-columns:1fr 80px 80px 80px;
+    gap:12px;padding:8px 28px;
+    background:var(--bg-elevated);
+    border-bottom:1px solid var(--border);
+    font-family:var(--font-mono);font-size:10px;font-weight:500;
+    text-transform:uppercase;letter-spacing:0.5px;color:var(--text-tertiary);
+  }
+  .deck-breakdown-header .col-right{text-align:right}
+
+  .deck-row{
+    display:grid;
+    grid-template-columns:1fr 80px 80px 80px;
+    gap:12px;padding:10px 28px;
+    border-bottom:1px solid var(--border);
+    font-size:13px;
+    transition:background 0.15s;
+  }
+  .deck-row:last-child{border-bottom:none}
+  .deck-row:hover{background:var(--bg-elevated)}
+
+  .deck-name{font-weight:500;color:var(--text-primary)}
+  .deck-val{
+    font-family:var(--font-mono);font-size:12px;font-weight:500;
+    color:var(--text-tertiary);text-align:right;
+  }
+  .deck-val.imported{color:var(--text-secondary)}
+
+  /* ═══ IMPORT HISTORY ═══ */
+  .history-table{
+    background:var(--bg-subtle);border:1px solid var(--border);
+    border-radius:var(--radius-lg);overflow:hidden;
+  }
+
+  .history-header-bar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 20px 14px;
+    border-bottom:1px solid var(--border);
+  }
+  .history-header-bar .hh-title{font-size:13px;font-weight:600;color:var(--text-secondary)}
+
+  .history-row{
+    display:grid;
+    grid-template-columns:1fr 120px 80px 80px 100px;
+    gap:12px;align-items:center;
+    padding:11px 20px;font-size:13px;
+    border-bottom:1px solid var(--border);
+    transition:background 0.15s;
+  }
+  .history-row:last-child{border-bottom:none}
+  .history-row:hover{background:var(--bg-elevated)}
+
+  .history-file{font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .history-date{font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary)}
+  .history-cards{font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);font-weight:500;text-align:right}
+  .history-dupes{font-family:var(--font-mono);font-size:12px;color:var(--text-tertiary);text-align:right}
+  .history-status{
+    font-family:var(--font-mono);font-size:10px;font-weight:500;
+    text-transform:uppercase;letter-spacing:0.3px;text-align:right;
+  }
+  .history-status.ok{color:var(--success)}
+  .history-status.partial{color:var(--text-secondary)}
+
+  /* ═══ NOTES SECTION ═══ */
+  .notes-section{padding:32px 0 0}
+  .notes-card{
+    background:var(--bg-subtle);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:24px;
+  }
+  .notes-card:hover{border-color:var(--border-hover)}
+  .notes-title{
+    font-size:13px;font-weight:600;color:var(--text-secondary);
+    margin-bottom:14px;
+  }
+  .notes-list{display:flex;flex-direction:column;gap:10px}
+  .note-item{
+    display:flex;align-items:flex-start;gap:10px;
+    font-size:13px;line-height:1.5;color:var(--text-secondary);
+  }
+  .note-bullet{
+    flex-shrink:0;margin-top:7px;
+    width:4px;height:4px;border-radius:50%;
+    background:var(--text-tertiary);
+  }
+  .note-item code{
+    font-family:var(--font-mono);font-size:12px;
+    background:var(--bg-elevated);border:1px solid var(--border);
+    border-radius:4px;padding:1px 5px;
+    color:var(--text-secondary);
+  }
+
+  /* ═══ SCROLLBAR ═══ */
+  ::-webkit-scrollbar{width:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--border-hover)}
+
+  .page-end{height:64px}
+
+  .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+
+  /* ═══ RESPONSIVE ═══ */
+  @media(max-width:768px){
+    .deck-breakdown-header,.deck-row{grid-template-columns:1fr 70px 70px}
+    .deck-breakdown-header span:nth-child(4),.deck-row span:nth-child(4){display:none}
+    .history-row{grid-template-columns:1fr 100px 70px 90px}
+    .history-row .history-dupes{display:none}
+  }
+  @media(max-width:640px){
+    .page{padding:0 20px}
+    .titlebar{padding:0 12px}
+    .drop-zone{padding:48px 24px}
+    .history-row{grid-template-columns:1fr 70px 80px}
+    .history-row .history-date{display:none}
+    .history-row .history-dupes{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- Rulers -->
+<div class="rulers">
+  <div class="ruler-v left"></div><div class="ruler-v right"></div>
+  <div class="ruler-v content-left"></div><div class="ruler-v content-right"></div>
+  <div class="ruler-h top"></div><div class="ruler-h bottom"></div>
+</div>
+
+<!-- Titlebar -->
+<div class="titlebar">
+  <div class="titlebar-left">
+    <div class="titlebar-logo">
+      <svg class="eye-logo" width="24" height="24" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+        <path class="eye-shape" d="M 2 26 C 12 10, 40 10, 50 26 C 40 42, 12 42, 2 26 Z" fill="none" stroke="#ededed" stroke-width="2.8" stroke-linejoin="round"/>
+        <circle class="eye-iris" cx="26" cy="26" r="9" fill="none" stroke="#ededed" stroke-width="2"/>
+        <g class="eye-pupil-g"><circle class="eye-pupil" cx="26" cy="26" r="3.5" fill="#ededed"/></g>
+      </svg>
+      <span class="titlebar-logo-text">pupil</span>
+    </div>
+    <div class="titlebar-sep"></div>
+    <div class="titlebar-tabs">
+      <span class="titlebar-tab">Dashboard</span>
+      <span class="titlebar-tab">All Cards</span>
+      <span class="titlebar-tab active">Import</span>
+      <span class="titlebar-tab">Settings</span>
+    </div>
+  </div>
+  <div class="titlebar-right">
+    <button class="titlebar-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="3.5" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="8" cy="12.5" r="1.5"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ═══ DROP ZONE ═══ -->
+  <div class="import-hero">
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-zone-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </div>
+      <div class="drop-zone-title">Import from Anki</div>
+      <div class="drop-zone-desc">Drag an <code style="font-family:var(--font-mono);font-size:12px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:4px;padding:1px 5px">.apkg</code> file here to import your decks. Each Anki deck becomes a Pupil space. Cards start fresh with FSRS‑5 scheduling.</div>
+      <div class="drop-zone-hint">.apkg · text only · media skipped in Phase 1</div>
+      <button class="drop-zone-browse">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 10V11.5A1.5 1.5 0 003.5 13h7a1.5 1.5 0 001.5-1.5V10"/><path d="M7 1v9"/><path d="M4 4l3-3 3 3"/></svg>
+        Browse files
+      </button>
+    </div>
+  </div>
+
+  <div class="ruler-divider"></div>
+
+  <!-- ═══ ACTIVE IMPORT — Parsing state ═══ -->
+  <div class="section" style="padding-bottom:24px">
+    <div class="section-head">
+      <span class="section-label">Active Import</span>
+    </div>
+
+    <div class="import-states">
+
+      <!-- Parsing in progress -->
+      <div class="import-progress-card">
+        <div class="import-progress-top">
+          <div class="import-file-info">
+            <div class="import-file-icon">
+              <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 1.5H4.5A1.5 1.5 0 003 3v12a1.5 1.5 0 001.5 1.5h9A1.5 1.5 0 0015 15V6.5L10 1.5z"/>
+                <path d="M10 1.5V6.5H15"/>
+              </svg>
+            </div>
+            <div>
+              <div class="import-file-name">japanese_n3_vocab.apkg</div>
+              <div class="import-file-size">4.2 MB · 1,847 notes detected</div>
+            </div>
+          </div>
+          <span class="import-status-badge parsing">Parsing…</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" style="width:65%"></div>
+        </div>
+        <div class="import-progress-details">
+          <span class="import-detail"><strong>1,203</strong> / 1,847 cards processed</span>
+          <span class="import-detail"><strong>4</strong> decks found</span>
+          <span class="import-detail"><strong>31</strong> duplicates so far</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="ruler-divider"></div>
+
+  <!-- ═══ COMPLETED IMPORT — with deck breakdown ═══ -->
+  <div class="section" style="padding-bottom:24px">
+    <div class="section-head">
+      <span class="section-label">Last Import</span>
+    </div>
+
+    <div class="import-summary">
+      <div class="import-summary-top">
+        <div class="import-summary-left">
+          <div class="import-file-icon">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 1.5H4.5A1.5 1.5 0 003 3v12a1.5 1.5 0 001.5 1.5h9A1.5 1.5 0 0015 15V6.5L10 1.5z"/>
+              <path d="M10 1.5V6.5H15"/>
+              <path d="M6.5 10l2 2 3.5-3.5" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div>
+            <div class="import-summary-headline">biochemistry_complete.apkg</div>
+            <div class="import-summary-meta">Imported 3 hours ago · 2.8 MB</div>
+          </div>
+        </div>
+        <div class="import-summary-actions">
+          <button class="import-summary-btn">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M10 6.5V10a1 1 0 01-1 1H3a1 1 0 01-1-1V4a1 1 0 011-1h3.5"/><path d="M7 5L11 1M11 1H8M11 1v3"/></svg>
+            View cards
+          </button>
+          <button class="import-summary-btn primary">Study now →</button>
+        </div>
+      </div>
+
+      <div class="deck-breakdown">
+        <div class="deck-breakdown-header">
+          <span>Deck → Space</span>
+          <span class="col-right">Imported</span>
+          <span class="col-right">Skipped</span>
+          <span class="col-right">Total</span>
+        </div>
+        <div class="deck-row">
+          <span class="deck-name">Amino Acids</span>
+          <span class="deck-val imported">62</span>
+          <span class="deck-val">3</span>
+          <span class="deck-val">65</span>
+        </div>
+        <div class="deck-row">
+          <span class="deck-name">Enzyme Kinetics</span>
+          <span class="deck-val imported">48</span>
+          <span class="deck-val">0</span>
+          <span class="deck-val">48</span>
+        </div>
+        <div class="deck-row">
+          <span class="deck-name">Metabolic Pathways</span>
+          <span class="deck-val imported">35</span>
+          <span class="deck-val">12</span>
+          <span class="deck-val">47</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ruler-divider"></div>
+
+  <!-- ═══ IMPORT HISTORY ═══ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-label">History</span>
+    </div>
+
+    <div class="history-table">
+      <div class="history-row">
+        <span class="history-file">biochemistry_complete.apkg</span>
+        <span class="history-date">3h ago</span>
+        <span class="history-cards">145</span>
+        <span class="history-dupes">15</span>
+        <span class="history-status ok">complete</span>
+      </div>
+      <div class="history-row">
+        <span class="history-file">world_history_ap.apkg</span>
+        <span class="history-date">Mar 20</span>
+        <span class="history-cards">312</span>
+        <span class="history-dupes">0</span>
+        <span class="history-status ok">complete</span>
+      </div>
+      <div class="history-row">
+        <span class="history-file">french_vocab_b2.apkg</span>
+        <span class="history-date">Mar 18</span>
+        <span class="history-cards">89</span>
+        <span class="history-dupes">4</span>
+        <span class="history-status ok">complete</span>
+      </div>
+      <div class="history-row">
+        <span class="history-file">organic_chem_reactions.apkg</span>
+        <span class="history-date">Mar 15</span>
+        <span class="history-cards">0</span>
+        <span class="history-dupes">0</span>
+        <span class="history-status partial">corrupt file</span>
+      </div>
+      <div class="history-row">
+        <span class="history-file">rust_ownership_basics.apkg</span>
+        <span class="history-date">Mar 10</span>
+        <span class="history-cards">89</span>
+        <span class="history-dupes">0</span>
+        <span class="history-status ok">complete</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="ruler-divider"></div>
+
+  <!-- ═══ NOTES ═══ -->
+  <div class="notes-section">
+    <div class="notes-card">
+      <div class="notes-title">What to know about Anki imports</div>
+      <div class="notes-list">
+        <div class="note-item">
+          <div class="note-bullet"></div>
+          <span>Each Anki deck becomes a separate Pupil space. Nested decks are flattened.</span>
+        </div>
+        <div class="note-item">
+          <div class="note-bullet"></div>
+          <span>Cards are mapped from Anki's note types — Basic uses <code>field[0]</code> → front, <code>field[1]</code> → back. Cloze syntax is converted automatically.</span>
+        </div>
+        <div class="note-item">
+          <div class="note-bullet"></div>
+          <span>All cards start fresh with FSRS‑5 scheduling. Anki review history is not transferred.</span>
+        </div>
+        <div class="note-item">
+          <div class="note-bullet"></div>
+          <span>Duplicate detection compares front and back text against existing cards in the target space.</span>
+        </div>
+        <div class="note-item">
+          <div class="note-bullet"></div>
+          <span>Images and audio embedded in <code>.apkg</code> files are skipped for now. HTML is stripped to plain text.</span>
+        </div>
+        <div class="note-item">
+          <div class="note-bullet"></div>
+          <span>Re-importing the same file is safe — duplicates are detected and skipped.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-end"></div>
+</div>
+
+<script>
+  // Drag-and-drop visual feedback
+  const dz = document.getElementById('dropZone');
+  ['dragenter','dragover'].forEach(e => {
+    dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.add('drag-over'); });
+  });
+  ['dragleave','drop'].forEach(e => {
+    dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.remove('drag-over'); });
+  });
+</script>
+
+</body>
+</html>

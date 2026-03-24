@@ -2,12 +2,14 @@ import { EyeLogo } from "../dashboard/EyeLogo";
 
 type SpaceDetailsTitlebarProps = {
   onBack: () => void;
+  onOpenAiGenerate: () => void;
   onOpenNewCard: () => void;
   spaceName: string;
 };
 
 export function SpaceDetailsTitlebar({
   onBack,
+  onOpenAiGenerate,
   onOpenNewCard,
   spaceName,
 }: SpaceDetailsTitlebarProps) {
@@ -36,7 +38,7 @@ export function SpaceDetailsTitlebar({
           <PlusIcon />
           New Card
         </button>
-        <button className="titlebar-btn-label" type="button">
+        <button className="titlebar-btn-label" onClick={onOpenAiGenerate} type="button">
           <GenerateIcon />
           AI Generate
         </button>
@@ -66,8 +68,10 @@ function PlusIcon() {
 
 function GenerateIcon() {
   return (
-    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M11.5 7.5L7 12l-4.5-4.5M7 12V2" />
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4">
+      <path d="M8 1.75l.8 2.6a1 1 0 00.67.67l2.6.8-2.6.8a1 1 0 00-.67.67L8 10.9l-.8-2.61a1 1 0 00-.67-.67l-2.6-.8 2.6-.8a1 1 0 00.67-.67L8 1.75z" />
+      <path d="M12.75 9.75l.39 1.29a.7.7 0 00.47.47l1.29.39-1.29.39a.7.7 0 00-.47.47l-.39 1.29-.39-1.29a.7.7 0 00-.47-.47l-1.29-.39 1.29-.39a.7.7 0 00.47-.47l.39-1.29z" />
+      <path d="M3 10.75l.3.99a.6.6 0 00.4.4l.99.3-.99.3a.6.6 0 00-.4.4L3 14.13l-.3-.99a.6.6 0 00-.4-.4l-.99-.3.99-.3a.6.6 0 00.4-.4l.3-.99z" />
     </svg>
   );
 }

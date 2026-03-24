@@ -47,6 +47,7 @@ export function CardsScreen({
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editorSuccessPulseTick, setEditorSuccessPulseTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -139,7 +140,7 @@ export function CardsScreen({
     );
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(options: { keepOpen: boolean }) {
     setError(null);
 
     try {
@@ -157,7 +158,12 @@ export function CardsScreen({
       }
 
       resetDraft(spaces, setDraft, setEditingCardId, setError);
-      setIsEditorOpen(false);
+
+      if (editingCardId || !options.keepOpen) {
+        setIsEditorOpen(false);
+      } else {
+        setEditorSuccessPulseTick((currentTick) => currentTick + 1);
+      }
     } catch (nextError: unknown) {
       setError(nextError instanceof Error ? nextError.message : "Failed to save card.");
     }
@@ -330,7 +336,8 @@ export function CardsScreen({
         onChange={(patch) => setDraft((currentDraft) => ({ ...currentDraft, ...patch }))}
         onClose={handleCloseEditor}
         onDelete={handleDelete}
-        onSubmit={() => void handleSubmit()}
+        onSubmit={(options) => void handleSubmit(options)}
+        successPulseTick={editorSuccessPulseTick}
         spaces={spaces}
       />
     </div>

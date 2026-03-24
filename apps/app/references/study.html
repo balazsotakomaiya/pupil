@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pupil — Study</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0a0a0a;--bg-subtle:#111;--bg-elevated:#161616;
+    --border:#1e1e1e;--border-hover:#333;--ruler:#2a2a2a;
+    --text-primary:#ededed;--text-secondary:#888;--text-tertiary:#555;
+    --success:#10b981;--success-dim:#10b98115;
+    --radius:8px;--radius-lg:12px;
+    --font-sans:"Inter",-apple-system,BlinkMacSystemFont,sans-serif;
+    --font-mono:"JetBrains Mono","SF Mono","Fira Code",monospace;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  html{height:100%}
+  body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans);font-size:15px;line-height:1.5;height:100%;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow:hidden}
+
+  /* ═══ NO RULERS — study mode is clean ═══ */
+
+  /* ═══ TOP BAR — minimal ═══ */
+  .study-bar{
+    height:48px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 20px;
+    -webkit-app-region:drag;user-select:none;
+    background:transparent;
+    position:relative;z-index:10;
+  }
+  .study-bar-left{display:flex;align-items:center;gap:12px;-webkit-app-region:no-drag}
+  .study-bar-right{display:flex;align-items:center;gap:8px;-webkit-app-region:no-drag}
+
+  .exit-btn{
+    display:flex;align-items:center;gap:5px;
+    font-size:12px;font-weight:500;color:var(--text-tertiary);
+    cursor:pointer;transition:color 0.15s;padding:4px 0;
+  }
+  .exit-btn:hover{color:var(--text-secondary)}
+  .exit-btn svg{width:14px;height:14px}
+
+  .study-scope{
+    font-family:var(--font-mono);font-size:11px;font-weight:500;
+    color:var(--text-tertiary);
+    background:var(--bg-subtle);border:1px solid var(--border);
+    border-radius:999px;padding:3px 12px;
+    letter-spacing:0.3px;
+  }
+
+  .study-counter{
+    font-family:var(--font-mono);font-size:11px;font-weight:500;
+    color:var(--text-tertiary);letter-spacing:0.3px;
+  }
+  .study-counter strong{color:var(--text-secondary);font-weight:600}
+
+  .shortcut-hint{
+    font-family:var(--font-mono);font-size:10px;
+    color:var(--text-tertiary);opacity:0.4;
+    display:flex;align-items:center;gap:4px;
+  }
+  .shortcut-hint .kbd{
+    font-size:9px;background:var(--bg-elevated);border:1px solid var(--border);
+    border-radius:3px;padding:1px 5px;min-width:18px;text-align:center;
+    color:var(--text-tertiary);
+  }
+
+  /* ═══ PROGRESS BAR ═══ */
+  .progress-track{
+    position:absolute;top:48px;left:0;right:0;
+    height:2px;background:var(--border);z-index:10;
+  }
+  .progress-fill{
+    height:100%;background:var(--text-tertiary);
+    transition:width 0.4s cubic-bezier(0.4,0,0.2,1);
+    border-radius:0 1px 1px 0;
+  }
+
+  /* ═══ STUDY AREA ═══ */
+  .study-area{
+    position:absolute;
+    top:50px;left:0;right:0;bottom:0;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    padding:24px 32px 32px;
+  }
+
+  /* ═══ THE CARD ═══ */
+  .study-card-wrap{
+    width:100%;max-width:560px;
+    flex-shrink:0;
+  }
+
+  .study-card{
+    width:100%;
+    min-height:280px;
+    background:var(--bg-subtle);
+    border:1px solid var(--border);
+    border-radius:20px;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    padding:48px 52px;
+    text-align:center;
+    position:relative;
+    transition:border-color 0.2s;
+  }
+  .study-card:hover{border-color:var(--border-hover)}
+
+  .study-card-label{
+    position:absolute;top:18px;left:24px;
+    font-family:var(--font-mono);font-size:8px;font-weight:500;
+    text-transform:uppercase;letter-spacing:1.2px;
+    color:var(--text-tertiary);opacity:0.5;
+  }
+
+  .study-card-space{
+    position:absolute;top:18px;right:24px;
+    font-family:var(--font-mono);font-size:8px;font-weight:500;
+    text-transform:uppercase;letter-spacing:0.8px;
+    color:var(--text-tertiary);opacity:0.4;
+  }
+
+  .study-card-text{
+    font-size:20px;line-height:1.5;font-weight:500;
+    letter-spacing:-0.3px;
+    color:var(--text-primary);
+    max-width:460px;
+    word-break:break-word;
+  }
+  .study-card-text strong{font-weight:700}
+  .study-card-text em{font-style:italic}
+  .study-card-text code{
+    font-family:var(--font-mono);font-size:15px;
+    background:var(--bg-elevated);border:1px solid var(--border);
+    border-radius:5px;padding:2px 7px;
+  }
+
+  /* Back side — slightly different feel */
+  .study-card.back-showing{
+    background:var(--bg-elevated);
+    border-color:var(--border-hover);
+  }
+  .study-card.back-showing .study-card-text{
+    font-size:17px;font-weight:400;
+    color:var(--text-secondary);
+    line-height:1.65;
+  }
+  .study-card.back-showing .study-card-text strong{color:var(--text-primary);font-weight:600}
+
+  /* Divider between front/back when back is showing */
+  .study-card-front-echo{
+    font-size:13px;font-weight:500;
+    color:var(--text-tertiary);
+    margin-bottom:20px;
+    padding-bottom:20px;
+    border-bottom:1px solid var(--border);
+    width:100%;text-align:center;
+    letter-spacing:-0.1px;
+    line-height:1.5;
+  }
+
+  /* Tags on card */
+  .study-card-tags{
+    display:flex;gap:5px;flex-wrap:wrap;justify-content:center;
+    margin-top:24px;
+  }
+  .study-card-tag{
+    font-family:var(--font-mono);font-size:9px;font-weight:500;
+    color:var(--text-tertiary);opacity:0.6;
+    background:rgba(255,255,255,0.03);border:1px solid var(--border);
+    border-radius:3px;padding:1px 6px;
+  }
+
+  /* ═══ ACTIONS ═══ */
+  .study-actions{
+    margin-top:32px;
+    width:100%;max-width:560px;
+    display:flex;flex-direction:column;align-items:center;gap:12px;
+  }
+
+  /* Reveal button */
+  .reveal-btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;max-width:320px;
+    height:44px;border-radius:10px;
+    background:var(--text-primary);color:var(--bg);
+    font-family:var(--font-sans);font-size:14px;font-weight:600;
+    border:none;cursor:pointer;
+    transition:opacity 0.15s;letter-spacing:-0.2px;
+  }
+  .reveal-btn:hover{opacity:0.85}
+  .reveal-btn .reveal-kbd{
+    font-family:var(--font-mono);font-size:10px;font-weight:500;
+    background:rgba(0,0,0,0.15);border-radius:4px;
+    padding:2px 7px;margin-left:4px;
+    opacity:0.6;
+  }
+
+  /* Rating buttons row */
+  .rating-row{
+    display:grid;grid-template-columns:repeat(4,1fr);
+    gap:8px;width:100%;
+  }
+
+  .rating-btn{
+    display:flex;flex-direction:column;align-items:center;
+    gap:4px;padding:14px 8px 12px;
+    border-radius:10px;
+    border:1px solid var(--border);background:var(--bg-subtle);
+    cursor:pointer;transition:border-color 0.15s,background 0.15s;
+    text-align:center;
+  }
+  .rating-btn:hover{border-color:var(--border-hover);background:var(--bg-elevated)}
+
+  .rating-btn .rating-label{
+    font-size:13px;font-weight:600;letter-spacing:-0.1px;
+  }
+  .rating-btn .rating-interval{
+    font-family:var(--font-mono);font-size:10px;font-weight:500;
+    color:var(--text-tertiary);letter-spacing:0.2px;
+  }
+  .rating-btn .rating-key{
+    font-family:var(--font-mono);font-size:9px;
+    color:var(--text-tertiary);opacity:0.4;
+    background:var(--bg-elevated);border:1px solid var(--border);
+    border-radius:3px;padding:1px 5px;margin-top:2px;
+  }
+
+  /* Rating colors — monochrome scale */
+  .rating-btn.again .rating-label{color:var(--text-tertiary)}
+  .rating-btn.hard .rating-label{color:var(--text-tertiary)}
+  .rating-btn.good .rating-label{color:var(--text-secondary)}
+  .rating-btn.easy .rating-label{color:var(--text-primary)}
+
+  .rating-btn.again:hover{border-color:#555}
+  .rating-btn.good:hover{border-color:var(--text-secondary)}
+  .rating-btn.easy:hover{border-color:var(--text-primary)}
+
+  /* Active flash on rate */
+  .rating-btn.pressed{
+    background:var(--bg-elevated);
+    border-color:var(--text-secondary);
+    transition:none;
+  }
+
+  .rating-hint{
+    font-family:var(--font-mono);font-size:10px;
+    color:var(--text-tertiary);opacity:0.4;
+    margin-top:4px;
+  }
+
+  /* ═══ SESSION SUMMARY ═══ */
+  .summary-screen{
+    position:absolute;inset:0;
+    display:none;flex-direction:column;
+    align-items:center;justify-content:center;
+    padding:32px;z-index:20;
+    background:var(--bg);
+  }
+  .summary-screen.visible{display:flex}
+
+  .summary-check{
+    width:56px;height:56px;border-radius:50%;
+    background:var(--success-dim);
+    border:2px solid #10b98130;
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:28px;
+  }
+  .summary-check svg{width:24px;height:24px;color:var(--success)}
+
+  .summary-title{
+    font-size:clamp(22px,3vw,30px);font-weight:700;
+    letter-spacing:-0.8px;line-height:1.2;
+    margin-bottom:6px;text-align:center;
+  }
+  .summary-sub{
+    font-size:14px;color:var(--text-secondary);
+    text-align:center;margin-bottom:36px;
+    max-width:360px;line-height:1.5;
+  }
+
+  .summary-stats{
+    display:grid;grid-template-columns:repeat(3,1fr);
+    gap:1px;background:var(--border);
+    border-radius:var(--radius-lg);overflow:hidden;
+    margin-bottom:36px;
+    width:100%;max-width:420px;
+  }
+  .summary-stat{
+    background:var(--bg-subtle);
+    padding:20px 24px;
+    text-align:center;
+  }
+  .summary-stat-value{
+    font-size:28px;font-weight:700;letter-spacing:-0.8px;
+    line-height:1;margin-bottom:4px;
+  }
+  .summary-stat-label{
+    font-family:var(--font-mono);font-size:10px;font-weight:500;
+    text-transform:uppercase;letter-spacing:0.8px;
+    color:var(--text-tertiary);
+  }
+  .summary-stat-value .unit{
+    font-size:14px;font-weight:500;color:var(--text-tertiary);
+  }
+
+  .summary-streak{
+    display:flex;align-items:center;gap:8px;
+    padding:10px 18px;border-radius:999px;
+    background:var(--success-dim);border:1px solid #10b98130;
+    margin-bottom:36px;
+  }
+  .summary-streak-dot{width:6px;height:6px;border-radius:50%;background:var(--success)}
+  .summary-streak-text{
+    font-size:13px;font-weight:500;color:var(--success);
+  }
+
+  .summary-actions{display:flex;gap:8px}
+
+  .summary-btn{
+    display:flex;align-items:center;gap:6px;
+    font-family:var(--font-sans);font-size:13px;font-weight:500;
+    color:var(--text-secondary);background:transparent;
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:10px 20px;cursor:pointer;
+    transition:color 0.15s,border-color 0.15s,background 0.15s;
+  }
+  .summary-btn:hover{color:var(--text-primary);border-color:var(--border-hover);background:rgba(255,255,255,0.03)}
+
+  .summary-btn.primary{
+    color:var(--bg);background:var(--text-primary);
+    border:none;font-weight:600;transition:opacity 0.15s;
+  }
+  .summary-btn.primary:hover{opacity:0.85}
+
+  .summary-next-due{
+    font-family:var(--font-mono);font-size:11px;
+    color:var(--text-tertiary);margin-top:20px;
+  }
+
+  /* ═══ SCROLLBAR ═══ */
+  ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+  @media(max-width:640px){
+    .study-card{padding:36px 28px;min-height:220px;border-radius:16px}
+    .study-card-text{font-size:18px}
+    .study-card.back-showing .study-card-text{font-size:15px}
+    .rating-row{grid-template-columns:repeat(2,1fr)}
+    .study-area{padding:16px 16px 24px}
+    .summary-stats{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ STUDY SESSION ═══ -->
+
+<!-- Top bar — stripped to essentials -->
+<div class="study-bar">
+  <div class="study-bar-left">
+    <div class="exit-btn" onclick="showSummary()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3L5 8l5 5"/></svg>
+      End
+    </div>
+    <span class="study-scope">Machine Learning</span>
+  </div>
+  <div class="study-bar-right">
+    <span class="study-counter"><strong id="currentNum">1</strong> / <span id="totalNum">18</span></span>
+  </div>
+</div>
+
+<!-- Progress -->
+<div class="progress-track">
+  <div class="progress-fill" id="progressFill" style="width:0%"></div>
+</div>
+
+<!-- Study area -->
+<div class="study-area" id="studyArea">
+
+  <div class="study-card-wrap">
+    <div class="study-card" id="studyCard">
+      <span class="study-card-label">front</span>
+      <span class="study-card-space">Machine Learning</span>
+
+      <!-- Front content (visible initially) -->
+      <div id="cardContent">
+        <div class="study-card-text" id="cardFront">What is the vanishing gradient problem?</div>
+      </div>
+
+      <div class="study-card-tags" id="cardTags">
+        <span class="study-card-tag">deep-learning</span>
+        <span class="study-card-tag">optimization</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="study-actions" id="studyActions">
+    <!-- Reveal state -->
+    <button class="reveal-btn" id="revealBtn" onclick="revealCard()">
+      Show answer
+      <span class="reveal-kbd">Space</span>
+    </button>
+  </div>
+
+</div>
+
+<!-- ═══ SESSION SUMMARY ═══ -->
+<div class="summary-screen" id="summaryScreen">
+  <div class="summary-check">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+  </div>
+  <div class="summary-title">Session complete</div>
+  <div class="summary-sub">You reviewed all 18 due cards in Machine Learning. That's 7 minutes well spent.</div>
+
+  <div class="summary-stats">
+    <div class="summary-stat">
+      <div class="summary-stat-value">18</div>
+      <div class="summary-stat-label">Reviewed</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-stat-value">89<span class="unit">%</span></div>
+      <div class="summary-stat-label">Retention</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-stat-value">7<span class="unit">m</span></div>
+      <div class="summary-stat-label">Duration</div>
+    </div>
+  </div>
+
+  <div class="summary-streak">
+    <span class="summary-streak-dot"></span>
+    <span class="summary-streak-text">13 day streak — keep it going</span>
+  </div>
+
+  <div class="summary-actions">
+    <button class="summary-btn" onclick="location.reload()">Study again</button>
+    <button class="summary-btn primary">Back to space →</button>
+  </div>
+
+  <div class="summary-next-due">Next review: 4 cards due tomorrow</div>
+</div>
+
+<script>
+  // ── Demo card data ──
+  const cards = [
+    { front: 'What is the vanishing gradient problem?', back: 'When gradients become extremely small as they propagate backward through many layers. Earlier layers learn very slowly or stop learning. Common with **sigmoid** and **tanh** activations. Mitigated by ReLU, residual connections, and batch normalization.', tags: ['deep-learning', 'optimization'], intervals: ['10m', '1d', '4d', '12d'] },
+    { front: 'Explain backpropagation in one sentence', back: 'Backpropagation computes the gradient of the loss function with respect to each weight by applying the **chain rule** layer by layer from output to input, enabling gradient descent to update all parameters.', tags: ['backprop'], intervals: ['10m', '2d', '6d', '18d'] },
+    { front: 'What does a learning rate control?', back: 'The **step size** during gradient descent. Too high causes overshooting and divergence. Too low causes slow convergence and risks getting stuck in local minima. Often scheduled to decay over training.', tags: ['hyperparameters'], intervals: ['1m', '10m', '1d', '3d'] },
+    { front: 'Define _____ as the process of adjusting model weights to minimize loss', back: '**Training** (or optimization). The model iteratively updates weights using an optimizer like SGD or Adam to reduce the gap between predictions and ground truth.', tags: ['cloze', 'fundamentals'], intervals: ['10m', '1d', '3d', '8d'] },
+    { front: 'Name three regularization techniques', back: '**L1** (Lasso) encourages sparsity. **L2** (Ridge) penalizes large weights. **Dropout** randomly deactivates neurons during training to prevent co-adaptation.', tags: ['regularization'], intervals: ['10m', '2d', '5d', '14d'] },
+    { front: 'What problem do residual connections solve?', back: 'They address the **degradation problem** — very deep networks performing worse than shallower ones. Skip connections let gradients flow directly through the network, enabling training of hundreds of layers.', tags: ['architecture'], intervals: ['1m', '10m', '2d', '6d'] },
+  ];
+
+  let currentIdx = 0;
+  let revealed = false;
+  const total = cards.length;
+
+  function renderMd(t) {
+    return t
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`(.+?)`/g, '<code>$1</code>')
+      .replace(/_____/g, '<span style="display:inline-block;border-bottom:2px solid var(--text-tertiary);width:48px;margin:0 2px;height:1.1em;vertical-align:bottom"></span>')
+      .replace(/\n/g, '<br>');
+  }
+
+  function loadCard(idx) {
+    if (idx >= total) { showSummary(); return; }
+
+    const card = cards[idx];
+    const studyCard = document.getElementById('studyCard');
+    const content = document.getElementById('cardContent');
+    const tags = document.getElementById('cardTags');
+    const actions = document.getElementById('studyActions');
+
+    // Reset to front
+    studyCard.classList.remove('back-showing');
+    studyCard.querySelector('.study-card-label').textContent = 'front';
+    revealed = false;
+
+    // Content
+    content.innerHTML = `<div class="study-card-text" id="cardFront">${renderMd(card.front)}</div>`;
+
+    // Tags
+    tags.innerHTML = card.tags.map(t => `<span class="study-card-tag">${t}</span>`).join('');
+
+    // Actions — show reveal
+    actions.innerHTML = `
+      <button class="reveal-btn" onclick="revealCard()">
+        Show answer
+        <span class="reveal-kbd">Space</span>
+      </button>
+    `;
+
+    // Counter + progress
+    document.getElementById('currentNum').textContent = idx + 1;
+    document.getElementById('progressFill').style.width = ((idx) / total * 100) + '%';
+  }
+
+  function revealCard() {
+    if (revealed) return;
+    revealed = true;
+
+    const card = cards[currentIdx];
+    const studyCard = document.getElementById('studyCard');
+    const content = document.getElementById('cardContent');
+    const actions = document.getElementById('studyActions');
+
+    // Transition to back
+    studyCard.classList.add('back-showing');
+    studyCard.querySelector('.study-card-label').textContent = 'back';
+
+    // Show front as echo + back text
+    content.innerHTML = `
+      <div class="study-card-front-echo">${renderMd(card.front)}</div>
+      <div class="study-card-text">${renderMd(card.back)}</div>
+    `;
+
+    // Show rating buttons
+    const labels = ['Again', 'Hard', 'Good', 'Easy'];
+    const classes = ['again', 'hard', 'good', 'easy'];
+    const keys = ['1', '2', '3', '4'];
+
+    actions.innerHTML = `
+      <div class="rating-row">
+        ${labels.map((l, i) => `
+          <button class="rating-btn ${classes[i]}" onclick="rate(${i})">
+            <span class="rating-label">${l}</span>
+            <span class="rating-interval">${card.intervals[i]}</span>
+            <span class="rating-key">${keys[i]}</span>
+          </button>
+        `).join('')}
+      </div>
+      <span class="rating-hint">Press 1–4 to rate</span>
+    `;
+  }
+
+  function rate(grade) {
+    // Flash the pressed button
+    const btns = document.querySelectorAll('.rating-btn');
+    btns[grade].classList.add('pressed');
+
+    // Advance after brief delay
+    setTimeout(() => {
+      currentIdx++;
+      if (currentIdx >= total) {
+        document.getElementById('progressFill').style.width = '100%';
+        setTimeout(showSummary, 300);
+      } else {
+        loadCard(currentIdx);
+      }
+    }, 150);
+  }
+
+  function showSummary() {
+    document.getElementById('summaryScreen').classList.add('visible');
+    document.getElementById('progressFill').style.width = '100%';
+  }
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (document.getElementById('summaryScreen').classList.contains('visible')) return;
+
+    if (e.code === 'Space' && !revealed) {
+      e.preventDefault();
+      revealCard();
+    }
+    if (revealed && ['Digit1','Digit2','Digit3','Digit4'].includes(e.code)) {
+      e.preventDefault();
+      rate(parseInt(e.code.replace('Digit','')) - 1);
+    }
+    if (e.code === 'Escape') {
+      showSummary();
+    }
+  });
+
+  // Init
+  loadCard(0);
+</script>
+
+</body>
+</html>

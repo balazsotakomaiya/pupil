@@ -70,3 +70,7 @@ Cursor, custom agents, etc.) can create, query, and manage cards programmaticall
   it stdio-only for Phase 2?
 - Should MCP card creation bypass the AI approval flow if the caller explicitly flags cards as
   pre-approved (e.g., a trusted local script)?
+
+
+TODO:
+- Radix

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { readAiSettings, writeAiSettings } from "../../lib/ai-settings";
 import { SettingsAboutCard } from "./SettingsAboutCard";
 import { SettingsConnectionStatus } from "./SettingsConnectionStatus";
 import { SettingsDataCard } from "./SettingsDataCard";
@@ -33,12 +34,12 @@ const SHORTCUTS = [
 
 export function SettingsScreen({ cardsCount, spacesCount }: SettingsScreenProps) {
   const [activeSection, setActiveSection] = useState<SettingsSectionId>("ai");
-  const [apiKey, setApiKey] = useState("");
+  const [apiKey, setApiKey] = useState(() => readAiSettings().apiKey);
   const [showApiKey, setShowApiKey] = useState(false);
-  const [baseUrl, setBaseUrl] = useState("https://api.anthropic.com/v1");
-  const [model, setModel] = useState("claude-sonnet-4-6");
-  const [maxTokens, setMaxTokens] = useState("4096");
-  const [temperature, setTemperature] = useState("0.7");
+  const [baseUrl, setBaseUrl] = useState(() => readAiSettings().baseUrl);
+  const [model, setModel] = useState(() => readAiSettings().model);
+  const [maxTokens, setMaxTokens] = useState(() => readAiSettings().maxTokens);
+  const [temperature, setTemperature] = useState(() => readAiSettings().temperature);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
   const [connectionStatus, setConnectionStatus] = useState<{
@@ -46,7 +47,7 @@ export function SettingsScreen({ cardsCount, spacesCount }: SettingsScreenProps)
     kind: "idle" | "success" | "error";
     label: string;
   }>({
-    detail: "Secure persistence is not wired yet",
+    detail: "Stored locally on this device",
     kind: "idle",
     label: "Not tested",
   });
@@ -65,6 +66,16 @@ export function SettingsScreen({ cardsCount, spacesCount }: SettingsScreenProps)
     }),
     [],
   );
+
+  useEffect(() => {
+    writeAiSettings({
+      apiKey,
+      baseUrl,
+      model,
+      maxTokens,
+      temperature,
+    });
+  }, [apiKey, baseUrl, model, maxTokens, temperature]);
 
   useEffect(() => {
     function updateActiveSection() {
@@ -197,10 +208,10 @@ export function SettingsScreen({ cardsCount, spacesCount }: SettingsScreenProps)
           </div>
 
           <SettingsConnectionStatus
-            detail={connectionStatus.detail}
-            kind={connectionStatus.kind}
-            label={connectionStatus.label}
-          />
+          detail={connectionStatus.detail}
+          kind={connectionStatus.kind}
+          label={connectionStatus.label}
+        />
 
           <div className="settings-field">
             <label className="settings-field-label" htmlFor="settings-base-url">

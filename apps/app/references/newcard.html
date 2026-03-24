@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pupil — New Card</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0a0a0a;--bg-subtle:#111;--bg-elevated:#161616;
+    --border:#1e1e1e;--border-hover:#333;--ruler:#2a2a2a;
+    --text-primary:#ededed;--text-secondary:#888;--text-tertiary:#555;
+    --accent:#ededed;--success:#10b981;--success-dim:#10b98115;
+    --warn:#f59e0b;--danger:#ef4444;
+    --radius:8px;--radius-lg:12px;
+    --font-sans:"Inter",-apple-system,BlinkMacSystemFont,sans-serif;
+    --font-mono:"JetBrains Mono","SF Mono","Fira Code",monospace;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans);font-size:15px;line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden}
+
+  /* ═══ RULERS ═══ */
+  .rulers{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
+  .ruler-v{position:absolute;top:0;bottom:0;width:1px;background-image:repeating-linear-gradient(to bottom,var(--ruler) 0px,var(--ruler) 1px,transparent 1px,transparent 5px)}
+  .ruler-v.left{left:0}.ruler-v.right{right:0}
+  .ruler-v.content-left{left:max(32px,calc((100vw - 960px)/2))}
+  .ruler-v.content-right{right:max(32px,calc((100vw - 960px)/2))}
+  .ruler-h{position:absolute;left:0;right:0;height:1px;background-image:repeating-linear-gradient(to right,var(--ruler) 0px,var(--ruler) 1px,transparent 1px,transparent 5px)}
+  .ruler-h.top{top:0}.ruler-h.bottom{bottom:0}
+  .ruler-divider{height:1px;margin-left:calc(-50vw + 50%);margin-right:calc(-50vw + 50%);background-image:repeating-linear-gradient(to right,var(--ruler) 0px,var(--ruler) 1px,transparent 1px,transparent 5px)}
+
+  /* ═══ TITLEBAR ═══ */
+  .titlebar{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;-webkit-app-region:drag;user-select:none;position:sticky;top:0;z-index:100;background:rgba(10,10,10,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+  .titlebar-left{display:flex;align-items:center;gap:16px}
+  .titlebar-logo{display:flex;align-items:center;gap:7px;-webkit-app-region:no-drag}
+  .titlebar-logo-text{font-family:"Syne",var(--font-sans);font-size:17px;font-weight:700;letter-spacing:-0.5px;color:var(--text-primary);line-height:1}
+  .titlebar-sep{width:1px;height:18px;background:var(--border)}
+  .back-btn{display:flex;align-items:center;gap:6px;-webkit-app-region:no-drag;font-size:13px;font-weight:500;color:var(--text-tertiary);cursor:pointer;transition:color 0.15s;padding:4px 0}
+  .back-btn:hover{color:var(--text-secondary)}
+  .back-btn svg{width:14px;height:14px}
+  .breadcrumb-name{font-size:13px;font-weight:600;color:var(--text-primary);-webkit-app-region:no-drag}
+  .titlebar-right{display:flex;align-items:center;gap:10px;-webkit-app-region:no-drag}
+
+  /* Make another toggle */
+  .make-another{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none}
+  .make-another-label{font-size:12px;font-weight:500;color:var(--text-tertiary);transition:color 0.15s;white-space:nowrap}
+  .make-another:hover .make-another-label{color:var(--text-secondary)}
+  .toggle-track{width:28px;height:16px;border-radius:8px;background:var(--bg-elevated);border:1px solid var(--border);position:relative;flex-shrink:0;transition:background 0.2s,border-color 0.2s}
+  .toggle-thumb{width:10px;height:10px;border-radius:50%;background:var(--text-tertiary);position:absolute;top:2px;left:2px;transition:transform 0.2s,background 0.2s}
+  .make-another.active .toggle-track{background:#10b98125;border-color:#10b98140}
+  .make-another.active .toggle-thumb{transform:translateX(12px);background:var(--success)}
+  .make-another.active .make-another-label{color:var(--text-secondary)}
+
+  .sep-sm{width:1px;height:16px;background:var(--border)}
+  .discard-btn{display:flex;align-items:center;height:30px;padding:0 14px;border-radius:6px;border:1px solid var(--border);background:transparent;font-family:var(--font-sans);font-size:12px;font-weight:500;color:var(--text-tertiary);cursor:pointer;transition:color 0.15s,border-color 0.15s}
+  .discard-btn:hover{color:var(--text-secondary);border-color:var(--border-hover)}
+  .save-btn{display:flex;align-items:center;gap:5px;height:30px;padding:0 16px;border-radius:6px;border:none;background:var(--text-primary);color:var(--bg);font-family:var(--font-sans);font-size:12px;font-weight:600;cursor:pointer;transition:opacity 0.15s;letter-spacing:-0.1px}
+  .save-btn:hover{opacity:0.85}
+  .save-btn svg{width:13px;height:13px}
+
+  .eye-logo{flex-shrink:0;display:block}
+  .eye-shape{animation:blink 4s ease-in-out infinite}
+  .eye-iris{animation:iris-blink 4s ease-in-out infinite;transform-origin:26px 26px}
+  .eye-pupil-g{animation:pupil-hide 4s ease-in-out infinite;transform-origin:26px 26px}
+  .eye-pupil{animation:look 4s ease-in-out infinite}
+  @keyframes blink{0%,16%,24%,34%,42%,100%{d:path("M 2 26 C 12 10, 40 10, 50 26 C 40 42, 12 42, 2 26 Z")}18.5%,21.5%{d:path("M 2 26 C 12 23, 40 23, 50 26 C 40 29, 12 29, 2 26 Z")}36.5%,39.5%{d:path("M 2 26 C 12 23, 40 23, 50 26 C 40 29, 12 29, 2 26 Z")}}
+  @keyframes iris-blink{0%,16%,24%,34%,42%,100%{transform:scaleY(1);opacity:1}18.5%,21.5%{transform:scaleY(0.1);opacity:0}36.5%,39.5%{transform:scaleY(0.1);opacity:0}}
+  @keyframes pupil-hide{0%,16%,24%,34%,42%,100%{transform:scaleY(1);opacity:1}18.5%,21.5%{transform:scaleY(0);opacity:0}36.5%,39.5%{transform:scaleY(0);opacity:0}}
+  @keyframes look{0%,42%{transform:translateX(0)}58%{transform:translateX(3px)}74%{transform:translateX(-2px)}90%,100%{transform:translateX(0)}}
+
+  /* ═══ PAGE ═══ */
+  .page{max-width:720px;margin:0 auto;padding:0 32px}
+
+  /* ═══ EDITOR ═══ */
+  .editor-section{padding:48px 0 40px}
+  .editor-pair{display:flex;flex-direction:column}
+  .field-block{position:relative}
+  .field-block + .field-block{margin-top:24px}
+  .field-chrome{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .field-label{font-family:var(--font-mono);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-tertiary)}
+  .word-count{font-family:var(--font-mono);font-size:10px;font-weight:500;color:var(--text-tertiary);transition:color 0.15s}
+  .word-count.warn{color:var(--warn)}
+  .word-count.over{color:var(--danger)}
+
+  .card-textarea{width:100%;padding:16px 18px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--radius-lg);color:var(--text-primary);font-family:var(--font-sans);font-size:15px;line-height:1.6;resize:none;outline:none;transition:border-color 0.15s}
+  .card-textarea::placeholder{color:var(--text-tertiary)}
+  .card-textarea:focus{border-color:var(--border-hover)}
+  .card-textarea.front{min-height:80px;font-weight:500;letter-spacing:-0.2px}
+  .card-textarea.back{min-height:140px;border-radius:0 0 var(--radius-lg) var(--radius-lg);border-top:none}
+
+  .format-toolbar{display:flex;align-items:center;gap:1px;padding:6px 10px;background:var(--bg-subtle);border:1px solid var(--border);border-bottom:none;border-radius:var(--radius-lg) var(--radius-lg) 0 0}
+  .fmt-btn{display:flex;align-items:center;justify-content:center;width:30px;height:28px;border-radius:5px;background:transparent;border:none;color:var(--text-tertiary);cursor:pointer;transition:color 0.15s,background 0.15s;position:relative}
+  .fmt-btn:hover{color:var(--text-secondary);background:var(--bg-elevated)}
+  .fmt-btn svg{width:15px;height:15px}
+  .fmt-sep{width:1px;height:18px;background:var(--border);margin:0 4px;flex-shrink:0}
+  .fmt-hint{margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);letter-spacing:0.3px;opacity:0.6}
+  .fmt-btn[data-tooltip]:hover::after{content:attr(data-tooltip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);white-space:nowrap;font-family:var(--font-sans);font-size:11px;font-weight:500;color:var(--text-primary);background:var(--bg-elevated);border:1px solid var(--border);border-radius:5px;padding:3px 9px;pointer-events:none;z-index:10}
+
+  .limit-guidance{margin-top:6px;font-size:11px;color:var(--text-tertiary);line-height:1.4;font-style:italic}
+  .limit-guidance.over{color:var(--danger);font-style:normal}
+
+  /* Tags */
+  .tags-section{margin-top:28px}
+  .tags-chrome{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .tags-input-wrap{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:8px 12px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--radius);min-height:38px;transition:border-color 0.15s;cursor:text}
+  .tags-input-wrap:focus-within{border-color:var(--border-hover)}
+  .tag-pill{display:flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--text-secondary);background:var(--bg-elevated);border:1px solid var(--border);border-radius:4px;padding:2px 8px;user-select:none}
+  .tag-remove{display:flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:3px;background:transparent;border:none;color:var(--text-tertiary);cursor:pointer;transition:color 0.15s,background 0.15s;padding:0}
+  .tag-remove:hover{color:var(--text-secondary);background:rgba(255,255,255,0.06)}
+  .tag-remove svg{width:9px;height:9px}
+  .tag-input{flex:1;min-width:80px;background:transparent;border:none;outline:none;color:var(--text-primary);font-family:var(--font-mono);font-size:11px;font-weight:500;letter-spacing:0.3px}
+  .tag-input::placeholder{color:var(--text-tertiary)}
+
+  /* Space */
+  .space-section{margin-top:28px}
+  .select-wrap{position:relative}
+  .select-input{appearance:none;-webkit-appearance:none;height:38px;padding:0 36px 0 14px;width:100%;background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;outline:none;cursor:pointer;transition:border-color 0.15s}
+  .select-input:focus{border-color:var(--border-hover)}
+  .select-input option{background:var(--bg-subtle);color:var(--text-primary)}
+  .select-chevron{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-tertiary)}
+  .select-chevron svg{width:13px;height:13px}
+
+  /* ═══ FLIP CARD ═══ */
+  .preview-section{padding:32px 0 40px}
+  .preview-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+  .preview-label-top{font-family:var(--font-mono);font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-tertiary)}
+  .preview-flip-hint{font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);display:flex;align-items:center;gap:6px;opacity:0.6}
+
+  .card-scene{
+    perspective:1200px;
+    width:100%;max-width:480px;
+    margin:0 auto;
+  }
+
+  .card-body{
+    position:relative;width:100%;
+    aspect-ratio:5 / 3;
+    transition:transform 0.55s cubic-bezier(0.4,0.0,0.15,1);
+    transform-style:preserve-3d;
+    cursor:pointer;
+  }
+
+  .card-scene:hover .card-body:not(.locked),
+  .card-body.flipped{
+    transform:rotateY(180deg);
+  }
+
+  .card-face{
+    position:absolute;inset:0;
+    backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    border-radius:16px;
+    display:flex;flex-direction:column;
+    overflow:hidden;
+  }
+
+  .card-face-front{background:var(--bg-subtle);border:1px solid var(--border)}
+  .card-face-back{background:var(--bg-elevated);border:1px solid var(--border-hover);transform:rotateY(180deg)}
+
+  .card-face-inner{
+    flex:1;display:flex;flex-direction:column;
+    justify-content:center;align-items:center;
+    padding:32px 40px;text-align:center;
+  }
+
+  .card-face-text{font-size:17px;line-height:1.55;color:var(--text-primary);max-width:380px;word-break:break-word}
+  .card-face-back .card-face-text{font-size:15px;line-height:1.6;color:var(--text-secondary)}
+  .card-face-text strong{font-weight:600;color:var(--text-primary)}
+  .card-face-text em{font-style:italic}
+  .card-face-text code{font-family:var(--font-mono);font-size:12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
+  .card-face-empty{font-size:14px;color:var(--text-tertiary);font-style:italic}
+
+  .card-face-tags{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;padding:0 40px 18px}
+  .card-face-tag{font-family:var(--font-mono);font-size:9px;font-weight:500;color:var(--text-tertiary);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:3px;padding:1px 6px}
+
+  /* Corner labels */
+  .card-corner{position:absolute;font-family:var(--font-mono);font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--text-tertiary);opacity:0.35}
+  .card-corner.tl{top:14px;left:18px}
+  .card-corner.br{bottom:14px;right:18px}
+
+  /* Subtle edge lines */
+  .card-face-front::after{content:'';position:absolute;bottom:0;left:24px;right:24px;height:1px;background:var(--border)}
+  .card-face-back::after{content:'';position:absolute;top:0;left:24px;right:24px;height:1px;background:var(--border)}
+
+  /* Dots */
+  .card-dots{display:flex;gap:5px;justify-content:center;margin-top:16px}
+  .card-dot{width:6px;height:6px;border-radius:50%;background:var(--border);transition:background 0.3s}
+  .card-dot.active{background:var(--text-tertiary)}
+
+  /* ═══ TOAST ═══ */
+  .toast{
+    position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(80px);
+    display:flex;align-items:center;gap:8px;
+    padding:10px 20px;border-radius:999px;
+    background:var(--bg-elevated);border:1px solid var(--border);
+    font-size:13px;font-weight:500;color:var(--text-secondary);
+    box-shadow:0 8px 32px rgba(0,0,0,0.4);
+    z-index:200;opacity:0;
+    transition:transform 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.35s;
+    pointer-events:none;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+  .toast .toast-dot{width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0}
+
+  /* ═══ OPINION ═══ */
+  .opinion-box{background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 24px;margin-top:24px}
+  .opinion-title{font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:10px}
+  .opinion-list{display:flex;flex-direction:column;gap:8px}
+  .opinion-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.5;color:var(--text-tertiary)}
+  .opinion-bullet{flex-shrink:0;margin-top:6px;width:4px;height:4px;border-radius:50%;background:var(--text-tertiary)}
+
+  ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--border-hover)}
+  .page-end{height:64px}
+
+  @media(max-width:640px){
+    .page{padding:0 20px;max-width:100%}.titlebar{padding:0 12px}
+    .make-another-label{display:none}
+    .card-face-inner{padding:24px 20px}.card-scene{max-width:100%}
+  }
+</style>
+</head>
+<body>
+
+<div class="rulers">
+  <div class="ruler-v left"></div><div class="ruler-v right"></div>
+  <div class="ruler-v content-left"></div><div class="ruler-v content-right"></div>
+  <div class="ruler-h top"></div><div class="ruler-h bottom"></div>
+</div>
+
+<!-- Titlebar -->
+<div class="titlebar">
+  <div class="titlebar-left">
+    <div class="titlebar-logo">
+      <svg class="eye-logo" width="24" height="24" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+        <path class="eye-shape" d="M 2 26 C 12 10, 40 10, 50 26 C 40 42, 12 42, 2 26 Z" fill="none" stroke="#ededed" stroke-width="2.8" stroke-linejoin="round"/>
+        <circle class="eye-iris" cx="26" cy="26" r="9" fill="none" stroke="#ededed" stroke-width="2"/>
+        <g class="eye-pupil-g"><circle class="eye-pupil" cx="26" cy="26" r="3.5" fill="#ededed"/></g>
+      </svg>
+      <span class="titlebar-logo-text">pupil</span>
+    </div>
+    <div class="titlebar-sep"></div>
+    <div class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3L5 8l5 5"/></svg>
+      Machine Learning
+    </div>
+    <div class="titlebar-sep"></div>
+    <span class="breadcrumb-name">New Card</span>
+  </div>
+  <div class="titlebar-right">
+    <div class="make-another active" onclick="this.classList.toggle('active')">
+      <span class="make-another-label">Make another</span>
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+    </div>
+    <div class="sep-sm"></div>
+    <button class="discard-btn">Discard</button>
+    <button class="save-btn" onclick="saveCard()">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 7l3 3 6-6.5"/></svg>
+      Save card
+    </button>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="editor-section">
+    <div class="editor-pair">
+
+      <!-- Front -->
+      <div class="field-block">
+        <div class="field-chrome">
+          <span class="field-label">Front</span>
+          <span class="word-count" id="frontCount">0 / 30 words</span>
+        </div>
+        <textarea class="card-textarea front" id="frontInput" placeholder="A clear, single question or prompt…" oninput="updateAll()"></textarea>
+        <div class="limit-guidance" id="frontGuidance">One question. One concept. No compound prompts.</div>
+      </div>
+
+      <!-- Back -->
+      <div class="field-block">
+        <div class="field-chrome">
+          <span class="field-label">Back</span>
+          <span class="word-count" id="backCount">0 / 60 words</span>
+        </div>
+        <div class="format-toolbar">
+          <button class="fmt-btn" data-tooltip="Bold ⌘B" onclick="insertFormat('**','**')"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5h4.5a3 3 0 011.93 5.3A3.25 3.25 0 019.25 14H4V2.5zm2 2V7h2.5a1 1 0 000-2H6zm0 4.5v3h3.25a1.25 1.25 0 000-2.5H6z"/></svg></button>
+          <button class="fmt-btn" data-tooltip="Italic ⌘I" onclick="insertFormat('*','*')"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 2.5h6M4 13.5h6M9.5 2.5L6.5 13.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+          <button class="fmt-btn" data-tooltip="Code" onclick="insertFormat('`','`')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5.5 4L2.5 8l3 4M10.5 4l3 4-3 4"/></svg></button>
+          <div class="fmt-sep"></div>
+          <button class="fmt-btn" data-tooltip="Cloze ___" onclick="insertCloze()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 12h3M6.5 12h3M11.5 12h2.5"/><path d="M4.5 8H11.5" stroke-width="1.8"/></svg></button>
+          <span class="fmt-hint">Markdown</span>
+        </div>
+        <textarea class="card-textarea back" id="backInput" placeholder="A direct answer. Just enough context to be unambiguous…" oninput="updateAll()"></textarea>
+        <div class="limit-guidance" id="backGuidance">Answer the front, then stop. If you need a paragraph, the card is too broad.</div>
+      </div>
+    </div>
+
+    <!-- Tags -->
+    <div class="tags-section">
+      <div class="tags-chrome">
+        <span class="field-label">Tags</span>
+        <span class="word-count" style="opacity:0.6">optional</span>
+      </div>
+      <div class="tags-input-wrap" onclick="this.querySelector('input').focus()">
+        <span class="tag-pill">deep-learning<button class="tag-remove" onclick="this.parentElement.remove();updateAll()"><svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 1.5l6 6M7.5 1.5l-6 6"/></svg></button></span>
+        <span class="tag-pill">optimization<button class="tag-remove" onclick="this.parentElement.remove();updateAll()"><svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 1.5l6 6M7.5 1.5l-6 6"/></svg></button></span>
+        <input type="text" class="tag-input" placeholder="Add tag…" onkeydown="handleTag(event)">
+      </div>
+    </div>
+
+    <!-- Space -->
+    <div class="space-section">
+      <div class="tags-chrome"><span class="field-label">Space</span></div>
+      <div class="select-wrap">
+        <select class="select-input">
+          <option>Machine Learning</option><option>Rust Ownership</option><option>World History</option><option>Music Theory</option><option>Biochemistry</option>
+        </select>
+        <div class="select-chevron"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5.5l3 3 3-3"/></svg></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ruler-divider"></div>
+
+  <!-- ═══ FLIP CARD PREVIEW ═══ -->
+  <div class="preview-section">
+    <div class="preview-header">
+      <span class="preview-label-top">Preview</span>
+      <span class="preview-flip-hint">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" style="width:13px;height:13px"><path d="M2 5l3-3 3 3"/><path d="M5 2v8a3 3 0 003 3h1"/></svg>
+        Hover or click to flip
+      </span>
+    </div>
+
+    <div class="card-scene" id="cardScene">
+      <div class="card-body" id="cardBody">
+        <!-- FRONT -->
+        <div class="card-face card-face-front">
+          <span class="card-corner tl">front</span>
+          <div class="card-face-inner">
+            <div class="card-face-text" id="prevFront"><span class="card-face-empty">Start typing…</span></div>
+          </div>
+          <div class="card-face-tags" id="prevTags">
+            <span class="card-face-tag">deep-learning</span>
+            <span class="card-face-tag">optimization</span>
+          </div>
+          <span class="card-corner br">Machine Learning</span>
+        </div>
+        <!-- BACK -->
+        <div class="card-face card-face-back">
+          <span class="card-corner tl">back</span>
+          <div class="card-face-inner">
+            <div class="card-face-text" id="prevBack"><span class="card-face-empty">Start typing…</span></div>
+          </div>
+          <span class="card-corner br">Machine Learning</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-dots">
+      <div class="card-dot active" id="dotF"></div>
+      <div class="card-dot" id="dotB"></div>
+    </div>
+
+    <div class="opinion-box">
+      <div class="opinion-title">What makes a good card</div>
+      <div class="opinion-list">
+        <div class="opinion-item"><div class="opinion-bullet"></div><span><strong style="color:var(--text-secondary)">Front: 30 words max.</strong> One question testing one atomic piece of knowledge. If the answer needs two ideas, make two cards.</span></div>
+        <div class="opinion-item"><div class="opinion-bullet"></div><span><strong style="color:var(--text-secondary)">Back: 60 words max.</strong> A direct answer with just enough context. Not a paragraph. The constraint is the point.</span></div>
+        <div class="opinion-item"><div class="opinion-bullet"></div><span><strong style="color:var(--text-secondary)">Use formatting sparingly.</strong> Bold a key term. Code-wrap a function name. The card should scan in under 5 seconds.</span></div>
+        <div class="opinion-item"><div class="opinion-bullet"></div><span><strong style="color:var(--text-secondary)">Cloze cards:</strong> use _____ on the front, answer on the back.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-end"></div>
+</div>
+
+<div class="toast" id="toast"><span class="toast-dot"></span>Card saved to Machine Learning</div>
+
+<script>
+  const FRONT_LIMIT = 30, BACK_LIMIT = 60;
+  const wc = s => { const t = s.trim(); return t ? t.split(/\s+/).length : 0; };
+
+  function renderMd(t) {
+    if (!t.trim()) return '';
+    return t
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`(.+?)`/g, '<code>$1</code>')
+      .replace(/_____/g, '<span style="display:inline-block;border-bottom:2px solid var(--text-tertiary);width:48px;margin:0 2px;height:1.2em;vertical-align:bottom"></span>')
+      .replace(/\n/g, '<br>');
+  }
+
+  function updateAll() {
+    const f = document.getElementById('frontInput').value;
+    const b = document.getElementById('backInput').value;
+    const fc = wc(f), bc = wc(b);
+
+    const fEl = document.getElementById('frontCount');
+    fEl.textContent = `${fc} / ${FRONT_LIMIT} words`;
+    fEl.className = 'word-count' + (fc > FRONT_LIMIT ? ' over' : fc > FRONT_LIMIT * 0.8 ? ' warn' : '');
+
+    const bEl = document.getElementById('backCount');
+    bEl.textContent = `${bc} / ${BACK_LIMIT} words`;
+    bEl.className = 'word-count' + (bc > BACK_LIMIT ? ' over' : bc > BACK_LIMIT * 0.8 ? ' warn' : '');
+
+    const fg = document.getElementById('frontGuidance');
+    if (fc > FRONT_LIMIT) { fg.textContent = `${fc-FRONT_LIMIT} word${fc-FRONT_LIMIT===1?'':'s'} over. Can this be tighter?`; fg.className='limit-guidance over'; }
+    else { fg.textContent='One question. One concept. No compound prompts.'; fg.className='limit-guidance'; }
+
+    const bg = document.getElementById('backGuidance');
+    if (bc > BACK_LIMIT) { bg.textContent = `${bc-BACK_LIMIT} word${bc-BACK_LIMIT===1?'':'s'} over. Try splitting into two cards.`; bg.className='limit-guidance over'; }
+    else { bg.textContent='Answer the front, then stop. If you need a paragraph, the card is too broad.'; bg.className='limit-guidance'; }
+
+    document.getElementById('prevFront').innerHTML = f.trim() ? renderMd(f) : '<span class="card-face-empty">Start typing…</span>';
+    document.getElementById('prevBack').innerHTML = b.trim() ? renderMd(b) : '<span class="card-face-empty">Start typing…</span>';
+
+    const tags = [...document.querySelectorAll('.tag-pill')].map(t => t.childNodes[0].textContent.trim());
+    const pt = document.getElementById('prevTags');
+    pt.innerHTML = tags.map(t => `<span class="card-face-tag">${t}</span>`).join('');
+    pt.style.display = tags.length ? 'flex' : 'none';
+  }
+
+  function insertFormat(a, b) {
+    const ta = document.getElementById('backInput');
+    const s = ta.selectionStart, e = ta.selectionEnd, t = ta.value, sel = t.substring(s, e);
+    if (sel) { ta.value = t.substring(0,s)+a+sel+b+t.substring(e); ta.selectionStart=s+a.length; ta.selectionEnd=e+a.length; }
+    else { ta.value = t.substring(0,s)+a+b+t.substring(e); ta.selectionStart=ta.selectionEnd=s+a.length; }
+    ta.focus(); updateAll();
+  }
+
+  function insertCloze() {
+    const ta = document.getElementById('frontInput');
+    const s = ta.selectionStart, e = ta.selectionEnd, t = ta.value;
+    if (s!==e) {
+      const sel = t.substring(s,e);
+      ta.value = t.substring(0,s)+'_____'+t.substring(e);
+      const back = document.getElementById('backInput');
+      if (!back.value.trim()) back.value = sel;
+    } else { ta.value = t.substring(0,s)+'_____'+t.substring(e); }
+    ta.focus(); updateAll();
+  }
+
+  function handleTag(e) {
+    if (e.key==='Enter'||e.key===',') {
+      e.preventDefault(); const input=e.target;
+      const val=input.value.trim().replace(/,/g,'').toLowerCase();
+      if (!val) return;
+      const pill=document.createElement('span'); pill.className='tag-pill';
+      pill.innerHTML=`${val}<button class="tag-remove" onclick="this.parentElement.remove();updateAll()"><svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 1.5l6 6M7.5 1.5l-6 6"/></svg></button>`;
+      input.parentElement.insertBefore(pill,input); input.value=''; updateAll();
+    }
+    if (e.key==='Backspace'&&!e.target.value) {
+      const pills=e.target.parentElement.querySelectorAll('.tag-pill');
+      if (pills.length){pills[pills.length-1].remove();updateAll();}
+    }
+  }
+
+  // Flip: click locks/unlocks, hover flips when not locked
+  const body = document.getElementById('cardBody');
+  const scene = document.getElementById('cardScene');
+  let locked = false;
+
+  body.addEventListener('click', () => {
+    if (locked) { body.classList.remove('flipped'); locked = false; }
+    else { body.classList.add('flipped'); locked = true; }
+    body.classList.toggle('locked', locked);
+    updateDots();
+  });
+
+  function isShowingBack() {
+    return body.classList.contains('flipped') || (!locked && scene.matches(':hover'));
+  }
+  function updateDots() {
+    const back = isShowingBack();
+    document.getElementById('dotF').className = 'card-dot' + (back ? '' : ' active');
+    document.getElementById('dotB').className = 'card-dot' + (back ? ' active' : '');
+  }
+  scene.addEventListener('mouseenter', updateDots);
+  scene.addEventListener('mouseleave', updateDots);
+
+  function saveCard() {
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2400);
+
+    if (document.querySelector('.make-another').classList.contains('active')) {
+      document.getElementById('frontInput').value = '';
+      document.getElementById('backInput').value = '';
+      if (locked) { body.classList.remove('flipped','locked'); locked = false; }
+      updateAll();
+      document.getElementById('frontInput').focus();
+    }
+  }
+
+  updateAll();
+</script>
+
+</body>
+</html>

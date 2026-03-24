@@ -15,6 +15,7 @@ type DashboardProps = {
   onOpenCreateDialog: () => void;
   onOpenSpace: (spaceId: string) => void;
   onStudyPrimaryAction?: () => void;
+  onStudySecondaryAction?: () => void;
   spaces: SpaceCardData[];
   stats: StatCardData[];
   streakCells: StreakCellData[];
@@ -27,6 +28,7 @@ export function Dashboard({
   onOpenCreateDialog,
   onOpenSpace,
   onStudyPrimaryAction,
+  onStudySecondaryAction,
   spaces,
   stats,
   streakCells,
@@ -35,7 +37,11 @@ export function Dashboard({
 }: DashboardProps) {
   return (
     <div className="page">
-      <StudySection onPrimaryAction={onStudyPrimaryAction} summary={studySummary} />
+      <StudySection
+        onPrimaryAction={onStudyPrimaryAction}
+        onSecondaryAction={onStudySecondaryAction}
+        summary={studySummary}
+      />
       <div className="ruler-divider" />
 
       <StatsSection stats={stats} />

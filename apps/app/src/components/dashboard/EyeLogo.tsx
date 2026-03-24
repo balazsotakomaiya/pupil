@@ -1,10 +1,16 @@
-export function EyeLogo() {
+type EyeLogoProps = {
+  className?: string;
+  height?: number | string;
+  width?: number | string;
+};
+
+export function EyeLogo({ className = "eye-logo", height = 24, width = 24 }: EyeLogoProps) {
   return (
     <svg
-      className="eye-logo"
+      className={className}
       viewBox="0 0 52 52"
-      width="24"
-      height="24"
+      width={width}
+      height={height}
       xmlns="http://www.w3.org/2000/svg"
     >
       <path

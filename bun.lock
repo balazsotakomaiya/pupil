@@ -18,6 +18,7 @@
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
         "sql.js": "^1.14.1",
+        "ts-fsrs": "^5.3.1",
       },
       "devDependencies": {
         "@tauri-apps/cli": "^2.4.1",
@@ -342,6 +343,8 @@
     "string_decoder": ["string_decoder@1.1.1", "", { "dependencies": { "safe-buffer": "~5.1.0" } }, "sha512-n/ShnvDi6FHbbVfviro+WojiFzv+s8MPMHBczVePfUpDJLwoLT0ht1l4YwBCbi8pJAveEEdnkHyPyTP/mzRfwg=="],
 
     "tinyglobby": ["tinyglobby@0.2.15", "", { "dependencies": { "fdir": "^6.5.0", "picomatch": "^4.0.3" } }, "sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ=="],
+
+    "ts-fsrs": ["ts-fsrs@5.3.1", "", {}, "sha512-PP3X4E014TX5QvteWxcrjqDkL8+NDiHhL4ACppejxSWansOndXpk/5EMljYlORRueDJL7ngL7YRC5RhBUhiJ3g=="],
 
     "turbo": ["turbo@2.8.20", "", { "optionalDependencies": { "@turbo/darwin-64": "2.8.20", "@turbo/darwin-arm64": "2.8.20", "@turbo/linux-64": "2.8.20", "@turbo/linux-arm64": "2.8.20", "@turbo/windows-64": "2.8.20", "@turbo/windows-arm64": "2.8.20" }, "bin": { "turbo": "bin/turbo" } }, "sha512-Rb4qk5YT8RUwwdXtkLpkVhNEe/lor6+WV7S5tTlLpxSz6MjV5Qi8jGNn4gS6NAvrYGA/rNrE6YUQM85sCZUDbQ=="],
 

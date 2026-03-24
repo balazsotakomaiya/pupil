@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pupil — Machine Learning</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0a0a0a;--bg-subtle:#111;--bg-elevated:#161616;
+    --border:#1e1e1e;--border-hover:#333;--ruler:#2a2a2a;
+    --text-primary:#ededed;--text-secondary:#888;--text-tertiary:#555;
+    --accent:#ededed;--success:#10b981;--success-dim:#10b98115;
+    --radius:8px;--radius-lg:12px;
+    --font-sans:"Inter",-apple-system,BlinkMacSystemFont,sans-serif;
+    --font-mono:"JetBrains Mono","SF Mono","Fira Code",monospace;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text-primary);font-family:var(--font-sans);font-size:15px;line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden}
+
+  /* ═══ RULERS ═══ */
+  .rulers{position:fixed;inset:0;pointer-events:none;z-index:50;overflow:hidden}
+  .ruler-v{position:absolute;top:0;bottom:0;width:1px;background-image:repeating-linear-gradient(to bottom,var(--ruler) 0px,var(--ruler) 1px,transparent 1px,transparent 5px)}
+  .ruler-v.left{left:0}.ruler-v.right{right:0}
+  .ruler-v.content-left{left:max(32px,calc((100vw - 960px)/2))}
+  .ruler-v.content-right{right:max(32px,calc((100vw - 960px)/2))}
+  .ruler-h{position:absolute;left:0;right:0;height:1px;background-image:repeating-linear-gradient(to right,var(--ruler) 0px,var(--ruler) 1px,transparent 1px,transparent 5px)}
+  .ruler-h.top{top:0}.ruler-h.bottom{bottom:0}
+  .ruler-divider{height:1px;margin-left:calc(-50vw + 50%);margin-right:calc(-50vw + 50%);background-image:repeating-linear-gradient(to right,var(--ruler) 0px,var(--ruler) 1px,transparent 1px,transparent 5px)}
+
+  /* ═══ TITLEBAR ═══ */
+  .titlebar{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;-webkit-app-region:drag;user-select:none;position:sticky;top:0;z-index:100;background:rgba(10,10,10,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+  .titlebar-left{display:flex;align-items:center;gap:16px}
+  .titlebar-logo{display:flex;align-items:center;gap:7px;-webkit-app-region:no-drag}
+  .titlebar-logo-text{font-family:"Syne",var(--font-sans);font-size:17px;font-weight:700;letter-spacing:-0.5px;color:var(--text-primary);line-height:1}
+  .titlebar-sep{width:1px;height:18px;background:var(--border)}
+  .titlebar-right{display:flex;align-items:center;gap:6px;-webkit-app-region:no-drag}
+  .titlebar-btn{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text-tertiary);cursor:pointer;transition:color 0.15s,border-color 0.15s,background 0.15s}
+  .titlebar-btn:hover{color:var(--text-secondary);border-color:var(--border-hover);background:rgba(255,255,255,0.03)}
+  .titlebar-btn svg{width:14px;height:14px}
+  .titlebar-btn-label{display:flex;align-items:center;gap:5px;height:30px;padding:0 11px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text-tertiary);font-family:var(--font-sans);font-size:12px;font-weight:500;cursor:pointer;transition:color 0.15s,border-color 0.15s,background 0.15s}
+  .titlebar-btn-label:hover{color:var(--text-secondary);border-color:var(--border-hover);background:rgba(255,255,255,0.03)}
+  .titlebar-btn-label svg{width:13px;height:13px;opacity:0.5}
+
+  /* Back button in titlebar */
+  .back-btn{
+    display:flex;align-items:center;gap:6px;
+    -webkit-app-region:no-drag;
+    font-size:13px;font-weight:500;color:var(--text-tertiary);
+    cursor:pointer;transition:color 0.15s;
+    padding:4px 0;
+  }
+  .back-btn:hover{color:var(--text-secondary)}
+  .back-btn svg{width:14px;height:14px}
+
+  .breadcrumb-name{
+    font-size:13px;font-weight:600;color:var(--text-primary);
+    -webkit-app-region:no-drag;
+  }
+
+  /* Eye */
+  .eye-logo{flex-shrink:0;display:block}
+  .eye-shape{animation:blink 4s ease-in-out infinite}
+  .eye-iris{animation:iris-blink 4s ease-in-out infinite;transform-origin:26px 26px}
+  .eye-pupil-g{animation:pupil-hide 4s ease-in-out infinite;transform-origin:26px 26px}
+  .eye-pupil{animation:look 4s ease-in-out infinite}
+  @keyframes blink{0%,16%,24%,34%,42%,100%{d:path("M 2 26 C 12 10, 40 10, 50 26 C 40 42, 12 42, 2 26 Z")}18.5%,21.5%{d:path("M 2 26 C 12 23, 40 23, 50 26 C 40 29, 12 29, 2 26 Z")}36.5%,39.5%{d:path("M 2 26 C 12 23, 40 23, 50 26 C 40 29, 12 29, 2 26 Z")}}
+  @keyframes iris-blink{0%,16%,24%,34%,42%,100%{transform:scaleY(1);opacity:1}18.5%,21.5%{transform:scaleY(0.1);opacity:0}36.5%,39.5%{transform:scaleY(0.1);opacity:0}}
+  @keyframes pupil-hide{0%,16%,24%,34%,42%,100%{transform:scaleY(1);opacity:1}18.5%,21.5%{transform:scaleY(0);opacity:0}36.5%,39.5%{transform:scaleY(0);opacity:0}}
+  @keyframes look{0%,42%{transform:translateX(0)}58%{transform:translateX(3px)}74%{transform:translateX(-2px)}90%,100%{transform:translateX(0)}}
+
+  /* ═══ PAGE ═══ */
+  .page{max-width:960px;margin:0 auto;padding:0 32px}
+  .section{padding:40px 0}
+  .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+  .section-label{font-family:var(--font-mono);font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-tertiary)}
+
+  /* ═══ SPACE HEADER ═══ */
+  .space-header{padding:48px 0 0}
+
+  .space-header-top{
+    display:flex;align-items:flex-start;justify-content:space-between;
+    gap:24px;margin-bottom:12px;
+  }
+
+  .space-title{
+    font-size:clamp(24px,3vw,32px);
+    font-weight:700;letter-spacing:-1px;line-height:1.15;
+  }
+
+  .space-header-actions{
+    display:flex;gap:6px;flex-shrink:0;padding-top:4px;
+  }
+
+  .space-tags{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    margin-bottom:8px;
+  }
+
+  .space-tag{
+    font-family:var(--font-mono);font-size:10px;font-weight:500;
+    text-transform:uppercase;letter-spacing:0.5px;
+    color:var(--text-tertiary);
+    background:var(--bg-subtle);border:1px solid var(--border);
+    border-radius:999px;padding:3px 10px;
+  }
+
+  .space-desc{
+    font-size:14px;line-height:1.6;color:var(--text-secondary);
+    max-width:600px;
+  }
+
+  /* ═══ STUDY CTA ═══ */
+  .study-section{padding:32px 0 40px}
+
+  .study-card{
+    background:var(--bg-subtle);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:32px 36px;
+    display:flex;align-items:center;justify-content:space-between;gap:32px;
+    transition:border-color 0.2s;
+  }
+  .study-card:hover{border-color:var(--border-hover)}
+
+  .study-left{display:flex;flex-direction:column;gap:6px}
+
+  .study-eyebrow{
+    font-family:var(--font-mono);font-size:11px;font-weight:500;
+    text-transform:uppercase;letter-spacing:1.5px;color:var(--text-tertiary);
+    display:flex;align-items:center;gap:8px;
+  }
+  .live-dot{
+    width:6px;height:6px;border-radius:50%;background:var(--success);
+    animation:pulse 2.5s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+  .study-headline{
+    font-size:clamp(20px,2.5vw,28px);font-weight:600;
+    letter-spacing:-0.6px;line-height:1.2;
+  }
+
+  .study-sub{font-size:14px;color:var(--text-secondary);line-height:1.5;max-width:420px}
+
+  .study-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
+
+  .study-btn{
+    display:flex;align-items:center;gap:8px;
+    font-family:var(--font-sans);font-size:14px;font-weight:600;
+    color:var(--bg);background:var(--text-primary);border:none;
+    border-radius:var(--radius);padding:11px 24px;cursor:pointer;
+    transition:opacity 0.15s;letter-spacing:-0.2px;
+  }
+  .study-btn:hover{opacity:0.85}
+
+  .study-btn-secondary{
+    display:flex;align-items:center;gap:6px;
+    font-family:var(--font-sans);font-size:13px;font-weight:500;
+    color:var(--text-secondary);background:transparent;
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:9px 16px;cursor:pointer;
+    transition:color 0.15s,border-color 0.15s,background 0.15s;
+  }
+  .study-btn-secondary:hover{color:var(--text-primary);border-color:var(--border-hover);background:rgba(255,255,255,0.03)}
+
+  /* ═══ STATS ═══ */
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+  .stat-card{
+    background:var(--bg-subtle);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:20px 22px;
+    transition:border-color 0.2s;
+  }
+  .stat-card:hover{border-color:var(--border-hover)}
+
+  .stat-eyebrow{
+    font-family:var(--font-mono);font-size:11px;font-weight:500;
+    text-transform:uppercase;letter-spacing:1px;color:var(--text-tertiary);
+    margin-bottom:10px;
+  }
+  .stat-value{font-size:32px;font-weight:700;letter-spacing:-1px;line-height:1;margin-bottom:4px}
+  .stat-value .unit{font-size:14px;font-weight:500;color:var(--text-tertiary);letter-spacing:0;margin-left:2px}
+  .stat-sub{font-size:13px;color:var(--text-tertiary)}
+  .stat-sub .up{color:var(--success);font-family:var(--font-mono);font-size:11px;font-weight:500}
+
+  /* ═══ CHARTS ROW ═══ */
+  .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+  .chart-card{
+    background:var(--bg-subtle);border:1px solid var(--border);
+    border-radius:var(--radius-lg);padding:24px;
+    transition:border-color 0.2s;
+  }
+  .chart-card:hover{border-color:var(--border-hover)}
+
+  .chart-header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:20px;
+  }
+  .chart-title{font-size:13px;font-weight:600;color:var(--text-secondary)}
+  .chart-period{
+    font-family:var(--font-mono);font-size:11px;font-weight:500;
+    color:var(--text-tertiary);
+  }
+
+  /* Bar chart */
+  .bar-chart{display:flex;align-items:flex-end;gap:3px;height:100px}
+  .bar-col{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:0;
+  }
+  .bar{
+    width:100%;border-radius:2px 2px 0 0;
+    background:#ededed18;
+    min-height:2px;
+    transition:background 0.15s;
+  }
+  .bar:hover{background:#ededed30}
+  .bar.today{background:var(--success-dim);border:1px solid var(--success);border-bottom:none}
+  .bar-label{
+    font-family:var(--font-mono);font-size:8px;
+    color:var(--text-tertiary);margin-top:6px;
+    letter-spacing:0.3px;
+  }
+
+  .chart-axis{
+    display:flex;justify-content:space-between;
+    padding-top:4px;border-top:1px solid var(--border);
+    margin-top:0;
+  }
+  .chart-axis span{
+    font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);
+    letter-spacing:0.3px;
+  }
+
+  /* State breakdown */
+  .state-breakdown{display:flex;flex-direction:column;gap:16px}
+
+  .state-bar-visual{
+    height:8px;border-radius:4px;
+    display:flex;overflow:hidden;
+    background:var(--bg-elevated);
+  }
+  .state-segment{height:100%;transition:width 0.3s ease}
+
+  .state-legend{display:flex;flex-direction:column;gap:10px}
+
+  .state-row{
+    display:flex;align-items:center;justify-content:space-between;
+  }
+
+  .state-row-left{display:flex;align-items:center;gap:8px}
+
+  .state-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+  .state-name{font-size:13px;font-weight:500;color:var(--text-secondary)}
+
+  .state-row-right{
+    display:flex;align-items:center;gap:12px;
+  }
+
+  .state-count{
+    font-family:var(--font-mono);font-size:13px;font-weight:500;
+    color:var(--text-primary);min-width:32px;text-align:right;
+  }
+
+  .state-pct{
+    font-family:var(--font-mono);font-size:11px;
+    color:var(--text-tertiary);min-width:36px;text-align:right;
+  }
+
+  /* State colors — monochrome with one green accent */
+  .clr-new{background:var(--text-primary)}
+  .clr-learning{background:var(--text-secondary)}
+  .clr-review{background:var(--success)}
+  .clr-relearning{background:var(--text-tertiary)}
+
+  /* ═══ RECENT REVIEWS ═══ */
+  .reviews-table{
+    background:var(--bg-subtle);border:1px solid var(--border);
+    border-radius:var(--radius-lg);overflow:hidden;
+    transition:border-color 0.2s;
+  }
+  .reviews-table:hover{border-color:var(--border-hover)}
+
+  .reviews-header{
+    display:grid;grid-template-columns:1fr 80px 80px 90px;
+    gap:12px;padding:10px 20px;
+    background:var(--bg-elevated);border-bottom:1px solid var(--border);
+    font-family:var(--font-mono);font-size:10px;font-weight:500;
+    text-transform:uppercase;letter-spacing:0.5px;color:var(--text-tertiary);
+  }
+  .reviews-header .col-right{text-align:right}
+
+  .review-row{
+    display:grid;grid-template-columns:1fr 80px 80px 90px;
+    gap:12px;align-items:center;padding:11px 20px;
+    border-bottom:1px solid var(--border);
+    transition:background 0.15s;font-size:13px;
+  }
+  .review-row:last-child{border-bottom:none}
+  .review-row:hover{background:var(--bg-elevated)}
+
+  .review-front{font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .review-grade{font-family:var(--font-mono);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.3px}
+  .grade-again{color:var(--text-tertiary)}
+  .grade-hard{color:var(--text-tertiary)}
+  .grade-good{color:var(--text-secondary)}
+  .grade-easy{color:var(--success)}
+  .review-interval{font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary)}
+  .review-time{font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary);text-align:right}
+
+  /* ═══ CARD LIST ═══ */
+  .card-list{
+    background:var(--bg-subtle);border:1px solid var(--border);
+    border-radius:var(--radius-lg);overflow:hidden;
+    transition:border-color 0.2s;
+  }
+  .card-list:hover{border-color:var(--border-hover)}
+
+  .card-list-header{
+    display:grid;grid-template-columns:1fr 80px 72px 90px 32px;
+    gap:12px;align-items:center;padding:10px 20px;
+    background:var(--bg-elevated);border-bottom:1px solid var(--border);
+    font-family:var(--font-mono);font-size:10px;font-weight:500;
+    text-transform:uppercase;letter-spacing:0.5px;color:var(--text-tertiary);
+  }
+  .card-list-header .col-right{text-align:right}
+
+  .card-row{border-bottom:1px solid var(--border);transition:background 0.15s}
+  .card-row:last-child{border-bottom:none}
+  .card-row:hover{background:rgba(255,255,255,0.015)}
+
+  .card-row-main{
+    display:grid;grid-template-columns:1fr 80px 72px 90px 32px;
+    gap:12px;align-items:center;padding:12px 20px;cursor:pointer;user-select:none;
+  }
+
+  .card-front{font-size:13.5px;font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-0.1px}
+  .card-state{font-family:var(--font-mono);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.3px;color:var(--text-tertiary)}
+  .card-state.state-new{color:var(--text-secondary)}
+  .card-state.state-review{color:var(--success)}
+  .card-source{font-family:var(--font-mono);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.3px;color:var(--text-tertiary)}
+  .card-due{font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--text-tertiary);text-align:right;white-space:nowrap}
+  .card-due.overdue{color:var(--text-secondary)}
+  .card-due .due-dot{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--success);margin-right:4px;vertical-align:middle}
+  .card-chevron{display:flex;align-items:center;justify-content:center;color:var(--text-tertiary);transition:transform 0.15s,color 0.15s}
+  .card-chevron svg{width:14px;height:14px}
+  .card-row.expanded .card-chevron{transform:rotate(90deg);color:var(--text-secondary)}
+
+  .card-expanded{display:none;padding:0 20px 16px}
+  .card-row.expanded .card-expanded{display:block}
+  .card-expanded-inner{background:var(--bg-elevated);border-radius:var(--radius);padding:20px}
+  .card-qa{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:16px}
+  .card-qa-label{font-family:var(--font-mono);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--text-tertiary);margin-bottom:8px}
+  .card-qa-text{font-size:14px;line-height:1.6;color:var(--text-primary)}
+  .card-qa-text.back-text{color:var(--text-secondary)}
+  .card-expanded-meta{display:flex;align-items:center;gap:16px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap}
+  .meta-item{font-size:12px;color:var(--text-tertiary)}
+  .meta-item strong{color:var(--text-secondary);font-weight:600}
+  .tag{font-family:var(--font-mono);font-size:10px;font-weight:500;color:var(--text-tertiary);background:var(--bg-subtle);border:1px solid var(--border);border-radius:4px;padding:2px 7px;letter-spacing:0.2px}
+  .card-expanded-actions{display:flex;gap:6px;margin-left:auto}
+  .action-btn{display:flex;align-items:center;gap:4px;font-family:var(--font-sans);font-size:12px;font-weight:500;color:var(--text-tertiary);background:transparent;border:1px solid var(--border);border-radius:5px;padding:4px 10px;cursor:pointer;transition:color 0.15s,border-color 0.15s}
+  .action-btn:hover{color:var(--text-secondary);border-color:var(--border-hover)}
+  .action-btn svg{width:12px;height:12px}
+
+  /* Ghost buttons */
+  .btn-ghost{display:flex;align-items:center;gap:6px;font-family:var(--font-sans);font-size:13px;font-weight:500;color:var(--text-secondary);padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;transition:color 0.15s,border-color 0.15s,background 0.15s}
+  .btn-ghost:hover{color:var(--text-primary);border-color:var(--border-hover);background:rgba(255,255,255,0.04)}
+  .btn-ghost svg{width:14px;height:14px;opacity:0.5}
+
+  /* Search input (compact) */
+  .search-compact{
+    position:relative;margin-bottom:16px;
+  }
+  .search-compact svg{
+    position:absolute;left:14px;top:50%;transform:translateY(-50%);
+    width:14px;height:14px;color:var(--text-tertiary);pointer-events:none;
+  }
+  .search-compact input{
+    width:100%;height:36px;padding:0 14px 0 38px;
+    background:var(--bg-subtle);border:1px solid var(--border);
+    border-radius:var(--radius);color:var(--text-primary);
+    font-family:var(--font-sans);font-size:13px;outline:none;
+    transition:border-color 0.15s;
+  }
+  .search-compact input::placeholder{color:var(--text-tertiary)}
+  .search-compact input:focus{border-color:var(--border-hover)}
+
+  /* ═══ SCROLLBAR ═══ */
+  ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--border-hover)}
+  .page-end{height:64px}
+
+  /* ═══ RESPONSIVE ═══ */
+  @media(max-width:768px){
+    .stats-grid{grid-template-columns:repeat(2,1fr)}
+    .charts-grid{grid-template-columns:1fr}
+    .study-card{flex-direction:column;align-items:flex-start;padding:28px}
+    .study-right{width:100%}
+    .study-btn{width:100%;justify-content:center}
+    .card-list-header,.card-row-main{grid-template-columns:1fr 70px 80px 32px}
+    .card-list-header .col-source{display:none}
+    .card-row-main .card-source{display:none}
+    .card-qa{grid-template-columns:1fr}
+    .reviews-header,.review-row{grid-template-columns:1fr 70px 80px}
+    .reviews-header .col-right:last-child,.review-row .review-time{display:none}
+  }
+  @media(max-width:640px){
+    .page{padding:0 20px}
+    .titlebar{padding:0 12px}
+    .stats-grid{grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+
+<div class="rulers">
+  <div class="ruler-v left"></div><div class="ruler-v right"></div>
+  <div class="ruler-v content-left"></div><div class="ruler-v content-right"></div>
+  <div class="ruler-h top"></div><div class="ruler-h bottom"></div>
+</div>
+
+<!-- ═══ TITLEBAR — drill-down mode ═══ -->
+<div class="titlebar">
+  <div class="titlebar-left">
+    <div class="titlebar-logo">
+      <svg class="eye-logo" width="24" height="24" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+        <path class="eye-shape" d="M 2 26 C 12 10, 40 10, 50 26 C 40 42, 12 42, 2 26 Z" fill="none" stroke="#ededed" stroke-width="2.8" stroke-linejoin="round"/>
+        <circle class="eye-iris" cx="26" cy="26" r="9" fill="none" stroke="#ededed" stroke-width="2"/>
+        <g class="eye-pupil-g"><circle class="eye-pupil" cx="26" cy="26" r="3.5" fill="#ededed"/></g>
+      </svg>
+      <span class="titlebar-logo-text">pupil</span>
+    </div>
+    <div class="titlebar-sep"></div>
+    <div class="back-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3L5 8l5 5"/></svg>
+      Dashboard
+    </div>
+    <div class="titlebar-sep"></div>
+    <span class="breadcrumb-name">Machine Learning</span>
+  </div>
+  <div class="titlebar-right">
+    <button class="titlebar-btn-label">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 2v10M2 7h10"/></svg>
+      New Card
+    </button>
+    <button class="titlebar-btn-label">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11.5 7.5L7 12l-4.5-4.5M7 12V2"/></svg>
+      AI Generate
+    </button>
+    <button class="titlebar-btn">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="3.5" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="8" cy="12.5" r="1.5"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ═══ SPACE HEADER ═══ -->
+  <div class="space-header">
+    <div class="space-header-top">
+      <div>
+        <h1 class="space-title">Machine Learning</h1>
+      </div>
+    </div>
+    <div class="space-tags">
+      <span class="space-tag">ai generated</span>
+      <span class="space-tag">created 3 days ago</span>
+    </div>
+    <p class="space-desc">Neural networks, gradient descent, transformers, attention mechanisms, loss functions, regularization techniques, and model evaluation.</p>
+  </div>
+
+  <!-- ═══ STUDY CTA ═══ -->
+  <div class="study-section">
+    <div class="study-card">
+      <div class="study-left">
+        <div class="study-eyebrow">
+          <span class="live-dot"></span>
+          Cards due in this space
+        </div>
+        <div class="study-headline">18 cards ready to review</div>
+        <div class="study-sub">7 overdue, 11 due today. Your next review interval ranges from 10 minutes to 4 days.</div>
+      </div>
+      <div class="study-right">
+        <button class="study-btn-secondary">Study all spaces</button>
+        <button class="study-btn">Study this space →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ruler-divider"></div>
+
+  <!-- ═══ STATS ═══ -->
+  <div class="section">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-eyebrow">Cards</div>
+        <div class="stat-value">234</div>
+        <div class="stat-sub"><span class="up">↑ 15</span> this week</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-eyebrow">Due today</div>
+        <div class="stat-value">18</div>
+        <div class="stat-sub">7 overdue</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-eyebrow">Retention</div>
+        <div class="stat-value">91<span class="unit">%</span></div>
+        <div class="stat-sub"><span class="up">↑ 4%</span> vs last month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-eyebrow">Streak</div>
+        <div class="stat-value">12 <span class="unit">days</span></div>
+        <div class="stat-sub">best: 18 days</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ruler-divider"></div>
+
+  <!-- ═══ CHARTS ═══ -->
+  <div class="section">
+    <div class="charts-grid">
+
+      <!-- Reviews over time -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">Reviews per day</span>
+          <span class="chart-period">Last 21 days</span>
+        </div>
+        <div class="bar-chart" id="reviewChart"></div>
+        <div class="chart-axis">
+          <span>Mar 4</span>
+          <span>Mar 11</span>
+          <span>Mar 18</span>
+          <span>Today</span>
+        </div>
+      </div>
+
+      <!-- Card state distribution -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">Card states</span>
+          <span class="chart-period">234 total</span>
+        </div>
+        <div class="state-breakdown">
+          <div class="state-bar-visual">
+            <div class="state-segment clr-review" style="width:52%"></div>
+            <div class="state-segment clr-new" style="width:27%"></div>
+            <div class="state-segment clr-learning" style="width:14%"></div>
+            <div class="state-segment clr-relearning" style="width:7%"></div>
+          </div>
+          <div class="state-legend">
+            <div class="state-row">
+              <div class="state-row-left"><div class="state-dot clr-review"></div><span class="state-name">Review</span></div>
+              <div class="state-row-right"><span class="state-count">121</span><span class="state-pct">52%</span></div>
+            </div>
+            <div class="state-row">
+              <div class="state-row-left"><div class="state-dot clr-new"></div><span class="state-name">New</span></div>
+              <div class="state-row-right"><span class="state-count">63</span><span class="state-pct">27%</span></div>
+            </div>
+            <div class="state-row">
+              <div class="state-row-left"><div class="state-dot clr-learning"></div><span class="state-name">Learning</span></div>
+              <div class="state-row-right"><span class="state-count">33</span><span class="state-pct">14%</span></div>
+            </div>
+            <div class="state-row">
+              <div class="state-row-left"><div class="state-dot clr-relearning"></div><span class="state-name">Relearning</span></div>
+              <div class="state-row-right"><span class="state-count">17</span><span class="state-pct">7%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="ruler-divider"></div>
+
+  <!-- ═══ RECENT REVIEWS ═══ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-label">Recent Reviews</span>
+    </div>
+
+    <div class="reviews-table">
+      <div class="reviews-header">
+        <span>Card</span>
+        <span>Grade</span>
+        <span>Next in</span>
+        <span class="col-right">When</span>
+      </div>
+      <div class="review-row">
+        <span class="review-front">What is the vanishing gradient problem?</span>
+        <span class="review-grade grade-good">Good</span>
+        <span class="review-interval">4 days</span>
+        <span class="review-time">2m ago</span>
+      </div>
+      <div class="review-row">
+        <span class="review-front">Explain backpropagation in one sentence</span>
+        <span class="review-grade grade-easy">Easy</span>
+        <span class="review-interval">12 days</span>
+        <span class="review-time">3m ago</span>
+      </div>
+      <div class="review-row">
+        <span class="review-front">What does a learning rate control?</span>
+        <span class="review-grade grade-again">Again</span>
+        <span class="review-interval">10 min</span>
+        <span class="review-time">4m ago</span>
+      </div>
+      <div class="review-row">
+        <span class="review-front">Name three regularization techniques</span>
+        <span class="review-grade grade-hard">Hard</span>
+        <span class="review-interval">1 day</span>
+        <span class="review-time">5m ago</span>
+      </div>
+      <div class="review-row">
+        <span class="review-front">Define the bias-variance tradeoff</span>
+        <span class="review-grade grade-good">Good</span>
+        <span class="review-interval">6 days</span>
+        <span class="review-time">6m ago</span>
+      </div>
+      <div class="review-row">
+        <span class="review-front">What problem do residual connections solve?</span>
+        <span class="review-grade grade-good">Good</span>
+        <span class="review-interval">3 days</span>
+        <span class="review-time">8m ago</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="ruler-divider"></div>
+
+  <!-- ═══ CARDS IN THIS SPACE ═══ -->
+  <div class="section">
+    <div class="section-head">
+      <span class="section-label">Cards</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn-ghost">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 2v10M2 7h10"/></svg>
+          New Card
+        </button>
+        <button class="btn-ghost">
+          <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11.5 7.5L7 12l-4.5-4.5M7 12V2"/></svg>
+          AI Generate
+        </button>
+      </div>
+    </div>
+
+    <div class="search-compact">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M10.5 10.5L14 14"/></svg>
+      <input type="text" placeholder="Search cards in this space…">
+    </div>
+
+    <div class="card-list">
+      <div class="card-list-header">
+        <span>Front</span>
+        <span>State</span>
+        <span class="col-source">Source</span>
+        <span class="col-right">Due</span>
+        <span></span>
+      </div>
+
+      <div class="card-row expanded" onclick="this.classList.toggle('expanded')">
+        <div class="card-row-main">
+          <span class="card-front">What is the vanishing gradient problem?</span>
+          <span class="card-state state-review">Review</span>
+          <span class="card-source">AI</span>
+          <span class="card-due overdue"><span class="due-dot"></span>2h ago</span>
+          <span class="card-chevron"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4l4 4-4 4"/></svg></span>
+        </div>
+        <div class="card-expanded">
+          <div class="card-expanded-inner">
+            <div class="card-qa">
+              <div class="card-qa-side"><div class="card-qa-label">Front</div><div class="card-qa-text">What is the vanishing gradient problem?</div></div>
+              <div class="card-qa-side"><div class="card-qa-label">Back</div><div class="card-qa-text back-text">When gradients become extremely small as they're propagated backward through many layers, earlier layers learn very slowly or stop learning. Common with sigmoid/tanh. Mitigated by ReLU, residual connections, batch normalization.</div></div>
+            </div>
+            <div class="card-expanded-meta">
+              <span class="meta-item"><strong>12</strong> reps</span>
+              <span class="meta-item"><strong>1</strong> lapse</span>
+              <span class="tag">deep-learning</span>
+              <span class="tag">optimization</span>
+              <div class="card-expanded-actions">
+                <button class="action-btn"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7.5 2L10 4.5M2.5 9.5L9 3l-2 5-4.5 1.5z"/></svg>Edit</button>
+                <button class="action-btn"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3"/></svg>Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-row" onclick="this.classList.toggle('expanded')">
+        <div class="card-row-main">
+          <span class="card-front">Explain backpropagation in one sentence</span>
+          <span class="card-state state-review">Review</span>
+          <span class="card-source">AI</span>
+          <span class="card-due">in 12d</span>
+          <span class="card-chevron"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4l4 4-4 4"/></svg></span>
+        </div>
+        <div class="card-expanded">
+          <div class="card-expanded-inner">
+            <div class="card-qa">
+              <div class="card-qa-side"><div class="card-qa-label">Front</div><div class="card-qa-text">Explain backpropagation in one sentence</div></div>
+              <div class="card-qa-side"><div class="card-qa-label">Back</div><div class="card-qa-text back-text">Backpropagation computes the gradient of the loss function with respect to each weight by applying the chain rule layer by layer from output to input, enabling gradient descent to update all weights in a neural network.</div></div>
+            </div>
+            <div class="card-expanded-meta">
+              <span class="meta-item"><strong>9</strong> reps</span>
+              <span class="meta-item"><strong>0</strong> lapses</span>
+              <span class="tag">backprop</span>
+              <div class="card-expanded-actions">
+                <button class="action-btn"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7.5 2L10 4.5M2.5 9.5L9 3l-2 5-4.5 1.5z"/></svg>Edit</button>
+                <button class="action-btn"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3"/></svg>Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-row" onclick="this.classList.toggle('expanded')">
+        <div class="card-row-main">
+          <span class="card-front">What does a learning rate control?</span>
+          <span class="card-state">Relearning</span>
+          <span class="card-source">AI</span>
+          <span class="card-due overdue"><span class="due-dot"></span>10m</span>
+          <span class="card-chevron"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4l4 4-4 4"/></svg></span>
+        </div>
+        <div class="card-expanded"><div class="card-expanded-inner"><div class="card-qa"><div class="card-qa-side"><div class="card-qa-label">Front</div><div class="card-qa-text">What does a learning rate control?</div></div><div class="card-qa-side"><div class="card-qa-label">Back</div><div class="card-qa-text back-text">The step size during gradient descent. Too high → overshooting and divergence. Too low → slow convergence and getting stuck in local minima. Often scheduled to decay over training.</div></div></div><div class="card-expanded-meta"><span class="meta-item"><strong>5</strong> reps</span><span class="meta-item"><strong>3</strong> lapses</span><span class="tag">hyperparameters</span><div class="card-expanded-actions"><button class="action-btn"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7.5 2L10 4.5M2.5 9.5L9 3l-2 5-4.5 1.5z"/></svg>Edit</button><button class="action-btn"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3"/></svg>Delete</button></div></div></div></div>
+      </div>
+
+      <div class="card-row" onclick="this.classList.toggle('expanded')">
+        <div class="card-row-main">
+          <span class="card-front">Define _____ as the process of adjusting weights to minimize loss</span>
+          <span class="card-state">Learning</span>
+          <span class="card-source">AI</span>
+          <span class="card-due overdue"><span class="due-dot"></span>30m</span>
+          <span class="card-chevron"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4l4 4-4 4"/></svg></span>
+        </div>
+        <div class="card-expanded"><div class="card-expanded-inner"><div class="card-qa"><div class="card-qa-side"><div class="card-qa-label">Front</div><div class="card-qa-text">Define _____ as the process of adjusting weights to minimize loss</div></div><div class="card-qa-side"><div class="card-qa-label">Back</div><div class="card-qa-text back-text">Training (or optimization). The model iteratively updates weights using an optimizer (SGD, Adam) to reduce the gap between predicted and actual outputs.</div></div></div><div class="card-expanded-meta"><span class="meta-item"><strong>2</strong> reps</span><span class="meta-item"><strong>1</strong> lapse</span><span class="tag">cloze</span><span class="tag">fundamentals</span><div class="card-expanded-actions"><button class="action-btn"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7.5 2L10 4.5M2.5 9.5L9 3l-2 5-4.5 1.5z"/></svg>Edit</button><button class="action-btn"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3"/></svg>Delete</button></div></div></div></div>
+      </div>
+
+      <div class="card-row" onclick="this.classList.toggle('expanded')">
+        <div class="card-row-main">
+          <span class="card-front">Name three regularization techniques</span>
+          <span class="card-state state-review">Review</span>
+          <span class="card-source">AI</span>
+          <span class="card-due">in 1d</span>
+          <span class="card-chevron"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4l4 4-4 4"/></svg></span>
+        </div>
+        <div class="card-expanded"><div class="card-expanded-inner"><div class="card-qa"><div class="card-qa-side"><div class="card-qa-label">Front</div><div class="card-qa-text">Name three regularization techniques</div></div><div class="card-qa-side"><div class="card-qa-label">Back</div><div class="card-qa-text back-text">L1 (Lasso), L2 (Ridge), and Dropout. L1 encourages sparsity, L2 penalizes large weights, and Dropout randomly deactivates neurons during training to prevent co-adaptation.</div></div></div><div class="card-expanded-meta"><span class="meta-item"><strong>7</strong> reps</span><span class="meta-item"><strong>0</strong> lapses</span><span class="tag">regularization</span><div class="card-expanded-actions"><button class="action-btn"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7.5 2L10 4.5M2.5 9.5L9 3l-2 5-4.5 1.5z"/></svg>Edit</button><button class="action-btn"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3"/></svg>Delete</button></div></div></div></div>
+      </div>
+
+      <div class="card-row" onclick="this.classList.toggle('expanded')">
+        <div class="card-row-main">
+          <span class="card-front">What is a transformer's self-attention mechanism?</span>
+          <span class="card-state state-new">New</span>
+          <span class="card-source">AI</span>
+          <span class="card-due">—</span>
+          <span class="card-chevron"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4l4 4-4 4"/></svg></span>
+        </div>
+        <div class="card-expanded"><div class="card-expanded-inner"><div class="card-qa"><div class="card-qa-side"><div class="card-qa-label">Front</div><div class="card-qa-text">What is a transformer's self-attention mechanism?</div></div><div class="card-qa-side"><div class="card-qa-label">Back</div><div class="card-qa-text back-text">Self-attention computes a weighted sum of all positions in a sequence, where each weight reflects how relevant one token is to another. Uses query, key, and value projections with scaled dot-product attention: softmax(QK^T / √d_k) × V.</div></div></div><div class="card-expanded-meta"><span class="meta-item"><strong>0</strong> reps</span><span class="tag">transformers</span><span class="tag">attention</span><div class="card-expanded-actions"><button class="action-btn"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M7.5 2L10 4.5M2.5 9.5L9 3l-2 5-4.5 1.5z"/></svg>Edit</button><button class="action-btn"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3"/></svg>Delete</button></div></div></div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="page-end"></div>
+</div>
+
+<script>
+  // Bar chart — 21 days of review data
+  const data = [8,12,0,15,6,22,18,0,0,14,9,20,11,7,16,24,13,19,0,21,18];
+  const max = Math.max(...data);
+  const chart = document.getElementById('reviewChart');
+  const today = new Date();
+
+  data.forEach((v, i) => {
+    const col = document.createElement('div');
+    col.className = 'bar-col';
+
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    if (i === data.length - 1) bar.classList.add('today');
+    bar.style.height = v === 0 ? '2px' : Math.round((v / max) * 100) + '%';
+    bar.title = v + ' reviews';
+
+    col.appendChild(bar);
+
+    // Only show labels on certain days
+    if (i === 0 || i === 7 || i === 14 || i === data.length - 1) {
+      const label = document.createElement('div');
+      label.className = 'bar-label';
+      const d = new Date(today);
+      d.setDate(d.getDate() - (data.length - 1 - i));
+      label.textContent = (d.getMonth() + 1) + '/' + d.getDate();
+      col.appendChild(label);
+    }
+
+    chart.appendChild(col);
+  });
+</script>
+
+</body>
+</html>
