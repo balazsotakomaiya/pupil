@@ -4,6 +4,7 @@ import { CardFormPanel } from "../cards/CardFormPanel";
 import { CardList } from "../cards/CardList";
 import type { CardRecord } from "../../lib/cards";
 import type { SpaceSummary } from "../../lib/spaces";
+import type { SpaceStats } from "../../lib/stats";
 
 type CardDraft = {
   back: string;
@@ -20,6 +21,7 @@ type SpaceDetailsScreenProps = {
   onDeleteCard: (input: { id: string }) => Promise<void>;
   onOpenAiGenerate: () => void;
   onStartStudy: () => void;
+  stats: SpaceStats | null;
   onUpdateCard: (input: {
     back: string;
     front: string;
@@ -40,6 +42,7 @@ export function SpaceDetailsScreen({
   onDeleteCard,
   onOpenAiGenerate,
   onStartStudy,
+  stats,
   onUpdateCard,
   space,
 }: SpaceDetailsScreenProps) {
@@ -67,11 +70,16 @@ export function SpaceDetailsScreen({
     .sort((left, right) => left.due - right.due || right.updatedAt - left.updatedAt);
 
   const readyCards = spaceCards.filter((card) => card.due <= now);
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfTomorrow = startOfToday.getTime() + DAY_IN_MS;
+  const dueTodayCount = spaceCards.filter((card) => card.due < startOfTomorrow).length;
+  const overdueCount = spaceCards.filter((card) => card.due < startOfToday.getTime()).length;
   const dueLaterTodayCount = spaceCards.filter((card) => isDueLaterToday(card.due, now)).length;
   const cardsAddedThisWeek = spaceCards.filter((card) => now - card.createdAt < 7 * DAY_IN_MS).length;
   const stateSummary = buildStateSummary(spaceCards);
   const stateRows = buildStateRows(stateSummary);
-  const activityBars = buildActivityBars(spaceCards, now);
+  const activityBars = buildActivityBars(stats?.reviewActivity7d ?? [], now);
   const recentChanges = [...spaceCards]
     .sort((left, right) => right.updatedAt - left.updatedAt || right.createdAt - left.createdAt)
     .slice(0, 5);
@@ -248,20 +256,31 @@ export function SpaceDetailsScreen({
             </div>
 
             <div className="stat-card">
-              <div className="stat-eyebrow">Ready now</div>
-              <div className="stat-value">{formatNumber(readyCards.length)}</div>
+              <div className="stat-eyebrow">Due today</div>
+              <div className="stat-value">{formatNumber(dueTodayCount)}</div>
               <div className="stat-sub">
-                {dueLaterTodayCount > 0
-                  ? `${formatNumber(dueLaterTodayCount)} more later today`
-                  : "No additional cards today"}
+                {overdueCount > 0
+                  ? `${formatNumber(overdueCount)} overdue`
+                  : dueTodayCount > 0
+                    ? "Nothing overdue"
+                    : "Nothing scheduled today"}
               </div>
             </div>
 
             <div className="stat-card">
-              <div className="stat-eyebrow">In review</div>
-              <div className="stat-value">{formatNumber(stateSummary.review.count)}</div>
+              <div className="stat-eyebrow">Retention</div>
+              <div className="stat-value">
+                {stats?.retention30d !== null && stats?.retention30d !== undefined
+                  ? Math.round(stats.retention30d)
+                  : "—"}
+                {stats?.retention30d !== null && stats?.retention30d !== undefined ? (
+                  <span className="unit">%</span>
+                ) : null}
+              </div>
               <div className="stat-sub">
-                {formatNumber(stateSummary.new.count)} new · {formatNumber(stateSummary.learning.count)} learning
+                {stats?.retention30d !== null && stats?.retention30d !== undefined
+                  ? "Good or Easy in the last 30 days"
+                  : "No review history yet"}
               </div>
             </div>
 
@@ -284,7 +303,7 @@ export function SpaceDetailsScreen({
           <div className="charts-grid">
             <div className="chart-card">
               <div className="chart-header">
-                <span className="chart-title">Space activity</span>
+                <span className="chart-title">Review activity</span>
                 <span className="chart-period">last 7 days</span>
               </div>
 
@@ -294,7 +313,7 @@ export function SpaceDetailsScreen({
                     <div
                       className={`bar${bar.isToday ? " today" : ""}`}
                       style={{ height: `${bar.height}%` }}
-                      title={`${bar.count} changes`}
+                      title={`${bar.count} reviews`}
                     />
                     <span className="bar-label">{bar.label}</span>
                   </div>
@@ -494,23 +513,14 @@ function buildSpaceDescription(
   return `${formatCount(space.cardCount, "card")} loaded with ${formatNumber(readyCount)} ready now and ${formatNumber(dueLaterTodayCount)} more scheduled later today.`;
 }
 
-function buildActivityBars(cards: CardRecord[], now: number) {
+function buildActivityBars(counts: number[], now: number) {
   const startOfToday = new Date(now);
   startOfToday.setHours(0, 0, 0, 0);
 
   const days = Array.from({ length: 7 }, (_, index) => {
     const day = new Date(startOfToday);
     day.setDate(startOfToday.getDate() - (6 - index));
-    const dayStart = day.getTime();
-    const dayEnd = dayStart + DAY_IN_MS;
-
-    const count = cards.filter((card) => {
-      const createdOnDay = card.createdAt >= dayStart && card.createdAt < dayEnd;
-      const updatedOnDay =
-        card.updatedAt !== card.createdAt && card.updatedAt >= dayStart && card.updatedAt < dayEnd;
-
-      return createdOnDay || updatedOnDay;
-    }).length;
+    const count = counts[index] ?? 0;
 
     return {
       count,

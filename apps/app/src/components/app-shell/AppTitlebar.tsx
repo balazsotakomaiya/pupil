@@ -11,6 +11,7 @@ export type AppTab = {
 
 type AppTitlebarProps = {
   activeTab: AppTabId;
+  globalStreak?: number | null;
   onOpenCreateDialog: () => void;
   onSelectTab: (tabId: AppTabId) => void;
   tabs: AppTab[];
@@ -18,6 +19,7 @@ type AppTitlebarProps = {
 
 export function AppTitlebar({
   activeTab,
+  globalStreak,
   onOpenCreateDialog,
   onSelectTab,
   tabs,
@@ -48,6 +50,12 @@ export function AppTitlebar({
       </div>
 
       <div className="titlebar-right">
+        {activeTab === "dashboard" && globalStreak !== undefined && globalStreak !== null ? (
+          <div className="titlebar-status">
+            <span className="streak-dot" />
+            {globalStreak > 0 ? `${globalStreak} day streak` : "No streak yet"}
+          </div>
+        ) : null}
         <button className="titlebar-btn-label" onClick={onOpenCreateDialog} type="button">
           <PlusIcon />
           New Space

@@ -1700,6 +1700,21 @@ button {
   -webkit-app-region: no-drag;
 }
 
+.titlebar-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
 .back-btn {
   display: inline-flex;
   align-items: center;
@@ -1929,6 +1944,13 @@ button {
   justify-content: space-between;
   gap: 32px;
   padding: 36px 40px;
+}
+
+.study-card.daily-checkin-active {
+  background:
+    radial-gradient(circle at top left, rgba(248, 182, 75, 0.12), transparent 46%),
+    var(--bg-subtle);
+  border: 1px solid rgba(248, 182, 75, 0.18);
 }
 
 .study-left {
@@ -5882,6 +5904,10 @@ button {
     gap: 12px;
   }
 
+  .titlebar-right {
+    flex-wrap: wrap;
+  }
+
   .titlebar-tabs {
     flex-wrap: wrap;
   }
@@ -5889,6 +5915,10 @@ button {
   .titlebar-tab {
     padding: 5px 8px;
     font-size: 12px;
+  }
+
+  .titlebar-status {
+    margin-right: auto;
   }
 
   .section-head {

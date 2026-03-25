@@ -1,15 +1,21 @@
 import type { StudySummary } from "./types";
 
 type StudySectionProps = {
+  isDailyCheckInActive?: boolean;
   onPrimaryAction?: () => void;
   onSecondaryAction?: () => void;
   summary: StudySummary;
 };
 
-export function StudySection({ onPrimaryAction, onSecondaryAction, summary }: StudySectionProps) {
+export function StudySection({
+  isDailyCheckInActive = false,
+  onPrimaryAction,
+  onSecondaryAction,
+  summary,
+}: StudySectionProps) {
   return (
     <section className="study-section">
-      <div className="study-card">
+      <div className={`study-card${isDailyCheckInActive ? " daily-checkin-active" : ""}`}>
         <div className="study-left">
           <div className="study-eyebrow">
             <span className="live-dot" />

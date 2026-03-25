@@ -161,19 +161,42 @@ struct ImportDeckResult {
     total_count: i64,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DashboardStats {
+    due_today: i64,
+    global_streak: i64,
+    studied_today: i64,
+    study_days: Vec<String>,
+    total_cards: i64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SpaceStats {
+    retention_30d: Option<f64>,
+    review_activity_7d: Vec<i64>,
+    space_id: String,
+}
+
 const SPACE_NAME_MAX_LENGTH: usize = 80;
 const DEVELOPER_RESET_ONBOARDING_MENU_ID: &str = "developer.reset_onboarding";
 const DEVELOPER_RESET_ONBOARDING_EVENT: &str = "developer://reset-onboarding";
 
-const MIGRATIONS: &[Migration] = &[Migration {
-    id: "0001_init",
-    sql: include_str!("../migrations/0001_init.sql"),
-}, Migration {
-    id: "0002_add_learning_steps",
-    sql: include_str!("../migrations/0002_add_learning_steps.sql"),
-}];
+const MIGRATIONS: &[Migration] = &[
+    Migration {
+        id: "0001_init",
+        sql: include_str!("../migrations/0001_init.sql"),
+    },
+    Migration {
+        id: "0002_add_learning_steps",
+        sql: include_str!("../migrations/0002_add_learning_steps.sql"),
+    },
+];
 
 #[tauri::command]
+/// Gives the frontend a plain-language snapshot of local app setup so onboarding
+/// and debugging can explain where data lives and whether bootstrapping finished cleanly.
 fn get_bootstrap_state(app: AppHandle) -> Result<BootstrapState, String> {
     let app_data_dir = app_data_dir(&app)?;
     let database_path = database_path(&app)?;
@@ -196,6 +219,8 @@ fn get_bootstrap_state(app: AppHandle) -> Result<BootstrapState, String> {
 }
 
 #[tauri::command]
+/// Lists spaces in the same enriched shape the UI renders, so the frontend does
+/// not need to stitch together counts, due cards, and streaks on its own.
 fn list_spaces(app: AppHandle) -> Result<Vec<SpaceSummary>, String> {
     let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
 
@@ -203,6 +228,8 @@ fn list_spaces(app: AppHandle) -> Result<Vec<SpaceSummary>, String> {
 }
 
 #[tauri::command]
+/// Creates a new study space after applying the same naming rules the rest of the
+/// app expects, keeping space creation consistent no matter where it starts.
 fn create_space(app: AppHandle, name: String) -> Result<SpaceSummary, String> {
     let normalized_name = normalize_space_name(&name)?;
     let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
@@ -211,6 +238,8 @@ fn create_space(app: AppHandle, name: String) -> Result<SpaceSummary, String> {
 }
 
 #[tauri::command]
+/// Renames an existing space while preserving the same validation and summary
+/// payload shape that the UI uses for fresh data.
 fn rename_space(app: AppHandle, id: String, name: String) -> Result<SpaceSummary, String> {
     let normalized_name = normalize_space_name(&name)?;
     let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
@@ -219,6 +248,8 @@ fn rename_space(app: AppHandle, id: String, name: String) -> Result<SpaceSummary
 }
 
 #[tauri::command]
+/// Deletes a space as a single backend operation so the UI only has to care about
+/// intent, not the storage details behind removing it.
 fn delete_space(app: AppHandle, id: String) -> Result<(), String> {
     let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
 
@@ -226,6 +257,8 @@ fn delete_space(app: AppHandle, id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+/// Returns cards in the display-ready format the library views use, with an
+/// optional space filter for scoped browsing.
 fn list_cards(app: AppHandle, space_id: Option<String>) -> Result<Vec<CardSummary>, String> {
     let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
 
@@ -233,6 +266,8 @@ fn list_cards(app: AppHandle, space_id: Option<String>) -> Result<Vec<CardSummar
 }
 
 #[tauri::command]
+/// Creates a card only after normalizing free-form user input into the stricter
+/// shape the database and scheduler expect.
 fn create_card(app: AppHandle, input: CreateCardInput) -> Result<CardSummary, String> {
     let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
     let normalized = normalize_card_input(
@@ -247,6 +282,8 @@ fn create_card(app: AppHandle, input: CreateCardInput) -> Result<CardSummary, St
 }
 
 #[tauri::command]
+/// Updates card content and placement while keeping validation at the backend
+/// boundary instead of trusting every caller to do it correctly.
 fn update_card(app: AppHandle, input: UpdateCardInput) -> Result<CardSummary, String> {
     let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
     let normalized = normalize_card_update_input(&input)?;
@@ -255,6 +292,8 @@ fn update_card(app: AppHandle, input: UpdateCardInput) -> Result<CardSummary, St
 }
 
 #[tauri::command]
+/// Removes a card and lets the backend take care of any follow-up bookkeeping
+/// such as refreshing the owning space timestamp.
 fn delete_card(app: AppHandle, id: String) -> Result<(), String> {
     let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
 
@@ -262,6 +301,8 @@ fn delete_card(app: AppHandle, id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+/// Applies the scheduler result for one review and records the matching review log
+/// so card state, history, and streak data stay in sync.
 fn review_card(app: AppHandle, input: ReviewCardInput) -> Result<CardSummary, String> {
     let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
     let normalized = normalize_review_card_input(&input)?;
@@ -270,6 +311,8 @@ fn review_card(app: AppHandle, input: ReviewCardInput) -> Result<CardSummary, St
 }
 
 #[tauri::command]
+/// Imports an Anki payload in one backend transaction so deck creation, duplicate
+/// detection, and card inserts either land together or fail together.
 fn import_anki_cards(app: AppHandle, input: ImportAnkiInput) -> Result<ImportAnkiResult, String> {
     let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
     let normalized_cards = normalize_import_anki_cards(&input.cards)?;
@@ -278,6 +321,28 @@ fn import_anki_cards(app: AppHandle, input: ImportAnkiInput) -> Result<ImportAnk
         .map_err(map_card_storage_error)
 }
 
+#[tauri::command]
+/// Builds the top-level dashboard numbers from the source tables so the frontend
+/// can render the home view without duplicating reporting logic.
+fn get_dashboard_stats(app: AppHandle) -> Result<DashboardStats, String> {
+    let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+    let now = now_ms();
+
+    load_dashboard_stats(&connection, now).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+/// Returns per-space trend data for the overview screens that compare activity and
+/// retention across the learner's collection.
+fn list_space_stats(app: AppHandle) -> Result<Vec<SpaceStats>, String> {
+    let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+    let now = now_ms();
+
+    list_space_stats_rows(&connection, now).map_err(|error| error.to_string())
+}
+
+/// Wires together the desktop shell, database bootstrapping, and Tauri commands.
+/// This is the backend entry point the tiny `main.rs` hands off to.
 pub fn run() {
     tauri::Builder::default()
         .menu(|app| build_app_menu(app))
@@ -305,12 +370,16 @@ pub fn run() {
             update_card,
             delete_card,
             review_card,
-            import_anki_cards
+            import_anki_cards,
+            get_dashboard_stats,
+            list_space_stats
         ])
         .run(tauri::generate_context!())
         .expect("error while running pupil app");
 }
 
+/// Builds a native-feeling app menu while keeping the developer-only affordances
+/// separate from the menus end users see in production.
 fn build_app_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
     #[cfg(target_os = "macos")]
     let app_menu = Some(
@@ -372,34 +441,38 @@ fn build_app_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry
         builder = builder.item(developer_menu);
     }
 
-    builder
-        .item(&edit_menu)
-        .item(&window_menu)
-        .build()
+    builder.item(&edit_menu).item(&window_menu).build()
 }
 
 struct BootstrapStatus {
     backup_created: bool,
 }
 
+/// Resolves the directory where this app keeps its durable local data, giving the
+/// rest of the backend one canonical base path to build from.
 fn app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     app.path()
         .resolve(".", BaseDirectory::AppData)
         .map_err(|error| error.to_string())
 }
 
+/// Chooses the single SQLite file the app treats as its source of truth.
 fn database_path(app: &AppHandle) -> Result<PathBuf, String> {
     let app_data_dir = app_data_dir(app)?;
 
     Ok(app_data_dir.join("pupil.db"))
 }
 
+/// Opens the application's main database connection so command handlers do not
+/// need to repeat path resolution on every call.
 fn open_app_connection(app: &AppHandle) -> AppResult<Connection> {
     let path = database_path(app)?;
 
     open_connection(&path)
 }
 
+/// Opens SQLite with the small set of guarantees this app relies on everywhere:
+/// the parent directory exists, writes wait briefly, and foreign keys are enforced.
 fn open_connection(path: &Path) -> AppResult<Connection> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
@@ -412,6 +485,8 @@ fn open_connection(path: &Path) -> AppResult<Connection> {
     Ok(connection)
 }
 
+/// Makes sure the migration ledger exists before any code tries to inspect or
+/// apply schema changes.
 fn ensure_schema_migrations_table(connection: &Connection) -> rusqlite::Result<()> {
     connection.execute_batch(
         "
@@ -423,6 +498,8 @@ fn ensure_schema_migrations_table(connection: &Connection) -> rusqlite::Result<(
     )
 }
 
+/// Reads which migrations have already run so startup can tell completed work
+/// from pending work.
 fn load_applied_migrations(connection: &Connection) -> rusqlite::Result<Vec<String>> {
     let mut statement = connection.prepare("SELECT id FROM schema_migrations ORDER BY id ASC")?;
     let rows = statement.query_map([], |row| row.get::<_, String>(0))?;
@@ -430,6 +507,8 @@ fn load_applied_migrations(connection: &Connection) -> rusqlite::Result<Vec<Stri
     rows.collect()
 }
 
+/// Computes the migrations still waiting to be applied, which powers both startup
+/// behavior and the bootstrap diagnostics shown in the UI.
 fn pending_migrations(applied_migrations: &[String]) -> Vec<String> {
     MIGRATIONS
         .iter()
@@ -438,6 +517,8 @@ fn pending_migrations(applied_migrations: &[String]) -> Vec<String> {
         .collect()
 }
 
+/// Applies pending schema changes during startup, creating a backup first when the
+/// SQL looks like it could destructively reshape existing data.
 fn run_migrations(app: &AppHandle, path: &Path) -> AppResult<bool> {
     let mut connection = open_connection(path)?;
     ensure_schema_migrations_table(&connection)?;
@@ -475,6 +556,8 @@ fn run_migrations(app: &AppHandle, path: &Path) -> AppResult<bool> {
     Ok(backup_created)
 }
 
+/// Uses a conservative text check to decide whether a migration deserves a safety
+/// backup before it runs.
 fn migration_needs_backup(sql: &str) -> bool {
     let normalized = sql.to_ascii_uppercase();
 
@@ -484,6 +567,8 @@ fn migration_needs_backup(sql: &str) -> bool {
         || normalized.contains("UPDATE ")
 }
 
+/// Creates a timestamped copy of the live database before risky migrations so the
+/// app has a simple rollback artifact if something goes wrong.
 fn create_backup_if_database_exists(app: &AppHandle, database_path: &Path) -> AppResult<bool> {
     if !database_path.exists() {
         return Ok(false);
@@ -498,6 +583,8 @@ fn create_backup_if_database_exists(app: &AppHandle, database_path: &Path) -> Ap
     Ok(true)
 }
 
+/// Loads the base list of spaces, then hydrates each one with the counts the UI
+/// actually shows next to its name.
 fn list_space_summaries(connection: &Connection) -> rusqlite::Result<Vec<SpaceSummary>> {
     let mut statement = connection.prepare(
         "
@@ -523,6 +610,8 @@ fn list_space_summaries(connection: &Connection) -> rusqlite::Result<Vec<SpaceSu
         .collect()
 }
 
+/// Turns a bare `spaces` row into the richer summary object used across the app's
+/// navigation and overview screens.
 fn hydrate_space_summary(
     connection: &Connection,
     space: SpaceIdentity,
@@ -542,6 +631,8 @@ fn hydrate_space_summary(
     })
 }
 
+/// Collects the two headline space counts together so space summaries can answer
+/// both "how many cards exist?" and "how many need attention now?".
 fn load_space_counts(
     connection: &Connection,
     space_id: &str,
@@ -560,6 +651,12 @@ fn load_space_counts(
 }
 
 fn load_space_streak(connection: &Connection, space_id: &str) -> rusqlite::Result<i64> {
+    load_streak(connection, Some(space_id))
+}
+
+/// Calculates a consecutive-day streak from the normalized `study_days` table.
+/// Both the global dashboard and per-space views rely on the same definition.
+fn load_streak(connection: &Connection, space_id: Option<&str>) -> rusqlite::Result<i64> {
     connection.query_row(
         "
         WITH ordered_days AS (
@@ -567,7 +664,7 @@ fn load_space_streak(connection: &Connection, space_id: &str) -> rusqlite::Resul
                  ROW_NUMBER() OVER (ORDER BY day DESC) AS row_number,
                  CAST(julianday(date('now', 'localtime')) - julianday(day) AS INTEGER) AS day_offset
           FROM study_days
-          WHERE space_id = ?1
+          WHERE ((?1 IS NULL AND space_id IS NULL) OR space_id = ?1)
             AND day <= date('now', 'localtime')
         ),
         anchor AS (
@@ -597,6 +694,138 @@ fn load_space_streak(connection: &Connection, space_id: &str) -> rusqlite::Resul
     )
 }
 
+/// Gathers the home-screen metrics in one place so the UI can stay focused on
+/// presentation rather than reporting queries.
+fn load_dashboard_stats(connection: &Connection, now: i64) -> rusqlite::Result<DashboardStats> {
+    let (total_cards, due_today) = connection.query_row(
+        "
+        SELECT COUNT(*),
+               COALESCE(SUM(CASE WHEN due <= ?1 THEN 1 ELSE 0 END), 0)
+        FROM cards
+        ",
+        [now],
+        |row| Ok((row.get(0)?, row.get(1)?)),
+    )?;
+    let studied_today = connection.query_row(
+        "
+        SELECT COUNT(*)
+        FROM review_logs
+        WHERE date(review_time / 1000, 'unixepoch', 'localtime') = date('now', 'localtime')
+        ",
+        [],
+        |row| row.get(0),
+    )?;
+    let global_streak = load_streak(connection, None)?;
+    let study_days = load_recent_study_days(connection, None, 112)?;
+
+    Ok(DashboardStats {
+        due_today,
+        global_streak,
+        studied_today,
+        study_days,
+        total_cards,
+    })
+}
+
+/// Builds the analytics payload for each space by pairing identities with the
+/// lightweight time-based stats shown in overview cards.
+fn list_space_stats_rows(connection: &Connection, now: i64) -> rusqlite::Result<Vec<SpaceStats>> {
+    let spaces = load_all_space_identities(connection)?;
+
+    spaces
+        .into_iter()
+        .map(|space| {
+            Ok(SpaceStats {
+                retention_30d: load_retention_30d(connection, &space.id)?,
+                review_activity_7d: load_review_activity_7d(connection, &space.id, now)?,
+                space_id: space.id,
+            })
+        })
+        .collect()
+}
+
+/// Estimates recent retention from review logs so the app can show whether a space
+/// is holding up over the last month without re-running scheduler logic.
+fn load_retention_30d(connection: &Connection, space_id: &str) -> rusqlite::Result<Option<f64>> {
+    let since = now_ms() - (30 * 24 * 60 * 60 * 1000);
+
+    connection.query_row(
+        "
+        SELECT COUNT(*),
+               COALESCE(SUM(CASE WHEN grade IN (3, 4) THEN 1 ELSE 0 END), 0)
+        FROM review_logs
+        WHERE space_id = ?1
+          AND review_time >= ?2
+        ",
+        params![space_id, since],
+        |row| {
+            let total: i64 = row.get(0)?;
+            let successful: i64 = row.get(1)?;
+
+            if total == 0 {
+                return Ok(None);
+            }
+
+            Ok(Some((successful as f64 / total as f64) * 100.0))
+        },
+    )
+}
+
+/// Produces a seven-day activity series for charts, including empty days so the
+/// frontend gets a stable shape every time.
+fn load_review_activity_7d(
+    connection: &Connection,
+    space_id: &str,
+    now: i64,
+) -> rusqlite::Result<Vec<i64>> {
+    let mut statement = connection.prepare(
+        "
+        WITH RECURSIVE offsets(value) AS (
+          SELECT 0
+          UNION ALL
+          SELECT value + 1 FROM offsets WHERE value < 6
+        )
+        SELECT COALESCE(
+          (
+            SELECT COUNT(*)
+            FROM review_logs
+            WHERE space_id = ?1
+              AND date(review_time / 1000, 'unixepoch', 'localtime') =
+                  date(?2 / 1000, 'unixepoch', 'localtime', printf('-%d day', 6 - offsets.value))
+          ),
+          0
+        ) AS review_count
+        FROM offsets
+        ORDER BY offsets.value ASC
+        ",
+    )?;
+    let rows = statement.query_map(params![space_id, now], |row| row.get::<_, i64>(0))?;
+
+    rows.collect()
+}
+
+/// Returns the most recent study days for either one space or the whole app.
+/// This feeds the heatmap-style history used in dashboard views.
+fn load_recent_study_days(
+    connection: &Connection,
+    space_id: Option<&str>,
+    limit: i64,
+) -> rusqlite::Result<Vec<String>> {
+    let mut statement = connection.prepare(
+        "
+        SELECT day
+        FROM study_days
+        WHERE ((?1 IS NULL AND space_id IS NULL) OR space_id = ?1)
+        ORDER BY day DESC
+        LIMIT ?2
+        ",
+    )?;
+    let rows = statement.query_map(params![space_id, limit], |row| row.get::<_, String>(0))?;
+
+    rows.collect()
+}
+
+/// Fetches the canonical row for a space before downstream code enriches or edits it.
 fn fetch_space_identity(connection: &Connection, id: &str) -> rusqlite::Result<SpaceIdentity> {
     connection.query_row(
         "
@@ -616,6 +845,8 @@ fn fetch_space_identity(connection: &Connection, id: &str) -> rusqlite::Result<S
     )
 }
 
+/// Inserts a new space and immediately returns it as a summary so callers can
+/// update the UI from the backend's source of truth.
 fn create_space_row(connection: &Connection, name: &str) -> rusqlite::Result<SpaceSummary> {
     let id = nanoid!(12);
     let timestamp = now_ms();
@@ -631,6 +862,7 @@ fn create_space_row(connection: &Connection, name: &str) -> rusqlite::Result<Spa
     hydrate_space_summary(connection, space, timestamp)
 }
 
+/// Renames a space and returns the refreshed summary the UI should render next.
 fn rename_space_row(
     connection: &Connection,
     id: &str,
@@ -656,6 +888,8 @@ fn rename_space_row(
     hydrate_space_summary(connection, space, timestamp)
 }
 
+/// Deletes a space and surfaces "not found" at the storage layer so command
+/// handlers can convert it into a user-facing message.
 fn delete_space_row(connection: &Connection, id: &str) -> rusqlite::Result<()> {
     let deleted_rows = connection.execute("DELETE FROM spaces WHERE id = ?1", [id])?;
 
@@ -666,6 +900,8 @@ fn delete_space_row(connection: &Connection, id: &str) -> rusqlite::Result<()> {
     Ok(())
 }
 
+/// Reads cards in the exact shape the UI wants, including the joined space name
+/// and decoded scheduler fields.
 fn list_card_summaries(
     connection: &Connection,
     space_id: Option<&str>,
@@ -702,6 +938,8 @@ fn list_card_summaries(
     rows.collect()
 }
 
+/// Fetches just enough card information to support follow-up writes, such as
+/// touching the old space after a move or delete.
 fn fetch_card_identity(connection: &Connection, id: &str) -> rusqlite::Result<CardIdentity> {
     connection.query_row(
         "
@@ -710,10 +948,16 @@ fn fetch_card_identity(connection: &Connection, id: &str) -> rusqlite::Result<Ca
         WHERE id = ?1
         ",
         [id],
-        |row| Ok(CardIdentity { space_id: row.get(0)? }),
+        |row| {
+            Ok(CardIdentity {
+                space_id: row.get(0)?,
+            })
+        },
     )
 }
 
+/// Reloads one card in display form after a write so callers always get the final
+/// stored state back from SQLite.
 fn fetch_card_summary(connection: &Connection, id: &str) -> rusqlite::Result<CardSummary> {
     connection.query_row(
         "
@@ -745,6 +989,8 @@ fn fetch_card_summary(connection: &Connection, id: &str) -> rusqlite::Result<Car
     )
 }
 
+/// Centralizes the mapping from a joined cards query into the response model the
+/// frontend expects, especially around tag decoding.
 fn map_card_summary_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<CardSummary> {
     let tags_json = row.get::<_, Option<String>>(5)?;
 
@@ -771,6 +1017,8 @@ fn map_card_summary_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<CardSummary
     })
 }
 
+/// Creates a card inside a transaction so the insert and the owning space's
+/// timestamp update succeed or fail together.
 fn create_card_row(
     connection: &mut Connection,
     input: NormalizedCardInput,
@@ -822,6 +1070,8 @@ fn create_card_row(
     fetch_card_summary(connection, &id)
 }
 
+/// Updates card content, handles cross-space moves, and refreshes whichever space
+/// records were affected so list ordering stays accurate.
 fn update_card_row(
     connection: &mut Connection,
     input: NormalizedCardUpdateInput,
@@ -866,6 +1116,8 @@ fn update_card_row(
     fetch_card_summary(connection, &input.id)
 }
 
+/// Deletes a card and bumps the parent space afterward so the rest of the app can
+/// notice that the collection changed.
 fn delete_card_row(connection: &mut Connection, id: &str) -> rusqlite::Result<()> {
     let existing = fetch_card_identity(connection, id)?;
     let timestamp = now_ms();
@@ -882,6 +1134,8 @@ fn delete_card_row(connection: &mut Connection, id: &str) -> rusqlite::Result<()
     Ok(())
 }
 
+/// Commits the result of a study action: it updates the card, appends a review
+/// history row, records the study day, and refreshes the touched space.
 fn review_card_row(
     connection: &mut Connection,
     input: NormalizedReviewCardInput,
@@ -951,14 +1205,24 @@ fn review_card_row(
             input.review_log.review_time
         ],
     )?;
-    upsert_study_day(&transaction, Some(&existing.space_id), input.review_log.review_time)?;
+    upsert_study_day(
+        &transaction,
+        Some(&existing.space_id),
+        input.review_log.review_time,
+    )?;
     upsert_study_day(&transaction, None, input.review_log.review_time)?;
-    touch_space(&transaction, &existing.space_id, input.review_log.review_time)?;
+    touch_space(
+        &transaction,
+        &existing.space_id,
+        input.review_log.review_time,
+    )?;
     transaction.commit()?;
 
     fetch_card_summary(connection, &input.id)
 }
 
+/// Updates a space timestamp whenever something inside that space changes, which
+/// lets the UI sort by recent activity without extra bookkeeping elsewhere.
 fn touch_space(connection: &Connection, space_id: &str, timestamp: i64) -> rusqlite::Result<()> {
     let touched_rows = connection.execute(
         "
@@ -976,6 +1240,8 @@ fn touch_space(connection: &Connection, space_id: &str, timestamp: i64) -> rusql
     Ok(())
 }
 
+/// Records that a study session happened on a given calendar day, collapsing many
+/// reviews into a single "studied on this day" marker.
 fn upsert_study_day(
     connection: &Connection,
     space_id: Option<&str>,
@@ -992,6 +1258,8 @@ fn upsert_study_day(
     Ok(())
 }
 
+/// Applies the shared naming rules for spaces so the rest of the backend can work
+/// with clean, bounded values.
 fn normalize_space_name(name: &str) -> Result<String, String> {
     let trimmed = name.trim();
 
@@ -1065,6 +1333,8 @@ struct ImportDeckAccumulator {
     total_count: i64,
 }
 
+/// Normalizes card creation input right at the boundary between the UI and storage,
+/// turning loose user input into something safe to persist.
 fn normalize_card_input(
     space_id: &str,
     front: &str,
@@ -1083,6 +1353,8 @@ fn normalize_card_input(
     })
 }
 
+/// Keeps card origin values constrained to the small set of sources the app knows
+/// how to reason about.
 fn normalize_card_source(source: Option<&str>) -> Result<String, String> {
     match source.unwrap_or("manual") {
         "manual" | "ai" | "anki" => Ok(source.unwrap_or("manual").to_string()),
@@ -1090,7 +1362,11 @@ fn normalize_card_source(source: Option<&str>) -> Result<String, String> {
     }
 }
 
-fn normalize_card_update_input(input: &UpdateCardInput) -> Result<NormalizedCardUpdateInput, String> {
+/// Reuses the same normalization rules for card edits so updating a card cannot
+/// sneak around the invariants enforced at creation time.
+fn normalize_card_update_input(
+    input: &UpdateCardInput,
+) -> Result<NormalizedCardUpdateInput, String> {
     Ok(NormalizedCardUpdateInput {
         id: normalize_required_identifier(&input.id, "Card")?,
         space_id: normalize_required_identifier(&input.space_id, "Space")?,
@@ -1100,7 +1376,11 @@ fn normalize_card_update_input(input: &UpdateCardInput) -> Result<NormalizedCard
     })
 }
 
-fn normalize_review_card_input(input: &ReviewCardInput) -> Result<NormalizedReviewCardInput, String> {
+/// Validates scheduler data coming back from the frontend before it becomes the
+/// app's persisted study history.
+fn normalize_review_card_input(
+    input: &ReviewCardInput,
+) -> Result<NormalizedReviewCardInput, String> {
     Ok(NormalizedReviewCardInput {
         id: normalize_required_identifier(&input.id, "Card")?,
         grade: normalize_grade(input.grade)?,
@@ -1118,7 +1398,10 @@ fn normalize_review_card_input(input: &ReviewCardInput) -> Result<NormalizedRevi
             state: normalize_card_state(input.review_log.state)?,
             due: normalize_timestamp(input.review_log.due, "Review due")?,
             elapsed_days: match input.review_log.elapsed_days {
-                Some(value) => Some(normalize_non_negative_integer(value, "Review elapsed days")?),
+                Some(value) => Some(normalize_non_negative_integer(
+                    value,
+                    "Review elapsed days",
+                )?),
                 None => None,
             },
             scheduled_days: normalize_non_negative_integer(
@@ -1130,6 +1413,8 @@ fn normalize_review_card_input(input: &ReviewCardInput) -> Result<NormalizedRevi
     })
 }
 
+/// Cleans imported Anki cards before any transaction starts so import failures
+/// happen early and with user-friendly validation messages.
 fn normalize_import_anki_cards(
     cards: &[ImportAnkiCardInput],
 ) -> Result<Vec<NormalizedImportAnkiCardInput>, String> {
@@ -1206,6 +1491,8 @@ fn normalize_card_text(value: &str, label: &str) -> Result<String, String> {
     Ok(trimmed.to_string())
 }
 
+/// Drops empty tags and duplicates so tag storage stays tidy no matter how messy
+/// the incoming UI or import payload was.
 fn normalize_tags(tags: &[String]) -> Vec<String> {
     let mut normalized = Vec::new();
 
@@ -1222,6 +1509,8 @@ fn normalize_tags(tags: &[String]) -> Vec<String> {
     normalized
 }
 
+/// Imports Anki cards in bulk while mapping decks to spaces, skipping duplicates,
+/// and returning a summary the UI can explain back to the user.
 fn import_anki_cards_row(
     connection: &mut Connection,
     _source_file_name: &str,
@@ -1326,6 +1615,8 @@ fn import_anki_cards_row(
     })
 }
 
+/// Loads all spaces in a lightweight shape for backend workflows that need to
+/// reason about identities before building richer summaries.
 fn load_all_space_identities(connection: &Connection) -> rusqlite::Result<Vec<SpaceIdentity>> {
     let mut statement = connection.prepare(
         "
@@ -1346,6 +1637,8 @@ fn load_all_space_identities(connection: &Connection) -> rusqlite::Result<Vec<Sp
     rows.collect()
 }
 
+/// Creates a bare space row inside an existing transaction, which is useful during
+/// import where space creation is only one step in a larger unit of work.
 fn insert_space_identity(
     transaction: &rusqlite::Transaction<'_>,
     name: &str,
@@ -1368,6 +1661,8 @@ fn insert_space_identity(
     })
 }
 
+/// Builds an in-memory set of front/back pairs so import can cheaply detect
+/// duplicates without querying for every incoming card.
 fn load_space_card_pairs(
     transaction: &rusqlite::Transaction<'_>,
     space_id: &str,
@@ -1388,6 +1683,8 @@ fn load_space_card_pairs(
     rows.collect()
 }
 
+/// Inserts a card with the app's default scheduler fields for freshly imported
+/// Anki content.
 fn insert_imported_anki_card(
     transaction: &rusqlite::Transaction<'_>,
     space_id: &str,
@@ -1429,10 +1726,13 @@ fn insert_imported_anki_card(
     Ok(())
 }
 
+/// Creates a stable duplicate-detection key from a card's visible content.
 fn card_pair_key(front: &str, back: &str) -> String {
     format!("{front}\u{001f}{back}")
 }
 
+/// Stores tags as JSON so SQLite keeps one nullable column while the Rust side
+/// keeps working with a plain vector.
 fn encode_tags(tags: &[String]) -> rusqlite::Result<Option<String>> {
     if tags.is_empty() {
         return Ok(None);
@@ -1443,6 +1743,7 @@ fn encode_tags(tags: &[String]) -> rusqlite::Result<Option<String>> {
         .map_err(|error| rusqlite::Error::ToSqlConversionFailure(Box::new(error)))
 }
 
+/// Reverses `encode_tags`, defaulting to an empty list when the column is unset.
 fn decode_tags(tags_json: Option<String>) -> rusqlite::Result<Vec<String>> {
     match tags_json {
         Some(json) if !json.trim().is_empty() => serde_json::from_str(&json).map_err(|error| {
@@ -1456,6 +1757,8 @@ fn decode_tags(tags_json: Option<String>) -> rusqlite::Result<Vec<String>> {
     }
 }
 
+/// Translates low-level SQLite errors about spaces into messages that make sense
+/// to a person using the app.
 fn map_storage_error(error: rusqlite::Error) -> String {
     match error {
         rusqlite::Error::SqliteFailure(sqlite_error, _)
@@ -1474,6 +1777,8 @@ fn map_storage_error(error: rusqlite::Error) -> String {
     }
 }
 
+/// Gives card-related commands the same friendlier error surface instead of
+/// exposing raw database wording.
 fn map_card_storage_error(error: rusqlite::Error) -> String {
     match error {
         rusqlite::Error::SqliteFailure(sqlite_error, _)
@@ -1486,6 +1791,8 @@ fn map_card_storage_error(error: rusqlite::Error) -> String {
     }
 }
 
+/// Provides a single millisecond timestamp helper so all persisted times are
+/// captured in the same format.
 fn now_ms() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)

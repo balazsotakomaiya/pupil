@@ -12,6 +12,7 @@ import type {
 
 type DashboardProps = {
   activity: ActivityItem[];
+  isDailyCheckInActive?: boolean;
   onOpenCreateDialog: () => void;
   onOpenSpace: (spaceId: string) => void;
   onStudyPrimaryAction?: () => void;
@@ -25,6 +26,7 @@ type DashboardProps = {
 
 export function Dashboard({
   activity,
+  isDailyCheckInActive,
   onOpenCreateDialog,
   onOpenSpace,
   onStudyPrimaryAction,
@@ -38,6 +40,7 @@ export function Dashboard({
   return (
     <div className="page">
       <StudySection
+        isDailyCheckInActive={isDailyCheckInActive}
         onPrimaryAction={onStudyPrimaryAction}
         onSecondaryAction={onStudySecondaryAction}
         summary={studySummary}

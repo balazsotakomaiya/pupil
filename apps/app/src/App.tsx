@@ -26,9 +26,20 @@ import {
   type CardRecord,
 } from "./lib/cards";
 import { loadBootstrapState } from "./lib/bootstrap";
+import {
+  dismissDailyCheckIn,
+  getDismissedDailyCheckInDay,
+  getTodayDayKey,
+} from "./lib/daily-checkin";
 import { dismissOnboarding, hasDismissedOnboarding, resetOnboarding } from "./lib/onboarding";
 import { isTauriRuntime } from "./lib/runtime";
 import { createSpace, listSpaces, type SpaceSummary } from "./lib/spaces";
+import {
+  getDashboardStats,
+  listSpaceStats,
+  type DashboardStats as DashboardStatsRecord,
+  type SpaceStats as SpaceStatsRecord,
+} from "./lib/stats";
 
 const APP_TABS: AppTab[] = [
   { id: "dashboard", label: "Dashboard" },
@@ -186,8 +197,13 @@ export default function App() {
   const [bootstrapError, setBootstrapError] = useState<string | null>(null);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isOnboardingDismissed, setIsOnboardingDismissed] = useState(false);
+  const [dismissedDailyCheckInDay, setDismissedDailyCheckInDay] = useState<string | null>(() =>
+    getDismissedDailyCheckInDay(),
+  );
   const [spaces, setSpaces] = useState<SpaceSummary[]>([]);
   const [cards, setCards] = useState<CardRecord[]>([]);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStatsRecord | null>(null);
+  const [spaceStats, setSpaceStats] = useState<SpaceStatsRecord[]>([]);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
   const [studySession, setStudySession] = useState<StudySessionState | null>(null);
   const [aiGenerateSession, setAiGenerateSession] = useState<AiGenerateSessionState | null>(null);
@@ -204,12 +220,19 @@ export default function App() {
       try {
         const dismissed = hasDismissedOnboarding();
         await loadBootstrapState();
-        const [nextSpaces, nextCards] = await Promise.all([listSpaces(), listCards()]);
+        const [nextSpaces, nextCards, nextDashboardStats, nextSpaceStats] = await Promise.all([
+          listSpaces(),
+          listCards(),
+          getDashboardStats(),
+          listSpaceStats(),
+        ]);
 
         if (!cancelled) {
           setIsOnboardingDismissed(dismissed);
           setSpaces(nextSpaces);
           setCards(nextCards);
+          setDashboardStats(nextDashboardStats);
+          setSpaceStats(nextSpaceStats);
         }
       } catch (nextError: unknown) {
         if (!cancelled) {
@@ -260,12 +283,23 @@ export default function App() {
 
   const hasRealSpaces = spaces.length > 0;
   const now = Date.now();
-  const longestStreak = hasRealSpaces ? Math.max(...spaces.map((space) => space.streak), 0) : 14;
-  const studySummary = hasRealSpaces ? buildStudySummary(spaces) : FALLBACK_STUDY_SUMMARY;
-  const stats = hasRealSpaces ? buildStats(spaces, now, longestStreak) : FALLBACK_STATS;
-  const spaceCards = hasRealSpaces ? buildSpaceCards(spaces, now) : FALLBACK_SPACES;
+  const todayDayKey = getTodayDayKey(now);
+  const spaceStatsById = new Map(spaceStats.map((entry) => [entry.spaceId, entry]));
+  const globalStreak = dashboardStats?.globalStreak ?? (hasRealSpaces ? 0 : 14);
+  const studySummary =
+    hasRealSpaces && dashboardStats ? buildStudySummary(spaces, dashboardStats) : FALLBACK_STUDY_SUMMARY;
+  const isDailyCheckInActive =
+    hasRealSpaces && dashboardStats
+      ? shouldShowDailyCheckInPrompt(dashboardStats, dismissedDailyCheckInDay, todayDayKey)
+      : false;
+  const stats =
+    hasRealSpaces && dashboardStats ? buildStats(dashboardStats) : FALLBACK_STATS;
+  const spaceCards =
+    hasRealSpaces ? buildSpaceCards(spaces, cards, spaceStatsById, now) : FALLBACK_SPACES;
   const activity = hasRealSpaces ? buildActivity(spaces, now) : FALLBACK_ACTIVITY;
-  const streakCells = buildStreakCells(hasRealSpaces ? longestStreak : 14, hasRealSpaces);
+  const streakCells = buildStreakCells(dashboardStats?.studyDays ?? [], hasRealSpaces);
+  const selectedSpaceStats =
+    selectedSpaceId !== null ? spaceStatsById.get(selectedSpaceId) ?? null : null;
   const selectedSpace =
     selectedSpaceId !== null ? spaces.find((space) => space.id === selectedSpaceId) ?? null : null;
   const studySpace =
@@ -287,9 +321,16 @@ export default function App() {
     !isOnboardingDismissed;
 
   async function refreshAppData() {
-    const [nextSpaces, nextCards] = await Promise.all([listSpaces(), listCards()]);
+    const [nextSpaces, nextCards, nextDashboardStats, nextSpaceStats] = await Promise.all([
+      listSpaces(),
+      listCards(),
+      getDashboardStats(),
+      listSpaceStats(),
+    ]);
     setSpaces(nextSpaces);
     setCards(nextCards);
+    setDashboardStats(nextDashboardStats);
+    setSpaceStats(nextSpaceStats);
   }
 
   async function handleCreateCard(input: {
@@ -349,12 +390,19 @@ export default function App() {
 
     try {
       const updatedCard = await reviewCard(input);
+      const [nextSpaces, nextDashboardStats, nextSpaceStats] = await Promise.all([
+        listSpaces(),
+        getDashboardStats(),
+        listSpaceStats(),
+      ]);
       setCards((currentCards) =>
         sortCardRecords(
           currentCards.map((card) => (card.id === updatedCard.id ? updatedCard : card)),
         ),
       );
-      setSpaces(await listSpaces());
+      setSpaces(nextSpaces);
+      setDashboardStats(nextDashboardStats);
+      setSpaceStats(nextSpaceStats);
       return updatedCard;
     } finally {
       setIsMutatingCards(false);
@@ -408,6 +456,9 @@ export default function App() {
   }
 
   function handleStartGlobalStudy() {
+    if (dashboardStats?.dueToday) {
+      setDismissedDailyCheckInDay(dismissDailyCheckIn(todayDayKey));
+    }
     setStudySession({ scope: "global", startedAt: Date.now() });
   }
 
@@ -571,6 +622,7 @@ export default function App() {
                 onDeleteCard={handleDeleteCard}
                 onOpenAiGenerate={() => handleOpenSpaceAiGenerate(selectedSpace.id)}
                 onStartStudy={() => handleStartSpaceStudy(selectedSpace.id)}
+                stats={selectedSpaceStats}
                 onUpdateCard={handleUpdateCard}
                 space={selectedSpace}
               />
@@ -578,6 +630,7 @@ export default function App() {
               <>
                 <AppTitlebar
                   activeTab={activeTab}
+                  globalStreak={activeTab === "dashboard" ? globalStreak : null}
                   onOpenCreateDialog={handleOpenCreateDialog}
                   onSelectTab={setActiveTab}
                   tabs={APP_TABS}
@@ -586,6 +639,7 @@ export default function App() {
                 {activeTab === "dashboard" ? (
                   <Dashboard
                     activity={activity}
+                    isDailyCheckInActive={isDailyCheckInActive}
                     onOpenCreateDialog={handleOpenCreateDialog}
                     onOpenSpace={handleOpenSpace}
                     onStudyPrimaryAction={hasRealSpaces ? handleStartGlobalStudy : handleOpenCreateDialog}
@@ -593,7 +647,7 @@ export default function App() {
                     spaces={spaceCards}
                     stats={stats}
                     streakCells={streakCells}
-                    streakCount={longestStreak}
+                    streakCount={globalStreak}
                     studySummary={studySummary}
                   />
                 ) : activeTab === "cards" ? (
@@ -637,8 +691,11 @@ export default function App() {
   );
 }
 
-function buildStudySummary(spaces: SpaceSummary[]): StudySummary {
-  const totalDueToday = spaces.reduce((sum, space) => sum + space.dueTodayCount, 0);
+function buildStudySummary(
+  spaces: SpaceSummary[],
+  dashboardStats: DashboardStatsRecord,
+): StudySummary {
+  const totalDueToday = dashboardStats.dueToday;
   const totalCards = spaces.reduce((sum, space) => sum + space.cardCount, 0);
   const dueSpaces = [...spaces]
     .filter((space) => space.dueTodayCount > 0)
@@ -680,11 +737,10 @@ function buildStudySummary(spaces: SpaceSummary[]): StudySummary {
   return {
     eyebrow: "Ready to study",
     headline: `${formatNumber(totalDueToday)} cards due today`,
-    description: `${formatCount(
-      spaces.length,
-      "space",
-    )}. ${formatCount(dueSpaces.length, "space")} currently need attention${
-      leadingNames.length > 0 ? `. Heaviest in ${joinLabels(leadingNames)}.` : "."
+    description: `Across ${formatCount(spaces.length, "space")}. ${formatNumber(
+      dashboardStats.studiedToday,
+    )} already reviewed — ${formatNumber(totalDueToday)} remaining${
+      leadingNames.length > 0 ? `. Most overdue in ${joinLabels(leadingNames)}.` : "."
     }`,
     breakdown,
     primaryActionLabel: "Study all →",
@@ -692,65 +748,84 @@ function buildStudySummary(spaces: SpaceSummary[]): StudySummary {
   };
 }
 
-function buildStats(spaces: SpaceSummary[], now: number, longestStreak: number): StatCardData[] {
-  const totalCards = spaces.reduce((sum, space) => sum + space.cardCount, 0);
-  const dueToday = spaces.reduce((sum, space) => sum + space.dueTodayCount, 0);
-  const touchedThisWeek = spaces.filter(
-    (space) => now - space.updatedAt < 7 * 24 * 60 * 60 * 1000,
-  ).length;
-  const spacesWithDue = spaces.filter((space) => space.dueTodayCount > 0).length;
-
+function buildStats(stats: DashboardStatsRecord): StatCardData[] {
   return [
     {
       label: "Total cards",
-      value: formatNumber(totalCards),
-      subtext: totalCards > 0 ? `${formatCount(spaces.length, "space")} in rotation` : "No cards yet",
+      value: formatNumber(stats.totalCards),
+      subtext: stats.totalCards > 0 ? "Across your full library" : "No cards yet",
+    },
+    {
+      label: "Studied today",
+      value: formatNumber(stats.studiedToday),
+      unit: stats.dueToday > 0 ? ` / ${formatNumber(stats.dueToday)}` : undefined,
+      subtext: stats.dueToday > 0 ? "due remaining" : "Queue cleared",
     },
     {
       label: "Due today",
-      value: formatNumber(dueToday),
-      subtext: dueToday > 0 ? `${formatCount(spacesWithDue, "space")} with reviews queued` : "Nothing scheduled",
+      value: formatNumber(stats.dueToday),
+      subtext: stats.dueToday > 0 ? "Reviews ready now" : "Nothing scheduled",
     },
     {
-      label: "Active spaces",
-      value: formatNumber(spaces.length),
-      subtext: touchedThisWeek > 0 ? `${formatCount(touchedThisWeek, "space")} touched this week` : "No recent updates",
-    },
-    {
-      label: "Longest streak",
-      value: formatNumber(longestStreak),
+      label: "Global streak",
+      value: formatNumber(stats.globalStreak),
       unit: "days",
-      subtext: longestStreak > 0 ? "Current best across spaces" : "No streaks yet",
+      subtext: stats.globalStreak > 0 ? "Across all study sessions" : "No streak yet",
     },
   ];
 }
 
-function buildSpaceCards(spaces: SpaceSummary[], now: number): SpaceCardData[] {
+function shouldShowDailyCheckInPrompt(
+  dashboardStats: DashboardStatsRecord,
+  dismissedDay: string | null,
+  todayDayKey: string,
+) {
+  return dashboardStats.dueToday > 0 && dismissedDay !== todayDayKey;
+}
+
+function buildSpaceCards(
+  spaces: SpaceSummary[],
+  cards: CardRecord[],
+  spaceStats: Map<string, SpaceStatsRecord>,
+  now: number,
+): SpaceCardData[] {
   return [...spaces]
     .sort((left, right) => right.dueTodayCount - left.dueTodayCount || right.updatedAt - left.updatedAt)
-    .map((space) => ({
-      id: space.id,
-      name: space.name,
-      description: buildSpaceDescription(space),
-      streakLabel: space.streak > 0 ? `${space.streak}d` : undefined,
-      meta: [
-        { label: "cards", value: formatNumber(space.cardCount) },
-        {
-          label: "due",
-          value: formatNumber(space.dueTodayCount),
-          variant: space.dueTodayCount > 0 ? "due" : "default",
-        },
-        {
-          label: "status",
-          value: space.cardCount > 0 ? "Ready" : "Empty",
-        },
-        {
-          label: "updated",
-          value: `local · ${formatCompactAge(space.updatedAt, now)}`,
-          variant: "aux",
-        },
-      ],
-    }));
+    .map((space) => {
+      const stats = spaceStats.get(space.id) ?? null;
+      const latestCard = [...cards]
+        .filter((card) => card.spaceId === space.id)
+        .sort((left, right) => right.updatedAt - left.updatedAt)[0];
+
+      return {
+        id: space.id,
+        name: space.name,
+        description: buildSpaceDescription(space),
+        streakLabel: space.streak > 0 ? `${space.streak}d` : undefined,
+        meta: [
+          { label: "cards", value: formatNumber(space.cardCount) },
+          {
+            label: "due",
+            value: formatNumber(space.dueTodayCount),
+            variant: space.dueTodayCount > 0 ? "due" : "default",
+          },
+          {
+            label: "retention",
+            value:
+              stats?.retention30d !== null && stats?.retention30d !== undefined
+                ? `${Math.round(stats.retention30d)}%`
+                : "—",
+          },
+          {
+            label: "source",
+            value: latestCard
+              ? `${formatSourceLabel(latestCard.source)} · ${formatCompactAge(latestCard.updatedAt, now)}`
+              : `local · ${formatCompactAge(space.updatedAt, now)}`,
+            variant: "aux",
+          },
+        ],
+      };
+    });
 }
 
 function buildActivity(spaces: SpaceSummary[], now: number): ActivityItem[] {
@@ -802,26 +877,27 @@ function buildActivity(spaces: SpaceSummary[], now: number): ActivityItem[] {
   });
 }
 
-function buildStreakCells(streakCount: number, hasRealSpaces: boolean): StreakCellData[] {
+function buildStreakCells(studyDays: string[], hasRealSpaces: boolean): StreakCellData[] {
   const totalCells = 16 * 7;
-  const studiedOffsets = new Set<number>();
+  const studiedDays = new Set<string>();
 
   if (hasRealSpaces) {
-    for (let index = 0; index < streakCount; index += 1) {
-      studiedOffsets.add(index);
+    for (const day of studyDays) {
+      studiedDays.add(day);
     }
   } else {
     for (const offset of FALLBACK_STREAK_OFFSETS) {
-      studiedOffsets.add(offset);
+      studiedDays.add(formatDayOffset(offset));
     }
   }
 
   return Array.from({ length: totalCells }, (_, index) => {
     const dayOffset = totalCells - index - 1;
+    const dateLabel = formatDayOffset(dayOffset);
 
     return {
       id: `streak-${dayOffset}`,
-      studied: studiedOffsets.has(dayOffset),
+      studied: studiedDays.has(dateLabel),
       today: dayOffset === 0,
     };
   });
@@ -924,6 +1000,27 @@ function formatCompactAge(timestamp: number, now: number): string {
   const months = Math.floor(days / 30);
 
   return `${months}mo ago`;
+}
+
+function formatDayOffset(offset: number) {
+  const day = new Date();
+  day.setHours(0, 0, 0, 0);
+  day.setDate(day.getDate() - offset);
+  const year = day.getFullYear();
+  const month = `${day.getMonth() + 1}`.padStart(2, "0");
+  const date = `${day.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${date}`;
+}
+
+function formatSourceLabel(source: CardRecord["source"]) {
+  switch (source) {
+    case "ai":
+      return "ai";
+    case "anki":
+      return "anki";
+    default:
+      return "manual";
+  }
 }
 
 function joinLabels(labels: string[]): string {

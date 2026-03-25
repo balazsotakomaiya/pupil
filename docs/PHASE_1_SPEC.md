@@ -11,9 +11,9 @@ Chunk tracker:
 - [x] Chunk 3. Manual card creation + storage
 - [x] Chunk 4. Anki import (.apkg)
 - [ ] Chunk 5. AI card generation + approval flow
-- [ ] Chunk 6. Study session + FSRS engine (per-space + global)
-- [ ] Chunk 7. Stats (per-space + global)
-- [ ] Chunk 8. Streaks + daily check-in
+- [x] Chunk 6. Study session + FSRS engine (per-space + global)
+- [x] Chunk 7. Stats (per-space + global)
+- [x] Chunk 8. Streaks + daily check-in
 - [ ] Chunk 9. AI provider settings
 
 ---
