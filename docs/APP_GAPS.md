@@ -2,19 +2,12 @@
 
 Snapshot of the meaningful gaps still remaining in the current Pupil app, based on the shipped code and the Phase 1 / Phase 2 specs.
 
-## 1. AI Generation is still a UI prototype
+## Recently closed
 
-- The AI generate flow is renderer-only and mocked. [`AiGenerateScreen.tsx`](../apps/app/src/components/ai-generate/AiGenerateScreen.tsx) builds fake cards locally with a timeout instead of calling a real provider.
-- There is no Rust-side `generate_cards` command yet, and the Tauri backend has no HTTP client or Stronghold integration. [`Cargo.toml`](../apps/app/src-tauri/Cargo.toml) only includes `tauri`, `rusqlite`, `serde`, and `nanoid`.
-- Result: Chunk 5 is still not actually complete, even though the review/save UI exists.
-
-## 2. AI settings are not implemented as specified
-
-- AI settings are currently stored in renderer `localStorage`, not in Tauri Stronghold or the SQLite `settings` table. See [`ai-settings.ts`](../apps/app/src/lib/ai-settings.ts).
-- The settings screen says this explicitly: Stronghold-backed secret storage and live provider testing are still pending. See [`SettingsScreen.tsx`](../apps/app/src/components/settings/SettingsScreen.tsx).
-- The `Test` button is simulated. It only checks whether the API key field is non-empty and then returns a fake success label.
-- The configured base URL/model are not driving any real generation request yet, because generation itself is still mocked.
-- Result: Chunk 9 is still incomplete.
+- AI generation is now wired end-to-end through the Tauri backend. The renderer calls a real `generate_cards` command, the Rust side makes the provider HTTP request, and the review/save flow still happens in the app UI. See [`AiGenerateScreen.tsx`](../apps/app/src/components/ai-generate/AiGenerateScreen.tsx), [`ai-settings.ts`](../apps/app/src/lib/ai-settings.ts), and [`lib.rs`](../apps/app/src-tauri/src/lib.rs).
+- AI settings now persist as specified: non-secret fields live in SQLite `settings`, the API key is stored in Stronghold, and the `Test` action performs a live provider request. See [`SettingsScreen.tsx`](../apps/app/src/components/settings/SettingsScreen.tsx) and [`lib.rs`](../apps/app/src-tauri/src/lib.rs).
+- Settings data actions are now real: database export, review-log CSV export, and full local reset are wired to backend commands, and the stale "0 reviews" placeholder copy is gone. See [`SettingsScreen.tsx`](../apps/app/src/components/settings/SettingsScreen.tsx), [`data-actions.ts`](../apps/app/src/lib/data-actions.ts), and [`lib.rs`](../apps/app/src-tauri/src/lib.rs).
+- Dashboard activity is now sourced from `review_logs`, and the inert "View all →" affordance was removed. See [`App.tsx`](../apps/app/src/App.tsx), [`activity.ts`](../apps/app/src/lib/activity.ts), and [`ActivitySection.tsx`](../apps/app/src/components/dashboard/ActivitySection.tsx).
 
 ## 3. Space CRUD is only partially exposed in the UI
 
@@ -55,9 +48,7 @@ Snapshot of the meaningful gaps still remaining in the current Pupil app, based 
 
 ## Recommended next order
 
-1. Finish real AI provider integration end-to-end.
-2. Implement Stronghold-backed settings persistence and live connection testing.
-3. Add rename/delete space actions to the visible UI.
-4. Replace synthetic dashboard activity with `review_logs`-driven activity.
-5. Wire real export/reset flows and clean up stale settings copy.
-6. Add a minimal automated test layer around imports, study scheduling, and stats queries.
+1. Add rename/delete space actions to the visible UI.
+2. Replace placeholder external links and other inert surfaced controls.
+3. Add a minimal automated test layer around imports, study scheduling, stats queries, and the new AI/settings flows.
+4. Revisit import limitations if media, history transfer, or import history persistence become important.

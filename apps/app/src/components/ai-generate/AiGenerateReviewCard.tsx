@@ -4,6 +4,7 @@ import { CheckIcon, CloseIcon, RotateIcon } from "./AiGenerateIcons";
 type AiGenerateReviewCardProps = {
   card: GeneratedCardCandidate;
   index: number;
+  isRegenerating: boolean;
   onApprove: () => void;
   onDiscard: () => void;
   onRegenerate: () => void;
@@ -13,6 +14,7 @@ type AiGenerateReviewCardProps = {
 export function AiGenerateReviewCard({
   card,
   index,
+  isRegenerating,
   onApprove,
   onDiscard,
   onRegenerate,
@@ -29,16 +31,17 @@ export function AiGenerateReviewCard({
           {index + 1} of {total}
         </span>
         <div className="ai-gen-review-card-btns">
-          <button className="ai-gen-rc-btn" onClick={onRegenerate} type="button">
+          <button className="ai-gen-rc-btn" disabled={isRegenerating} onClick={onRegenerate} type="button">
             <RotateIcon />
-            Regenerate
+            {isRegenerating ? "Regenerating…" : "Regenerate"}
           </button>
-          <button className="ai-gen-rc-btn" onClick={onDiscard} type="button">
+          <button className="ai-gen-rc-btn" disabled={isRegenerating} onClick={onDiscard} type="button">
             <CloseIcon />
             Discard
           </button>
           <button
             className={`ai-gen-rc-btn${card.status === "approved" ? " approved" : " approve"}`}
+            disabled={isRegenerating}
             onClick={onApprove}
             type="button"
           >

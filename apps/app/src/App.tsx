@@ -17,6 +17,7 @@ import { OnboardingScreen } from "./components/onboarding";
 import { SettingsScreen } from "./components/settings";
 import { SpaceDetailsScreen } from "./components/space-details";
 import { StudyScreen, type StudyScope } from "./components/study";
+import { listRecentActivity, type RecentActivityRecord } from "./lib/activity";
 import {
   createCard,
   deleteCard,
@@ -26,6 +27,7 @@ import {
   type CardRecord,
 } from "./lib/cards";
 import { loadBootstrapState } from "./lib/bootstrap";
+import { resetAllData } from "./lib/data-actions";
 import {
   dismissDailyCheckIn,
   getDismissedDailyCheckInDay,
@@ -203,6 +205,7 @@ export default function App() {
   const [spaces, setSpaces] = useState<SpaceSummary[]>([]);
   const [cards, setCards] = useState<CardRecord[]>([]);
   const [dashboardStats, setDashboardStats] = useState<DashboardStatsRecord | null>(null);
+  const [recentActivity, setRecentActivity] = useState<RecentActivityRecord[]>([]);
   const [spaceStats, setSpaceStats] = useState<SpaceStatsRecord[]>([]);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
   const [studySession, setStudySession] = useState<StudySessionState | null>(null);
@@ -220,18 +223,21 @@ export default function App() {
       try {
         const dismissed = hasDismissedOnboarding();
         await loadBootstrapState();
-        const [nextSpaces, nextCards, nextDashboardStats, nextSpaceStats] = await Promise.all([
-          listSpaces(),
-          listCards(),
-          getDashboardStats(),
-          listSpaceStats(),
-        ]);
+        const [nextSpaces, nextCards, nextDashboardStats, nextSpaceStats, nextRecentActivity] =
+          await Promise.all([
+            listSpaces(),
+            listCards(),
+            getDashboardStats(),
+            listSpaceStats(),
+            listRecentActivity(),
+          ]);
 
         if (!cancelled) {
           setIsOnboardingDismissed(dismissed);
           setSpaces(nextSpaces);
           setCards(nextCards);
           setDashboardStats(nextDashboardStats);
+          setRecentActivity(nextRecentActivity);
           setSpaceStats(nextSpaceStats);
         }
       } catch (nextError: unknown) {
@@ -296,7 +302,7 @@ export default function App() {
     hasRealSpaces && dashboardStats ? buildStats(dashboardStats) : FALLBACK_STATS;
   const spaceCards =
     hasRealSpaces ? buildSpaceCards(spaces, cards, spaceStatsById, now) : FALLBACK_SPACES;
-  const activity = hasRealSpaces ? buildActivity(spaces, now) : FALLBACK_ACTIVITY;
+  const activity = hasRealSpaces ? buildActivity(recentActivity, now) : FALLBACK_ACTIVITY;
   const streakCells = buildStreakCells(dashboardStats?.studyDays ?? [], hasRealSpaces);
   const selectedSpaceStats =
     selectedSpaceId !== null ? spaceStatsById.get(selectedSpaceId) ?? null : null;
@@ -321,15 +327,18 @@ export default function App() {
     !isOnboardingDismissed;
 
   async function refreshAppData() {
-    const [nextSpaces, nextCards, nextDashboardStats, nextSpaceStats] = await Promise.all([
-      listSpaces(),
-      listCards(),
-      getDashboardStats(),
-      listSpaceStats(),
-    ]);
+    const [nextSpaces, nextCards, nextDashboardStats, nextSpaceStats, nextRecentActivity] =
+      await Promise.all([
+        listSpaces(),
+        listCards(),
+        getDashboardStats(),
+        listSpaceStats(),
+        listRecentActivity(),
+      ]);
     setSpaces(nextSpaces);
     setCards(nextCards);
     setDashboardStats(nextDashboardStats);
+    setRecentActivity(nextRecentActivity);
     setSpaceStats(nextSpaceStats);
   }
 
@@ -390,11 +399,13 @@ export default function App() {
 
     try {
       const updatedCard = await reviewCard(input);
-      const [nextSpaces, nextDashboardStats, nextSpaceStats] = await Promise.all([
-        listSpaces(),
-        getDashboardStats(),
-        listSpaceStats(),
-      ]);
+      const [nextSpaces, nextDashboardStats, nextSpaceStats, nextRecentActivity] =
+        await Promise.all([
+          listSpaces(),
+          getDashboardStats(),
+          listSpaceStats(),
+          listRecentActivity(),
+        ]);
       setCards((currentCards) =>
         sortCardRecords(
           currentCards.map((card) => (card.id === updatedCard.id ? updatedCard : card)),
@@ -402,6 +413,7 @@ export default function App() {
       );
       setSpaces(nextSpaces);
       setDashboardStats(nextDashboardStats);
+      setRecentActivity(nextRecentActivity);
       setSpaceStats(nextSpaceStats);
       return updatedCard;
     } finally {
@@ -528,6 +540,15 @@ export default function App() {
     } finally {
       setIsMutatingCards(false);
     }
+  }
+
+  async function handleResetAllData() {
+    await resetAllData();
+    setSelectedSpaceId(null);
+    setStudySession(null);
+    setAiGenerateSession(null);
+    setDismissedDailyCheckInDay(null);
+    await refreshAppData();
   }
 
   function handleDismissOnboarding() {
@@ -667,7 +688,11 @@ export default function App() {
                     onStudyNow={handleStartGlobalStudy}
                   />
                 ) : activeTab === "settings" ? (
-                  <SettingsScreen cardsCount={cards.length} spacesCount={spaces.length} />
+                  <SettingsScreen
+                    cardsCount={cards.length}
+                    onResetAllData={handleResetAllData}
+                    spacesCount={spaces.length}
+                  />
                 ) : (
                   <div className="page cards-page" />
                 )}
@@ -828,53 +853,15 @@ function buildSpaceCards(
     });
 }
 
-function buildActivity(spaces: SpaceSummary[], now: number): ActivityItem[] {
-  const recentSpaces = [...spaces]
-    .sort((left, right) => right.updatedAt - left.updatedAt || right.createdAt - left.createdAt)
-    .slice(0, 5);
-
-  return recentSpaces.map((space) => {
-    if (space.createdAt === space.updatedAt) {
-      return {
-        id: `activity-${space.id}`,
-        timeLabel: formatRelativeAge(space.createdAt, now),
-        prefix: "Created ",
-        highlight: space.name,
-        suffix: " space",
-        typeLabel: "space",
-      };
-    }
-
-    if (space.dueTodayCount > 0) {
-      return {
-        id: `activity-${space.id}`,
-        timeLabel: formatRelativeAge(space.updatedAt, now),
-        prefix: "Queued ",
-        highlight: formatCount(space.dueTodayCount, "card"),
-        suffix: ` in ${space.name}`,
-        typeLabel: "study",
-      };
-    }
-
-    if (space.cardCount > 0) {
-      return {
-        id: `activity-${space.id}`,
-        timeLabel: formatRelativeAge(space.updatedAt, now),
-        prefix: "Tracking ",
-        highlight: formatCount(space.cardCount, "card"),
-        suffix: ` in ${space.name}`,
-        typeLabel: "cards",
-      };
-    }
-
-    return {
-      id: `activity-${space.id}`,
-      timeLabel: formatRelativeAge(space.updatedAt, now),
-      prefix: "Updated ",
-      highlight: space.name,
-      typeLabel: "space",
-    };
-  });
+function buildActivity(activity: RecentActivityRecord[], now: number): ActivityItem[] {
+  return activity.map((entry) => ({
+    id: entry.id,
+    timeLabel: formatRelativeAge(entry.reviewTime, now),
+    prefix: "Studied ",
+    highlight: formatCount(entry.reviewCount, "card"),
+    suffix: ` in ${entry.spaceName}`,
+    typeLabel: "study",
+  }));
 }
 
 function buildStreakCells(studyDays: string[], hasRealSpaces: boolean): StreakCellData[] {

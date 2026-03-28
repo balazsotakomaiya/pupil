@@ -1,5 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { hasConfiguredAiKey, readAiSettings } from "../../lib/ai-settings";
+import { useEffect, useState } from "react";
+import {
+  generateAiCards,
+  hasConfiguredAiKey,
+  loadAiSettings,
+  type AiSettings,
+} from "../../lib/ai-settings";
 import type { SpaceSummary } from "../../lib/spaces";
 import { AiGenerateError } from "./AiGenerateError";
 import { AiGenerateForm, NEW_SPACE_OPTION_ID } from "./AiGenerateForm";
@@ -23,6 +28,15 @@ type AiGenerateScreenProps = {
   spaces: SpaceSummary[];
 };
 
+const DEFAULT_AI_SETTINGS: AiSettings = {
+  apiKey: "",
+  hasApiKey: false,
+  baseUrl: "https://api.openai.com/v1",
+  model: "gpt-5.4",
+  maxTokens: "4096",
+  temperature: "0.7",
+};
+
 export function AiGenerateScreen({
   backLabel,
   initialSpaceId = null,
@@ -32,20 +46,51 @@ export function AiGenerateScreen({
   onSaveApprovedCards,
   spaces,
 }: AiGenerateScreenProps) {
-  const aiSettings = useMemo(() => readAiSettings(), []);
-  const [mode, setMode] = useState<AiGenerateMode>(
-    hasConfiguredAiKey(aiSettings) ? "form" : "no-key",
-  );
+  const [aiSettings, setAiSettings] = useState<AiSettings>(DEFAULT_AI_SETTINGS);
+  const [isSettingsLoading, setIsSettingsLoading] = useState(true);
+  const [mode, setMode] = useState<AiGenerateMode>("form");
   const [draft, setDraft] = useState<AiGenerateDraft>(() => createInitialDraft(spaces, initialSpaceId));
   const [styleModalOpen, setStyleModalOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [runtimeError, setRuntimeError] = useState<string>("No generation attempt yet.");
   const [generatedCards, setGeneratedCards] = useState<GeneratedCardCandidate[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const loadingTimeoutRef = useRef<number | null>(null);
+  const [regeneratingCardId, setRegeneratingCardId] = useState<string | null>(null);
 
   const targetSpaceName = getTargetSpaceName(draft, spaces);
   const endpointHost = getEndpointHost(aiSettings.baseUrl);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSettings() {
+      try {
+        const settings = await loadAiSettings();
+
+        if (cancelled) {
+          return;
+        }
+
+        setAiSettings(settings);
+        setMode(hasConfiguredAiKey(settings) ? "form" : "no-key");
+      } catch (error: unknown) {
+        if (!cancelled) {
+          setRuntimeError(error instanceof Error ? error.message : "Failed to load AI settings.");
+          setMode("error");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsSettingsLoading(false);
+        }
+      }
+    }
+
+    void loadSettings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (spaces.length === 0 && draft.spaceId !== NEW_SPACE_OPTION_ID) {
@@ -71,20 +116,12 @@ export function AiGenerateScreen({
     }
   }, [draft.spaceId, initialSpaceId, spaces]);
 
-  useEffect(() => {
-    return () => {
-      if (loadingTimeoutRef.current !== null) {
-        window.clearTimeout(loadingTimeoutRef.current);
-      }
-    };
-  }, []);
-
   function handleDraftChange(patch: Partial<AiGenerateDraft>) {
     setFormError(null);
     setDraft((currentDraft) => ({ ...currentDraft, ...patch }));
   }
 
-  function handleGenerate() {
+  async function handleGenerate() {
     const normalizedTopic = draft.topic.trim();
 
     if (!normalizedTopic) {
@@ -100,25 +137,31 @@ export function AiGenerateScreen({
     setFormError(null);
     setMode("loading");
 
-    if (loadingTimeoutRef.current !== null) {
-      window.clearTimeout(loadingTimeoutRef.current);
+    try {
+      const cards = await generateAiCards({
+        count: draft.autoCount ? null : draft.count,
+        difficulty: draft.difficulty,
+        style: draft.style,
+        topic: normalizedTopic,
+      });
+      setGeneratedCards(
+        cards.map((card, index) => ({
+          ...card,
+          id: `ai-card-${Date.now()}-${index}`,
+          status: "pending",
+          tags: buildGeneratedTags(draft, index, card.front),
+        })),
+      );
+      setMode("review");
+    } catch (error: unknown) {
+      setRuntimeError(error instanceof Error ? error.message : "Generation failed.");
+      setMode("error");
     }
-
-    loadingTimeoutRef.current = window.setTimeout(() => {
-      try {
-        const nextCards = buildGeneratedCards(draft);
-        setGeneratedCards(nextCards);
-        setMode("review");
-      } catch (error: unknown) {
-        setRuntimeError(error instanceof Error ? error.message : "Generation failed.");
-        setMode("error");
-      }
-    }, 900);
   }
 
   function handleRetryGeneration() {
     setMode("form");
-    handleGenerate();
+    void handleGenerate();
   }
 
   function handleApprove(cardId: string) {
@@ -133,18 +176,39 @@ export function AiGenerateScreen({
     );
   }
 
-  function handleRegenerate(cardId: string) {
-    setGeneratedCards((currentCards) =>
-      currentCards.map((card, index) =>
-        card.id === cardId
-          ? {
-              ...buildGeneratedCard(draft, index, index + 1),
-              id: card.id,
-              status: "pending",
-            }
-          : card,
-      ),
-    );
+  async function handleRegenerate(cardId: string) {
+    setRegeneratingCardId(cardId);
+
+    try {
+      const [replacement] = await generateAiCards({
+        count: 1,
+        difficulty: draft.difficulty,
+        style: draft.style,
+        topic: draft.topic.trim(),
+      });
+
+      if (!replacement) {
+        throw new Error("The provider did not return a replacement card.");
+      }
+
+      setGeneratedCards((currentCards) =>
+        currentCards.map((card, index) =>
+          card.id === cardId
+            ? {
+                ...replacement,
+                id: card.id,
+                status: "pending",
+                tags: buildGeneratedTags(draft, index, replacement.front),
+              }
+            : card,
+        ),
+      );
+    } catch (error: unknown) {
+      setRuntimeError(error instanceof Error ? error.message : "Regeneration failed.");
+      setMode("error");
+    } finally {
+      setRegeneratingCardId(null);
+    }
   }
 
   function handleBulkApprove() {
@@ -194,7 +258,9 @@ export function AiGenerateScreen({
       <AiGenerateTitlebar backLabel={backLabel} onBack={onBack} />
 
       <div className="page ai-gen-page">
-        {mode === "no-key" ? (
+        {isSettingsLoading ? (
+          <AiGenerateLoading model="AI provider" topic="Loading saved settings" />
+        ) : mode === "no-key" ? (
           <AiGenerateNoKey onOpenSettings={onOpenSettings} />
         ) : mode === "loading" ? (
           <AiGenerateLoading model={aiSettings.model} topic={draft.topic} />
@@ -207,12 +273,13 @@ export function AiGenerateScreen({
         ) : mode === "review" ? (
           <AiGenerateReviewList
             cards={generatedCards}
+            isRegenerating={regeneratingCardId}
             isSaving={isSaving}
             onApprove={handleApprove}
             onBulkApprove={handleBulkApprove}
             onBulkDiscard={handleBulkDiscard}
             onDiscard={handleDiscard}
-            onRegenerate={handleRegenerate}
+            onRegenerate={(cardId) => void handleRegenerate(cardId)}
             onSave={() => void handleSave()}
             targetSpaceName={targetSpaceName}
           />
@@ -223,7 +290,7 @@ export function AiGenerateScreen({
             error={formError}
             model={aiSettings.model}
             onChange={handleDraftChange}
-            onGenerate={handleGenerate}
+            onGenerate={() => void handleGenerate()}
             onOpenSettings={onOpenSettings}
             onOpenStyleModal={() => setStyleModalOpen(true)}
             spaces={spaces}
@@ -271,67 +338,16 @@ function getEndpointHost(baseUrl: string) {
   }
 }
 
-function buildGeneratedCards(draft: AiGenerateDraft): GeneratedCardCandidate[] {
-  const topic = draft.topic.trim();
-  const count = draft.autoCount ? estimateAutoCount(topic) : draft.count;
+function buildGeneratedTags(draft: AiGenerateDraft, index: number, front: string) {
+  const concepts = extractConcepts(draft.topic.trim());
+  const fallbackConcept = concepts[index % concepts.length] ?? front;
 
-  return Array.from({ length: count }, (_, index) => ({
-    ...buildGeneratedCard(draft, index, 0),
-    id: `ai-card-${index}`,
-    status: "pending",
-  }));
-}
-
-function buildGeneratedCard(
-  draft: AiGenerateDraft,
-  index: number,
-  variantOffset: number,
-): Omit<GeneratedCardCandidate, "id" | "status"> {
-  const topic = draft.topic.trim();
-  const concepts = extractConcepts(topic);
-  const concept = concepts[(index + variantOffset) % concepts.length] ?? topic;
-  const detail = concepts[(index + variantOffset + 1) % concepts.length] ?? topic;
-  const tags = [
+  return [
     "ai",
     normalizeTag(draft.style),
     normalizeTag(draft.difficulty),
-    normalizeTag(concept),
+    normalizeTag(fallbackConcept),
   ];
-
-  if (draft.style === "Concept") {
-    return {
-      back: `${concept} is a core idea in ${topic}. ${difficultyExplanation(
-        draft.difficulty,
-      )} Focus on how it connects to ${detail.toLowerCase()}.`,
-      front: concept,
-      tags,
-    };
-  }
-
-  if (draft.style === "Cloze") {
-    return {
-      back: `${concept}. In ${topic}, it matters because it anchors ${detail.toLowerCase()}. ${difficultyExplanation(
-        draft.difficulty,
-      )}`,
-      front: `In ${topic}, _____ is closely tied to ${detail.toLowerCase()}.`,
-      tags,
-    };
-  }
-
-  const promptStyles = [
-    `What is ${concept}?`,
-    `Why does ${concept} matter in ${topic}?`,
-    `How would you explain ${concept} in one clean sentence?`,
-    `What role does ${concept} play relative to ${detail.toLowerCase()}?`,
-  ];
-
-  return {
-    back: `${concept} is a key part of ${topic}. ${difficultyExplanation(
-      draft.difficulty,
-    )} It is especially useful to connect it with ${detail.toLowerCase()}.`,
-    front: promptStyles[(index + variantOffset) % promptStyles.length],
-    tags,
-  };
 }
 
 function extractConcepts(topic: string) {
@@ -358,33 +374,11 @@ function splitLongPart(part: string) {
     return [part];
   }
 
-  return [
-    part,
-    ...part
-      .split(/\s+/)
-      .filter((word) => word.length > 4)
-      .slice(0, 3),
-  ];
+  return [part, ...part.split(/\s+/).filter((word) => word.length > 4).slice(0, 3)];
 }
 
 function cleanupConcept(value: string) {
   return value.replace(/[.?!]+$/, "").trim();
-}
-
-function difficultyExplanation(difficulty: string) {
-  switch (difficulty) {
-    case "Beginner":
-      return "Keep the explanation grounded and plain, with minimal jargon.";
-    case "Advanced":
-      return "Include the deeper mechanism, tradeoff, or edge case that makes it matter.";
-    default:
-      return "Aim for a precise explanation that still stays compact enough to review quickly.";
-  }
-}
-
-function estimateAutoCount(topic: string) {
-  const conceptCount = extractConcepts(topic).length;
-  return Math.max(6, Math.min(18, conceptCount * 2));
 }
 
 function normalizeTag(value: string) {

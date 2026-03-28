@@ -2340,11 +2340,6 @@ button {
   border-bottom: 1px solid var(--border);
 }
 
-.activity-header-bar .ah-link {
-  color: var(--text-tertiary);
-  font-size: 12px;
-}
-
 .activity-row {
   display: grid;
   grid-template-columns: 64px 1fr auto;
@@ -2362,6 +2357,13 @@ button {
 
 .activity-row:hover {
   background: var(--bg-elevated);
+}
+
+.activity-empty {
+  padding: 18px 20px 20px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .activity-time {
@@ -3315,6 +3317,19 @@ button {
   color: var(--text-primary);
 }
 
+.settings-key-test-btn:disabled,
+.settings-data-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.settings-key-test-btn:disabled:hover,
+.settings-data-btn:disabled:hover {
+  border-color: var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
 .settings-key-test-btn svg,
 .settings-data-btn svg,
 .settings-about-link svg,
@@ -3559,6 +3574,11 @@ button {
 .settings-data-btn.danger:hover {
   border-color: #ef4444;
   background: #ef444415;
+}
+
+.settings-data-btn.danger:disabled:hover {
+  border-color: #ef444440;
+  background: transparent;
 }
 
 .settings-shortcuts-grid {

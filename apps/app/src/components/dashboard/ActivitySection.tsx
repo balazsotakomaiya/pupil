@@ -55,20 +55,23 @@ export function ActivitySection({
         <div className="activity-wrap">
           <div className="activity-header-bar">
             <span className="ah-title">Recent</span>
-            <span className="ah-link">View all →</span>
           </div>
 
-          {activity.map((item) => (
-            <div className="activity-row" key={item.id}>
-              <span className="activity-time">{item.timeLabel}</span>
-              <span className="activity-desc">
-                {item.prefix}
-                <strong>{item.highlight}</strong>
-                {item.suffix ?? ""}
-              </span>
-              <span className="activity-type">{item.typeLabel}</span>
-            </div>
-          ))}
+          {activity.length === 0 ? (
+            <div className="activity-empty">No study activity yet. Your first reviews will show up here.</div>
+          ) : (
+            activity.map((item) => (
+              <div className="activity-row" key={item.id}>
+                <span className="activity-time">{item.timeLabel}</span>
+                <span className="activity-desc">
+                  {item.prefix}
+                  <strong>{item.highlight}</strong>
+                  {item.suffix ?? ""}
+                </span>
+                <span className="activity-type">{item.typeLabel}</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </section>

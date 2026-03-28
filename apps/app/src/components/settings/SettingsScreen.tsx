@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { readAiSettings, writeAiSettings } from "../../lib/ai-settings";
+import {
+  loadAiSettings,
+  saveAiSettings,
+  testAiProviderConnection,
+} from "../../lib/ai-settings";
+import {
+  exportDatabaseCopy,
+  exportReviewLogsCsv,
+  getSettingsDataSummary,
+} from "../../lib/data-actions";
 import { SettingsAboutCard } from "./SettingsAboutCard";
 import { SettingsConnectionStatus } from "./SettingsConnectionStatus";
 import { SettingsDataCard } from "./SettingsDataCard";
@@ -17,10 +26,10 @@ import { SettingsShortcutsGrid } from "./SettingsShortcutsGrid";
 
 type SettingsScreenProps = {
   cardsCount: number;
+  onResetAllData: () => Promise<void>;
   spacesCount: number;
 };
 
-const DATABASE_PATH = "~/Library/Application Support/com.pupil.app/pupil.db";
 const SHORTCUTS = [
   { keys: ["Space"], label: "Reveal card" },
   { keys: ["1"], label: "Rate: Again" },
@@ -32,24 +41,46 @@ const SHORTCUTS = [
   { keys: ["⌘", ","], label: "Settings" },
 ];
 
-export function SettingsScreen({ cardsCount, spacesCount }: SettingsScreenProps) {
+export function SettingsScreen({
+  cardsCount,
+  onResetAllData,
+  spacesCount,
+}: SettingsScreenProps) {
   const [activeSection, setActiveSection] = useState<SettingsSectionId>("ai");
-  const [apiKey, setApiKey] = useState(() => readAiSettings().apiKey);
+  const [apiKey, setApiKey] = useState("");
+  const [apiKeyEdited, setApiKeyEdited] = useState(false);
+  const [hasStoredApiKey, setHasStoredApiKey] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
-  const [baseUrl, setBaseUrl] = useState(() => readAiSettings().baseUrl);
-  const [model, setModel] = useState(() => readAiSettings().model);
-  const [maxTokens, setMaxTokens] = useState(() => readAiSettings().maxTokens);
-  const [temperature, setTemperature] = useState(() => readAiSettings().temperature);
+  const [baseUrl, setBaseUrl] = useState("https://api.openai.com/v1");
+  const [model, setModel] = useState("gpt-5.4");
+  const [maxTokens, setMaxTokens] = useState("4096");
+  const [temperature, setTemperature] = useState("0.7");
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+  const [databasePath, setDatabasePath] = useState("Loading database path…");
+  const [reviewLogCount, setReviewLogCount] = useState(0);
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [isExportingDatabase, setIsExportingDatabase] = useState(false);
+  const [isExportingReviewLogs, setIsExportingReviewLogs] = useState(false);
+  const [isResettingData, setIsResettingData] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<{
     detail?: string;
     kind: "idle" | "success" | "error";
     label: string;
   }>({
-    detail: "Stored locally on this device",
+    detail: "Checking local provider settings…",
     kind: "idle",
     label: "Not tested",
+  });
+  const [dataStatus, setDataStatus] = useState<{
+    detail?: string;
+    kind: "idle" | "success" | "error";
+    label: string;
+  }>({
+    detail: "Database and review exports land on this device.",
+    kind: "idle",
+    label: "Ready",
   });
 
   const aiRef = useRef<HTMLElement | null>(null);
@@ -68,14 +99,83 @@ export function SettingsScreen({ cardsCount, spacesCount }: SettingsScreenProps)
   );
 
   useEffect(() => {
-    writeAiSettings({
-      apiKey,
-      baseUrl,
-      model,
-      maxTokens,
-      temperature,
-    });
-  }, [apiKey, baseUrl, model, maxTokens, temperature]);
+    let cancelled = false;
+
+    async function loadState() {
+      try {
+        const [settings, dataSummary] = await Promise.all([
+          loadAiSettings(),
+          getSettingsDataSummary(),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        setApiKey("");
+        setApiKeyEdited(false);
+        setHasStoredApiKey(settings.hasApiKey);
+        setBaseUrl(settings.baseUrl);
+        setModel(settings.model);
+        setMaxTokens(settings.maxTokens);
+        setTemperature(settings.temperature);
+        setDatabasePath(dataSummary.databasePath);
+        setReviewLogCount(dataSummary.reviewLogCount);
+        setConnectionStatus({
+          detail: settings.hasApiKey ? "API key stored securely on this device" : "No saved API key yet",
+          kind: "idle",
+          label: "Not tested",
+        });
+      } catch (error: unknown) {
+        if (!cancelled) {
+          setConnectionStatus({
+            detail: error instanceof Error ? error.message : "Failed to load AI settings.",
+            kind: "error",
+            label: "Load failed",
+          });
+          setDataStatus({
+            detail: error instanceof Error ? error.message : "Failed to load data actions.",
+            kind: "error",
+            label: "Load failed",
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setSettingsLoaded(true);
+        }
+      }
+    }
+
+    void loadState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!settingsLoaded) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void saveAiSettings({
+        apiKey: apiKeyEdited ? apiKey : undefined,
+        baseUrl,
+        model,
+        maxTokens,
+        temperature,
+      })
+        .then((saved) => {
+          setHasStoredApiKey(saved.hasApiKey);
+        })
+        .catch(() => {
+          // Keep the draft state in place; generation and test flows surface validation errors explicitly.
+        });
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [apiKey, apiKeyEdited, baseUrl, model, maxTokens, settingsLoaded, temperature]);
 
   useEffect(() => {
     function updateActiveSection() {
@@ -114,30 +214,134 @@ export function SettingsScreen({ cardsCount, spacesCount }: SettingsScreenProps)
     sectionRefs[sectionId].current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  async function refreshDataSummary() {
+    const summary = await getSettingsDataSummary();
+    setDatabasePath(summary.databasePath);
+    setReviewLogCount(summary.reviewLogCount);
+  }
+
   async function handleCopyPath() {
     try {
-      await navigator.clipboard.writeText(DATABASE_PATH);
+      await navigator.clipboard.writeText(databasePath);
       setCopyState("copied");
     } catch {
       setCopyState("idle");
     }
   }
 
-  function handleTestConnection() {
-    if (!apiKey.trim()) {
+  async function handleTestConnection() {
+    setIsTestingConnection(true);
+
+    try {
+      const result = await testAiProviderConnection({
+        apiKey: apiKeyEdited ? apiKey : undefined,
+        baseUrl,
+        model,
+        maxTokens,
+        temperature,
+      });
       setConnectionStatus({
-        detail: "Add an API key first",
+        detail: result.detail,
+        kind: "success",
+        label: result.label,
+      });
+    } catch (error: unknown) {
+      setConnectionStatus({
+        detail: error instanceof Error ? error.message : "Connection test failed.",
         kind: "error",
         label: "Connection failed",
       });
+    } finally {
+      setIsTestingConnection(false);
+    }
+  }
+
+  async function handleExportDatabase() {
+    setIsExportingDatabase(true);
+
+    try {
+      const result = await exportDatabaseCopy();
+      setDataStatus({
+        detail: result.path,
+        kind: "success",
+        label: "Database exported",
+      });
+    } catch (error: unknown) {
+      setDataStatus({
+        detail: error instanceof Error ? error.message : "Database export failed.",
+        kind: "error",
+        label: "Export failed",
+      });
+    } finally {
+      setIsExportingDatabase(false);
+    }
+  }
+
+  async function handleExportReviewLogs() {
+    setIsExportingReviewLogs(true);
+
+    try {
+      const result = await exportReviewLogsCsv();
+      setDataStatus({
+        detail:
+          result.recordCount > 0
+            ? `${result.recordCount} rows · ${result.path}`
+            : `No review rows yet · ${result.path}`,
+        kind: "success",
+        label: "Review logs exported",
+      });
+    } catch (error: unknown) {
+      setDataStatus({
+        detail: error instanceof Error ? error.message : "Review log export failed.",
+        kind: "error",
+        label: "Export failed",
+      });
+    } finally {
+      setIsExportingReviewLogs(false);
+    }
+  }
+
+  async function handleReset() {
+    if (
+      !window.confirm(
+        "Reset all local data? This removes spaces, cards, review history, saved AI settings, and the stored API key.",
+      )
+    ) {
       return;
     }
 
-    setConnectionStatus({
-      detail: `${model} · 238ms`,
-      kind: "success",
-      label: "Connected",
-    });
+    setIsResettingData(true);
+
+    try {
+      await onResetAllData();
+      const nextSettings = await loadAiSettings();
+      await refreshDataSummary();
+      setApiKey("");
+      setApiKeyEdited(false);
+      setHasStoredApiKey(nextSettings.hasApiKey);
+      setBaseUrl(nextSettings.baseUrl);
+      setModel(nextSettings.model);
+      setMaxTokens(nextSettings.maxTokens);
+      setTemperature(nextSettings.temperature);
+      setConnectionStatus({
+        detail: nextSettings.hasApiKey ? "API key stored securely on this device" : "No saved API key yet",
+        kind: "idle",
+        label: "Not tested",
+      });
+      setDataStatus({
+        detail: "Local study data and saved AI settings were cleared.",
+        kind: "success",
+        label: "Reset complete",
+      });
+    } catch (error: unknown) {
+      setDataStatus({
+        detail: error instanceof Error ? error.message : "Reset failed.",
+        kind: "error",
+        label: "Reset failed",
+      });
+    } finally {
+      setIsResettingData(false);
+    }
   }
 
   function handleOpenExternal(kind: "docs" | "github" | "issues") {
@@ -149,6 +353,10 @@ export function SettingsScreen({ cardsCount, spacesCount }: SettingsScreenProps)
 
     window.open(urls[kind], "_blank", "noopener,noreferrer");
   }
+
+  const apiKeyHint = hasStoredApiKey
+    ? "API key stored in Stronghold. Leave the field empty to keep it, or clear it to remove it."
+    : "API key is stored in Stronghold on this device. Add one to enable live generation.";
 
   return (
     <div className="page settings-page">
@@ -167,9 +375,8 @@ export function SettingsScreen({ cardsCount, spacesCount }: SettingsScreenProps)
         <div className="settings-section-head">
           <div className="settings-section-title">AI Provider</div>
           <div className="settings-section-desc">
-            Pupil calls an OpenAI-compatible API to generate flashcards. The visual settings flow is
-            here now; Stronghold-backed secret storage and real provider testing are still part of a
-            later chunk.
+            Pupil stores the API key in Stronghold and keeps the non-secret provider settings in the
+            local app database. Generation and provider tests now use these saved values directly.
           </div>
         </div>
 
@@ -177,14 +384,17 @@ export function SettingsScreen({ cardsCount, spacesCount }: SettingsScreenProps)
           <div className="settings-field">
             <label className="settings-field-label" htmlFor="settings-api-key">
               API Key
-              <span className="settings-label-badge">Encrypted</span>
+              <span className="settings-label-badge">Stronghold</span>
             </label>
             <div className="settings-key-input-wrap">
               <input
                 className="settings-text-input settings-text-input-mono"
                 id="settings-api-key"
-                onChange={(event) => setApiKey(event.target.value)}
-                placeholder="sk-..."
+                onChange={(event) => {
+                  setApiKey(event.target.value);
+                  setApiKeyEdited(true);
+                }}
+                placeholder={hasStoredApiKey ? "Stored securely — enter a new key to replace it" : "sk-..."}
                 type={showApiKey ? "text" : "password"}
                 value={apiKey}
               />
@@ -196,22 +406,24 @@ export function SettingsScreen({ cardsCount, spacesCount }: SettingsScreenProps)
               >
                 {showApiKey ? <EyeClosedIcon /> : <EyeOpenIcon />}
               </button>
-              <button className="settings-key-test-btn" onClick={handleTestConnection} type="button">
+              <button
+                className="settings-key-test-btn"
+                disabled={isTestingConnection}
+                onClick={() => void handleTestConnection()}
+                type="button"
+              >
                 <ArrowRightIcon />
-                Test
+                {isTestingConnection ? "Testing…" : "Test"}
               </button>
             </div>
-            <div className="settings-field-hint">
-              Target storage is Tauri Stronghold. This screen is wired for the final UX, but secure
-              persistence and live provider calls are still pending.
-            </div>
+            <div className="settings-field-hint">{apiKeyHint}</div>
           </div>
 
           <SettingsConnectionStatus
-          detail={connectionStatus.detail}
-          kind={connectionStatus.kind}
-          label={connectionStatus.label}
-        />
+            detail={connectionStatus.detail}
+            kind={connectionStatus.kind}
+            label={connectionStatus.label}
+          />
 
           <div className="settings-field">
             <label className="settings-field-label" htmlFor="settings-base-url">
@@ -226,7 +438,8 @@ export function SettingsScreen({ cardsCount, spacesCount }: SettingsScreenProps)
               value={baseUrl}
             />
             <div className="settings-field-hint">
-              OpenAI-compatible endpoint. Change this for Anthropic, Ollama, or a self-hosted proxy.
+              OpenAI-compatible endpoint. Change this for Anthropic, Ollama, or a self-hosted
+              proxy.
             </div>
           </div>
 
@@ -243,7 +456,7 @@ export function SettingsScreen({ cardsCount, spacesCount }: SettingsScreenProps)
               value={model}
             />
             <div className="settings-model-chips">
-              {["claude-sonnet-4-6", "claude-opus-4-6", "gpt-5.4"].map((chip) => (
+              {["gpt-5.4", "claude-sonnet-4-6", "claude-opus-4-6"].map((chip) => (
                 <button
                   className={`settings-model-chip${model === chip ? " active" : ""}`}
                   key={chip}
@@ -315,20 +528,25 @@ export function SettingsScreen({ cardsCount, spacesCount }: SettingsScreenProps)
         <div className="settings-section-head">
           <div className="settings-section-title">Data</div>
           <div className="settings-section-desc">
-            All study data is stored locally. Export and destructive data actions are still UI-only
-            right now.
+            All study data is stored locally. Export creates a real copy of the database or review
+            logs, and reset clears this device.
           </div>
         </div>
 
         <div className="settings-data-cards">
           <SettingsDataCard
             action={
-              <button className="settings-data-btn" type="button">
+              <button
+                className="settings-data-btn"
+                disabled={isExportingDatabase}
+                onClick={() => void handleExportDatabase()}
+                type="button"
+              >
                 <DownloadIcon />
-                Export
+                {isExportingDatabase ? "Exporting…" : "Export"}
               </button>
             }
-            description="Local SQLite file containing all spaces, cards, and study metadata."
+            description="Live SQLite file containing all spaces, cards, scheduler state, and study metadata."
             title="Database"
             value={
               <>
@@ -339,16 +557,21 @@ export function SettingsScreen({ cardsCount, spacesCount }: SettingsScreenProps)
 
           <SettingsDataCard
             action={
-              <button className="settings-data-btn" type="button">
+              <button
+                className="settings-data-btn"
+                disabled={isExportingReviewLogs}
+                onClick={() => void handleExportReviewLogs()}
+                type="button"
+              >
                 <DownloadIcon />
-                Export CSV
+                {isExportingReviewLogs ? "Exporting…" : "Export CSV"}
               </button>
             }
-            description="Review logs are not recorded yet in the current build, but the UI is aligned with the final layout."
+            description="Review history recorded during study sessions. Export writes a CSV with one row per review."
             title="Review Logs"
             value={
               <>
-                <strong>0</strong> reviews
+                <strong>{reviewLogCount}</strong> reviews
               </>
             }
           />
@@ -360,24 +583,33 @@ export function SettingsScreen({ cardsCount, spacesCount }: SettingsScreenProps)
                 {copyState === "copied" ? "Copied" : "Copy"}
               </button>
             }
-            description={
-              <span className="settings-data-card-desc-path">{DATABASE_PATH}</span>
-            }
+            description={<span className="settings-data-card-desc-path">{databasePath}</span>}
             title="Database Path"
           />
 
           <SettingsDataCard
             action={
-              <button className="settings-data-btn danger" type="button">
+              <button
+                className="settings-data-btn danger"
+                disabled={isResettingData}
+                onClick={() => void handleReset()}
+                type="button"
+              >
                 <TrashIcon />
-                Reset
+                {isResettingData ? "Resetting…" : "Reset"}
               </button>
             }
-            description="Delete all spaces, cards, review history, and settings. This is not wired yet and remains presentation-only."
+            description="Delete all spaces, cards, review history, saved AI settings, and the stored API key from this device."
             title="Reset All Data"
             tone="danger"
           />
         </div>
+
+        <SettingsConnectionStatus
+          detail={dataStatus.detail}
+          kind={dataStatus.kind}
+          label={dataStatus.label}
+        />
       </section>
 
       <div className="ruler-divider" />

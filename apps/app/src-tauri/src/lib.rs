@@ -1,13 +1,18 @@
 use nanoid::nanoid;
+use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
 use rusqlite::{ffi::ErrorCode, params, Connection};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Emitter, Manager};
+use tauri_plugin_stronghold::stronghold::Stronghold;
 
 type AppResult<T> = Result<T, Box<dyn std::error::Error>>;
 
@@ -179,9 +184,123 @@ struct SpaceStats {
     space_id: String,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AiSettingsState {
+    base_url: String,
+    model: String,
+    max_tokens: String,
+    temperature: String,
+    has_api_key: bool,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SaveAiSettingsInput {
+    api_key: Option<String>,
+    base_url: String,
+    model: String,
+    max_tokens: String,
+    temperature: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AiConnectionTestResult {
+    detail: String,
+    label: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct GenerateCardsInput {
+    topic: String,
+    count: Option<i64>,
+    difficulty: String,
+    style: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GeneratedCardPayload {
+    back: String,
+    front: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct RecentActivityEntry {
+    id: String,
+    review_count: i64,
+    review_time: i64,
+    space_id: String,
+    space_name: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SettingsDataSummary {
+    database_path: String,
+    review_log_count: i64,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ExportDataResult {
+    path: String,
+    record_count: i64,
+}
+
+struct NormalizedAiSettingsInput {
+    api_key: Option<String>,
+    base_url: String,
+    model: String,
+    max_tokens: i64,
+    temperature: f64,
+}
+
+struct ResolvedAiSettings {
+    api_key: String,
+    base_url: String,
+    model: String,
+    max_tokens: i64,
+    temperature: f64,
+}
+
+struct NormalizedGenerateCardsInput {
+    topic: String,
+    count: Option<i64>,
+    difficulty: String,
+    style: String,
+}
+
 const SPACE_NAME_MAX_LENGTH: usize = 80;
 const DEVELOPER_RESET_ONBOARDING_MENU_ID: &str = "developer.reset_onboarding";
 const DEVELOPER_RESET_ONBOARDING_EVENT: &str = "developer://reset-onboarding";
+const AI_SETTING_BASE_URL_KEY: &str = "ai.base_url";
+const AI_SETTING_MODEL_KEY: &str = "ai.model";
+const AI_SETTING_MAX_TOKENS_KEY: &str = "ai.max_tokens";
+const AI_SETTING_TEMPERATURE_KEY: &str = "ai.temperature";
+const DEFAULT_AI_BASE_URL: &str = "https://api.openai.com/v1";
+const DEFAULT_AI_MODEL: &str = "gpt-5.4";
+const DEFAULT_AI_MAX_TOKENS: &str = "4096";
+const DEFAULT_AI_TEMPERATURE: &str = "0.7";
+const STRONGHOLD_SNAPSHOT_FILE_NAME: &str = "pupil.hold";
+const STRONGHOLD_CLIENT_NAME: &[u8] = b"pupil";
+const STRONGHOLD_AI_API_KEY_RECORD_KEY: &[u8] = b"ai.api_key";
+const AI_SYSTEM_PROMPT: &str = r#"You are an expert flashcard author. Your job is to produce flashcards that maximize long-term retention using the principles of spaced repetition.
+
+Rules:
+1. Return ONLY a valid JSON array. No markdown fences, no commentary, no wrapper object.
+2. Each element: { "front": "...", "back": "..." }
+3. Both "front" and "back" must be non-empty strings.
+4. Keep the front concise - a single clear question, term, or cloze prompt. No compound questions.
+5. Keep the back focused - a direct answer with just enough context to disambiguate. No essays.
+6. Avoid trivial or overly broad cards. Each card should test one atomic piece of knowledge.
+7. Order cards from foundational concepts to more advanced topics.
+8. Do not number or prefix the cards.
+9. For cloze style: front uses "___" for the blank, back gives the missing term plus a one-sentence explanation.
+10. Avoid duplicating information across cards. Each card should cover a distinct fact or concept."#;
 
 const MIGRATIONS: &[Migration] = &[
     Migration {
@@ -341,6 +460,133 @@ fn list_space_stats(app: AppHandle) -> Result<Vec<SpaceStats>, String> {
     list_space_stats_rows(&connection, now).map_err(|error| error.to_string())
 }
 
+#[tauri::command]
+/// Loads the persisted AI provider settings while only exposing whether a key
+/// exists, not the key value itself.
+fn get_ai_settings(app: AppHandle) -> Result<AiSettingsState, String> {
+    let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+
+    load_ai_settings_state(&app, &connection).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+/// Persists non-secret AI settings in SQLite and the API key in Stronghold so
+/// later generation calls can run fully from the backend.
+fn save_ai_settings(app: AppHandle, input: SaveAiSettingsInput) -> Result<AiSettingsState, String> {
+    let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+    let normalized = normalize_ai_settings_input(input)?;
+
+    save_ai_settings_rows(&app, &mut connection, normalized).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+/// Checks the currently entered AI provider settings with a lightweight live
+/// request so the settings screen can report success or failure honestly.
+async fn test_ai_provider_connection(
+    app: AppHandle,
+    input: SaveAiSettingsInput,
+) -> Result<AiConnectionTestResult, String> {
+    let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+    let normalized = normalize_ai_settings_input(input)?;
+    let settings = resolve_ai_settings_for_test(&app, &connection, normalized)?;
+    let started_at = now_ms();
+
+    execute_ai_completion(
+        &settings,
+        "Reply with the single word ok.",
+        Some("You are validating provider connectivity. Reply with the single word ok."),
+    )
+    .await?;
+
+    Ok(AiConnectionTestResult {
+        detail: format!("{} · {}ms", settings.model, now_ms() - started_at),
+        label: "Connected".to_string(),
+    })
+}
+
+#[tauri::command]
+/// Generates cards through the configured provider using the backend-held API key
+/// so the renderer only receives validated card content.
+async fn generate_cards(
+    app: AppHandle,
+    input: GenerateCardsInput,
+) -> Result<Vec<GeneratedCardPayload>, String> {
+    let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+    let normalized = normalize_generate_cards_input(input)?;
+    let settings = load_resolved_ai_settings(&app, &connection)?;
+    let prompt = build_generate_cards_prompt(
+        &normalized.topic,
+        normalized.count,
+        &normalized.difficulty,
+        &normalized.style,
+    );
+    let response_text = execute_ai_completion(&settings, &prompt, Some(AI_SYSTEM_PROMPT)).await?;
+
+    parse_generated_cards_response(&response_text)
+}
+
+#[tauri::command]
+/// Returns the recent study feed from `review_logs` so the dashboard activity
+/// panel reflects real review history instead of inferred space updates.
+fn list_recent_activity(app: AppHandle) -> Result<Vec<RecentActivityEntry>, String> {
+    let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+
+    load_recent_activity(&connection, 5).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+/// Gives the settings screen the small amount of live data it needs for export
+/// and reset actions, including the real review log count and database path.
+fn get_settings_data_summary(app: AppHandle) -> Result<SettingsDataSummary, String> {
+    let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+    let database_path = database_path(&app)?;
+
+    load_settings_data_summary(&connection, &database_path).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+/// Copies the SQLite database to a user-friendly export folder so people have a
+/// real local backup flow from the settings screen.
+fn export_database_copy(app: AppHandle) -> Result<ExportDataResult, String> {
+    let database_path = database_path(&app)?;
+    let export_dir = export_dir(&app).map_err(|error| error.to_string())?;
+    fs::create_dir_all(&export_dir).map_err(|error| error.to_string())?;
+
+    let export_path = export_dir.join(format!("pupil-export-{}.db", now_ms()));
+    fs::copy(&database_path, &export_path).map_err(|error| error.to_string())?;
+
+    Ok(ExportDataResult {
+        path: export_path.display().to_string(),
+        record_count: 1,
+    })
+}
+
+#[tauri::command]
+/// Exports review history as CSV so learners can inspect or analyze their study
+/// data outside the app.
+fn export_review_logs_csv(app: AppHandle) -> Result<ExportDataResult, String> {
+    let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+    let export_dir = export_dir(&app).map_err(|error| error.to_string())?;
+    fs::create_dir_all(&export_dir).map_err(|error| error.to_string())?;
+    let export_path = export_dir.join(format!("pupil-review-logs-{}.csv", now_ms()));
+    let record_count =
+        write_review_logs_csv(&connection, &export_path).map_err(|error| error.to_string())?;
+
+    Ok(ExportDataResult {
+        path: export_path.display().to_string(),
+        record_count,
+    })
+}
+
+#[tauri::command]
+/// Clears the learner's local library, review history, settings, and stored API
+/// key while leaving the schema in place so the app can continue running cleanly.
+fn reset_all_data(app: AppHandle) -> Result<(), String> {
+    let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+
+    reset_all_data_rows(&app, &mut connection).map_err(|error| error.to_string())
+}
+
 /// Wires together the desktop shell, database bootstrapping, and Tauri commands.
 /// This is the backend entry point the tiny `main.rs` hands off to.
 pub fn run() {
@@ -372,7 +618,16 @@ pub fn run() {
             review_card,
             import_anki_cards,
             get_dashboard_stats,
-            list_space_stats
+            list_space_stats,
+            get_ai_settings,
+            save_ai_settings,
+            test_ai_provider_connection,
+            generate_cards,
+            list_recent_activity,
+            get_settings_data_summary,
+            export_database_copy,
+            export_review_logs_csv,
+            reset_all_data
         ])
         .run(tauri::generate_context!())
         .expect("error while running pupil app");
@@ -581,6 +836,729 @@ fn create_backup_if_database_exists(app: &AppHandle, database_path: &Path) -> Ap
     fs::copy(database_path, backup_path)?;
 
     Ok(true)
+}
+
+fn load_ai_settings_state(app: &AppHandle, connection: &Connection) -> AppResult<AiSettingsState> {
+    Ok(AiSettingsState {
+        base_url: load_string_setting(connection, AI_SETTING_BASE_URL_KEY, DEFAULT_AI_BASE_URL)?,
+        model: load_string_setting(connection, AI_SETTING_MODEL_KEY, DEFAULT_AI_MODEL)?,
+        max_tokens: load_string_setting(
+            connection,
+            AI_SETTING_MAX_TOKENS_KEY,
+            DEFAULT_AI_MAX_TOKENS,
+        )?,
+        temperature: load_string_setting(
+            connection,
+            AI_SETTING_TEMPERATURE_KEY,
+            DEFAULT_AI_TEMPERATURE,
+        )?,
+        has_api_key: load_ai_api_key(app)?.is_some(),
+    })
+}
+
+fn save_ai_settings_rows(
+    app: &AppHandle,
+    connection: &mut Connection,
+    input: NormalizedAiSettingsInput,
+) -> AppResult<AiSettingsState> {
+    match input.api_key {
+        Some(api_key) if api_key.is_empty() => clear_ai_api_key(app)?,
+        Some(api_key) => save_ai_api_key(app, &api_key)?,
+        None => {}
+    }
+
+    let transaction = connection.transaction()?;
+    upsert_setting(&transaction, AI_SETTING_BASE_URL_KEY, &input.base_url)?;
+    upsert_setting(&transaction, AI_SETTING_MODEL_KEY, &input.model)?;
+    upsert_setting(
+        &transaction,
+        AI_SETTING_MAX_TOKENS_KEY,
+        &input.max_tokens.to_string(),
+    )?;
+    upsert_setting(
+        &transaction,
+        AI_SETTING_TEMPERATURE_KEY,
+        &trim_trailing_zeroes(input.temperature),
+    )?;
+    transaction.commit()?;
+
+    load_ai_settings_state(app, connection)
+}
+
+fn resolve_ai_settings_for_test(
+    app: &AppHandle,
+    connection: &Connection,
+    input: NormalizedAiSettingsInput,
+) -> Result<ResolvedAiSettings, String> {
+    let api_key = match input.api_key {
+        Some(api_key) if api_key.is_empty() => return Err("Add an API key first.".to_string()),
+        Some(api_key) => api_key,
+        None => load_ai_api_key(app)
+            .map_err(|error| error.to_string())?
+            .ok_or_else(|| "Add an API key first.".to_string())?,
+    };
+
+    let _ = connection;
+
+    Ok(ResolvedAiSettings {
+        api_key,
+        base_url: input.base_url,
+        model: input.model,
+        max_tokens: input.max_tokens,
+        temperature: input.temperature,
+    })
+}
+
+fn load_resolved_ai_settings(
+    app: &AppHandle,
+    connection: &Connection,
+) -> Result<ResolvedAiSettings, String> {
+    let state = load_ai_settings_state(app, connection).map_err(|error| error.to_string())?;
+    let api_key = load_ai_api_key(app)
+        .map_err(|error| error.to_string())?
+        .ok_or_else(|| "Add an API key in Settings first.".to_string())?;
+    let max_tokens = state
+        .max_tokens
+        .parse::<i64>()
+        .map_err(|_| "Max tokens must be a positive integer.".to_string())?;
+    let temperature = state
+        .temperature
+        .parse::<f64>()
+        .map_err(|_| "Temperature must be a finite number.".to_string())?;
+
+    Ok(ResolvedAiSettings {
+        api_key,
+        base_url: state.base_url,
+        model: state.model,
+        max_tokens,
+        temperature,
+    })
+}
+
+fn load_string_setting(
+    connection: &Connection,
+    key: &str,
+    default: &str,
+) -> rusqlite::Result<String> {
+    connection
+        .query_row("SELECT value FROM settings WHERE key = ?1", [key], |row| {
+            row.get::<_, String>(0)
+        })
+        .or_else(|error| match error {
+            rusqlite::Error::QueryReturnedNoRows => Ok(default.to_string()),
+            other => Err(other),
+        })
+}
+
+fn upsert_setting(
+    transaction: &rusqlite::Transaction<'_>,
+    key: &str,
+    value: &str,
+) -> rusqlite::Result<()> {
+    transaction.execute(
+        "
+        INSERT INTO settings (key, value)
+        VALUES (?1, ?2)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        ",
+        params![key, value],
+    )?;
+
+    Ok(())
+}
+
+fn stronghold_snapshot_path(app: &AppHandle) -> AppResult<PathBuf> {
+    let path = app_data_dir(app)?.join(STRONGHOLD_SNAPSHOT_FILE_NAME);
+
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    Ok(path)
+}
+
+fn stronghold_password(app: &AppHandle) -> AppResult<Vec<u8>> {
+    let mut hasher = Sha256::new();
+    hasher.update(b"pupil-stronghold-v1");
+    hasher.update(app_data_dir(app)?.display().to_string().as_bytes());
+
+    if let Ok(user) = std::env::var("USER").or_else(|_| std::env::var("USERNAME")) {
+        hasher.update(user.as_bytes());
+    }
+
+    Ok(hasher.finalize().to_vec())
+}
+
+fn open_stronghold(app: &AppHandle) -> AppResult<Stronghold> {
+    let snapshot_path = stronghold_snapshot_path(app)?;
+    let password = stronghold_password(app)?;
+
+    Stronghold::new(snapshot_path, password).map_err(Into::into)
+}
+
+fn load_ai_api_key(app: &AppHandle) -> AppResult<Option<String>> {
+    let stronghold = open_stronghold(app)?;
+    let client = match stronghold.get_client(STRONGHOLD_CLIENT_NAME.to_vec()) {
+        Ok(client) => client,
+        Err(_) => stronghold.create_client(STRONGHOLD_CLIENT_NAME.to_vec())?,
+    };
+    let value = client
+        .store()
+        .get(STRONGHOLD_AI_API_KEY_RECORD_KEY)
+        .map_err(|error| -> Box<dyn std::error::Error> { Box::new(error) })?;
+
+    value.map(String::from_utf8).transpose().map_err(Into::into)
+}
+
+fn save_ai_api_key(app: &AppHandle, api_key: &str) -> AppResult<()> {
+    let stronghold = open_stronghold(app)?;
+    let client = match stronghold.get_client(STRONGHOLD_CLIENT_NAME.to_vec()) {
+        Ok(client) => client,
+        Err(_) => stronghold.create_client(STRONGHOLD_CLIENT_NAME.to_vec())?,
+    };
+    client
+        .store()
+        .insert(
+            STRONGHOLD_AI_API_KEY_RECORD_KEY.to_vec(),
+            api_key.as_bytes().to_vec(),
+            None,
+        )
+        .map_err(|error| -> Box<dyn std::error::Error> { Box::new(error) })?;
+    stronghold.save()?;
+
+    Ok(())
+}
+
+fn clear_ai_api_key(app: &AppHandle) -> AppResult<()> {
+    let stronghold = open_stronghold(app)?;
+    let client = match stronghold.get_client(STRONGHOLD_CLIENT_NAME.to_vec()) {
+        Ok(client) => client,
+        Err(_) => stronghold.create_client(STRONGHOLD_CLIENT_NAME.to_vec())?,
+    };
+    let _ = client
+        .store()
+        .delete(STRONGHOLD_AI_API_KEY_RECORD_KEY)
+        .map_err(|error| -> Box<dyn std::error::Error> { Box::new(error) })?;
+    stronghold.save()?;
+
+    Ok(())
+}
+
+fn normalize_ai_settings_input(
+    input: SaveAiSettingsInput,
+) -> Result<NormalizedAiSettingsInput, String> {
+    let base_url = normalize_base_url(&input.base_url)?;
+    let model = normalize_non_empty_text(&input.model, "Model")?;
+    let max_tokens = input
+        .max_tokens
+        .trim()
+        .parse::<i64>()
+        .map_err(|_| "Max tokens must be a positive integer.".to_string())?;
+
+    if max_tokens <= 0 {
+        return Err("Max tokens must be a positive integer.".to_string());
+    }
+
+    let temperature = input
+        .temperature
+        .trim()
+        .parse::<f64>()
+        .map_err(|_| "Temperature must be a number between 0.0 and 2.0.".to_string())?;
+
+    if !temperature.is_finite() || !(0.0..=2.0).contains(&temperature) {
+        return Err("Temperature must be a number between 0.0 and 2.0.".to_string());
+    }
+
+    Ok(NormalizedAiSettingsInput {
+        api_key: input.api_key.map(|value| value.trim().to_string()),
+        base_url,
+        model,
+        max_tokens,
+        temperature,
+    })
+}
+
+fn normalize_generate_cards_input(
+    input: GenerateCardsInput,
+) -> Result<NormalizedGenerateCardsInput, String> {
+    let topic = normalize_non_empty_text(&input.topic, "Topic")?;
+    let count = match input.count {
+        Some(value) if !(1..=30).contains(&value) => {
+            return Err("Card count must be between 1 and 30.".to_string());
+        }
+        Some(value) => Some(value),
+        None => None,
+    };
+    let difficulty = normalize_ai_difficulty(&input.difficulty)?;
+    let style = normalize_ai_style(&input.style)?;
+
+    Ok(NormalizedGenerateCardsInput {
+        topic,
+        count,
+        difficulty,
+        style,
+    })
+}
+
+fn normalize_base_url(value: &str) -> Result<String, String> {
+    let trimmed = value.trim().trim_end_matches('/');
+
+    if trimmed.is_empty() {
+        return Err("Base URL can't be empty.".to_string());
+    }
+
+    if !trimmed.starts_with("http://") && !trimmed.starts_with("https://") {
+        return Err("Base URL must start with http:// or https://.".to_string());
+    }
+
+    Ok(trimmed.to_string())
+}
+
+fn normalize_non_empty_text(value: &str, label: &str) -> Result<String, String> {
+    let trimmed = value.trim();
+
+    if trimmed.is_empty() {
+        return Err(format!("{label} can't be empty."));
+    }
+
+    Ok(trimmed.to_string())
+}
+
+fn normalize_ai_difficulty(value: &str) -> Result<String, String> {
+    match value.trim() {
+        "Beginner" | "Intermediate" | "Advanced" => Ok(value.trim().to_string()),
+        _ => Err("Difficulty must be Beginner, Intermediate, or Advanced.".to_string()),
+    }
+}
+
+fn normalize_ai_style(value: &str) -> Result<String, String> {
+    match value.trim() {
+        "Concept" | "Q&A" | "Cloze" => Ok(value.trim().to_string()),
+        _ => Err("Style must be Concept, Q&A, or Cloze.".to_string()),
+    }
+}
+
+fn trim_trailing_zeroes(value: f64) -> String {
+    let mut text = format!("{value:.2}");
+
+    while text.contains('.') && text.ends_with('0') {
+        text.pop();
+    }
+
+    if text.ends_with('.') {
+        text.pop();
+    }
+
+    text
+}
+
+fn build_generate_cards_prompt(
+    topic: &str,
+    count: Option<i64>,
+    difficulty: &str,
+    style: &str,
+) -> String {
+    let request_line = match count {
+        Some(value) => format!("Generate exactly {value} flashcards about \"{topic}\"."),
+        None => format!(
+            "Generate the smallest complete set of flashcards about \"{topic}\". Return between 6 and 20 cards."
+        ),
+    };
+
+    format!(
+        "{request_line}\n\nDifficulty: {}\nCard style: {}\n\nReturn only the JSON array.",
+        ai_difficulty_description(difficulty),
+        ai_style_description(style)
+    )
+}
+
+fn ai_difficulty_description(value: &str) -> &'static str {
+    match value {
+        "Beginner" => {
+            "Introductory - assume no prior knowledge. Use simple language and cover the most essential concepts."
+        }
+        "Advanced" => {
+            "Expert level. Include edge cases, trade-offs, subtle distinctions, and deep technical detail."
+        }
+        _ => {
+            "Assumes basic familiarity. Include nuance, important details, and connections between concepts."
+        }
+    }
+}
+
+fn ai_style_description(value: &str) -> &'static str {
+    match value {
+        "Concept" => {
+            "Concept definition cards: front = concept name or term, back = clear definition with enough context to be unambiguous."
+        }
+        "Cloze" => {
+            "Cloze deletion cards: front = a sentence with ___ replacing the key term, back = the missing term with a one-sentence explanation."
+        }
+        _ => {
+            "Question and answer cards: front = a precise question targeting one fact, back = a concise direct answer."
+        }
+    }
+}
+
+async fn execute_ai_completion(
+    settings: &ResolvedAiSettings,
+    user_prompt: &str,
+    system_prompt: Option<&str>,
+) -> Result<String, String> {
+    if settings.api_key.trim().is_empty() {
+        return Err("Add an API key in Settings first.".to_string());
+    }
+
+    if is_anthropic_base_url(&settings.base_url) {
+        execute_anthropic_completion(settings, user_prompt, system_prompt).await
+    } else {
+        execute_openai_compatible_completion(settings, user_prompt, system_prompt).await
+    }
+}
+
+fn is_anthropic_base_url(base_url: &str) -> bool {
+    base_url.contains("anthropic.com")
+}
+
+async fn execute_openai_compatible_completion(
+    settings: &ResolvedAiSettings,
+    user_prompt: &str,
+    system_prompt: Option<&str>,
+) -> Result<String, String> {
+    let endpoint = format!(
+        "{}/chat/completions",
+        settings.base_url.trim_end_matches('/')
+    );
+    let mut headers = HeaderMap::new();
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+    headers.insert(
+        AUTHORIZATION,
+        HeaderValue::from_str(&format!("Bearer {}", settings.api_key))
+            .map_err(|_| "The API key contains invalid header characters.".to_string())?,
+    );
+
+    let mut messages = Vec::new();
+    if let Some(system_prompt) = system_prompt {
+        messages.push(serde_json::json!({ "role": "system", "content": system_prompt }));
+    }
+    messages.push(serde_json::json!({ "role": "user", "content": user_prompt }));
+
+    let response = reqwest::Client::new()
+        .post(endpoint)
+        .headers(headers)
+        .json(&serde_json::json!({
+            "model": settings.model,
+            "messages": messages,
+            "max_tokens": settings.max_tokens,
+            "temperature": settings.temperature
+        }))
+        .send()
+        .await
+        .map_err(|error| format!("Failed to reach the AI provider: {error}"))?;
+    let status = response.status();
+    let body = response
+        .text()
+        .await
+        .map_err(|error| format!("Failed to read the AI provider response: {error}"))?;
+
+    if !status.is_success() {
+        return Err(format_provider_error(status.as_u16(), &body));
+    }
+
+    let payload: Value =
+        serde_json::from_str(&body).map_err(|error| format!("Invalid provider JSON: {error}"))?;
+    let content = &payload["choices"][0]["message"]["content"];
+
+    extract_text_content(content)
+        .ok_or_else(|| "The provider returned no message content.".to_string())
+}
+
+async fn execute_anthropic_completion(
+    settings: &ResolvedAiSettings,
+    user_prompt: &str,
+    system_prompt: Option<&str>,
+) -> Result<String, String> {
+    let endpoint = format!("{}/messages", settings.base_url.trim_end_matches('/'));
+    let mut headers = HeaderMap::new();
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+    headers.insert(
+        "x-api-key",
+        HeaderValue::from_str(&settings.api_key)
+            .map_err(|_| "The API key contains invalid header characters.".to_string())?,
+    );
+    headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
+
+    let response = reqwest::Client::new()
+        .post(endpoint)
+        .headers(headers)
+        .json(&serde_json::json!({
+            "model": settings.model,
+            "max_tokens": settings.max_tokens,
+            "temperature": settings.temperature,
+            "system": system_prompt.unwrap_or_default(),
+            "messages": [{ "role": "user", "content": user_prompt }]
+        }))
+        .send()
+        .await
+        .map_err(|error| format!("Failed to reach the AI provider: {error}"))?;
+    let status = response.status();
+    let body = response
+        .text()
+        .await
+        .map_err(|error| format!("Failed to read the AI provider response: {error}"))?;
+
+    if !status.is_success() {
+        return Err(format_provider_error(status.as_u16(), &body));
+    }
+
+    let payload: Value =
+        serde_json::from_str(&body).map_err(|error| format!("Invalid provider JSON: {error}"))?;
+    let content = payload["content"]
+        .as_array()
+        .ok_or_else(|| "The provider returned no content array.".to_string())?;
+    let mut text = String::new();
+
+    for part in content {
+        if part["type"].as_str() == Some("text") {
+            if let Some(part_text) = part["text"].as_str() {
+                text.push_str(part_text);
+            }
+        }
+    }
+
+    if text.trim().is_empty() {
+        return Err("The provider returned no text content.".to_string());
+    }
+
+    Ok(text)
+}
+
+fn extract_text_content(value: &Value) -> Option<String> {
+    if let Some(text) = value.as_str() {
+        return Some(text.to_string());
+    }
+
+    value.as_array().map(|parts| {
+        parts
+            .iter()
+            .filter_map(|part| {
+                part.get("text")
+                    .and_then(Value::as_str)
+                    .or_else(|| part.get("content").and_then(Value::as_str))
+            })
+            .collect::<String>()
+    })
+}
+
+fn format_provider_error(status_code: u16, body: &str) -> String {
+    let detail = body.trim();
+    let detail = if detail.len() > 240 {
+        format!("{}…", &detail[..240])
+    } else {
+        detail.to_string()
+    };
+
+    if detail.is_empty() {
+        format!("The AI provider returned HTTP {status_code}.")
+    } else {
+        format!("The AI provider returned HTTP {status_code}: {detail}")
+    }
+}
+
+fn parse_generated_cards_response(
+    response_text: &str,
+) -> Result<Vec<GeneratedCardPayload>, String> {
+    let candidate = extract_json_array_candidate(response_text);
+    let payload: Value = serde_json::from_str(&candidate)
+        .map_err(|error| format!("Failed to parse AI JSON: {error}"))?;
+    let Some(items) = payload.as_array() else {
+        return Err("The AI response was not a JSON array.".to_string());
+    };
+
+    let cards = items
+        .iter()
+        .filter_map(|item| {
+            let front = item.get("front")?.as_str()?.trim();
+            let back = item.get("back")?.as_str()?.trim();
+
+            if front.is_empty() || back.is_empty() {
+                return None;
+            }
+
+            Some(GeneratedCardPayload {
+                back: back.to_string(),
+                front: front.to_string(),
+            })
+        })
+        .collect::<Vec<_>>();
+
+    if cards.is_empty() {
+        return Err("The AI response did not contain any valid cards.".to_string());
+    }
+
+    Ok(cards)
+}
+
+fn extract_json_array_candidate(response_text: &str) -> String {
+    let trimmed = response_text.trim();
+    let unfenced = if trimmed.starts_with("```") {
+        let mut lines = trimmed.lines();
+        let _ = lines.next();
+        let body = lines.collect::<Vec<_>>().join("\n");
+
+        if let Some(index) = body.rfind("```") {
+            body[..index].trim().to_string()
+        } else {
+            body.trim().to_string()
+        }
+    } else {
+        trimmed.to_string()
+    };
+
+    let first_bracket = unfenced.find('[');
+    let last_bracket = unfenced.rfind(']');
+
+    match (first_bracket, last_bracket) {
+        (Some(start), Some(end)) if start <= end => unfenced[start..=end].to_string(),
+        _ => unfenced,
+    }
+}
+
+fn load_recent_activity(
+    connection: &Connection,
+    limit: i64,
+) -> rusqlite::Result<Vec<RecentActivityEntry>> {
+    let mut statement = connection.prepare(
+        "
+        SELECT review_logs.space_id,
+               spaces.name,
+               MAX(review_logs.review_time) AS review_time,
+               COUNT(*) AS review_count,
+               strftime('%Y-%m-%d %H:%M', review_logs.review_time / 1000, 'unixepoch', 'localtime') AS bucket
+        FROM review_logs
+        INNER JOIN spaces ON spaces.id = review_logs.space_id
+        GROUP BY review_logs.space_id, spaces.name, bucket
+        ORDER BY review_time DESC
+        LIMIT ?1
+        ",
+    )?;
+    let rows = statement.query_map([limit], |row| {
+        let space_id: String = row.get(0)?;
+        let review_time: i64 = row.get(2)?;
+        let bucket: String = row.get(4)?;
+
+        Ok(RecentActivityEntry {
+            id: format!("{space_id}:{bucket}"),
+            review_count: row.get(3)?,
+            review_time,
+            space_id,
+            space_name: row.get(1)?,
+        })
+    })?;
+
+    rows.collect()
+}
+
+fn load_settings_data_summary(
+    connection: &Connection,
+    database_path: &Path,
+) -> rusqlite::Result<SettingsDataSummary> {
+    let review_log_count = connection.query_row("SELECT COUNT(*) FROM review_logs", [], |row| {
+        row.get::<_, i64>(0)
+    })?;
+
+    Ok(SettingsDataSummary {
+        database_path: database_path.display().to_string(),
+        review_log_count,
+    })
+}
+
+fn export_dir(app: &AppHandle) -> AppResult<PathBuf> {
+    match app.path().resolve("Pupil", BaseDirectory::Download) {
+        Ok(path) => Ok(path),
+        Err(_) => Ok(app_data_dir(app)?.join("exports")),
+    }
+}
+
+fn write_review_logs_csv(connection: &Connection, path: &Path) -> AppResult<i64> {
+    let mut statement = connection.prepare(
+        "
+        SELECT review_logs.review_time,
+               review_logs.space_id,
+               spaces.name,
+               review_logs.card_id,
+               cards.front,
+               review_logs.grade,
+               review_logs.state,
+               review_logs.due,
+               review_logs.elapsed_days,
+               review_logs.scheduled_days
+        FROM review_logs
+        INNER JOIN spaces ON spaces.id = review_logs.space_id
+        INNER JOIN cards ON cards.id = review_logs.card_id
+        ORDER BY review_logs.review_time DESC
+        ",
+    )?;
+    let mut rows = statement.query([])?;
+    let mut file = fs::File::create(path)?;
+    let mut count = 0_i64;
+
+    writeln!(
+        file,
+        "review_time,space_id,space_name,card_id,card_front,grade,state,due,elapsed_days,scheduled_days"
+    )?;
+
+    while let Some(row) = rows.next()? {
+        writeln!(
+            file,
+            "{},{},{},{},{},{},{},{},{},{}",
+            csv_escape(&row.get::<_, i64>(0)?.to_string()),
+            csv_escape(&row.get::<_, String>(1)?),
+            csv_escape(&row.get::<_, String>(2)?),
+            csv_escape(&row.get::<_, String>(3)?),
+            csv_escape(&row.get::<_, String>(4)?),
+            csv_escape(&row.get::<_, i64>(5)?.to_string()),
+            csv_escape(&row.get::<_, i64>(6)?.to_string()),
+            csv_escape(&row.get::<_, i64>(7)?.to_string()),
+            csv_escape(
+                &row.get::<_, Option<i64>>(8)?
+                    .map(|value| value.to_string())
+                    .unwrap_or_default()
+            ),
+            csv_escape(
+                &row.get::<_, Option<i64>>(9)?
+                    .map(|value| value.to_string())
+                    .unwrap_or_default()
+            ),
+        )?;
+        count += 1;
+    }
+
+    Ok(count)
+}
+
+fn csv_escape(value: &str) -> String {
+    let escaped = value.replace('"', "\"\"");
+
+    format!("\"{escaped}\"")
+}
+
+fn reset_all_data_rows(app: &AppHandle, connection: &mut Connection) -> AppResult<()> {
+    clear_ai_api_key(app)?;
+
+    let transaction = connection.transaction()?;
+    transaction.execute_batch(
+        "
+        DELETE FROM review_logs;
+        DELETE FROM study_days;
+        DELETE FROM cards;
+        DELETE FROM spaces;
+        DELETE FROM settings;
+        ",
+    )?;
+    transaction.commit()?;
+
+    Ok(())
 }
 
 /// Loads the base list of spaces, then hydrates each one with the counts the UI

@@ -4,6 +4,7 @@ import type { GeneratedCardCandidate } from "./types";
 
 type AiGenerateReviewListProps = {
   cards: GeneratedCardCandidate[];
+  isRegenerating: string | null;
   isSaving: boolean;
   onApprove: (cardId: string) => void;
   onBulkApprove: () => void;
@@ -16,6 +17,7 @@ type AiGenerateReviewListProps = {
 
 export function AiGenerateReviewList({
   cards,
+  isRegenerating,
   isSaving,
   onApprove,
   onBulkApprove,
@@ -56,6 +58,7 @@ export function AiGenerateReviewList({
             <AiGenerateReviewCard
               card={card}
               index={index}
+              isRegenerating={isRegenerating === card.id}
               key={card.id}
               onApprove={() => onApprove(card.id)}
               onDiscard={() => onDiscard(card.id)}
@@ -71,7 +74,7 @@ export function AiGenerateReviewList({
           </div>
           <button
             className="ai-gen-save-bar-btn"
-            disabled={approvedCount === 0 || isSaving}
+            disabled={approvedCount === 0 || isSaving || isRegenerating !== null}
             onClick={onSave}
             type="button"
           >
