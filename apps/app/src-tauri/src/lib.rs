@@ -838,6 +838,9 @@ fn create_backup_if_database_exists(app: &AppHandle, database_path: &Path) -> Ap
     Ok(true)
 }
 
+/// Assembles the AI settings that the settings screen needs to display: non-secret
+/// values come from the database, and the API key check talks to Stronghold so the
+/// key bytes never have to leave secure storage.
 fn load_ai_settings_state(app: &AppHandle, connection: &Connection) -> AppResult<AiSettingsState> {
     Ok(AiSettingsState {
         base_url: load_string_setting(connection, AI_SETTING_BASE_URL_KEY, DEFAULT_AI_BASE_URL)?,
@@ -856,6 +859,10 @@ fn load_ai_settings_state(app: &AppHandle, connection: &Connection) -> AppResult
     })
 }
 
+/// Writes AI settings in two separate stores: non-secret fields go into the SQLite
+/// `settings` table inside a transaction, and the API key goes into Stronghold.
+/// An empty string for the key means "clear it", omitting the field entirely means
+/// "leave whatever is stored alone".
 fn save_ai_settings_rows(
     app: &AppHandle,
     connection: &mut Connection,
@@ -885,6 +892,10 @@ fn save_ai_settings_rows(
     load_ai_settings_state(app, connection)
 }
 
+/// Resolves the fully usable AI settings for a live connectivity test, where the
+/// caller may be providing a brand-new key that hasn't been saved yet. If the input
+/// key is missing, falls back to what's already in Stronghold — so the test button
+/// works both during initial setup and when tweaking model or URL only.
 fn resolve_ai_settings_for_test(
     app: &AppHandle,
     connection: &Connection,
@@ -909,6 +920,9 @@ fn resolve_ai_settings_for_test(
     })
 }
 
+/// Loads and parses everything the AI layer needs to make a real request — the DB
+/// settings plus the Stronghold key — and fails with a clear message if the key
+/// hasn't been configured yet.
 fn load_resolved_ai_settings(
     app: &AppHandle,
     connection: &Connection,
@@ -935,6 +949,9 @@ fn load_resolved_ai_settings(
     })
 }
 
+/// Reads a single string from the `settings` table, returning a compile-time
+/// default when the key doesn't exist yet. This means callers never have to
+/// distinguish between "never set" and "set to the default value".
 fn load_string_setting(
     connection: &Connection,
     key: &str,
@@ -950,6 +967,8 @@ fn load_string_setting(
         })
 }
 
+/// Inserts or updates a key/value pair in the `settings` table. Using ON CONFLICT
+/// means callers don't need to check whether the row exists before writing.
 fn upsert_setting(
     transaction: &rusqlite::Transaction<'_>,
     key: &str,
@@ -967,6 +986,9 @@ fn upsert_setting(
     Ok(())
 }
 
+/// Returns the path to the Stronghold snapshot file on disk. The snapshot is the
+/// encrypted blob that stores secrets like the AI API key. The parent directory is
+/// created here so nothing downstream has to worry about it.
 fn stronghold_snapshot_path(app: &AppHandle) -> AppResult<PathBuf> {
     let path = app_data_dir(app)?.join(STRONGHOLD_SNAPSHOT_FILE_NAME);
 
@@ -977,6 +999,10 @@ fn stronghold_snapshot_path(app: &AppHandle) -> AppResult<PathBuf> {
     Ok(path)
 }
 
+/// Derives a deterministic encryption password for the Stronghold vault from a
+/// fixed salt, the app data directory path, and the current OS username. The
+/// password is never stored — it's recomputed from machine context each time the
+/// vault is opened, so the encrypted snapshot is useless if moved to another machine.
 fn stronghold_password(app: &AppHandle) -> AppResult<Vec<u8>> {
     let mut hasher = Sha256::new();
     hasher.update(b"pupil-stronghold-v1");
@@ -989,6 +1015,8 @@ fn stronghold_password(app: &AppHandle) -> AppResult<Vec<u8>> {
     Ok(hasher.finalize().to_vec())
 }
 
+/// Opens the Stronghold vault using the machine-derived password. Every secret read
+/// or write goes through this function rather than holding the vault open globally.
 fn open_stronghold(app: &AppHandle) -> AppResult<Stronghold> {
     let snapshot_path = stronghold_snapshot_path(app)?;
     let password = stronghold_password(app)?;
@@ -996,6 +1024,8 @@ fn open_stronghold(app: &AppHandle) -> AppResult<Stronghold> {
     Stronghold::new(snapshot_path, password).map_err(Into::into)
 }
 
+/// Reads the AI API key from Stronghold. Returns `None` when no key has been saved
+/// yet, which is the expected state for a fresh install.
 fn load_ai_api_key(app: &AppHandle) -> AppResult<Option<String>> {
     let stronghold = open_stronghold(app)?;
     let client = match stronghold.get_client(STRONGHOLD_CLIENT_NAME.to_vec()) {
@@ -1010,6 +1040,8 @@ fn load_ai_api_key(app: &AppHandle) -> AppResult<Option<String>> {
     value.map(String::from_utf8).transpose().map_err(Into::into)
 }
 
+/// Writes the API key into the Stronghold store and flushes the snapshot to disk
+/// so it survives the next app launch.
 fn save_ai_api_key(app: &AppHandle, api_key: &str) -> AppResult<()> {
     let stronghold = open_stronghold(app)?;
     let client = match stronghold.get_client(STRONGHOLD_CLIENT_NAME.to_vec()) {
@@ -1029,6 +1061,8 @@ fn save_ai_api_key(app: &AppHandle, api_key: &str) -> AppResult<()> {
     Ok(())
 }
 
+/// Removes the API key from Stronghold and saves the snapshot so the deletion is
+/// durable. Used when the user explicitly clears the field in settings.
 fn clear_ai_api_key(app: &AppHandle) -> AppResult<()> {
     let stronghold = open_stronghold(app)?;
     let client = match stronghold.get_client(STRONGHOLD_CLIENT_NAME.to_vec()) {
@@ -1044,6 +1078,9 @@ fn clear_ai_api_key(app: &AppHandle) -> AppResult<()> {
     Ok(())
 }
 
+/// Validates and coerces the raw AI settings payload from the frontend into the
+/// typed form the backend works with. Rejects clearly unusable values (bad URL
+/// scheme, max_tokens ≤ 0, temperature outside 0–2) with user-readable messages.
 fn normalize_ai_settings_input(
     input: SaveAiSettingsInput,
 ) -> Result<NormalizedAiSettingsInput, String> {
@@ -1078,6 +1115,9 @@ fn normalize_ai_settings_input(
     })
 }
 
+/// Validates card-generation parameters before they touch the AI layer. Count is
+/// optional — leaving it out asks the model to choose — but when provided it must
+/// sit between 1 and 30.
 fn normalize_generate_cards_input(
     input: GenerateCardsInput,
 ) -> Result<NormalizedGenerateCardsInput, String> {
@@ -1138,6 +1178,9 @@ fn normalize_ai_style(value: &str) -> Result<String, String> {
     }
 }
 
+/// Formats a float as a string without unnecessary trailing zeros so that 0.7
+/// serializes as "0.7", not "0.70". Used for storing temperature in the settings
+/// table where values are kept as human-readable strings.
 fn trim_trailing_zeroes(value: f64) -> String {
     let mut text = format!("{value:.2}");
 
@@ -1152,6 +1195,9 @@ fn trim_trailing_zeroes(value: f64) -> String {
     text
 }
 
+/// Assembles the user-turn prompt the model sees. The system prompt lives in
+/// `AI_SYSTEM_PROMPT` and covers format rules; this function handles the
+/// per-request variables: topic, desired count, difficulty level, and card style.
 fn build_generate_cards_prompt(
     topic: &str,
     count: Option<i64>,
@@ -1172,6 +1218,9 @@ fn build_generate_cards_prompt(
     )
 }
 
+/// Expands a short difficulty label into the fuller prose the model understands.
+/// The expanded descriptions are injected into the prompt so the model can calibrate
+/// vocabulary and depth without us re-explaining the scale every time.
 fn ai_difficulty_description(value: &str) -> &'static str {
     match value {
         "Beginner" => {
@@ -1186,6 +1235,8 @@ fn ai_difficulty_description(value: &str) -> &'static str {
     }
 }
 
+/// Expands a card style label into a concrete description that tells the model how
+/// to structure the front and back of every card it generates.
 fn ai_style_description(value: &str) -> &'static str {
     match value {
         "Concept" => {
@@ -1200,6 +1251,10 @@ fn ai_style_description(value: &str) -> &'static str {
     }
 }
 
+/// Top-level AI dispatch: routes the request to the Anthropic path when the base
+/// URL looks like anthropic.com, and to the OpenAI-compatible path otherwise.
+/// This lets the app work with GPT, Claude, local models, or any OpenAI-spec proxy
+/// through one settings form.
 async fn execute_ai_completion(
     settings: &ResolvedAiSettings,
     user_prompt: &str,
@@ -1216,10 +1271,16 @@ async fn execute_ai_completion(
     }
 }
 
+/// Simple heuristic to tell whether a base URL points at Anthropic's API.
+/// Anthropic uses a different auth header and response shape, so the two paths
+/// stay separate.
 fn is_anthropic_base_url(base_url: &str) -> bool {
     base_url.contains("anthropic.com")
 }
 
+/// Calls any OpenAI-compatible `/chat/completions` endpoint. This covers OpenAI
+/// itself plus local servers like Ollama, LM Studio, and cloud proxies that speak
+/// the same wire format. Auth uses Bearer token in the Authorization header.
 async fn execute_openai_compatible_completion(
     settings: &ResolvedAiSettings,
     user_prompt: &str,
@@ -1273,6 +1334,9 @@ async fn execute_openai_compatible_completion(
         .ok_or_else(|| "The provider returned no message content.".to_string())
 }
 
+/// Calls the Anthropic Messages API. Anthropic uses `x-api-key` instead of
+/// `Authorization: Bearer`, passes `system` as a top-level field instead of in the
+/// messages array, and returns content as an array of typed parts.
 async fn execute_anthropic_completion(
     settings: &ResolvedAiSettings,
     user_prompt: &str,
@@ -1333,6 +1397,9 @@ async fn execute_anthropic_completion(
     Ok(text)
 }
 
+/// Normalizes the `content` field from an OpenAI-style response into a plain
+/// string, handling both the simple-string case and the content-parts array that
+/// some providers use.
 fn extract_text_content(value: &Value) -> Option<String> {
     if let Some(text) = value.as_str() {
         return Some(text.to_string());
@@ -1350,6 +1417,8 @@ fn extract_text_content(value: &Value) -> Option<String> {
     })
 }
 
+/// Converts a non-2xx provider response into a message the UI can display.
+/// Truncates long bodies so error toasts don't overflow.
 fn format_provider_error(status_code: u16, body: &str) -> String {
     let detail = body.trim();
     let detail = if detail.len() > 240 {
@@ -1365,6 +1434,8 @@ fn format_provider_error(status_code: u16, body: &str) -> String {
     }
 }
 
+/// Parses the raw text the model returned into the card list the frontend expects.
+/// Filters out items with empty front or back so callers always get usable cards.
 fn parse_generated_cards_response(
     response_text: &str,
 ) -> Result<Vec<GeneratedCardPayload>, String> {
@@ -1399,6 +1470,9 @@ fn parse_generated_cards_response(
     Ok(cards)
 }
 
+/// Strips markdown fences and preamble so we can attempt to parse whatever JSON
+/// array the model returned, even when it ignored the "no fences" instruction.
+/// Finds the outermost `[...]` span as a best-effort fallback.
 fn extract_json_array_candidate(response_text: &str) -> String {
     let trimmed = response_text.trim();
     let unfenced = if trimmed.starts_with("```") {
@@ -1424,6 +1498,9 @@ fn extract_json_array_candidate(response_text: &str) -> String {
     }
 }
 
+/// Fetches the most recent study sessions grouped by space and minute-bucket so
+/// the dashboard activity feed shows distinct events rather than one row per card
+/// reviewed.
 fn load_recent_activity(
     connection: &Connection,
     limit: i64,
@@ -1459,6 +1536,9 @@ fn load_recent_activity(
     rows.collect()
 }
 
+/// Provides the settings screen with the two pieces of live data it needs: where
+/// the database file lives (for the "open in Finder" hint) and how many review
+/// records exist (so the export prompt can show an honest number).
 fn load_settings_data_summary(
     connection: &Connection,
     database_path: &Path,
@@ -1473,6 +1553,9 @@ fn load_settings_data_summary(
     })
 }
 
+/// Resolves the folder where exported files should land. Prefers the user's
+/// Downloads directory so exports are easy to find, and falls back to an `exports`
+/// folder inside the app data directory if Downloads isn't accessible.
 fn export_dir(app: &AppHandle) -> AppResult<PathBuf> {
     match app.path().resolve("Pupil", BaseDirectory::Download) {
         Ok(path) => Ok(path),
@@ -1480,6 +1563,9 @@ fn export_dir(app: &AppHandle) -> AppResult<PathBuf> {
     }
 }
 
+/// Streams every review log row to a CSV file so learners can analyze their study
+/// history in any spreadsheet tool. Joins spaces and cards to include human-readable
+/// names alongside the raw IDs.
 fn write_review_logs_csv(connection: &Connection, path: &Path) -> AppResult<i64> {
     let mut statement = connection.prepare(
         "
@@ -1537,12 +1623,17 @@ fn write_review_logs_csv(connection: &Connection, path: &Path) -> AppResult<i64>
     Ok(count)
 }
 
+/// Wraps a value in double-quotes and escapes any internal quotes by doubling
+/// them, which is the standard RFC 4180 CSV escaping rule.
 fn csv_escape(value: &str) -> String {
     let escaped = value.replace('"', "\"\"");
 
     format!("\"{escaped}\"")
 }
 
+/// Wipes all user-generated content and settings, including the API key in
+/// Stronghold. The schema tables (`schema_migrations`) are left intact so the app
+/// continues to boot cleanly after a reset.
 fn reset_all_data_rows(app: &AppHandle, connection: &mut Connection) -> AppResult<()> {
     clear_ai_api_key(app)?;
 
@@ -1628,6 +1719,8 @@ fn load_space_counts(
     )
 }
 
+/// Looks up the streak for a single space by delegating to the shared streak
+/// helper with a space filter applied.
 fn load_space_streak(connection: &Connection, space_id: &str) -> rusqlite::Result<i64> {
     load_streak(connection, Some(space_id))
 }
@@ -2409,6 +2502,8 @@ fn normalize_import_anki_cards(
         .collect()
 }
 
+/// Validates that an ID field arrived non-empty. Trims whitespace since IDs
+/// typed or pasted by users sometimes have invisible trailing characters.
 fn normalize_required_identifier(value: &str, label: &str) -> Result<String, String> {
     let trimmed = value.trim();
 
@@ -2419,6 +2514,8 @@ fn normalize_required_identifier(value: &str, label: &str) -> Result<String, Str
     Ok(trimmed.to_string())
 }
 
+/// FSRS uses grades 1–4 (Again / Hard / Good / Easy). Anything outside that
+/// range is a bug in the frontend scheduler integration.
 fn normalize_grade(value: i64) -> Result<i64, String> {
     if (1..=4).contains(&value) {
         return Ok(value);
@@ -2427,6 +2524,7 @@ fn normalize_grade(value: i64) -> Result<i64, String> {
     Err("Grade must be between 1 and 4.".to_string())
 }
 
+/// FSRS card states are 0 = New, 1 = Learning, 2 = Review, 3 = Relearning.
 fn normalize_card_state(value: i64) -> Result<i64, String> {
     if (0..=3).contains(&value) {
         return Ok(value);
@@ -2435,6 +2533,8 @@ fn normalize_card_state(value: i64) -> Result<i64, String> {
     Err("Card state must be between 0 and 3.".to_string())
 }
 
+/// All timestamps in this app are Unix milliseconds. A non-positive value almost
+/// always means the frontend passed an uninitialized field.
 fn normalize_timestamp(value: i64, label: &str) -> Result<i64, String> {
     if value > 0 {
         return Ok(value);
