@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { AppTitlebar, type AppTab } from "./components/app-shell";
+import { AppTitlebar, CommandPalette, type AppTab } from "./components/app-shell";
 import { AiGenerateScreen } from "./components/ai-generate";
 import { CardsScreen } from "./components/cards";
 import {
@@ -215,6 +215,7 @@ export default function App() {
   const [newSpaceName, setNewSpaceName] = useState("");
   const [newSpaceError, setNewSpaceError] = useState<string | null>(null);
   const [isCreatingSpace, setIsCreatingSpace] = useState(false);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -285,6 +286,17 @@ export default function App() {
     return () => {
       unlisten?.();
     };
+  }, []);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsPaletteOpen((open) => !open);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const hasRealSpaces = spaces.length > 0;
@@ -653,6 +665,7 @@ export default function App() {
                   activeTab={activeTab}
                   globalStreak={activeTab === "dashboard" ? globalStreak : null}
                   onOpenCreateDialog={handleOpenCreateDialog}
+                  onOpenPalette={() => setIsPaletteOpen(true)}
                   onSelectTab={setActiveTab}
                   tabs={APP_TABS}
                 />
@@ -708,6 +721,21 @@ export default function App() {
               onClose={handleCloseCreateDialog}
               onSubmit={handleCreateSpaceSubmit}
               value={newSpaceName}
+            />
+          ) : null}
+
+          {isPaletteOpen ? (
+            <CommandPalette
+              cards={cards}
+              onClose={() => setIsPaletteOpen(false)}
+              onOpenAiGenerate={handleOpenGlobalAiGenerate}
+              onOpenCreateDialog={handleOpenCreateDialog}
+              onOpenImport={() => setActiveTab("import")}
+              onOpenSettings={() => setActiveTab("settings")}
+              onOpenSpace={handleOpenSpace}
+              onSelectTab={setActiveTab}
+              onStartGlobalStudy={handleStartGlobalStudy}
+              spaces={spaces}
             />
           ) : null}
         </>

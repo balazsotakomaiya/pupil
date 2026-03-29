@@ -13,6 +13,7 @@ type AppTitlebarProps = {
   activeTab: AppTabId;
   globalStreak?: number | null;
   onOpenCreateDialog: () => void;
+  onOpenPalette: () => void;
   onSelectTab: (tabId: AppTabId) => void;
   tabs: AppTab[];
 };
@@ -21,6 +22,7 @@ export function AppTitlebar({
   activeTab,
   globalStreak,
   onOpenCreateDialog,
+  onOpenPalette,
   onSelectTab,
   tabs,
 }: AppTitlebarProps) {
@@ -60,7 +62,7 @@ export function AppTitlebar({
           <PlusIcon />
           New Space
         </button>
-        <button aria-label="Search" className="titlebar-btn" type="button">
+        <button aria-label="Search" className="titlebar-btn" onClick={onOpenPalette} type="button">
           <SearchIcon />
         </button>
       </div>
