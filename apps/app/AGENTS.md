@@ -36,7 +36,19 @@ apps/app/
 ├── src-tauri/              # Rust backend
 │   ├── src/
 │   │   ├── main.rs         # Entry point — just calls lib::run()
-│   │   └── lib.rs          # Everything: Tauri commands, DB logic, AI calls
+│   │   ├── lib.rs          # Crate root and Tauri wiring
+│   │   ├── app.rs          # App bootstrap, paths, connections, migrations, menu
+│   │   ├── commands.rs     # Tauri command handlers
+│   │   ├── ai.rs           # AI settings, Stronghold, prompt building, provider calls
+│   │   ├── spaces.rs       # Space queries and mutations
+│   │   ├── cards.rs        # Card queries, mutations, and review persistence
+│   │   ├── analytics.rs    # Dashboard and per-space reporting queries
+│   │   ├── imports.rs      # Anki import transaction logic
+│   │   ├── normalize.rs    # Backend input normalization
+│   │   ├── settings.rs     # Export/reset helpers and settings queries
+│   │   ├── types.rs        # Shared DTOs and internal data shapes
+│   │   ├── constants.rs    # Shared constants and migration registry
+│   │   └── util.rs         # Small cross-cutting helpers
 │   ├── migrations/         # SQL schema files (applied in order at startup)
 │   ├── capabilities/       # Tauri capability definitions (IPC permissions)
 │   └── tauri.conf.json     # App metadata, window config, plugin config
@@ -47,19 +59,18 @@ apps/app/
 
 ## How the backend is organized
 
-All Rust lives in a single `lib.rs`. The rough layering within that file is:
+The Rust backend is split by responsibility:
 
-1. **Imports and type aliases** — at the top. `AppResult<T>` is the shared error wrapper.
-2. **Data structs** — input types (`*Input`), output types (`*Summary`, `*State`), and normalized intermediates (`Normalized*`). Inputs come from the frontend (deserialized), outputs go back (serialized). Normalized types are internal-only.
-3. **Constants** — FSRS limits, setting keys, AI prompt text, Stronghold identifiers, migration definitions.
-4. **Tauri commands** (`#[tauri::command]`) — the public API the frontend calls. These are thin: they open a connection, normalize input, call a storage or business-logic function, and map errors. They do not contain query logic.
-5. **`run()`** — wires the Tauri builder, registers all commands, and runs migrations on startup.
-6. **Infrastructure helpers** — path resolution, connection opening, migration logic, backup creation.
-7. **Settings and Stronghold** — reading/writing the `settings` table and the API key vault.
-8. **AI layer** — prompt building, provider dispatch (OpenAI vs Anthropic), response parsing.
-9. **Storage functions** — SQL queries, one per operation. Named `*_row` or `*_rows` by convention.
-10. **Normalization functions** — input validation at the boundary. Named `normalize_*`.
-11. **Utility functions** — `now_ms()`, `encode_tags`, `decode_tags`, `csv_escape`, error mappers.
+1. **`lib.rs`** — crate root. Registers Tauri commands and starts the app.
+2. **`app.rs`** — app bootstrap and infrastructure: menu, app-data paths, SQLite connections, migrations, backup creation.
+3. **`commands.rs`** — the public Tauri IPC surface. These functions stay thin: open a connection, normalize input, call feature/storage code, map errors.
+4. **`types.rs`** — shared structs for command inputs/outputs plus internal normalized shapes.
+5. **`constants.rs`** — app-wide constants, Stronghold identifiers, AI defaults, migration registry.
+6. **Feature/storage modules** — `spaces.rs`, `cards.rs`, `analytics.rs`, `imports.rs`, `settings.rs`, `ai.rs`.
+7. **`normalize.rs`** — validation and coercion at the backend boundary.
+8. **`util.rs`** — small shared helpers like timestamps, tag encoding, and storage error mapping.
+
+The guiding rule is pragmatic separation: keep thin command handlers, keep SQL close to the feature it serves, and avoid layers that only forward calls.
 
 ---
 
@@ -79,7 +90,7 @@ All Rust lives in a single `lib.rs`. The rough layering within that file is:
 - All IDs are `nanoid!(12)` — 12-character random strings.
 - All timestamps are Unix milliseconds stored as `INTEGER`. Use `now_ms()` to get the current time.
 - Tags are stored as a JSON array string in a nullable `TEXT` column. Use `encode_tags` / `decode_tags`.
-- Schema changes go in a new file under `migrations/` named `NNNN_description.sql`. Add the new `Migration` entry to the `MIGRATIONS` slice in `lib.rs`.
+- Schema changes go in a new file under `migrations/` named `NNNN_description.sql`. Add the new `Migration` entry to the `MIGRATIONS` slice in `src-tauri/src/constants.rs`.
 - Migrations that contain `DROP TABLE`, `ALTER TABLE`, `DELETE FROM`, or `UPDATE` automatically trigger a pre-migration database backup.
 - Foreign keys are enforced (`PRAGMA foreign_keys = ON`). On delete cascade is used for cards and review logs when their parent space is deleted.
 
@@ -130,7 +141,7 @@ The Rust backend compiles with `cargo` under the hood. First build takes a while
 ## What to be careful about
 
 - **Never put the API key in SQLite.** It goes in Stronghold only.
-- **Normalize all frontend input** before it reaches a storage function. The `normalize_*` functions at the bottom of `lib.rs` are the pattern.
+- **Normalize all frontend input** before it reaches a storage function. The `normalize_*` helpers in `src-tauri/src/normalize.rs` and `src-tauri/src/ai.rs` are the pattern.
 - **Use transactions** for any write that touches more than one table (e.g., inserting a card and bumping the space's `updated_at`).
 - **Don't add scheduler logic to Rust.** Scheduling is the frontend's job; the backend is a dumb persistence layer for FSRS state.
 - **The `study_days` table has a NULL/non-NULL duality** — `space_id IS NULL` means the global streak row, `space_id = x` means a per-space row. The streak query handles this with `(?1 IS NULL AND space_id IS NULL) OR space_id = ?1`.

@@ -411,10 +411,353 @@ body {
   color: var(--text-primary);
 }
 
+/* ─── Hero mockup ────────────────────────────────────────────────────────── */
+.hero-mockup {
+  margin-top: 56px;
+  width: 100%;
+  /* Fades the bottom edge into the background so it blends with the divider */
+  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+.mockup-window {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 32px 64px rgba(0,0,0,0.6);
+}
+
+.mockup-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+}
+
+.mockup-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.dot-red    { background: #ff5f56; }
+.dot-yellow { background: #ffbd2e; }
+.dot-green  { background: #27c93f; }
+
+.mockup-app-title {
+  font-family: "Syne", var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  letter-spacing: -0.3px;
+  margin: 0 auto;
+}
+
+.mockup-body {
+  display: flex;
+  min-height: 340px;
+}
+
+.mockup-sidebar {
+  width: 140px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mockup-tab {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: default;
+  user-select: none;
+}
+
+.mockup-tab-active {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+.mockup-sidebar-spacer {
+  flex: 1;
+}
+
+.mockup-main {
+  flex: 1;
+  padding: 20px 24px;
+  overflow: hidden;
+}
+
+.mockup-main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.mockup-greeting {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.mockup-btn {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--bg);
+  background: var(--text-primary);
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: default;
+  user-select: none;
+}
+
+.mockup-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.mockup-stat {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mockup-stat-value {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.mockup-stat-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.mockup-section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+
+.mockup-spaces {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mockup-space-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+}
+
+.mockup-space-icon {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--border-hover);
+  flex-shrink: 0;
+}
+
+.mockup-space-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.mockup-space-meta {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.mockup-space-due {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.mockup-study-btn {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: default;
+  user-select: none;
+}
+
+/* ─── How it works steps ─────────────────────────────────────────────────── */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  position: relative;
+}
+
+/* Horizontal connecting line between steps */
+.steps::before {
+  content: "";
+  position: absolute;
+  top: 20px; /* center of the number badge */
+  left: calc(100% / 6); /* starts at center of first step */
+  right: calc(100% / 6); /* ends at center of last step */
+  height: 1px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--border) 0px,
+    var(--border) 1px,
+    transparent 1px,
+    transparent 6px
+  );
+}
+
+.step {
+  padding: 0 32px 0 0;
+  position: relative;
+}
+
+.step:last-child {
+  padding-right: 0;
+}
+
+.step-connector {
+  display: none;
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.step-number span {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  letter-spacing: 0.5px;
+}
+
+.step-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  letter-spacing: -0.3px;
+}
+
+.step-desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* ─── Final CTA section ──────────────────────────────────────────────────── */
+.cta-section {
+  padding: 96px 32px;
+  max-width: 960px;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.cta-section .section-label {
+  margin-bottom: 16px;
+}
+
+.cta-title {
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 600;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  max-width: 560px;
+  margin-bottom: 16px;
+}
+
+.cta-title em {
+  font-style: italic;
+  font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
+  font-weight: 400;
+}
+
+.cta-desc {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+}
+
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .features-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .steps {
     grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .steps::before {
+    display: none;
+  }
+
+  .step {
+    padding-right: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mockup-sidebar {
+    display: none;
+  }
+
+  .mockup-stats-row {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -431,11 +774,19 @@ body {
     padding: 56px 20px;
   }
 
+  .cta-section {
+    padding: 72px 20px;
+  }
+
   .nav-inner {
     padding: 12px 16px;
   }
 
   .nav-links li:not(:last-child) {
     display: none;
+  }
+
+  .mockup-stats-row {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

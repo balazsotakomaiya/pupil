@@ -50,11 +50,17 @@ export default function App() {
         </p>
         <div className="hero-ctas">
           <a href="#" className="btn-primary">
+            <AppleIcon />
             Download for Mac
           </a>
           <a href="#" className="btn-secondary">
             Open Web App
           </a>
+        </div>
+
+        {/* App screenshot slot */}
+        <div className="hero-mockup">
+          <AppMockup />
         </div>
       </section>
 
@@ -63,10 +69,10 @@ export default function App() {
       {/* Features */}
       <section className="section" id="features">
         <p className="section-label">Features</p>
-        <h2 className="section-title">Everything Anki should have been</h2>
+        <h2 className="section-title">Spaced repetition, without the friction</h2>
         <p className="section-desc">
-          All the rigor of spaced repetition. None of the friction. Powered
-          by AI so you can go from topic to drill in seconds.
+          All the rigor of the algorithm. None of the setup. Powered by AI
+          so you can go from topic to drill in seconds.
         </p>
         <div className="features-grid">
           {FEATURES.map((f) => (
@@ -76,6 +82,51 @@ export default function App() {
               <p className="feature-desc">{f.desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      <div className="ruler-divider" />
+
+      {/* How it works */}
+      <section className="section" id="how-it-works">
+        <p className="section-label">How it works</p>
+        <h2 className="section-title">From topic to retained in minutes</h2>
+        <p className="section-desc">
+          No setup, no configuration. Just tell Pupil what you want to learn.
+        </p>
+        <div className="steps">
+          {STEPS.map((step, i) => (
+            <div className="step" key={step.title}>
+              <div className="step-number">
+                <span>{String(i + 1).padStart(2, "0")}</span>
+              </div>
+              <div className="step-connector" aria-hidden="true" />
+              <p className="step-title">{step.title}</p>
+              <p className="step-desc">{step.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="ruler-divider" />
+
+      {/* Final CTA */}
+      <section className="cta-section">
+        <p className="section-label">Get started</p>
+        <h2 className="cta-title">
+          Ready to <em>actually</em> remember things?
+        </h2>
+        <p className="cta-desc">
+          Free. Open source. No account. Your cards stay on your device.
+        </p>
+        <div className="hero-ctas">
+          <a href="#" className="btn-primary">
+            <AppleIcon />
+            Download for Mac
+          </a>
+          <a href="#" className="btn-secondary">
+            Open Web App
+          </a>
         </div>
       </section>
 
@@ -92,7 +143,7 @@ export default function App() {
           <a href="https://github.com/pupil-app/pupil/issues" target="_blank" rel="noopener noreferrer">Issues</a>
         </nav>
         <a
-          href="https://github.com/pupil-app/pupil"
+          href="https://otakomaiya.com"
           className="footer-credit"
           target="_blank"
           rel="noopener noreferrer"
@@ -101,6 +152,68 @@ export default function App() {
         </a>
       </footer>
     </>
+  );
+}
+
+/* ─── App mockup (screenshot placeholder) ───────────────────────────────── */
+function AppMockup() {
+  return (
+    <div className="mockup-window">
+      <div className="mockup-titlebar">
+        <div className="mockup-dots">
+          <span className="dot dot-red" />
+          <span className="dot dot-yellow" />
+          <span className="dot dot-green" />
+        </div>
+        <span className="mockup-app-title">pupil</span>
+      </div>
+      <div className="mockup-body">
+        <aside className="mockup-sidebar">
+          <div className="mockup-tab mockup-tab-active">Dashboard</div>
+          <div className="mockup-tab">Cards</div>
+          <div className="mockup-tab">Study</div>
+          <div className="mockup-tab">AI Generate</div>
+          <div className="mockup-tab">Import</div>
+          <div className="mockup-sidebar-spacer" />
+          <div className="mockup-tab">Settings</div>
+        </aside>
+        <main className="mockup-main">
+          <div className="mockup-main-header">
+            <span className="mockup-greeting">Good morning</span>
+            <div className="mockup-btn">Study all</div>
+          </div>
+          <div className="mockup-stats-row">
+            {[
+              { value: "142", label: "Total cards" },
+              { value: "14",  label: "Due today" },
+              { value: "91%", label: "Retention" },
+              { value: "7d",  label: "Streak" },
+            ].map((s) => (
+              <div className="mockup-stat" key={s.label}>
+                <span className="mockup-stat-value">{s.value}</span>
+                <span className="mockup-stat-label">{s.label}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mockup-section-label">Spaces</p>
+          <div className="mockup-spaces">
+            {[
+              { name: "Systems Design", cards: 43, due: 3 },
+              { name: "Biology",        cards: 28, due: 8 },
+              { name: "Spanish vocab",  cards: 71, due: 1 },
+            ].map((sp) => (
+              <div className="mockup-space-row" key={sp.name}>
+                <div className="mockup-space-icon" />
+                <span className="mockup-space-name">{sp.name}</span>
+                <span className="mockup-space-meta">{sp.cards} cards</span>
+                <span className="mockup-space-due">{sp.due} due</span>
+                <div className="mockup-study-btn">Study</div>
+              </div>
+            ))}
+          </div>
+        </main>
+      </div>
+    </div>
   );
 }
 
@@ -149,22 +262,22 @@ function PupilEye() {
         }
         @keyframes pupil-look {
           0%    { transform: translateX(0); }
-          25%   { transform: translateX(3.5px); }
-          75%   { transform: translateX(-3.5px); }
+          25%   { transform: translateX(2px); }
+          75%   { transform: translateX(-2px); }
           100%  { transform: translateX(0); }
         }
       `}</style>
 
-      {/* Eye outline */}
+      {/* Eye outline — wider, rounded corners */}
       <path
         className="pupil-eye-shape"
-        d="M4 26 C4 26 13 10 26 10 C39 10 48 26 48 26 C48 26 39 42 26 42 C13 42 4 26 4 26Z"
+        d="M3 26 C7 17 15 13 26 13 C37 13 45 17 49 26 C45 35 37 39 26 39 C15 39 7 35 3 26Z"
         stroke="#ededed"
         strokeWidth="1.5"
         fill="none"
       />
       {/* Iris */}
-      <circle className="pupil-eye-iris" cx="26" cy="26" r="9" stroke="#ededed" strokeWidth="1.5" fill="none" />
+      <circle className="pupil-eye-iris" cx="26" cy="26" r="8" stroke="#ededed" strokeWidth="1.5" fill="none" />
       {/* Pupil group */}
       <g className="pupil-eye-pupil-group">
         {/* Pupil fill with look animation */}
@@ -173,6 +286,22 @@ function PupilEye() {
     </svg>
   );
 }
+
+/* ─── How it works data ─────────────────────────────────────────────────── */
+const STEPS = [
+  {
+    title: "Generate",
+    desc: "Type any topic. Pick a difficulty and card style. Pupil's AI drafts a full deck in seconds — from scratch.",
+  },
+  {
+    title: "Review",
+    desc: "Approve, edit, or discard cards before they land in your space. You decide what's worth learning.",
+  },
+  {
+    title: "Retain",
+    desc: "FSRS-5 schedules each card at exactly the right moment. Study less time, remember far more.",
+  },
+];
 
 /* ─── Feature data ──────────────────────────────────────────────────────── */
 const FEATURES = [
@@ -211,9 +340,27 @@ const FEATURES = [
     desc: "Bring your existing Anki decks along. Import .apkg files and keep studying without starting over.",
     icon: <ImportIcon />,
   },
+  {
+    title: "Command palette",
+    desc: "Jump to any space, start a study session, or generate cards — all from the keyboard. No mouse required.",
+    icon: <CommandIcon />,
+  },
+  {
+    title: "Tiny footprint",
+    desc: "Under 10 MB to download. Launches in under a second. Won't hog your RAM while you're doing real work.",
+    icon: <FeatherIcon />,
+  },
 ];
 
 /* ─── Icon components (inline SVG) ─────────────────────────────────────── */
+function AppleIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+    </svg>
+  );
+}
+
 function SparklesIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -274,6 +421,24 @@ function ImportIcon() {
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
+
+function CommandIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z" />
+    </svg>
+  );
+}
+
+function FeatherIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z" />
+      <line x1="16" y1="8" x2="2" y2="22" />
+      <line x1="17.5" y1="15" x2="9" y2="15" />
     </svg>
   );
 }

@@ -1,0 +1,148 @@
+use std::fs;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+
+use rusqlite::Connection;
+use tauri::path::BaseDirectory;
+use tauri::{AppHandle, Manager};
+
+use crate::ai::clear_ai_api_key;
+use crate::app::app_data_dir;
+use crate::types::{AppResult, RecentActivityEntry, SettingsDataSummary};
+
+pub(crate) fn load_recent_activity(
+    connection: &Connection,
+    limit: i64,
+) -> rusqlite::Result<Vec<RecentActivityEntry>> {
+    let mut statement = connection.prepare(
+        "
+        SELECT review_logs.space_id,
+               spaces.name,
+               MAX(review_logs.review_time) AS review_time,
+               COUNT(*) AS review_count,
+               strftime('%Y-%m-%d %H:%M', review_logs.review_time / 1000, 'unixepoch', 'localtime') AS bucket
+        FROM review_logs
+        INNER JOIN spaces ON spaces.id = review_logs.space_id
+        GROUP BY review_logs.space_id, spaces.name, bucket
+        ORDER BY review_time DESC
+        LIMIT ?1
+        ",
+    )?;
+    let rows = statement.query_map([limit], |row| {
+        let space_id: String = row.get(0)?;
+        let review_time: i64 = row.get(2)?;
+        let bucket: String = row.get(4)?;
+
+        Ok(RecentActivityEntry {
+            id: format!("{space_id}:{bucket}"),
+            review_count: row.get(3)?,
+            review_time,
+            space_id,
+            space_name: row.get(1)?,
+        })
+    })?;
+
+    rows.collect()
+}
+
+pub(crate) fn load_settings_data_summary(
+    connection: &Connection,
+    database_path: &Path,
+) -> rusqlite::Result<SettingsDataSummary> {
+    let review_log_count = connection.query_row("SELECT COUNT(*) FROM review_logs", [], |row| {
+        row.get::<_, i64>(0)
+    })?;
+
+    Ok(SettingsDataSummary {
+        database_path: database_path.display().to_string(),
+        review_log_count,
+    })
+}
+
+pub(crate) fn export_dir(app: &AppHandle) -> AppResult<PathBuf> {
+    match app.path().resolve("Pupil", BaseDirectory::Download) {
+        Ok(path) => Ok(path),
+        Err(_) => Ok(app_data_dir(app)?.join("exports")),
+    }
+}
+
+pub(crate) fn write_review_logs_csv(connection: &Connection, path: &Path) -> AppResult<i64> {
+    let mut statement = connection.prepare(
+        "
+        SELECT review_logs.review_time,
+               review_logs.space_id,
+               spaces.name,
+               review_logs.card_id,
+               cards.front,
+               review_logs.grade,
+               review_logs.state,
+               review_logs.due,
+               review_logs.elapsed_days,
+               review_logs.scheduled_days
+        FROM review_logs
+        INNER JOIN spaces ON spaces.id = review_logs.space_id
+        INNER JOIN cards ON cards.id = review_logs.card_id
+        ORDER BY review_logs.review_time DESC
+        ",
+    )?;
+    let mut rows = statement.query([])?;
+    let mut file = fs::File::create(path)?;
+    let mut count = 0_i64;
+
+    writeln!(
+        file,
+        "review_time,space_id,space_name,card_id,card_front,grade,state,due,elapsed_days,scheduled_days"
+    )?;
+
+    while let Some(row) = rows.next()? {
+        writeln!(
+            file,
+            "{},{},{},{},{},{},{},{},{},{}",
+            csv_escape(&row.get::<_, i64>(0)?.to_string()),
+            csv_escape(&row.get::<_, String>(1)?),
+            csv_escape(&row.get::<_, String>(2)?),
+            csv_escape(&row.get::<_, String>(3)?),
+            csv_escape(&row.get::<_, String>(4)?),
+            csv_escape(&row.get::<_, i64>(5)?.to_string()),
+            csv_escape(&row.get::<_, i64>(6)?.to_string()),
+            csv_escape(&row.get::<_, i64>(7)?.to_string()),
+            csv_escape(
+                &row.get::<_, Option<i64>>(8)?
+                    .map(|value| value.to_string())
+                    .unwrap_or_default()
+            ),
+            csv_escape(
+                &row.get::<_, Option<i64>>(9)?
+                    .map(|value| value.to_string())
+                    .unwrap_or_default()
+            ),
+        )?;
+        count += 1;
+    }
+
+    Ok(count)
+}
+
+pub(crate) fn reset_all_data_rows(app: &AppHandle, connection: &mut Connection) -> AppResult<()> {
+    clear_ai_api_key(app)?;
+
+    let transaction = connection.transaction()?;
+    transaction.execute_batch(
+        "
+        DELETE FROM review_logs;
+        DELETE FROM study_days;
+        DELETE FROM cards;
+        DELETE FROM spaces;
+        DELETE FROM settings;
+        ",
+    )?;
+    transaction.commit()?;
+
+    Ok(())
+}
+
+fn csv_escape(value: &str) -> String {
+    let escaped = value.replace('"', "\"\"");
+
+    format!("\"{escaped}\"")
+}
