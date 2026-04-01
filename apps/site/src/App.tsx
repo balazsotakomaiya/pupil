@@ -1,3 +1,6 @@
+import { Link } from "react-router-dom";
+import Nav from "./Nav";
+
 export default function App() {
   return (
     <>
@@ -11,29 +14,7 @@ export default function App() {
         <div className="ruler ruler-h ruler-bottom" />
       </div>
 
-      {/* Nav */}
-      <nav className="nav">
-        <div className="nav-inner">
-          <a href="/" className="nav-logo">
-            <PupilEye />
-            pupil
-          </a>
-          <ul className="nav-links">
-            <li><a href="#features">Features</a></li>
-            <li><a href="#how-it-works">How it works</a></li>
-            <li>
-              <a
-                href="https://github.com/pupil-app/pupil"
-                className="nav-github"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                GitHub
-              </a>
-            </li>
-          </ul>
-        </div>
-      </nav>
+      <Nav />
 
       {/* Hero */}
       <section className="hero">
@@ -134,13 +115,13 @@ export default function App() {
 
       {/* Footer */}
       <footer className="footer">
-        <a href="/" className="footer-logo">pupil</a>
+        <Link to="/" className="footer-logo">pupil</Link>
         <nav className="footer-links">
-          <a href="https://github.com/pupil-app/pupil" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/balazsotakomaiya/pupil" target="_blank" rel="noopener noreferrer">GitHub</a>
           <span className="sep">·</span>
           <a href="/docs">Docs</a>
           <span className="sep">·</span>
-          <a href="https://github.com/pupil-app/pupil/issues" target="_blank" rel="noopener noreferrer">Issues</a>
+          <a href="https://github.com/balazsotakomaiya/pupil/issues" target="_blank" rel="noopener noreferrer">Issues</a>
         </nav>
         <a
           href="https://otakomaiya.com"
@@ -214,76 +195,6 @@ function AppMockup() {
         </main>
       </div>
     </div>
-  );
-}
-
-/* ─── Animated eye logo ─────────────────────────────────────────────────── */
-function PupilEye() {
-  return (
-    <svg
-      width="28"
-      height="28"
-      viewBox="0 0 52 52"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <style>{`
-        .pupil-eye-shape {
-          animation: pupil-blink 4s ease-in-out infinite;
-          transform-origin: 26px 26px;
-        }
-        .pupil-eye-iris {
-          animation: pupil-iris 4s ease-in-out infinite;
-          transform-origin: 26px 26px;
-        }
-        .pupil-eye-pupil-group {
-          animation: pupil-hide 4s ease-in-out infinite;
-          transform-origin: 26px 26px;
-        }
-        .pupil-eye-pupil {
-          animation: pupil-look 4s ease-in-out infinite;
-          transform-origin: 26px 26px;
-        }
-        @keyframes pupil-blink {
-          0%, 17%, 22%, 100%  { transform: scaleY(1); }
-          18.5%               { transform: scaleY(0.05); }
-          20%                 { transform: scaleY(1); }
-        }
-        @keyframes pupil-iris {
-          0%, 17%, 22%, 100%  { transform: scaleY(1); }
-          18.5%               { transform: scaleY(0.1); }
-          20%                 { transform: scaleY(1); }
-        }
-        @keyframes pupil-hide {
-          0%, 17%, 22%, 100%  { opacity: 1; }
-          18.5%               { opacity: 0; }
-          20%                 { opacity: 1; }
-        }
-        @keyframes pupil-look {
-          0%    { transform: translateX(0); }
-          25%   { transform: translateX(2px); }
-          75%   { transform: translateX(-2px); }
-          100%  { transform: translateX(0); }
-        }
-      `}</style>
-
-      {/* Eye outline — wider, rounded corners */}
-      <path
-        className="pupil-eye-shape"
-        d="M3 26 C7 17 15 13 26 13 C37 13 45 17 49 26 C45 35 37 39 26 39 C15 39 7 35 3 26Z"
-        stroke="#ededed"
-        strokeWidth="1.5"
-        fill="none"
-      />
-      {/* Iris */}
-      <circle className="pupil-eye-iris" cx="26" cy="26" r="8" stroke="#ededed" strokeWidth="1.5" fill="none" />
-      {/* Pupil group */}
-      <g className="pupil-eye-pupil-group">
-        {/* Pupil fill with look animation */}
-        <circle className="pupil-eye-pupil" cx="26" cy="26" r="4" fill="#ededed" />
-      </g>
-    </svg>
   );
 }
 

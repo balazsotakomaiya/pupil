@@ -163,7 +163,14 @@ body {
   color: var(--text-primary);
 }
 
+.nav-link-active {
+  color: var(--text-primary) !important;
+}
+
 .nav-github {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
   color: var(--text-secondary);
   text-decoration: none;
@@ -729,6 +736,105 @@ body {
   font-size: 15px;
   color: var(--text-secondary);
   margin-bottom: 32px;
+}
+
+/* ─── Manifesto page ─────────────────────────────────────────────────────── */
+.manifesto {
+  padding: 80px 32px 96px;
+}
+
+.manifesto-inner {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.manifesto-header {
+  padding-bottom: 56px;
+}
+
+.manifesto-title {
+  font-size: clamp(40px, 6vw, 64px);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -2px;
+  margin-bottom: 20px;
+  margin-top: 16px;
+}
+
+.manifesto-title em {
+  font-style: italic;
+  font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
+  font-weight: 400;
+}
+
+.manifesto-subtitle {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 480px;
+}
+
+.manifesto-body {
+  padding-top: 0;
+}
+
+.manifesto-section {
+  padding: 56px 0;
+}
+
+.manifesto-h2 {
+  font-size: clamp(18px, 2.5vw, 22px);
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+.manifesto-section p {
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--text-secondary);
+  margin-bottom: 18px;
+}
+
+.manifesto-section p:last-child {
+  margin-bottom: 0;
+}
+
+.manifesto-quote {
+  border-left: 1px solid var(--border-hover);
+  margin: 32px 0;
+  padding: 4px 24px;
+  font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.manifesto-sign {
+  padding: 56px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.manifesto-sign p {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.manifesto-sign a {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--border-hover);
+  transition: text-decoration-color 0.15s;
+}
+
+.manifesto-sign a:hover {
+  text-decoration-color: var(--text-secondary);
 }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────── */

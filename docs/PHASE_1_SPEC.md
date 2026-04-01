@@ -244,11 +244,12 @@ pupil/
 ├── apps/
 │   ├── app/          # Tauri v2 + React — desktop binary + web build
 │   └── site/         # Vite + React — landing page (static)
+├── packages/         # Shared workspace packages
 ├── docs/
 │   └── PHASE_1_SPEC.md
 ├── DESIGN.md
 ├── package.json      # Bun workspace root
-└── turbo.json
+└── tsconfig.base.json
 ```
 
 This target layout now exists in the repo. `apps/app` is scaffolded and already carries the Chunk 1-2 foundation, while later sections below still describe the remaining work for the rest of Phase 1.

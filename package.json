@@ -7,14 +7,13 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck",
-    "test": "turbo run test"
+    "dev": "bun run --workspaces --if-present dev",
+    "build": "bun run --workspaces --if-present build",
+    "lint": "bun run --workspaces --if-present lint",
+    "typecheck": "bun run --workspaces --if-present typecheck",
+    "test": "bun run --workspaces --if-present test"
   },
   "devDependencies": {
-    "turbo": "^2.5.0",
     "typescript": "^5.8.0"
   },
   "engines": {
