@@ -3246,12 +3246,16 @@ button {
 }
 
 .settings-key-input-wrap {
-  position: relative;
   display: flex;
   gap: 6px;
 }
 
-.settings-key-input-wrap .settings-text-input {
+.settings-key-field-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.settings-key-field-wrap .settings-text-input {
   flex: 1;
   padding-right: 40px;
 }
@@ -3259,7 +3263,7 @@ button {
 .settings-key-reveal {
   position: absolute;
   top: 50%;
-  right: 72px;
+  right: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3274,8 +3278,17 @@ button {
   transition: color 0.15s ease;
 }
 
+.settings-key-reveal:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .settings-key-reveal:hover {
   color: var(--text-secondary);
+}
+
+.settings-key-reveal:disabled:hover {
+  color: var(--text-tertiary);
 }
 
 .settings-key-reveal svg {
@@ -3283,6 +3296,13 @@ button {
   height: 14px;
 }
 
+.settings-key-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.settings-key-save-btn,
 .settings-key-test-btn,
 .settings-data-btn,
 .settings-about-link {
@@ -3297,6 +3317,7 @@ button {
     background 0.15s ease;
 }
 
+.settings-key-save-btn,
 .settings-key-test-btn {
   height: 38px;
   padding: 0 16px;
@@ -3309,6 +3330,7 @@ button {
   flex-shrink: 0;
 }
 
+.settings-key-save-btn:hover,
 .settings-key-test-btn:hover,
 .settings-data-btn:hover,
 .settings-about-link:hover {
@@ -3317,12 +3339,15 @@ button {
   color: var(--text-primary);
 }
 
+
+.settings-key-save-btn:disabled,
 .settings-key-test-btn:disabled,
 .settings-data-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 
+.settings-key-save-btn:disabled:hover,
 .settings-key-test-btn:disabled:hover,
 .settings-data-btn:disabled:hover {
   border-color: var(--border);
@@ -3330,6 +3355,13 @@ button {
   color: var(--text-secondary);
 }
 
+.settings-autosave-badge {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--success);
+}
+
+.settings-key-save-btn svg,
 .settings-key-test-btn svg,
 .settings-data-btn svg,
 .settings-about-link svg,
@@ -3479,8 +3511,14 @@ button {
   color: var(--text-primary);
 }
 
-.settings-data-cards {
+.settings-data-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   max-width: 560px;
+}
+
+.settings-data-cards {
   gap: 12px;
 }
 
@@ -5837,6 +5875,16 @@ button {
   .settings-field-row,
   .settings-shortcuts-grid {
     grid-template-columns: 1fr;
+  }
+
+  .settings-key-input-wrap,
+  .settings-key-actions {
+    flex-direction: column;
+  }
+
+  .settings-key-save-btn,
+  .settings-key-test-btn {
+    justify-content: center;
   }
 
   .settings-shortcut-row:nth-child(odd) {

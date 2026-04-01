@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
+  describeAiSettingsError,
   loadAiSettings,
   saveAiSettings,
   testAiProviderConnection,
@@ -30,6 +31,14 @@ type SettingsScreenProps = {
   spacesCount: number;
 };
 
+type SavedSettingsSnapshot = {
+  baseUrl: string;
+  hasApiKey: boolean;
+  maxTokens: string;
+  model: string;
+  temperature: string;
+};
+
 const SHORTCUTS = [
   { keys: ["Space"], label: "Reveal card" },
   { keys: ["1"], label: "Rate: Again" },
@@ -41,11 +50,46 @@ const SHORTCUTS = [
   { keys: ["⌘", ","], label: "Settings" },
 ];
 
+// Module-level: survives component unmount/remount within the same tab session.
+let _connectionStatusCache: {
+  detail?: string;
+  kind: "idle" | "success" | "error";
+  label: string;
+} | null = null;
+
+function detectProviderFromKey(key: string): { baseUrl: string; model: string } | null {
+  if (key.length < 10) return null;
+  if (key.startsWith("sk-ant-")) {
+    return { baseUrl: "https://api.anthropic.com/v1", model: "claude-sonnet-4-6" };
+  }
+  if (key.startsWith("sk-")) {
+    return { baseUrl: "https://api.openai.com/v1", model: "gpt-5.4" };
+  }
+  if (key.startsWith("AIza")) {
+    return {
+      baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
+      model: "gemini-2.5-pro",
+    };
+  }
+  return null;
+}
+
+function detectModelFromUrl(url: string): string | null {
+  if (url.includes("anthropic.com")) return "claude-sonnet-4-6";
+  if (url.includes("openai.com")) return "gpt-5.4";
+  if (url.includes("generativelanguage.googleapis.com")) return "gemini-2.5-pro";
+  return null;
+}
+
 export function SettingsScreen({
   cardsCount,
   onResetAllData,
   spacesCount,
 }: SettingsScreenProps) {
+  const hasUserEditedSettings = useRef(false);
+  const autoSaveTimerRef = useRef<number | null>(null);
+  // Updated on every render so the timeout callback always uses latest state.
+  const handleAutoSave = useRef<() => void>(() => {});
   const [activeSection, setActiveSection] = useState<SettingsSectionId>("ai");
   const [apiKey, setApiKey] = useState("");
   const [apiKeyEdited, setApiKeyEdited] = useState(false);
@@ -55,24 +99,38 @@ export function SettingsScreen({
   const [model, setModel] = useState("gpt-5.4");
   const [maxTokens, setMaxTokens] = useState("4096");
   const [temperature, setTemperature] = useState("0.7");
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [savedSettings, setSavedSettings] = useState<SavedSettingsSnapshot>({
+    baseUrl: "https://api.openai.com/v1",
+    hasApiKey: false,
+    maxTokens: "4096",
+    model: "gpt-5.4",
+    temperature: "0.7",
+  });
+  const [lastSavedField, setLastSavedField] = useState<
+    "baseUrl" | "model" | "maxTokens" | "temperature" | null
+  >(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
   const [databasePath, setDatabasePath] = useState("Loading database path…");
   const [reviewLogCount, setReviewLogCount] = useState(0);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [isExportingDatabase, setIsExportingDatabase] = useState(false);
   const [isExportingReviewLogs, setIsExportingReviewLogs] = useState(false);
   const [isResettingData, setIsResettingData] = useState(false);
+  const [recentlySaved, setRecentlySaved] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<{
     detail?: string;
     kind: "idle" | "success" | "error";
     label: string;
-  }>({
-    detail: "Checking local provider settings…",
-    kind: "idle",
-    label: "Not tested",
-  });
+  }>(
+    () =>
+      _connectionStatusCache ?? {
+        detail: "Checking local provider settings…",
+        kind: "idle",
+        label: "Not tested",
+      },
+  );
   const [dataStatus, setDataStatus] = useState<{
     detail?: string;
     kind: "idle" | "success" | "error";
@@ -101,81 +159,85 @@ export function SettingsScreen({
   useEffect(() => {
     let cancelled = false;
 
-    async function loadState() {
+    async function loadAiState() {
       try {
-        const [settings, dataSummary] = await Promise.all([
-          loadAiSettings(),
-          getSettingsDataSummary(),
-        ]);
+        const settings = await loadAiSettings();
 
         if (cancelled) {
           return;
         }
 
-        setApiKey("");
-        setApiKeyEdited(false);
         setHasStoredApiKey(settings.hasApiKey);
-        setBaseUrl(settings.baseUrl);
-        setModel(settings.model);
-        setMaxTokens(settings.maxTokens);
-        setTemperature(settings.temperature);
-        setDatabasePath(dataSummary.databasePath);
-        setReviewLogCount(dataSummary.reviewLogCount);
-        setConnectionStatus({
-          detail: settings.hasApiKey ? "API key stored securely on this device" : "No saved API key yet",
-          kind: "idle",
-          label: "Not tested",
+        setSavedSettings({
+          baseUrl: settings.baseUrl,
+          hasApiKey: settings.hasApiKey,
+          maxTokens: settings.maxTokens,
+          model: settings.model,
+          temperature: settings.temperature,
         });
+
+        if (!hasUserEditedSettings.current) {
+          setApiKey("");
+          setApiKeyEdited(false);
+          setBaseUrl(settings.baseUrl);
+          setModel(settings.model);
+          setMaxTokens(settings.maxTokens);
+          setTemperature(settings.temperature);
+        }
+
+        if (!_connectionStatusCache) {
+          setConnectionStatus({
+            detail: settings.hasApiKey
+              ? "API key stored safely on this device. Click Save after editing to persist changes."
+              : "No saved API key yet. Click Save after editing to persist changes.",
+            kind: "idle",
+            label: "Not tested",
+          });
+        }
       } catch (error: unknown) {
         if (!cancelled) {
           setConnectionStatus({
-            detail: error instanceof Error ? error.message : "Failed to load AI settings.",
+            detail: describeAiSettingsError(error, "Failed to load AI settings."),
             kind: "error",
             label: "Load failed",
           });
           setDataStatus({
-            detail: error instanceof Error ? error.message : "Failed to load data actions.",
+            detail: describeAiSettingsError(error, "Failed to load data actions."),
             kind: "error",
             label: "Load failed",
           });
         }
-      } finally {
+      }
+    }
+
+    async function loadDataState() {
+      try {
+        const dataSummary = await getSettingsDataSummary();
+
+        if (cancelled) {
+          return;
+        }
+
+        setDatabasePath(dataSummary.databasePath);
+        setReviewLogCount(dataSummary.reviewLogCount);
+      } catch (error: unknown) {
         if (!cancelled) {
-          setSettingsLoaded(true);
+          setDataStatus({
+            detail: describeAiSettingsError(error, "Failed to load data actions."),
+            kind: "error",
+            label: "Load failed",
+          });
         }
       }
     }
 
-    void loadState();
+    void loadAiState();
+    void loadDataState();
 
     return () => {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (!settingsLoaded) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      void saveAiSettings({
-        apiKey: apiKeyEdited ? apiKey : undefined,
-        baseUrl,
-        model,
-        maxTokens,
-        temperature,
-      })
-        .then((saved) => {
-          setHasStoredApiKey(saved.hasApiKey);
-        })
-        .catch(() => {
-          // Keep the draft state in place; generation and test flows surface validation errors explicitly.
-        });
-    }, 250);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [apiKey, apiKeyEdited, baseUrl, model, maxTokens, settingsLoaded, temperature]);
 
   useEffect(() => {
     function updateActiveSection() {
@@ -209,6 +271,42 @@ export function SettingsScreen({
     return () => window.clearTimeout(timeoutId);
   }, [copyState]);
 
+  useEffect(() => {
+    if (!recentlySaved) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => setRecentlySaved(false), 2000);
+    return () => window.clearTimeout(timeoutId);
+  }, [recentlySaved]);
+
+  // Cancel any pending autosave on unmount.
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimerRef.current !== null) {
+        window.clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Updated on every render so the timeout always calls the latest closure.
+  handleAutoSave.current = () => {
+    if (!apiKeyEdited) {
+      void persistSettings({ announceSaved: true });
+    }
+  };
+
+  function scheduleAutoSave(field: "baseUrl" | "model" | "maxTokens" | "temperature") {
+    setLastSavedField(field);
+    if (autoSaveTimerRef.current !== null) {
+      window.clearTimeout(autoSaveTimerRef.current);
+    }
+    autoSaveTimerRef.current = window.setTimeout(() => {
+      autoSaveTimerRef.current = null;
+      handleAutoSave.current();
+    }, 800);
+  }
+
   function handleSelectSection(sectionId: SettingsSectionId) {
     setActiveSection(sectionId);
     sectionRefs[sectionId].current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -229,10 +327,63 @@ export function SettingsScreen({
     }
   }
 
+  async function persistSettings(options?: { announceSaved?: boolean }) {
+    setIsSavingSettings(true);
+
+    try {
+      const saved = await saveAiSettings({
+        apiKey: apiKeyEdited ? apiKey : undefined,
+        baseUrl,
+        model,
+        maxTokens,
+        temperature,
+      });
+
+      setApiKey("");
+      setApiKeyEdited(false);
+      hasUserEditedSettings.current = false;
+      setHasStoredApiKey(saved.hasApiKey);
+      setSavedSettings({
+        baseUrl: saved.baseUrl,
+        hasApiKey: saved.hasApiKey,
+        maxTokens: saved.maxTokens,
+        model: saved.model,
+        temperature: saved.temperature,
+      });
+
+      if (options?.announceSaved ?? true) {
+        setRecentlySaved(true);
+      }
+
+      return saved;
+    } catch (error: unknown) {
+      setConnectionStatus({
+        detail: describeAiSettingsError(error, "Failed to save AI settings."),
+        kind: "error",
+        label: "Save failed",
+      });
+      throw error;
+    } finally {
+      setIsSavingSettings(false);
+    }
+  }
+
+  async function handleSaveSettings() {
+    try {
+      await persistSettings();
+    } catch {
+      // persistSettings already updates the UI state with the failure.
+    }
+  }
+
   async function handleTestConnection() {
     setIsTestingConnection(true);
 
     try {
+      if (hasUnsavedChanges) {
+        await persistSettings({ announceSaved: false });
+      }
+
       const result = await testAiProviderConnection({
         apiKey: apiKeyEdited ? apiKey : undefined,
         baseUrl,
@@ -240,14 +391,16 @@ export function SettingsScreen({
         maxTokens,
         temperature,
       });
-      setConnectionStatus({
+      const nextStatus = {
         detail: result.detail,
-        kind: "success",
+        kind: "success" as const,
         label: result.label,
-      });
+      };
+      _connectionStatusCache = nextStatus;
+      setConnectionStatus(nextStatus);
     } catch (error: unknown) {
       setConnectionStatus({
-        detail: error instanceof Error ? error.message : "Connection test failed.",
+        detail: describeAiSettingsError(error, "Connection test failed."),
         kind: "error",
         label: "Connection failed",
       });
@@ -268,7 +421,7 @@ export function SettingsScreen({
       });
     } catch (error: unknown) {
       setDataStatus({
-        detail: error instanceof Error ? error.message : "Database export failed.",
+        detail: describeAiSettingsError(error, "Database export failed."),
         kind: "error",
         label: "Export failed",
       });
@@ -292,7 +445,7 @@ export function SettingsScreen({
       });
     } catch (error: unknown) {
       setDataStatus({
-        detail: error instanceof Error ? error.message : "Review log export failed.",
+        detail: describeAiSettingsError(error, "Review log export failed."),
         kind: "error",
         label: "Export failed",
       });
@@ -316,6 +469,7 @@ export function SettingsScreen({
       await onResetAllData();
       const nextSettings = await loadAiSettings();
       await refreshDataSummary();
+      hasUserEditedSettings.current = false;
       setApiKey("");
       setApiKeyEdited(false);
       setHasStoredApiKey(nextSettings.hasApiKey);
@@ -323,8 +477,18 @@ export function SettingsScreen({
       setModel(nextSettings.model);
       setMaxTokens(nextSettings.maxTokens);
       setTemperature(nextSettings.temperature);
+      setSavedSettings({
+        baseUrl: nextSettings.baseUrl,
+        hasApiKey: nextSettings.hasApiKey,
+        maxTokens: nextSettings.maxTokens,
+        model: nextSettings.model,
+        temperature: nextSettings.temperature,
+      });
+      _connectionStatusCache = null;
       setConnectionStatus({
-        detail: nextSettings.hasApiKey ? "API key stored securely on this device" : "No saved API key yet",
+        detail: nextSettings.hasApiKey
+          ? "API key stored safely on this device."
+          : "No saved API key yet",
         kind: "idle",
         label: "Not tested",
       });
@@ -335,7 +499,7 @@ export function SettingsScreen({
       });
     } catch (error: unknown) {
       setDataStatus({
-        detail: error instanceof Error ? error.message : "Reset failed.",
+        detail: describeAiSettingsError(error, "Reset failed."),
         kind: "error",
         label: "Reset failed",
       });
@@ -355,8 +519,17 @@ export function SettingsScreen({
   }
 
   const apiKeyHint = hasStoredApiKey
-    ? "API key stored in Stronghold. Leave the field empty to keep it, or clear it to remove it."
-    : "API key is stored in Stronghold on this device. Add one to enable live generation.";
+    ? "Leave the field empty to keep the stored key, or enter a new one to replace it."
+    : "API key will be stored safely on this device. Add one to enable live generation.";
+  const hasUnsavedChanges =
+    apiKeyEdited ||
+    hasStoredApiKey !== savedSettings.hasApiKey ||
+    baseUrl !== savedSettings.baseUrl ||
+    model !== savedSettings.model ||
+    maxTokens !== savedSettings.maxTokens ||
+    temperature !== savedSettings.temperature;
+  const isSettingsBusy = isSavingSettings || isTestingConnection;
+  const areSettingsActionsBusy = isSavingSettings || isTestingConnection;
 
   return (
     <div className="page settings-page">
@@ -375,8 +548,9 @@ export function SettingsScreen({
         <div className="settings-section-head">
           <div className="settings-section-title">AI Provider</div>
           <div className="settings-section-desc">
-            Pupil stores the API key in Stronghold and keeps the non-secret provider settings in the
-            local app database. Generation and provider tests now use these saved values directly.
+            Pupil stores the API key safely on this device and keeps the non-secret provider
+            settings in the local app database. Generation and provider tests now use these saved
+            values directly.
           </div>
         </div>
 
@@ -384,37 +558,58 @@ export function SettingsScreen({
           <div className="settings-field">
             <label className="settings-field-label" htmlFor="settings-api-key">
               API Key
-              <span className="settings-label-badge">Stronghold</span>
+              <span className="settings-label-badge">Stored safely</span>
             </label>
             <div className="settings-key-input-wrap">
-              <input
-                className="settings-text-input settings-text-input-mono"
-                id="settings-api-key"
-                onChange={(event) => {
-                  setApiKey(event.target.value);
-                  setApiKeyEdited(true);
-                }}
-                placeholder={hasStoredApiKey ? "Stored securely — enter a new key to replace it" : "sk-..."}
-                type={showApiKey ? "text" : "password"}
-                value={apiKey}
-              />
-              <button
-                aria-label={showApiKey ? "Hide API key" : "Show API key"}
-                className="settings-key-reveal"
-                onClick={() => setShowApiKey((current) => !current)}
-                type="button"
-              >
-                {showApiKey ? <EyeClosedIcon /> : <EyeOpenIcon />}
-              </button>
-              <button
-                className="settings-key-test-btn"
-                disabled={isTestingConnection}
-                onClick={() => void handleTestConnection()}
-                type="button"
-              >
-                <ArrowRightIcon />
-                {isTestingConnection ? "Testing…" : "Test"}
-              </button>
+              <div className="settings-key-field-wrap">
+                <input
+                  className="settings-text-input settings-text-input-mono"
+                  disabled={isSettingsBusy}
+                  id="settings-api-key"
+                  onChange={(event) => {
+                    hasUserEditedSettings.current = true;
+                    const value = event.target.value;
+                    setApiKey(value);
+                    setApiKeyEdited(true);
+                    const provider = detectProviderFromKey(value);
+                    if (provider) {
+                      setBaseUrl(provider.baseUrl);
+                      setModel(provider.model);
+                    }
+                  }}
+                  placeholder={hasStoredApiKey ? "Stored — enter to replace" : "sk-..."}
+                  type={showApiKey ? "text" : "password"}
+                  value={apiKey}
+                />
+                <button
+                  aria-label={showApiKey ? "Hide API key" : "Show API key"}
+                  className="settings-key-reveal"
+                  disabled={isSettingsBusy}
+                  onClick={() => setShowApiKey((current) => !current)}
+                  type="button"
+                >
+                  {showApiKey ? <EyeClosedIcon /> : <EyeOpenIcon />}
+                </button>
+              </div>
+              <div className="settings-key-actions">
+                <button
+                  className="settings-key-save-btn"
+                  disabled={areSettingsActionsBusy || !apiKeyEdited}
+                  onClick={() => void handleSaveSettings()}
+                  type="button"
+                >
+                  {isSavingSettings ? "Saving…" : "Save"}
+                </button>
+                <button
+                  className="settings-key-test-btn"
+                  disabled={areSettingsActionsBusy}
+                  onClick={() => void handleTestConnection()}
+                  type="button"
+                >
+                  <ArrowRightIcon />
+                  {isTestingConnection ? "Testing…" : "Test"}
+                </button>
+              </div>
             </div>
             <div className="settings-field-hint">{apiKeyHint}</div>
           </div>
@@ -428,11 +623,22 @@ export function SettingsScreen({
           <div className="settings-field">
             <label className="settings-field-label" htmlFor="settings-base-url">
               Base URL
+              {recentlySaved && lastSavedField === "baseUrl" && (
+                <span className="settings-autosave-badge">Saved</span>
+              )}
             </label>
             <input
               className="settings-text-input settings-text-input-mono"
+              disabled={isSettingsBusy}
               id="settings-base-url"
-              onChange={(event) => setBaseUrl(event.target.value)}
+              onChange={(event) => {
+                hasUserEditedSettings.current = true;
+                const value = event.target.value;
+                setBaseUrl(value);
+                const detectedModel = detectModelFromUrl(value);
+                if (detectedModel) setModel(detectedModel);
+                scheduleAutoSave("baseUrl");
+              }}
               placeholder="https://api.openai.com/v1"
               type="text"
               value={baseUrl}
@@ -446,11 +652,19 @@ export function SettingsScreen({
           <div className="settings-field">
             <label className="settings-field-label" htmlFor="settings-model">
               Model
+              {recentlySaved && lastSavedField === "model" && (
+                <span className="settings-autosave-badge">Saved</span>
+              )}
             </label>
             <input
               className="settings-text-input settings-text-input-mono"
+              disabled={isSettingsBusy}
               id="settings-model"
-              onChange={(event) => setModel(event.target.value)}
+              onChange={(event) => {
+                hasUserEditedSettings.current = true;
+                setModel(event.target.value);
+                scheduleAutoSave("model");
+              }}
               placeholder="Enter model name"
               type="text"
               value={model}
@@ -459,8 +673,13 @@ export function SettingsScreen({
               {["gpt-5.4", "claude-sonnet-4-6", "claude-opus-4-6"].map((chip) => (
                 <button
                   className={`settings-model-chip${model === chip ? " active" : ""}`}
+                  disabled={isSettingsBusy}
                   key={chip}
-                  onClick={() => setModel(chip)}
+                  onClick={() => {
+                    hasUserEditedSettings.current = true;
+                    setModel(chip);
+                    scheduleAutoSave("model");
+                  }}
                   type="button"
                 >
                   {chip}
@@ -487,11 +706,19 @@ export function SettingsScreen({
                 <div className="settings-field">
                   <label className="settings-field-label" htmlFor="settings-max-tokens">
                     Max Tokens
+                    {recentlySaved && lastSavedField === "maxTokens" && (
+                      <span className="settings-autosave-badge">Saved</span>
+                    )}
                   </label>
                   <input
                     className="settings-text-input settings-text-input-mono"
+                    disabled={isSettingsBusy}
                     id="settings-max-tokens"
-                    onChange={(event) => setMaxTokens(event.target.value)}
+                    onChange={(event) => {
+                      hasUserEditedSettings.current = true;
+                      setMaxTokens(event.target.value);
+                      scheduleAutoSave("maxTokens");
+                    }}
                     placeholder="4096"
                     type="text"
                     value={maxTokens}
@@ -501,11 +728,19 @@ export function SettingsScreen({
                 <div className="settings-field">
                   <label className="settings-field-label" htmlFor="settings-temperature">
                     Temperature
+                    {recentlySaved && lastSavedField === "temperature" && (
+                      <span className="settings-autosave-badge">Saved</span>
+                    )}
                   </label>
                   <input
                     className="settings-text-input settings-text-input-mono"
+                    disabled={isSettingsBusy}
                     id="settings-temperature"
-                    onChange={(event) => setTemperature(event.target.value)}
+                    onChange={(event) => {
+                      hasUserEditedSettings.current = true;
+                      setTemperature(event.target.value);
+                      scheduleAutoSave("temperature");
+                    }}
                     placeholder="0.0 – 2.0"
                     type="text"
                     value={temperature}
@@ -519,6 +754,7 @@ export function SettingsScreen({
               </div>
             </div>
           </div>
+
         </div>
       </section>
 
@@ -533,6 +769,7 @@ export function SettingsScreen({
           </div>
         </div>
 
+        <div className="settings-data-section-body">
         <div className="settings-data-cards">
           <SettingsDataCard
             action={
@@ -610,6 +847,7 @@ export function SettingsScreen({
           kind={dataStatus.kind}
           label={dataStatus.label}
         />
+        </div>
       </section>
 
       <div className="ruler-divider" />

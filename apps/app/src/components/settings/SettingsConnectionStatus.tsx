@@ -13,7 +13,7 @@ export function SettingsConnectionStatus({
     <div className={`settings-connection-status ${kind}`}>
       <span className="status-dot" />
       {label}
-      {detail ? <span className="status-detail">— {detail}</span> : null}
+      {detail ? <span className="status-detail">{detail}</span> : null}
     </div>
   );
 }

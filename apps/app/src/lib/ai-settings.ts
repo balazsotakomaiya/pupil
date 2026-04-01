@@ -44,10 +44,25 @@ const DEFAULT_AI_SETTINGS: AiSettings = {
   temperature: "0.7",
 };
 
+let pendingTauriAiSettings: Promise<AiSettings> | null = null;
+const SETTINGS_COMMAND_TIMEOUT_MS = 5000;
+const CONNECTION_TEST_TIMEOUT_MS = 15000;
+
 export async function loadAiSettings(): Promise<AiSettings> {
   if (isTauriRuntime()) {
-    const state = await invoke<PersistedAiSettings>("get_ai_settings");
-    return { ...state, apiKey: "" };
+    if (!pendingTauriAiSettings) {
+      pendingTauriAiSettings = withTimeout(
+        invoke<PersistedAiSettings>("get_ai_settings"),
+        SETTINGS_COMMAND_TIMEOUT_MS,
+        "Loading local AI settings",
+      )
+        .then((state) => ({ ...state, apiKey: "" }))
+        .finally(() => {
+          pendingTauriAiSettings = null;
+        });
+    }
+
+    return pendingTauriAiSettings;
   }
 
   return readWebAiSettings();
@@ -55,7 +70,11 @@ export async function loadAiSettings(): Promise<AiSettings> {
 
 export async function saveAiSettings(input: SaveAiSettingsInput): Promise<AiSettings> {
   if (isTauriRuntime()) {
-    const state = await invoke<PersistedAiSettings>("save_ai_settings", { input });
+    const state = await withTimeout(
+      invoke<PersistedAiSettings>("save_ai_settings", { input }),
+      SETTINGS_COMMAND_TIMEOUT_MS,
+      "Saving local AI settings",
+    );
     return {
       ...state,
       apiKey: input.apiKey ?? "",
@@ -83,7 +102,11 @@ export async function testAiProviderConnection(
   input: SaveAiSettingsInput,
 ): Promise<AiConnectionTestResult> {
   if (isTauriRuntime()) {
-    return invoke<AiConnectionTestResult>("test_ai_provider_connection", { input });
+    return withTimeout(
+      invoke<AiConnectionTestResult>("test_ai_provider_connection", { input }),
+      CONNECTION_TEST_TIMEOUT_MS,
+      "Testing the AI provider connection",
+    );
   }
 
   if (!(input.apiKey ?? "").trim()) {
@@ -111,6 +134,67 @@ export async function generateAiCards(input: {
 
 export function hasConfiguredAiKey(settings: AiSettings): boolean {
   return settings.apiKey.trim().length > 0 || settings.hasApiKey;
+}
+
+export function describeAiSettingsError(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+
+  if (error && typeof error === "object") {
+    const maybeError = error as {
+      cause?: unknown;
+      detail?: unknown;
+      error?: unknown;
+      message?: unknown;
+    };
+
+    for (const candidate of [
+      maybeError.message,
+      maybeError.error,
+      maybeError.detail,
+      maybeError.cause,
+    ]) {
+      if (typeof candidate === "string" && candidate.trim()) {
+        return candidate;
+      }
+    }
+
+    try {
+      const serialized = JSON.stringify(error);
+
+      if (serialized !== "{}") {
+        return serialized;
+      }
+    } catch {
+      // Ignore JSON serialization issues and fall through to the fallback.
+    }
+  }
+
+  return fallback;
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      reject(new Error(`${label} timed out. Please restart the app and try again.`));
+    }, ms);
+
+    promise.then(
+      (value) => {
+        window.clearTimeout(timeoutId);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(timeoutId);
+        reject(error);
+      },
+    );
+  });
 }
 
 function readWebAiSettings(): AiSettings {

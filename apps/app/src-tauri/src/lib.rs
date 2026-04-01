@@ -13,6 +13,7 @@ mod util;
 
 use tauri::{Emitter, Manager};
 
+use crate::ai::StrongholdState;
 use crate::app::{build_app_menu, database_path, run_migrations, BootstrapStatus};
 use crate::commands::{
     create_card, create_space, delete_card, delete_space, export_database_copy,
@@ -25,6 +26,7 @@ use crate::constants::{DEVELOPER_RESET_ONBOARDING_EVENT, DEVELOPER_RESET_ONBOARD
 
 pub fn run() {
     tauri::Builder::default()
+        .manage(StrongholdState::default())
         .menu(build_app_menu)
         .on_menu_event(|app, event| {
             if event.id().as_ref() == DEVELOPER_RESET_ONBOARDING_MENU_ID {

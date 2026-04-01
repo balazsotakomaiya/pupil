@@ -34,6 +34,14 @@ use crate::types::{
 };
 use crate::util::{map_card_storage_error, map_storage_error, now_ms};
 
+async fn run_blocking<T: Send + 'static>(
+    operation: impl FnOnce() -> Result<T, String> + Send + 'static,
+) -> Result<T, String> {
+    tauri::async_runtime::spawn_blocking(operation)
+        .await
+        .map_err(|error| error.to_string())?
+}
+
 #[tauri::command]
 pub(crate) fn get_bootstrap_state(app: AppHandle) -> Result<BootstrapState, String> {
     let app_data_dir = app_data_dir(&app)?;
@@ -166,21 +174,28 @@ pub(crate) fn list_space_stats(app: AppHandle) -> Result<Vec<SpaceStats>, String
 }
 
 #[tauri::command]
-pub(crate) fn get_ai_settings(app: AppHandle) -> Result<AiSettingsState, String> {
-    let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+pub(crate) async fn get_ai_settings(app: AppHandle) -> Result<AiSettingsState, String> {
+    run_blocking(move || {
+        let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
 
-    load_ai_settings_state(&app, &connection).map_err(|error| error.to_string())
+        load_ai_settings_state(&app, &connection).map_err(|error| error.to_string())
+    })
+    .await
 }
 
 #[tauri::command]
-pub(crate) fn save_ai_settings(
+pub(crate) async fn save_ai_settings(
     app: AppHandle,
     input: SaveAiSettingsInput,
 ) -> Result<AiSettingsState, String> {
-    let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
     let normalized = normalize_ai_settings_input(input)?;
 
-    save_ai_settings_rows(&app, &mut connection, normalized).map_err(|error| error.to_string())
+    run_blocking(move || {
+        let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+
+        save_ai_settings_rows(&app, &mut connection, normalized).map_err(|error| error.to_string())
+    })
+    .await
 }
 
 #[tauri::command]
@@ -188,9 +203,13 @@ pub(crate) async fn test_ai_provider_connection(
     app: AppHandle,
     input: SaveAiSettingsInput,
 ) -> Result<AiConnectionTestResult, String> {
-    let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
     let normalized = normalize_ai_settings_input(input)?;
-    let settings = resolve_ai_settings_for_test(&app, &connection, normalized)?;
+    let settings = run_blocking(move || {
+        let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+
+        resolve_ai_settings_for_test(&app, &connection, normalized)
+    })
+    .await?;
     let started_at = now_ms();
 
     execute_ai_completion(
@@ -211,9 +230,13 @@ pub(crate) async fn generate_cards(
     app: AppHandle,
     input: GenerateCardsInput,
 ) -> Result<Vec<GeneratedCardPayload>, String> {
-    let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
     let normalized = normalize_generate_cards_input(input)?;
-    let settings = load_resolved_ai_settings(&app, &connection)?;
+    let settings = run_blocking(move || {
+        let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+
+        load_resolved_ai_settings(&app, &connection)
+    })
+    .await?;
     let prompt = build_generate_cards_prompt(
         &normalized.topic,
         normalized.count,
@@ -233,11 +256,16 @@ pub(crate) fn list_recent_activity(app: AppHandle) -> Result<Vec<RecentActivityE
 }
 
 #[tauri::command]
-pub(crate) fn get_settings_data_summary(app: AppHandle) -> Result<SettingsDataSummary, String> {
-    let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
-    let database_path = database_path(&app)?;
+pub(crate) async fn get_settings_data_summary(
+    app: AppHandle,
+) -> Result<SettingsDataSummary, String> {
+    run_blocking(move || {
+        let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+        let database_path = database_path(&app)?;
 
-    load_settings_data_summary(&connection, &database_path).map_err(|error| error.to_string())
+        load_settings_data_summary(&connection, &database_path).map_err(|error| error.to_string())
+    })
+    .await
 }
 
 #[tauri::command]

@@ -1,28 +1,37 @@
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Mutex;
 
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
 use rusqlite::{params, Connection};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_stronghold::stronghold::Stronghold;
 
 use crate::app::app_data_dir;
 use crate::constants::{
-    AI_SETTING_BASE_URL_KEY, AI_SETTING_MAX_TOKENS_KEY, AI_SETTING_MODEL_KEY,
+    AI_SECRET_ACCOUNT_NAME, AI_SECRET_SERVICE_NAME, AI_SETTING_BASE_URL_KEY,
+    AI_SETTING_HAS_API_KEY_KEY, AI_SETTING_MAX_TOKENS_KEY, AI_SETTING_MODEL_KEY,
     AI_SETTING_TEMPERATURE_KEY, DEFAULT_AI_BASE_URL, DEFAULT_AI_MAX_TOKENS, DEFAULT_AI_MODEL,
-    DEFAULT_AI_TEMPERATURE, STRONGHOLD_AI_API_KEY_RECORD_KEY, STRONGHOLD_CLIENT_NAME,
-    STRONGHOLD_SNAPSHOT_FILE_NAME,
+    DEFAULT_AI_TEMPERATURE, STRONGHOLD_SNAPSHOT_FILE_NAME,
 };
+#[cfg(not(target_os = "macos"))]
+use crate::constants::{STRONGHOLD_AI_API_KEY_RECORD_KEY, STRONGHOLD_CLIENT_NAME};
 use crate::types::{
     AiSettingsState, AppResult, GenerateCardsInput, GeneratedCardPayload,
     NormalizedAiSettingsInput, NormalizedGenerateCardsInput, ResolvedAiSettings,
     SaveAiSettingsInput,
 };
 
+#[cfg_attr(target_os = "macos", allow(dead_code))]
+#[derive(Default)]
+pub(crate) struct StrongholdState {
+    pub(crate) lock: Mutex<()>,
+}
+
 pub(crate) fn load_ai_settings_state(
-    app: &AppHandle,
+    _app: &AppHandle,
     connection: &Connection,
 ) -> AppResult<AiSettingsState> {
     Ok(AiSettingsState {
@@ -38,7 +47,7 @@ pub(crate) fn load_ai_settings_state(
             AI_SETTING_TEMPERATURE_KEY,
             DEFAULT_AI_TEMPERATURE,
         )?,
-        has_api_key: load_ai_api_key(app)?.is_some(),
+        has_api_key: load_bool_setting(connection, AI_SETTING_HAS_API_KEY_KEY, false)?,
     })
 }
 
@@ -47,6 +56,11 @@ pub(crate) fn save_ai_settings_rows(
     connection: &mut Connection,
     input: NormalizedAiSettingsInput,
 ) -> AppResult<AiSettingsState> {
+    let next_has_api_key = match input.api_key.as_ref() {
+        Some(api_key) => !api_key.is_empty(),
+        None => load_bool_setting(connection, AI_SETTING_HAS_API_KEY_KEY, false)?,
+    };
+
     match input.api_key {
         Some(api_key) if api_key.is_empty() => clear_ai_api_key(app)?,
         Some(api_key) => save_ai_api_key(app, &api_key)?,
@@ -65,6 +79,11 @@ pub(crate) fn save_ai_settings_rows(
         &transaction,
         AI_SETTING_TEMPERATURE_KEY,
         &trim_trailing_zeroes(input.temperature),
+    )?;
+    upsert_setting(
+        &transaction,
+        AI_SETTING_HAS_API_KEY_KEY,
+        if next_has_api_key { "1" } else { "0" },
     )?;
     transaction.commit()?;
 
@@ -86,13 +105,17 @@ pub(crate) fn resolve_ai_settings_for_test(
 
     let _ = connection;
 
-    Ok(ResolvedAiSettings {
+    let settings = ResolvedAiSettings {
         api_key,
         base_url: input.base_url,
         model: input.model,
         max_tokens: input.max_tokens,
         temperature: input.temperature,
-    })
+    };
+
+    validate_provider_model_selection(&settings)?;
+
+    Ok(settings)
 }
 
 pub(crate) fn load_resolved_ai_settings(
@@ -112,13 +135,17 @@ pub(crate) fn load_resolved_ai_settings(
         .parse::<f64>()
         .map_err(|_| "Temperature must be a finite number.".to_string())?;
 
-    Ok(ResolvedAiSettings {
+    let settings = ResolvedAiSettings {
         api_key,
         base_url: state.base_url,
         model: state.model,
         max_tokens,
         temperature,
-    })
+    };
+
+    validate_provider_model_selection(&settings)?;
+
+    Ok(settings)
 }
 
 pub(crate) fn normalize_ai_settings_input(
@@ -248,18 +275,27 @@ pub(crate) fn parse_generated_cards_response(
 }
 
 pub(crate) fn clear_ai_api_key(app: &AppHandle) -> AppResult<()> {
-    let stronghold = open_stronghold(app)?;
-    let client = match stronghold.get_client(STRONGHOLD_CLIENT_NAME.to_vec()) {
-        Ok(client) => client,
-        Err(_) => stronghold.create_client(STRONGHOLD_CLIENT_NAME.to_vec())?,
-    };
-    let _ = client
-        .store()
-        .delete(STRONGHOLD_AI_API_KEY_RECORD_KEY)
-        .map_err(|error| -> Box<dyn std::error::Error> { Box::new(error) })?;
-    stronghold.save()?;
+    #[cfg(target_os = "macos")]
+    {
+        let _ = app;
+        return clear_ai_api_key_macos();
+    }
 
-    Ok(())
+    #[cfg(not(target_os = "macos"))]
+    with_stronghold_lock(app, || {
+        let stronghold = open_stronghold(app)?;
+        let client = stronghold
+            .get_client(STRONGHOLD_CLIENT_NAME.to_vec())
+            .or_else(|_| stronghold.load_client(STRONGHOLD_CLIENT_NAME.to_vec()))
+            .or_else(|_| stronghold.create_client(STRONGHOLD_CLIENT_NAME.to_vec()))?;
+        let _ = client
+            .store()
+            .delete(STRONGHOLD_AI_API_KEY_RECORD_KEY)
+            .map_err(|error| -> Box<dyn std::error::Error> { Box::new(error) })?;
+        stronghold.save()?;
+
+        Ok(())
+    })
 }
 
 fn load_string_setting(
@@ -275,6 +311,12 @@ fn load_string_setting(
             rusqlite::Error::QueryReturnedNoRows => Ok(default.to_string()),
             other => Err(other),
         })
+}
+
+fn load_bool_setting(connection: &Connection, key: &str, default: bool) -> rusqlite::Result<bool> {
+    let raw = load_string_setting(connection, key, if default { "1" } else { "0" })?;
+
+    Ok(matches!(raw.as_str(), "1" | "true" | "yes"))
 }
 
 fn upsert_setting(
@@ -294,6 +336,7 @@ fn upsert_setting(
     Ok(())
 }
 
+#[cfg_attr(target_os = "macos", allow(dead_code))]
 fn stronghold_snapshot_path(app: &AppHandle) -> AppResult<PathBuf> {
     let path = app_data_dir(app)?.join(STRONGHOLD_SNAPSHOT_FILE_NAME);
 
@@ -304,6 +347,7 @@ fn stronghold_snapshot_path(app: &AppHandle) -> AppResult<PathBuf> {
     Ok(path)
 }
 
+#[cfg_attr(target_os = "macos", allow(dead_code))]
 fn stronghold_password(app: &AppHandle) -> AppResult<Vec<u8>> {
     let mut hasher = Sha256::new();
     hasher.update(b"pupil-stronghold-v1");
@@ -316,6 +360,7 @@ fn stronghold_password(app: &AppHandle) -> AppResult<Vec<u8>> {
     Ok(hasher.finalize().to_vec())
 }
 
+#[cfg_attr(target_os = "macos", allow(dead_code))]
 fn open_stronghold(app: &AppHandle) -> AppResult<Stronghold> {
     let snapshot_path = stronghold_snapshot_path(app)?;
     let password = stronghold_password(app)?;
@@ -324,36 +369,110 @@ fn open_stronghold(app: &AppHandle) -> AppResult<Stronghold> {
 }
 
 fn load_ai_api_key(app: &AppHandle) -> AppResult<Option<String>> {
-    let stronghold = open_stronghold(app)?;
-    let client = match stronghold.get_client(STRONGHOLD_CLIENT_NAME.to_vec()) {
-        Ok(client) => client,
-        Err(_) => stronghold.create_client(STRONGHOLD_CLIENT_NAME.to_vec())?,
-    };
-    let value = client
-        .store()
-        .get(STRONGHOLD_AI_API_KEY_RECORD_KEY)
-        .map_err(|error| -> Box<dyn std::error::Error> { Box::new(error) })?;
+    #[cfg(target_os = "macos")]
+    {
+        let _ = app;
+        return load_ai_api_key_macos();
+    }
 
-    value.map(String::from_utf8).transpose().map_err(Into::into)
+    #[cfg(not(target_os = "macos"))]
+    with_stronghold_lock(app, || {
+        let stronghold = open_stronghold(app)?;
+        let client = stronghold
+            .get_client(STRONGHOLD_CLIENT_NAME.to_vec())
+            .or_else(|_| stronghold.load_client(STRONGHOLD_CLIENT_NAME.to_vec()))
+            .or_else(|_| stronghold.create_client(STRONGHOLD_CLIENT_NAME.to_vec()))?;
+        let value = client
+            .store()
+            .get(STRONGHOLD_AI_API_KEY_RECORD_KEY)
+            .map_err(|error| -> Box<dyn std::error::Error> { Box::new(error) })?;
+
+        value.map(String::from_utf8).transpose().map_err(Into::into)
+    })
 }
 
 fn save_ai_api_key(app: &AppHandle, api_key: &str) -> AppResult<()> {
-    let stronghold = open_stronghold(app)?;
-    let client = match stronghold.get_client(STRONGHOLD_CLIENT_NAME.to_vec()) {
-        Ok(client) => client,
-        Err(_) => stronghold.create_client(STRONGHOLD_CLIENT_NAME.to_vec())?,
-    };
-    client
-        .store()
-        .insert(
-            STRONGHOLD_AI_API_KEY_RECORD_KEY.to_vec(),
-            api_key.as_bytes().to_vec(),
-            None,
-        )
-        .map_err(|error| -> Box<dyn std::error::Error> { Box::new(error) })?;
-    stronghold.save()?;
+    #[cfg(target_os = "macos")]
+    {
+        let _ = app;
+        return save_ai_api_key_macos(api_key);
+    }
 
-    Ok(())
+    #[cfg(not(target_os = "macos"))]
+    with_stronghold_lock(app, || {
+        let stronghold = open_stronghold(app)?;
+        let client = stronghold
+            .get_client(STRONGHOLD_CLIENT_NAME.to_vec())
+            .or_else(|_| stronghold.load_client(STRONGHOLD_CLIENT_NAME.to_vec()))
+            .or_else(|_| stronghold.create_client(STRONGHOLD_CLIENT_NAME.to_vec()))?;
+        client
+            .store()
+            .insert(
+                STRONGHOLD_AI_API_KEY_RECORD_KEY.to_vec(),
+                api_key.as_bytes().to_vec(),
+                None,
+            )
+            .map_err(|error| -> Box<dyn std::error::Error> { Box::new(error) })?;
+        stronghold.save()?;
+
+        Ok(())
+    })
+}
+
+#[cfg_attr(target_os = "macos", allow(dead_code))]
+fn with_stronghold_lock<T>(
+    app: &AppHandle,
+    operation: impl FnOnce() -> AppResult<T>,
+) -> AppResult<T> {
+    let state = app.state::<StrongholdState>();
+    let _guard = state
+        .lock
+        .lock()
+        .map_err(|_| std::io::Error::other("Stronghold access failed"))?;
+
+    operation()
+}
+
+#[cfg(target_os = "macos")]
+fn macos_keyring_entry() -> AppResult<keyring::Entry> {
+    keyring::Entry::new(AI_SECRET_SERVICE_NAME, AI_SECRET_ACCOUNT_NAME).map_err(Into::into)
+}
+
+#[cfg(target_os = "macos")]
+fn load_ai_api_key_macos() -> AppResult<Option<String>> {
+    match macos_keyring_entry()?.get_password() {
+        Ok(password) => Ok(Some(password)),
+        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(error) => Err(Box::new(error)),
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn save_ai_api_key_macos(api_key: &str) -> AppResult<()> {
+    let entry = macos_keyring_entry()?;
+    entry
+        .set_password(api_key)
+        .map_err(|error| -> Box<dyn std::error::Error> { Box::new(error) })?;
+
+    match entry.get_password() {
+        Ok(saved_api_key) if saved_api_key == api_key => Ok(()),
+        Ok(_) => Err(std::io::Error::other(
+            "The API key could not be verified after saving it locally.",
+        )
+        .into()),
+        Err(error) => Err(Box::new(error)),
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn clear_ai_api_key_macos() -> AppResult<()> {
+    let entry = macos_keyring_entry()?;
+
+    match entry.delete_credential() {
+        Ok(()) => Ok(()),
+        Err(keyring::Error::NoEntry) => Ok(()),
+        Err(error) => Err(Box::new(error)),
+    }
 }
 
 fn normalize_base_url(value: &str) -> Result<String, String> {
@@ -440,6 +559,28 @@ fn is_anthropic_base_url(base_url: &str) -> bool {
     base_url.contains("anthropic.com")
 }
 
+fn is_official_openai_base_url(base_url: &str) -> bool {
+    base_url.contains("api.openai.com")
+}
+
+fn validate_provider_model_selection(settings: &ResolvedAiSettings) -> Result<(), String> {
+    let model = settings.model.trim().to_ascii_lowercase();
+
+    if is_anthropic_base_url(&settings.base_url) && model.starts_with("gpt-") {
+        return Err(
+            "This base URL points to Anthropic, but the model looks like OpenAI (`gpt-...`). Pick a Claude model or switch the base URL to https://api.openai.com/v1.".to_string(),
+        );
+    }
+
+    if is_official_openai_base_url(&settings.base_url) && model.starts_with("claude-") {
+        return Err(
+            "This base URL points to OpenAI, but the model looks like Anthropic (`claude-...`). Pick an OpenAI model or switch the base URL to https://api.anthropic.com/v1.".to_string(),
+        );
+    }
+
+    Ok(())
+}
+
 async fn execute_openai_compatible_completion(
     settings: &ResolvedAiSettings,
     user_prompt: &str,
@@ -464,7 +605,7 @@ async fn execute_openai_compatible_completion(
     messages.push(serde_json::json!({ "role": "user", "content": user_prompt }));
 
     let response = reqwest::Client::new()
-        .post(endpoint)
+        .post(&endpoint)
         .headers(headers)
         .json(&serde_json::json!({
             "model": settings.model,
@@ -474,15 +615,24 @@ async fn execute_openai_compatible_completion(
         }))
         .send()
         .await
-        .map_err(|error| format!("Failed to reach the AI provider: {error}"))?;
+        .map_err(|error| {
+            format!(
+                "Failed to reach the AI provider at {endpoint} with model {}: {error}",
+                settings.model
+            )
+        })?;
     let status = response.status();
-    let body = response
-        .text()
-        .await
-        .map_err(|error| format!("Failed to read the AI provider response: {error}"))?;
+    let body = response.text().await.map_err(|error| {
+        format!("Failed to read the AI provider response from {endpoint}: {error}")
+    })?;
 
     if !status.is_success() {
-        return Err(format_provider_error(status.as_u16(), &body));
+        return Err(format_provider_error(
+            &endpoint,
+            &settings.model,
+            status.as_u16(),
+            &body,
+        ));
     }
 
     let payload: Value =
@@ -509,7 +659,7 @@ async fn execute_anthropic_completion(
     headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
 
     let response = reqwest::Client::new()
-        .post(endpoint)
+        .post(&endpoint)
         .headers(headers)
         .json(&serde_json::json!({
             "model": settings.model,
@@ -520,15 +670,24 @@ async fn execute_anthropic_completion(
         }))
         .send()
         .await
-        .map_err(|error| format!("Failed to reach the AI provider: {error}"))?;
+        .map_err(|error| {
+            format!(
+                "Failed to reach the AI provider at {endpoint} with model {}: {error}",
+                settings.model
+            )
+        })?;
     let status = response.status();
-    let body = response
-        .text()
-        .await
-        .map_err(|error| format!("Failed to read the AI provider response: {error}"))?;
+    let body = response.text().await.map_err(|error| {
+        format!("Failed to read the AI provider response from {endpoint}: {error}")
+    })?;
 
     if !status.is_success() {
-        return Err(format_provider_error(status.as_u16(), &body));
+        return Err(format_provider_error(
+            &endpoint,
+            &settings.model,
+            status.as_u16(),
+            &body,
+        ));
     }
 
     let payload: Value =
@@ -570,18 +729,49 @@ fn extract_text_content(value: &Value) -> Option<String> {
     })
 }
 
-fn format_provider_error(status_code: u16, body: &str) -> String {
-    let detail = body.trim();
-    let detail = if detail.len() > 240 {
-        format!("{}…", &detail[..240])
-    } else {
-        detail.to_string()
-    };
+fn format_provider_error(endpoint: &str, model: &str, status_code: u16, body: &str) -> String {
+    let detail = extract_provider_error_detail(body);
 
     if detail.is_empty() {
-        format!("The AI provider returned HTTP {status_code}.")
+        format!("The AI provider at {endpoint} rejected model {model} with HTTP {status_code}.")
     } else {
-        format!("The AI provider returned HTTP {status_code}: {detail}")
+        format!(
+            "The AI provider at {endpoint} rejected model {model} with HTTP {status_code}: {detail}"
+        )
+    }
+}
+
+fn extract_provider_error_detail(body: &str) -> String {
+    let trimmed = body.trim();
+
+    if trimmed.is_empty() {
+        return String::new();
+    }
+
+    if let Ok(payload) = serde_json::from_str::<Value>(trimmed) {
+        let message = payload
+            .pointer("/error/message")
+            .and_then(Value::as_str)
+            .or_else(|| payload.pointer("/message").and_then(Value::as_str))
+            .or_else(|| payload.pointer("/error").and_then(Value::as_str));
+
+        if let Some(message) = message {
+            return truncate_message_detail(message);
+        }
+    }
+
+    truncate_message_detail(trimmed)
+}
+
+fn truncate_message_detail(detail: &str) -> String {
+    let collapsed = detail.split_whitespace().collect::<Vec<_>>().join(" ");
+    let mut chars = collapsed.chars();
+    let truncated = chars.by_ref().take(240).collect::<String>();
+
+    if chars.next().is_some() {
+        format!("{truncated}…")
+    } else {
+        truncated
     }
 }
 
