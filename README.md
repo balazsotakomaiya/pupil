@@ -1,5 +1,9 @@
 # Pupil
 
+[![Build](https://github.com/balazsotakomaiya/pupil/actions/workflows/build.yml/badge.svg)](https://github.com/balazsotakomaiya/pupil/actions/workflows/build.yml)
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-blue)
+![License](https://img.shields.io/github/license/balazsotakomaiya/pupil)
+
 Pupil is a local-first flashcard app for people who want the power of spaced repetition without the friction that usually comes with it.
 
 Create focused study spaces. Import Anki decks. Generate cards from any topic with AI. Study with FSRS. Everything stays on your machine.

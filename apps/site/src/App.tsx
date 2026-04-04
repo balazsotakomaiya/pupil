@@ -1,6 +1,45 @@
 import { Link } from "react-router-dom";
 import Nav from "./Nav";
 
+const RELEASES_URL = "https://github.com/balazsotakomaiya/pupil/releases";
+
+type OS = "mac" | "windows" | "linux" | "unknown";
+
+function detectOS(): OS {
+  const ua = navigator.userAgent;
+  if (/Macintosh|MacIntel/.test(ua)) return "mac";
+  if (/Windows/.test(ua)) return "windows";
+  if (/Linux/.test(ua) && !/Android/.test(ua)) return "linux";
+  return "unknown";
+}
+
+const OS_CONFIG: Record<OS, { label: string; icon: React.ReactNode }> = {
+  mac:     { label: "Download for Mac",     icon: <AppleIcon /> },
+  windows: { label: "Download for Windows", icon: <WindowsIcon /> },
+  linux:   { label: "Download for Linux",   icon: <LinuxIcon /> },
+  unknown: { label: "Download",             icon: <DownloadIcon /> },
+};
+
+function DownloadCTA() {
+  const { label, icon } = OS_CONFIG[detectOS()];
+  return (
+    <div className="hero-ctas-group">
+      <div className="hero-ctas">
+        <a href={RELEASES_URL} className="btn-primary" target="_blank" rel="noopener noreferrer">
+          {icon}
+          {label}
+        </a>
+        <a href="#" className="btn-secondary">
+          Open Web App
+        </a>
+      </div>
+      <a href={RELEASES_URL} className="btn-all-platforms" target="_blank" rel="noopener noreferrer">
+        All platforms ↗
+      </a>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <>
@@ -29,15 +68,7 @@ export default function App() {
           Pupil generates, organizes, and adapts cards to your knowledge gaps
           using AI and science-backed spaced repetition. No account needed.
         </p>
-        <div className="hero-ctas">
-          <a href="#" className="btn-primary">
-            <AppleIcon />
-            Download for Mac
-          </a>
-          <a href="#" className="btn-secondary">
-            Open Web App
-          </a>
-        </div>
+        <DownloadCTA />
 
         {/* App screenshot slot */}
         <div className="hero-mockup">
@@ -100,15 +131,7 @@ export default function App() {
         <p className="cta-desc">
           Free. Open source. No account. Your cards stay on your device.
         </p>
-        <div className="hero-ctas">
-          <a href="#" className="btn-primary">
-            <AppleIcon />
-            Download for Mac
-          </a>
-          <a href="#" className="btn-secondary">
-            Open Web App
-          </a>
-        </div>
+        <DownloadCTA />
       </section>
 
       <div className="ruler-divider" />
@@ -350,6 +373,33 @@ function FeatherIcon() {
       <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z" />
       <line x1="16" y1="8" x2="2" y2="22" />
       <line x1="17.5" y1="15" x2="9" y2="15" />
+    </svg>
+  );
+}
+
+function WindowsIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M11.4 11.4H0V0h11.4v11.4zm12.6 0H12.6V0H24v11.4zM11.4 24H0V12.6h11.4V24zm12.6 0H12.6V12.6H24V24z" />
+    </svg>
+  );
+}
+
+function LinuxIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="4 17 10 11 4 5" />
+      <line x1="12" y1="19" x2="20" y2="19" />
+    </svg>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
     </svg>
   );
 }
