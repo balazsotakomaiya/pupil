@@ -32,6 +32,7 @@ use crate::types::{
     ImportAnkiResult, RecentActivityEntry, ReviewCardInput, SaveAiSettingsInput,
     SettingsDataSummary, SpaceStats, SpaceSummary, UpdateCardInput,
 };
+use crate::tray;
 use crate::util::{map_card_storage_error, map_storage_error, now_ms};
 
 async fn run_blocking<T: Send + 'static>(
@@ -303,4 +304,9 @@ pub(crate) fn reset_all_data(app: AppHandle) -> Result<(), String> {
     let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
 
     reset_all_data_rows(&app, &mut connection).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+pub(crate) fn refresh_tray_status(app: AppHandle) -> Result<(), String> {
+    tray::refresh_tray(&app)
 }

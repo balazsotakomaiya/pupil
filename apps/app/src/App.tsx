@@ -36,6 +36,7 @@ import {
 import { dismissOnboarding, hasDismissedOnboarding, resetOnboarding } from "./lib/onboarding";
 import { isTauriRuntime } from "./lib/runtime";
 import { createSpace, listSpaces, type SpaceSummary } from "./lib/spaces";
+import { refreshTrayStatus } from "./lib/tray";
 import {
   getDashboardStats,
   listSpaceStats,
@@ -240,6 +241,7 @@ export default function App() {
           setDashboardStats(nextDashboardStats);
           setRecentActivity(nextRecentActivity);
           setSpaceStats(nextSpaceStats);
+          void refreshTrayStatus();
         }
       } catch (nextError: unknown) {
         if (!cancelled) {
@@ -278,6 +280,26 @@ export default function App() {
         setStudySession(null);
         setAiGenerateSession(null);
         setIsCreateDialogOpen(false);
+      }).then((dispose) => {
+        unlisten = dispose;
+      }),
+    );
+
+    return () => {
+      unlisten?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isTauriRuntime()) {
+      return;
+    }
+
+    let unlisten: (() => void) | null = null;
+
+    void import("@tauri-apps/api/event").then(({ listen }) =>
+      listen("tray://study-now", () => {
+        setStudySession({ scope: "global", startedAt: Date.now() });
       }).then((dispose) => {
         unlisten = dispose;
       }),
@@ -352,6 +374,7 @@ export default function App() {
     setDashboardStats(nextDashboardStats);
     setRecentActivity(nextRecentActivity);
     setSpaceStats(nextSpaceStats);
+    void refreshTrayStatus();
   }
 
   async function handleCreateCard(input: {
@@ -427,6 +450,7 @@ export default function App() {
       setDashboardStats(nextDashboardStats);
       setRecentActivity(nextRecentActivity);
       setSpaceStats(nextSpaceStats);
+      void refreshTrayStatus();
       return updatedCard;
     } finally {
       setIsMutatingCards(false);

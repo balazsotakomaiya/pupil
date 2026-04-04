@@ -8,6 +8,7 @@ mod imports;
 mod normalize;
 mod settings;
 mod spaces;
+mod tray;
 mod types;
 mod util;
 
@@ -19,8 +20,8 @@ use crate::commands::{
     create_card, create_space, delete_card, delete_space, export_database_copy,
     export_review_logs_csv, generate_cards, get_ai_settings, get_bootstrap_state,
     get_dashboard_stats, get_settings_data_summary, import_anki_cards, list_cards,
-    list_recent_activity, list_space_stats, list_spaces, rename_space, reset_all_data, review_card,
-    save_ai_settings, test_ai_provider_connection, update_card,
+    list_recent_activity, list_space_stats, list_spaces, refresh_tray_status, rename_space,
+    reset_all_data, review_card, save_ai_settings, test_ai_provider_connection, update_card,
 };
 use crate::constants::{DEVELOPER_RESET_ONBOARDING_EVENT, DEVELOPER_RESET_ONBOARDING_MENU_ID};
 
@@ -38,6 +39,7 @@ pub fn run() {
             let backup_created = run_migrations(app.handle(), &database_path)?;
 
             app.manage(BootstrapStatus { backup_created });
+            tray::setup_tray(app.handle())?;
 
             Ok(())
         })
@@ -63,7 +65,8 @@ pub fn run() {
             get_settings_data_summary,
             export_database_copy,
             export_review_logs_csv,
-            reset_all_data
+            reset_all_data,
+            refresh_tray_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running pupil app");
