@@ -2,7 +2,7 @@
 
 [![Build](https://github.com/balazsotakomaiya/pupil/actions/workflows/build.yml/badge.svg)](https://github.com/balazsotakomaiya/pupil/actions/workflows/build.yml)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-blue)
-![License](https://img.shields.io/github/license/balazsotakomaiya/pupil)
+[![License](https://img.shields.io/badge/license-MIT-0f766e)](LICENSE)
 
 Pupil is a local-first flashcard app for people who want the power of spaced repetition without the friction that usually comes with it.
 
@@ -87,6 +87,10 @@ Key docs:
 - [Phase 2 spec](docs/PHASE_2_SPEC.md)
 - [App design notes](apps/app/DESIGN.md)
 - [Agent/contributor guide](apps/app/AGENTS.md)
+
+## License
+
+Pupil is available under the MIT License. You can use, modify, distribute, and sell software based on it, as long as you keep the copyright notice and license text. See [LICENSE](LICENSE).
 
 ## Product direction
 
