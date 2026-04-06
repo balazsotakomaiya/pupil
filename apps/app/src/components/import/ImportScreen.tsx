@@ -5,70 +5,13 @@ import { ImportHistoryTable } from "./ImportHistoryTable";
 import { ImportNotesCard } from "./ImportNotesCard";
 import { ImportProgressCard } from "./ImportProgressCard";
 import { ImportSummaryCard } from "./ImportSummaryCard";
-import type {
-  ImportHistoryItem,
-  ImportProgressModel,
-  ImportSummaryModel,
-} from "./types";
+import type { ImportHistoryItem, ImportProgressModel, ImportSummaryModel } from "./types";
 
 type ImportScreenProps = {
   onImportComplete: () => Promise<void>;
   onOpenCards: () => void;
   onStudyNow: () => void;
 };
-
-const FALLBACK_SUMMARY: ImportSummaryModel = {
-  deckBreakdown: [
-    { deckName: "Amino Acids", importedCount: 62, skippedCount: 3, totalCount: 65 },
-    { deckName: "Enzyme Kinetics", importedCount: 48, skippedCount: 0, totalCount: 48 },
-    { deckName: "Metabolic Pathways", importedCount: 35, skippedCount: 12, totalCount: 47 },
-  ],
-  fileName: "biochemistry_complete.apkg",
-  metaLabel: "Imported 3 hours ago · 2.8 MB",
-};
-
-const FALLBACK_HISTORY: ImportHistoryItem[] = [
-  {
-    cardsImported: 145,
-    dateLabel: "3h ago",
-    duplicateCount: 15,
-    fileName: "biochemistry_complete.apkg",
-    status: "complete",
-    statusLabel: "complete",
-  },
-  {
-    cardsImported: 312,
-    dateLabel: "Mar 20",
-    duplicateCount: 0,
-    fileName: "world_history_ap.apkg",
-    status: "complete",
-    statusLabel: "complete",
-  },
-  {
-    cardsImported: 89,
-    dateLabel: "Mar 18",
-    duplicateCount: 4,
-    fileName: "french_vocab_b2.apkg",
-    status: "complete",
-    statusLabel: "complete",
-  },
-  {
-    cardsImported: 0,
-    dateLabel: "Mar 15",
-    duplicateCount: 0,
-    fileName: "organic_chem_reactions.apkg",
-    status: "partial",
-    statusLabel: "corrupt file",
-  },
-  {
-    cardsImported: 89,
-    dateLabel: "Mar 10",
-    duplicateCount: 0,
-    fileName: "rust_ownership_basics.apkg",
-    status: "complete",
-    statusLabel: "complete",
-  },
-];
 
 const IMPORT_NOTES = [
   "Each Anki deck becomes a separate Pupil space. Nested decks are flattened.",
@@ -79,19 +22,6 @@ const IMPORT_NOTES = [
   "Re-importing the same file is safe. Duplicates are detected and skipped.",
 ];
 
-const FALLBACK_ACTIVE_IMPORT: ImportProgressModel = {
-  details: [
-    { label: "/ 1,847 cards processed", value: "1,203" },
-    { label: "decks found", value: "4" },
-    { label: "duplicates so far", value: "31" },
-  ],
-  fileName: "japanese_n3_vocab.apkg",
-  fileSubtext: "4.2 MB · 1,847 notes detected",
-  progress: 65,
-  statusLabel: "Parsing…",
-  statusVariant: "parsing",
-};
-
 export function ImportScreen({
   onImportComplete,
   onOpenCards,
@@ -100,14 +30,14 @@ export function ImportScreen({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const storedHistory = useMemo(() => readImportHistory(), []);
-  const [activeImportModel, setActiveImportModel] = useState<ImportProgressModel>(() =>
-    storedHistory[0] ? buildCompletedProgressModel(storedHistory[0]) : FALLBACK_ACTIVE_IMPORT,
+  const [activeImportModel, setActiveImportModel] = useState<ImportProgressModel | null>(() =>
+    storedHistory[0] ? buildCompletedProgressModel(storedHistory[0]) : null,
   );
-  const [lastImportModel, setLastImportModel] = useState<ImportSummaryModel>(() =>
-    storedHistory[0] ? buildSummaryModel(storedHistory[0]) : FALLBACK_SUMMARY,
+  const [lastImportModel, setLastImportModel] = useState<ImportSummaryModel | null>(() =>
+    storedHistory[0] ? buildSummaryModel(storedHistory[0]) : null,
   );
   const [historyItems, setHistoryItems] = useState<ImportHistoryItem[]>(() =>
-    storedHistory.length > 0 ? storedHistory.map(buildHistoryItem) : FALLBACK_HISTORY,
+    storedHistory.map(buildHistoryItem),
   );
 
   function handleBrowse() {
@@ -130,7 +60,7 @@ export function ImportScreen({
       const result = await importApkgFile(file, setActiveImportModel);
       setLastImportModel(buildSummaryModel(result));
       const nextHistory = readImportHistory();
-      setHistoryItems(nextHistory.length > 0 ? nextHistory.map(buildHistoryItem) : FALLBACK_HISTORY);
+      setHistoryItems(nextHistory.map(buildHistoryItem));
       await onImportComplete();
     } catch (error: unknown) {
       setActiveImportModel(
@@ -185,41 +115,53 @@ export function ImportScreen({
         onFileChange={handleFileChange}
       />
 
-      <div className="ruler-divider" />
+      {activeImportModel ? (
+        <>
+          <div className="ruler-divider" />
 
-      <section className="section import-section-tight">
-        <div className="section-head">
-          <span className="section-label">Active Import</span>
-        </div>
+          <section className="section import-section-tight">
+            <div className="section-head">
+              <span className="section-label">Active Import</span>
+            </div>
 
-        <div className="import-states">
-          <ImportProgressCard model={activeImportModel} />
-        </div>
-      </section>
+            <div className="import-states">
+              <ImportProgressCard model={activeImportModel} />
+            </div>
+          </section>
+        </>
+      ) : null}
 
-      <div className="ruler-divider" />
+      {lastImportModel ? (
+        <>
+          <div className="ruler-divider" />
 
-      <section className="section import-section-tight">
-        <div className="section-head">
-          <span className="section-label">Last Import</span>
-        </div>
+          <section className="section import-section-tight">
+            <div className="section-head">
+              <span className="section-label">Last Import</span>
+            </div>
 
-        <ImportSummaryCard
-          model={lastImportModel}
-          onOpenCards={onOpenCards}
-          onStudyNow={onStudyNow}
-        />
-      </section>
+            <ImportSummaryCard
+              model={lastImportModel}
+              onOpenCards={onOpenCards}
+              onStudyNow={onStudyNow}
+            />
+          </section>
+        </>
+      ) : null}
 
-      <div className="ruler-divider" />
+      {historyItems.length > 0 ? (
+        <>
+          <div className="ruler-divider" />
 
-      <section className="section">
-        <div className="section-head">
-          <span className="section-label">History</span>
-        </div>
+          <section className="section">
+            <div className="section-head">
+              <span className="section-label">History</span>
+            </div>
 
-        <ImportHistoryTable items={historyItems} />
-      </section>
+            <ImportHistoryTable items={historyItems} />
+          </section>
+        </>
+      ) : null}
 
       <div className="ruler-divider" />
 
