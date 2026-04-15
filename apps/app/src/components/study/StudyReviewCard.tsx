@@ -7,39 +7,50 @@ type StudyReviewCardProps = {
 
 export function StudyReviewCard({ card, isAnswerVisible }: StudyReviewCardProps) {
   return (
-    <div className={`session-card${isAnswerVisible ? " back-showing" : ""}`}>
-      <span className="session-card-label">{isAnswerVisible ? "back" : "front"}</span>
-      <span className="session-card-space">{card.spaceName}</span>
-
-      <div className="session-card-content">
-        {isAnswerVisible ? (
-          <>
-            <div
-              className="session-card-front-echo"
-              dangerouslySetInnerHTML={{ __html: renderStudyHtml(card.front) }}
-            />
-            <div
-              className="session-card-text"
-              dangerouslySetInnerHTML={{ __html: renderStudyHtml(card.back) }}
-            />
-          </>
-        ) : (
+    <div className={`session-card${isAnswerVisible ? " flipped" : ""}`}>
+      <div className="session-card-face front">
+        <span className="session-card-label">front</span>
+        <span className="session-card-space">{card.spaceName}</span>
+        <div className="session-card-content">
           <div
             className="session-card-text"
             dangerouslySetInnerHTML={{ __html: renderStudyHtml(card.front) }}
           />
-        )}
+        </div>
+        {card.tags.length > 0 ? (
+          <div className="session-card-tags">
+            {card.tags.map((tag) => (
+              <span className="session-card-tag" key={`${card.id}-${tag}-front`}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
 
-      {card.tags.length > 0 ? (
-        <div className="session-card-tags">
-          {card.tags.map((tag) => (
-            <span className="session-card-tag" key={`${card.id}-${tag}`}>
-              {tag}
-            </span>
-          ))}
+      <div className="session-card-face back">
+        <span className="session-card-label">back</span>
+        <span className="session-card-space">{card.spaceName}</span>
+        <div className="session-card-content">
+          <div
+            className="session-card-front-echo"
+            dangerouslySetInnerHTML={{ __html: renderStudyHtml(card.front) }}
+          />
+          <div
+            className="session-card-text"
+            dangerouslySetInnerHTML={{ __html: renderStudyHtml(card.back) }}
+          />
         </div>
-      ) : null}
+        {card.tags.length > 0 ? (
+          <div className="session-card-tags">
+            {card.tags.map((tag) => (
+              <span className="session-card-tag" key={`${card.id}-${tag}-back`}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

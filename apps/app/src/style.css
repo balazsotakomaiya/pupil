@@ -5703,13 +5703,26 @@ button {
   width: 100%;
   max-width: 560px;
   flex-shrink: 0;
+  perspective: 1200px;
 }
 
 .session-card {
+  display: grid;
+  grid-template-areas: "card";
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.48s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.session-card.flipped {
+  transform: rotateY(180deg);
+}
+
+.session-card-face {
+  grid-area: card;
   position: relative;
   display: flex;
   min-height: 280px;
-  width: 100%;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -5718,14 +5731,16 @@ button {
   border-radius: 20px;
   background: var(--bg-subtle);
   text-align: center;
+  backface-visibility: hidden;
   transition: border-color 0.2s ease;
 }
 
-.session-card:hover {
+.session-card:hover .session-card-face.front {
   border-color: var(--border-hover);
 }
 
-.session-card.back-showing {
+.session-card-face.back {
+  transform: rotateY(180deg);
   border-color: var(--border-hover);
   background: var(--bg-elevated);
 }
@@ -5785,14 +5800,14 @@ button {
   font-size: 15px;
 }
 
-.session-card.back-showing .session-card-text {
+.session-card-face.back .session-card-text {
   color: var(--text-secondary);
   font-size: 17px;
   font-weight: 400;
   line-height: 1.65;
 }
 
-.session-card.back-showing .session-card-text strong {
+.session-card-face.back .session-card-text strong {
   color: var(--text-primary);
   font-weight: 600;
 }
@@ -6487,7 +6502,7 @@ button {
     padding-left: 20px;
   }
 
-  .session-card {
+  .session-card-face {
     min-height: 220px;
     padding: 36px 28px;
     border-radius: 16px;
@@ -6497,7 +6512,7 @@ button {
     font-size: 18px;
   }
 
-  .session-card.back-showing .session-card-text {
+  .session-card-face.back .session-card-text {
     font-size: 15px;
   }
 
