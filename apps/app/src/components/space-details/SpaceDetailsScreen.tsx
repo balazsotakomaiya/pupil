@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import { SpaceDetailsTitlebar } from "../app-shell";
 import { CardFormPanel } from "../cards/CardFormPanel";
 import { CardList } from "../cards/CardList";
+import { Pagination } from "../Pagination";
 import { DeleteSpaceDialog } from "./DeleteSpaceDialog";
 import type { CardRecord } from "../../lib/cards";
 import type { SpaceSummary } from "../../lib/spaces";
 import type { SpaceStats } from "../../lib/stats";
+
+const PAGE_SIZE = 50;
 
 type CardDraft = {
   back: string;
@@ -60,6 +63,7 @@ export function SpaceDetailsScreen({
   const [editorSuccessPulseTick, setEditorSuccessPulseTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const now = Date.now();
 
   const spaceCards = cards.filter((card) => card.spaceId === space.id);
@@ -74,6 +78,15 @@ export function SpaceDetailsScreen({
       return `${card.front} ${card.back} ${card.tags.join(" ")}`.toLowerCase().includes(query);
     })
     .sort((left, right) => left.due - right.due || right.updatedAt - left.updatedAt);
+
+  const totalPages = Math.max(1, Math.ceil(filteredCards.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedCards = filteredCards.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setExpandedCardId(null);
+  }, [searchQuery]);
 
   const readyCards = spaceCards.filter((card) => card.due <= now);
   const startOfToday = new Date(now);
@@ -458,13 +471,14 @@ export function SpaceDetailsScreen({
           </div>
 
           <CardList
-            cards={filteredCards}
+            cards={paginatedCards}
             expandedCardId={expandedCardId}
             mode="space"
             onDeleteCard={(cardId) => void handleDelete(cardId)}
             onEditCard={handleEditCard}
             onToggleExpand={handleToggleExpand}
           />
+          <Pagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={totalPages} />
         </section>
 
         <div className="page-end" />

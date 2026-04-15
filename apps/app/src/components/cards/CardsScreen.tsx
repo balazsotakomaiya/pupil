@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import type { CardRecord } from "../../lib/cards";
 import type { SpaceSummary } from "../../lib/spaces";
+import { Pagination } from "../Pagination";
 import { CardFormPanel } from "./CardFormPanel";
 import { CardList } from "./CardList";
+
+const PAGE_SIZE = 50;
 
 type CardDraft = {
   back: string;
@@ -55,6 +58,7 @@ export function CardsScreen({
   const [sourceFilter, setSourceFilter] = useState<"all" | CardRecord["source"]>("all");
   const [spaceFilter, setSpaceFilter] = useState<string>("all");
   const [sortMode, setSortMode] = useState<"due" | "recent">("due");
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (spaces.length === 0) {
@@ -119,6 +123,15 @@ export function CardsScreen({
 
       return right.updatedAt - left.updatedAt || left.due - right.due;
     });
+
+  const totalPages = Math.max(1, Math.ceil(filteredCards.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedCards = filteredCards.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setExpandedCardId(null);
+  }, [searchQuery, stateFilter, sourceFilter, spaceFilter, sortMode]);
 
   if (spaces.length === 0) {
     return (
@@ -316,12 +329,13 @@ export function CardsScreen({
 
       <section className="card-list-section">
         <CardList
-          cards={filteredCards}
+          cards={paginatedCards}
           expandedCardId={expandedCardId}
           onDeleteCard={(cardId) => void handleDelete(cardId)}
           onEditCard={handleEditCard}
           onToggleExpand={handleToggleExpand}
         />
+        <Pagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={totalPages} />
       </section>
 
       <div className="page-end" />
