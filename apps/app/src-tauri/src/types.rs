@@ -239,6 +239,13 @@ pub(crate) struct ExportDataResult {
     pub(crate) record_count: i64,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct StudySettingsState {
+    pub(crate) new_cards_limit: Option<i64>,
+    pub(crate) new_cards_today: i64,
+}
+
 pub(crate) struct NormalizedAiSettingsInput {
     pub(crate) api_key: Option<String>,
     pub(crate) base_url: String,

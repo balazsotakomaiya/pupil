@@ -22,15 +22,15 @@ use crate::normalize::{
     normalize_review_card_input, normalize_space_name,
 };
 use crate::settings::{
-    export_dir, load_recent_activity, load_settings_data_summary, reset_all_data_rows,
-    write_review_logs_csv,
+    export_dir, load_new_cards_limit, load_recent_activity, load_settings_data_summary,
+    load_today_new_card_count, reset_all_data_rows, save_new_cards_limit, write_review_logs_csv,
 };
 use crate::spaces::{create_space_row, delete_space_row, list_space_summaries, rename_space_row};
 use crate::types::{
     AiConnectionTestResult, AiSettingsState, BootstrapState, CardSummary, CreateCardInput,
     DashboardStats, ExportDataResult, GenerateCardsInput, GeneratedCardPayload, ImportAnkiInput,
     ImportAnkiResult, RecentActivityEntry, ReviewCardInput, SaveAiSettingsInput,
-    SettingsDataSummary, SpaceStats, SpaceSummary, UpdateCardInput,
+    SettingsDataSummary, SpaceStats, SpaceSummary, StudySettingsState, UpdateCardInput,
 };
 use crate::tray;
 use crate::util::{map_card_storage_error, map_storage_error, now_ms};
@@ -309,4 +309,33 @@ pub(crate) fn reset_all_data(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub(crate) fn refresh_tray_status(app: AppHandle) -> Result<(), String> {
     tray::refresh_tray(&app)
+}
+
+#[tauri::command]
+pub(crate) fn get_study_settings(app: AppHandle) -> Result<StudySettingsState, String> {
+    let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+    let new_cards_limit = load_new_cards_limit(&connection).map_err(|error| error.to_string())?;
+    let new_cards_today =
+        load_today_new_card_count(&connection).map_err(|error| error.to_string())?;
+
+    Ok(StudySettingsState {
+        new_cards_limit,
+        new_cards_today,
+    })
+}
+
+#[tauri::command]
+pub(crate) fn save_study_settings(
+    app: AppHandle,
+    new_cards_limit: Option<i64>,
+) -> Result<StudySettingsState, String> {
+    let connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+    save_new_cards_limit(&connection, new_cards_limit).map_err(|error| error.to_string())?;
+    let new_cards_today =
+        load_today_new_card_count(&connection).map_err(|error| error.to_string())?;
+
+    Ok(StudySettingsState {
+        new_cards_limit,
+        new_cards_today,
+    })
 }

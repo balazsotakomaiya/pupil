@@ -10,6 +10,7 @@ import type { StudyCardRecord, StudyGrade, StudyScope } from "./types";
 
 type StudyScreenProps = {
   cards: StudyCardRecord[];
+  newCardsBudget: number | null;
   onBack: () => void;
   onReviewCard: (input: { card: CardRecord; grade: StudyGrade }) => Promise<CardRecord>;
   sessionKey: number;
@@ -20,6 +21,7 @@ type StudyScreenProps = {
 
 export function StudyScreen({
   cards,
+  newCardsBudget,
   onBack,
   onReviewCard,
   sessionKey,
@@ -31,15 +33,22 @@ export function StudyScreen({
   const [isAnswerVisible, setIsAnswerVisible] = useState(false);
   const [pressedGrade, setPressedGrade] = useState<StudyGrade | null>(null);
   const [sessionGrades, setSessionGrades] = useState<StudyGrade[]>([]);
+  const [sessionNewCardsBudget] = useState(() => newCardsBudget);
+  const [sessionCardIds, setSessionCardIds] = useState<Set<string>>(() =>
+    buildAdmittedSet(cards, Date.now(), newCardsBudget),
+  );
   const [isSummaryVisible, setIsSummaryVisible] = useState(
-    () => buildDueQueue(cards, Date.now()).length === 0,
+    () => buildDueQueue(cards, Date.now()).filter((c) => buildAdmittedSet(cards, Date.now(), newCardsBudget).has(c.id)).length === 0,
   );
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
-  const queue = useMemo(() => buildDueQueue(sessionCards, now), [sessionCards, now]);
+  const queue = useMemo(
+    () => buildDueQueue(sessionCards, now).filter((card) => sessionCardIds.has(card.id)),
+    [sessionCards, now, sessionCardIds],
+  );
   const currentCard = queue[0] ?? null;
   const reviewedCount = sessionGrades.length;
   const totalCards = queue.length + reviewedCount;
@@ -53,10 +62,17 @@ export function StudyScreen({
   const totalMinutes = Math.max(1, Math.round((Date.now() - startedAt) / (60 * 1000)));
   const nextDueLabel = buildNextDueLabel(sessionCards, now);
   const summaryTitle = reviewedCount === 0 && queue.length === 0 ? "No cards due" : "Session complete";
+  const allDueCards = buildDueQueue(sessionCards, now);
+  const gatedNewCards = allDueCards.filter((c) => c.state === 0 && !sessionCardIds.has(c.id));
+  const hasGatedNewCards = newCardsBudget !== null && gatedNewCards.length > 0;
   const summarySubtitle =
     reviewedCount === 0 && queue.length === 0
-      ? `Nothing is due in ${scopeLabel} right now. Come back when the next review window opens.`
-      : `You reviewed ${reviewedCount} due card${reviewedCount === 1 ? "" : "s"} in ${scopeLabel}.`;
+      ? hasGatedNewCards
+        ? `You've hit your daily limit of ${sessionNewCardsBudget} new cards. Reviews of cards already in your queue will still appear when due.`
+        : `Nothing is due in ${scopeLabel} right now. Come back when the next review window opens.`
+      : hasGatedNewCards
+        ? `You reviewed ${reviewedCount} card${reviewedCount === 1 ? "" : "s"} in ${scopeLabel}. ${gatedNewCards.length} new card${gatedNewCards.length === 1 ? "" : "s"} held back by your daily new-card limit.`
+        : `You reviewed ${reviewedCount} due card${reviewedCount === 1 ? "" : "s"} in ${scopeLabel}.`;
   const streakLabel =
     scope === "space"
       ? `${Math.max(space?.streak ?? 0, reviewedCount > 0 ? 1 : 0)} day streak in ${scopeLabel}`
@@ -69,7 +85,9 @@ export function StudyScreen({
     setIsAnswerVisible(false);
     setPressedGrade(null);
     setSessionGrades([]);
-    setIsSummaryVisible(buildDueQueue(cards, Date.now()).length === 0);
+    const admitted = buildAdmittedSet(cards, Date.now(), newCardsBudget);
+    setSessionCardIds(admitted);
+    setIsSummaryVisible(buildDueQueue(cards, Date.now()).filter((c) => admitted.has(c.id)).length === 0);
     setStartedAt(Date.now());
     setIsSubmittingReview(false);
     setError(null);
@@ -150,7 +168,7 @@ export function StudyScreen({
       setIsAnswerVisible(false);
       setNow(nextNow);
 
-      if (buildDueQueue(nextCards, nextNow).length === 0) {
+      if (buildDueQueue(nextCards, nextNow).filter((card) => sessionCardIds.has(card.id)).length === 0) {
         setIsSummaryVisible(true);
       }
     } catch (nextError: unknown) {
@@ -162,10 +180,12 @@ export function StudyScreen({
   }
 
   function handleRestart() {
+    const admitted = buildAdmittedSet(sessionCards, Date.now(), sessionNewCardsBudget);
+    setSessionCardIds(admitted);
     setIsAnswerVisible(false);
     setPressedGrade(null);
     setSessionGrades([]);
-    setIsSummaryVisible(buildDueQueue(sessionCards, Date.now()).length === 0);
+    setIsSummaryVisible(buildDueQueue(sessionCards, Date.now()).filter((c) => admitted.has(c.id)).length === 0);
     setStartedAt(Date.now());
     setIsSubmittingReview(false);
     setError(null);
@@ -218,6 +238,25 @@ function buildDueQueue(cards: StudyCardRecord[], now: number) {
   return [...cards]
     .filter((card) => card.due <= now)
     .sort((left, right) => left.due - right.due || right.updatedAt - left.updatedAt);
+}
+
+/**
+ * Build the set of card IDs admitted into a session.
+ * - All due review cards (state > 0) are always admitted.
+ * - New cards (state === 0) are admitted up to `newCardsBudget`.
+ */
+function buildAdmittedSet(
+  cards: StudyCardRecord[],
+  now: number,
+  newCardsBudget: number | null,
+): Set<string> {
+  const dueCards = buildDueQueue(cards, now);
+  const reviewCards = dueCards.filter((c) => c.state > 0);
+  const newCards = dueCards.filter((c) => c.state === 0);
+  const admittedNewCards =
+    newCardsBudget !== null ? newCards.slice(0, newCardsBudget) : newCards;
+
+  return new Set([...reviewCards, ...admittedNewCards].map((c) => c.id));
 }
 
 function buildNextDueLabel(cards: StudyCardRecord[], now: number): string {

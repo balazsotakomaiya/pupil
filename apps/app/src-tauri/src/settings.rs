@@ -123,6 +123,55 @@ pub(crate) fn write_review_logs_csv(connection: &Connection, path: &Path) -> App
     Ok(count)
 }
 
+pub(crate) fn load_new_cards_limit(connection: &Connection) -> rusqlite::Result<Option<i64>> {
+    let result: rusqlite::Result<String> = connection.query_row(
+        "SELECT value FROM settings WHERE key = 'study.new_cards_limit'",
+        [],
+        |row| row.get(0),
+    );
+
+    match result {
+        Ok(value) => Ok(value.parse::<i64>().ok().filter(|&v| v > 0)),
+        Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+        Err(error) => Err(error),
+    }
+}
+
+pub(crate) fn save_new_cards_limit(
+    connection: &Connection,
+    limit: Option<i64>,
+) -> rusqlite::Result<()> {
+    match limit {
+        Some(value) => {
+            connection.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES ('study.new_cards_limit', ?1)",
+                [value.to_string()],
+            )?;
+        }
+        None => {
+            connection.execute(
+                "DELETE FROM settings WHERE key = 'study.new_cards_limit'",
+                [],
+            )?;
+        }
+    }
+
+    Ok(())
+}
+
+pub(crate) fn load_today_new_card_count(connection: &Connection) -> rusqlite::Result<i64> {
+    connection.query_row(
+        "
+        SELECT COUNT(DISTINCT card_id)
+        FROM review_logs
+        WHERE state = 0
+          AND date(review_time / 1000, 'unixepoch', 'localtime') = date('now', 'localtime')
+        ",
+        [],
+        |row| row.get(0),
+    )
+}
+
 pub(crate) fn reset_all_data_rows(app: &AppHandle, connection: &mut Connection) -> AppResult<()> {
     clear_ai_api_key(app)?;
 

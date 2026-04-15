@@ -17,6 +17,7 @@ const WEB_KEYS = [
   "pupil.web.review_logs",
   "pupil.web.spaces",
   "pupil.web.study_days",
+  "pupil.web.study_settings",
 ];
 
 export async function getSettingsDataSummary(): Promise<SettingsDataSummary> {

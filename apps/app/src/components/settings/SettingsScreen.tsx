@@ -24,11 +24,16 @@ import {
 } from "./SettingsIcons";
 import { SettingsNav, type SettingsSectionId } from "./SettingsNav";
 import { SettingsShortcutsGrid } from "./SettingsShortcutsGrid";
+import { StudySettingsCard } from "./StudySettingsCard";
+import { type StudySettings } from "../../lib/study-settings";
 
 type SettingsScreenProps = {
   cardsCount: number;
+  isSavingStudySettings: boolean;
   onResetAllData: () => Promise<void>;
+  onSaveStudySettings: (newCardsLimit: number | null) => Promise<void>;
   spacesCount: number;
+  studySettings: StudySettings;
 };
 
 type SavedSettingsSnapshot = {
@@ -83,14 +88,17 @@ function detectModelFromUrl(url: string): string | null {
 
 export function SettingsScreen({
   cardsCount,
+  isSavingStudySettings,
   onResetAllData,
+  onSaveStudySettings,
   spacesCount,
+  studySettings,
 }: SettingsScreenProps) {
   const hasUserEditedSettings = useRef(false);
   const autoSaveTimerRef = useRef<number | null>(null);
   // Updated on every render so the timeout callback always uses latest state.
   const handleAutoSave = useRef<() => void>(() => {});
-  const [activeSection, setActiveSection] = useState<SettingsSectionId>("ai");
+  const [activeSection, setActiveSection] = useState<SettingsSectionId>("study");
   const [apiKey, setApiKey] = useState("");
   const [apiKeyEdited, setApiKeyEdited] = useState(false);
   const [hasStoredApiKey, setHasStoredApiKey] = useState(false);
@@ -141,6 +149,7 @@ export function SettingsScreen({
     label: "Ready",
   });
 
+  const studyRef = useRef<HTMLElement | null>(null);
   const aiRef = useRef<HTMLElement | null>(null);
   const dataRef = useRef<HTMLElement | null>(null);
   const shortcutsRef = useRef<HTMLElement | null>(null);
@@ -152,6 +161,7 @@ export function SettingsScreen({
       ai: aiRef,
       data: dataRef,
       shortcuts: shortcutsRef,
+      study: studyRef,
     }),
     [],
   );
@@ -518,6 +528,10 @@ export function SettingsScreen({
     window.open(urls[kind], "_blank", "noopener,noreferrer");
   }
 
+  async function handleSaveStudySettings(newCardsLimit: number | null) {
+    await onSaveStudySettings(newCardsLimit);
+  }
+
   const apiKeyHint = hasStoredApiKey
     ? "Leave the field empty to keep the stored key, or enter a new one to replace it."
     : "API key will be stored safely on this device. Add one to enable live generation.";
@@ -541,6 +555,25 @@ export function SettingsScreen({
       </section>
 
       <SettingsNav activeSection={activeSection} onSelect={handleSelectSection} />
+
+      <div className="ruler-divider" />
+
+      <section className="settings-section" id="study" ref={studyRef}>
+        <div className="settings-section-head">
+          <div className="settings-section-title">New Cards Per Day</div>
+          <div className="settings-section-desc">
+            Control how many unseen cards are introduced each day. Reviews of
+            cards already in your learning queue always appear when due — this
+            limit only gates new material.
+          </div>
+        </div>
+
+        <StudySettingsCard
+          isSaving={isSavingStudySettings}
+          onSave={handleSaveStudySettings}
+          settings={studySettings}
+        />
+      </section>
 
       <div className="ruler-divider" />
 

@@ -12,36 +12,44 @@ mod tray;
 mod types;
 mod util;
 
-use tauri::{Emitter, Manager};
+#[cfg(debug_assertions)]
+use tauri::Emitter;
+use tauri::Manager;
 
 use crate::ai::StrongholdState;
 use crate::app::{build_app_menu, database_path, run_migrations, BootstrapStatus};
 use crate::commands::{
     create_card, create_space, delete_card, delete_space, export_database_copy,
     export_review_logs_csv, generate_cards, get_ai_settings, get_bootstrap_state,
-    get_dashboard_stats, get_settings_data_summary, import_anki_cards, list_cards,
-    list_recent_activity, list_space_stats, list_spaces, refresh_tray_status, rename_space,
-    reset_all_data, review_card, save_ai_settings, test_ai_provider_connection, update_card,
+    get_dashboard_stats, get_settings_data_summary, get_study_settings, import_anki_cards,
+    list_cards, list_recent_activity, list_space_stats, list_spaces, refresh_tray_status,
+    rename_space, reset_all_data, review_card, save_ai_settings, save_study_settings,
+    test_ai_provider_connection, update_card,
 };
+#[cfg(debug_assertions)]
 use crate::constants::{
     DEVELOPER_OPEN_DEVTOOLS_MENU_ID, DEVELOPER_RESET_ONBOARDING_EVENT,
     DEVELOPER_RESET_ONBOARDING_MENU_ID,
 };
 
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .manage(StrongholdState::default())
-        .menu(build_app_menu)
-        .on_menu_event(|app, event| {
-            if event.id().as_ref() == DEVELOPER_OPEN_DEVTOOLS_MENU_ID {
-                if let Some(webview) = app.get_webview_window("main") {
-                    webview.open_devtools();
-                }
+        .menu(build_app_menu);
+
+    #[cfg(debug_assertions)]
+    let builder = builder.on_menu_event(|app, event| {
+        if event.id().as_ref() == DEVELOPER_OPEN_DEVTOOLS_MENU_ID {
+            if let Some(webview) = app.get_webview_window("main") {
+                webview.open_devtools();
             }
-            if event.id().as_ref() == DEVELOPER_RESET_ONBOARDING_MENU_ID {
-                let _ = app.emit(DEVELOPER_RESET_ONBOARDING_EVENT, ());
-            }
-        })
+        }
+        if event.id().as_ref() == DEVELOPER_RESET_ONBOARDING_MENU_ID {
+            let _ = app.emit(DEVELOPER_RESET_ONBOARDING_EVENT, ());
+        }
+    });
+
+    builder
         .setup(|app| {
             let database_path = database_path(app.handle())?;
             let backup_created = run_migrations(app.handle(), &database_path)?;
@@ -74,7 +82,9 @@ pub fn run() {
             export_database_copy,
             export_review_logs_csv,
             reset_all_data,
-            refresh_tray_status
+            refresh_tray_status,
+            get_study_settings,
+            save_study_settings
         ])
         .run(tauri::generate_context!())
         .expect("error while running pupil app");

@@ -3,12 +3,17 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use rusqlite::Connection;
-use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
+use tauri::menu::{MenuBuilder, SubmenuBuilder};
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Manager};
 
+#[cfg(debug_assertions)]
+use tauri::menu::MenuItemBuilder;
+
+use crate::constants::MIGRATIONS;
+#[cfg(debug_assertions)]
 use crate::constants::{
-    DEVELOPER_OPEN_DEVTOOLS_MENU_ID, DEVELOPER_RESET_ONBOARDING_MENU_ID, MIGRATIONS,
+    DEVELOPER_OPEN_DEVTOOLS_MENU_ID, DEVELOPER_RESET_ONBOARDING_MENU_ID,
 };
 use crate::types::AppResult;
 use crate::util::now_ms;

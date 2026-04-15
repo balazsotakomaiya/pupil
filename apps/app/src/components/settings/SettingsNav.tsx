@@ -1,4 +1,4 @@
-export type SettingsSectionId = "ai" | "data" | "shortcuts" | "about";
+export type SettingsSectionId = "study" | "ai" | "data" | "shortcuts" | "about";
 
 type SettingsNavProps = {
   activeSection: SettingsSectionId;
@@ -6,6 +6,7 @@ type SettingsNavProps = {
 };
 
 const NAV_ITEMS: Array<{ id: SettingsSectionId; label: string }> = [
+  { id: "study", label: "Study" },
   { id: "ai", label: "AI Provider" },
   { id: "data", label: "Data" },
   { id: "shortcuts", label: "Shortcuts" },

@@ -1,8 +1,11 @@
 use crate::types::Migration;
 
 pub(crate) const SPACE_NAME_MAX_LENGTH: usize = 80;
+#[cfg(debug_assertions)]
 pub(crate) const DEVELOPER_OPEN_DEVTOOLS_MENU_ID: &str = "developer.open_devtools";
+#[cfg(debug_assertions)]
 pub(crate) const DEVELOPER_RESET_ONBOARDING_MENU_ID: &str = "developer.reset_onboarding";
+#[cfg(debug_assertions)]
 pub(crate) const DEVELOPER_RESET_ONBOARDING_EVENT: &str = "developer://reset-onboarding";
 pub(crate) const AI_SETTING_BASE_URL_KEY: &str = "ai.base_url";
 pub(crate) const AI_SETTING_MODEL_KEY: &str = "ai.model";

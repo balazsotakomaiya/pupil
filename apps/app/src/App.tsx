@@ -43,6 +43,13 @@ import {
   type DashboardStats as DashboardStatsRecord,
   type SpaceStats as SpaceStatsRecord,
 } from "./lib/stats";
+import {
+  computeNewCardsBudget,
+  DEFAULT_NEW_CARDS_LIMIT,
+  getStudySettings,
+  saveStudySettings,
+  type StudySettings,
+} from "./lib/study-settings";
 
 const APP_TABS: AppTab[] = [
   { id: "dashboard", label: "Dashboard" },
@@ -220,6 +227,11 @@ export default function App() {
   const [newSpaceError, setNewSpaceError] = useState<string | null>(null);
   const [isCreatingSpace, setIsCreatingSpace] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  const [studySettings, setStudySettings] = useState<StudySettings>({
+    newCardsLimit: DEFAULT_NEW_CARDS_LIMIT,
+    newCardsToday: 0,
+  });
+  const [isSavingStudySettings, setIsSavingStudySettings] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -228,13 +240,14 @@ export default function App() {
       try {
         const dismissed = hasDismissedOnboarding();
         await loadBootstrapState();
-        const [nextSpaces, nextCards, nextDashboardStats, nextSpaceStats, nextRecentActivity] =
+        const [nextSpaces, nextCards, nextDashboardStats, nextSpaceStats, nextRecentActivity, nextStudySettings] =
           await Promise.all([
             listSpaces(),
             listCards(),
             getDashboardStats(),
             listSpaceStats(),
             listRecentActivity(),
+            getStudySettings(),
           ]);
 
         if (!cancelled) {
@@ -244,6 +257,7 @@ export default function App() {
           setDashboardStats(nextDashboardStats);
           setRecentActivity(nextRecentActivity);
           setSpaceStats(nextSpaceStats);
+          setStudySettings(nextStudySettings);
           void refreshTrayStatus();
         }
       } catch (nextError: unknown) {
@@ -362,6 +376,10 @@ export default function App() {
     studySession?.scope === "space"
       ? cards.filter((card) => card.spaceId === studySession.spaceId)
       : cards;
+  const newCardsBudget = computeNewCardsBudget(
+    studySettings.newCardsLimit,
+    studySettings.newCardsToday,
+  );
   const shouldShowOnboarding =
     !selectedSpace &&
     !studySession &&
@@ -370,19 +388,21 @@ export default function App() {
     !isOnboardingDismissed;
 
   async function refreshAppData() {
-    const [nextSpaces, nextCards, nextDashboardStats, nextSpaceStats, nextRecentActivity] =
+    const [nextSpaces, nextCards, nextDashboardStats, nextSpaceStats, nextRecentActivity, nextStudySettings] =
       await Promise.all([
         listSpaces(),
         listCards(),
         getDashboardStats(),
         listSpaceStats(),
         listRecentActivity(),
+        getStudySettings(),
       ]);
     setSpaces(nextSpaces);
     setCards(nextCards);
     setDashboardStats(nextDashboardStats);
     setRecentActivity(nextRecentActivity);
     setSpaceStats(nextSpaceStats);
+    setStudySettings(nextStudySettings);
     void refreshTrayStatus();
   }
 
@@ -443,12 +463,13 @@ export default function App() {
 
     try {
       const updatedCard = await reviewCard(input);
-      const [nextSpaces, nextDashboardStats, nextSpaceStats, nextRecentActivity] =
+      const [nextSpaces, nextDashboardStats, nextSpaceStats, nextRecentActivity, nextStudySettings] =
         await Promise.all([
           listSpaces(),
           getDashboardStats(),
           listSpaceStats(),
           listRecentActivity(),
+          getStudySettings(),
         ]);
       setCards((currentCards) =>
         sortCardRecords(
@@ -459,6 +480,7 @@ export default function App() {
       setDashboardStats(nextDashboardStats);
       setRecentActivity(nextRecentActivity);
       setSpaceStats(nextSpaceStats);
+      setStudySettings(nextStudySettings);
       void refreshTrayStatus();
       return updatedCard;
     } finally {
@@ -612,6 +634,17 @@ export default function App() {
     await refreshAppData();
   }
 
+  async function handleSaveStudySettings(newCardsLimit: number | null) {
+    setIsSavingStudySettings(true);
+
+    try {
+      const saved = await saveStudySettings(newCardsLimit);
+      setStudySettings(saved);
+    } finally {
+      setIsSavingStudySettings(false);
+    }
+  }
+
   function handleDismissOnboarding() {
     dismissOnboarding();
     setIsOnboardingDismissed(true);
@@ -714,6 +747,7 @@ export default function App() {
             ) : studySession ? (
               <StudyScreen
                 cards={studyCards}
+                newCardsBudget={newCardsBudget}
                 onBack={handleCloseStudySession}
                 onReviewCard={handleReviewCard}
                 sessionKey={studySession.startedAt}
@@ -781,8 +815,11 @@ export default function App() {
                 ) : activeTab === "settings" ? (
                   <SettingsScreen
                     cardsCount={cards.length}
+                    isSavingStudySettings={isSavingStudySettings}
                     onResetAllData={handleResetAllData}
+                    onSaveStudySettings={handleSaveStudySettings}
                     spacesCount={spaces.length}
+                    studySettings={studySettings}
                   />
                 ) : (
                   <div className="page cards-page" />
