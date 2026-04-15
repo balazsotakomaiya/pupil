@@ -1798,6 +1798,68 @@ button {
   opacity: 0.6;
 }
 
+.more-menu-wrap {
+  position: relative;
+}
+
+.more-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 148px;
+  padding: 4px;
+  border: 1px solid var(--border-hover);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.more-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.more-menu-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.more-menu-item.danger {
+  color: #ef4444;
+}
+
+.more-menu-item.danger:hover {
+  background: #ef444415;
+  color: #ef4444;
+}
+
+.more-menu-item svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.titlebar-btn.active {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
 .eye-logo {
   display: block;
   flex-shrink: 0;
@@ -2035,6 +2097,15 @@ button {
   cursor: default;
 }
 
+.study-btn.danger-btn {
+  background: #ef4444;
+  color: #fff;
+}
+
+.study-btn.danger-btn:hover {
+  opacity: 0.88;
+}
+
 .study-btn-secondary {
   padding: 10px 18px;
   color: var(--text-secondary);
@@ -2184,6 +2255,7 @@ button {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
 .space-streak {
@@ -2209,10 +2281,15 @@ button {
   color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .space-meta {
   display: flex;
+  align-items: flex-end;
   gap: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
@@ -2224,15 +2301,22 @@ button {
   gap: 2px;
 }
 
+.space-meta-item:last-child {
+  margin-left: auto;
+  align-items: flex-end;
+}
+
 .space-meta-val {
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.3px;
+  white-space: nowrap;
 }
 
 .space-meta-label {
   color: var(--text-tertiary);
   font-size: 11px;
+  white-space: nowrap;
 }
 
 .due-indicator {
@@ -3754,6 +3838,71 @@ button {
 
 .import-hero {
   padding: 56px 0 48px;
+}
+
+.import-target {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 32px;
+}
+
+.import-target-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.import-target-select-wrap {
+  position: relative;
+}
+
+.import-target-select {
+  width: 100%;
+  height: 38px;
+  padding: 0 36px 0 14px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.import-target-select:hover {
+  border-color: var(--text-tertiary);
+}
+
+.import-target-select:focus {
+  border-color: var(--border-hover);
+}
+
+.import-target-chevron {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+}
+
+.import-target-chevron svg {
+  width: 13px;
+  height: 13px;
+}
+
+.import-target-hint {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .drop-zone {

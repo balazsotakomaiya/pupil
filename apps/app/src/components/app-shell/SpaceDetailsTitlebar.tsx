@@ -1,18 +1,39 @@
+import { useEffect, useRef, useState } from "react";
 import { EyeLogo } from "../dashboard/EyeLogo";
 
 type SpaceDetailsTitlebarProps = {
   onBack: () => void;
+  onOpenDeleteDialog: () => void;
   onOpenAiGenerate: () => void;
+  onOpenImport: () => void;
   onOpenNewCard: () => void;
   spaceName: string;
 };
 
 export function SpaceDetailsTitlebar({
   onBack,
+  onOpenDeleteDialog,
   onOpenAiGenerate,
+  onOpenImport,
   onOpenNewCard,
   spaceName,
 }: SpaceDetailsTitlebarProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isMenuOpen]);
+
   return (
     <div className="titlebar">
       <div className="titlebar-left">
@@ -42,9 +63,36 @@ export function SpaceDetailsTitlebar({
           <GenerateIcon />
           AI Generate
         </button>
-        <button aria-label="More actions" className="titlebar-btn" type="button">
-          <MoreIcon />
+        <button className="titlebar-btn-label" onClick={onOpenImport} type="button">
+          <ImportIcon />
+          Import
         </button>
+        <div className="more-menu-wrap" ref={menuRef}>
+          <button
+            aria-expanded={isMenuOpen}
+            aria-label="More actions"
+            className={`titlebar-btn${isMenuOpen ? " active" : ""}`}
+            onClick={() => setIsMenuOpen((open) => !open)}
+            type="button"
+          >
+            <MoreIcon />
+          </button>
+          {isMenuOpen && (
+            <div className="more-menu">
+              <button
+                className="more-menu-item danger"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  onOpenDeleteDialog();
+                }}
+                type="button"
+              >
+                <TrashIcon />
+                Delete space
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -76,12 +124,30 @@ function GenerateIcon() {
   );
 }
 
+function ImportIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5">
+      <path d="M8 2.25v7" />
+      <path d="M5.25 6.75L8 9.5l2.75-2.75" />
+      <path d="M3 10.75v1A1.25 1.25 0 004.25 13h7.5A1.25 1.25 0 0013 11.75v-1" />
+    </svg>
+  );
+}
+
 function MoreIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
       <circle cx="8" cy="3.5" r="1.5" />
       <circle cx="8" cy="8" r="1.5" />
       <circle cx="8" cy="12.5" r="1.5" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4">
+      <path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3" />
     </svg>
   );
 }

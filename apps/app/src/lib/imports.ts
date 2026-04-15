@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { decompress as decompressZstd } from "fzstd";
 import JSZip from "jszip";
 import initSqlJs from "sql.js";
 import sqlWasmUrl from "sql.js/dist/sql-wasm.wasm?url";
@@ -22,6 +23,7 @@ type ParsedAnkiPackage = {
 type ImportAnkiPayload = {
   cards: ParsedAnkiCard[];
   sourceFileName: string;
+  targetSpaceId?: string | null;
 };
 
 type ImportDeckResult = {
@@ -45,6 +47,8 @@ export type ImportExecutionResult = {
   sourceFileName: string;
   status: "complete" | "partial";
   statusLabel: string;
+  targetSpaceId?: string | null;
+  targetSpaceName?: string | null;
 };
 
 type StoredWebSpace = {
@@ -70,81 +74,128 @@ type StoredWebCard = {
 const IMPORT_HISTORY_STORAGE_KEY = "pupil.web.import-history";
 const WEB_SPACE_STORAGE_KEY = "pupil.web.spaces";
 const WEB_CARD_STORAGE_KEY = "pupil.web.cards";
-const COLLECTION_FILE_NAMES = ["collection.anki21", "collection.anki2"];
+const COLLECTION_FILE_NAMES = ["collection.anki21b", "collection.anki21", "collection.anki2"] as const;
 const CLOZE_PATTERN = /\{\{c(\d+)::([\s\S]*?)(?:::(.*?))?\}\}/gi;
 
 let sqlJsPromise: Promise<Awaited<ReturnType<typeof initSqlJs>>> | null = null;
 
 export async function importApkgFile(
   file: File,
-  onStageChange?: (model: {
-    details: Array<{ accent?: "success"; label: string; value: string }>;
-    fileName: string;
-    fileSubtext: string;
-    progress: number;
-    statusLabel: string;
-    statusVariant: "parsing" | "complete" | "error" | "queued";
-  }) => void,
+  options: {
+    onStageChange?: (model: {
+      details: Array<{ accent?: "success"; label: string; value: string }>;
+      fileName: string;
+      fileSubtext: string;
+      progress: number;
+      statusLabel: string;
+      statusVariant: "parsing" | "complete" | "error" | "queued";
+    }) => void;
+    targetSpaceId?: string | null;
+  } = {},
 ): Promise<ImportExecutionResult> {
-  onStageChange?.({
-    details: [
-      { label: "file selected", value: formatFileSize(file.size) },
-      { label: "archive", value: ".apkg" },
-      { accent: "success", label: "target scheduler", value: "FSRS-5" },
-    ],
+  const { onStageChange, targetSpaceId = null } = options;
+  console.info("[import] Starting Anki import", {
     fileName: file.name,
-    fileSubtext: `${formatFileSize(file.size)} · loading package`,
-    progress: 12,
-    statusLabel: "Parsing…",
-    statusVariant: "parsing",
-  });
-
-  const parsed = await parseApkgFile(file);
-
-  onStageChange?.({
-    details: [
-      { label: "cards parsed", value: formatNumber(parsed.cards.length) },
-      { label: "notes detected", value: formatNumber(parsed.noteCount) },
-      { label: "decks found", value: formatNumber(parsed.deckCount) },
-    ],
-    fileName: file.name,
-    fileSubtext: `${formatFileSize(file.size)} · importing cards`,
-    progress: 64,
-    statusLabel: "Importing…",
-    statusVariant: "parsing",
-  });
-
-  const persisted = await persistAnkiImport({
-    cards: parsed.cards,
-    sourceFileName: parsed.sourceFileName,
-  });
-
-  const result: ImportExecutionResult = {
-    ...persisted,
     fileSize: file.size,
-    importedAt: Date.now(),
-    parsedCardCount: parsed.cards.length,
-    sourceFileName: parsed.sourceFileName,
-    status: "complete",
-    statusLabel: "complete",
-  };
-
-  writeImportHistory([result, ...readImportHistory()]);
-
-  onStageChange?.({
-    details: [
-      { accent: "success", label: "cards imported", value: formatNumber(result.importedCount) },
-      { label: "duplicates skipped", value: formatNumber(result.duplicateCount) },
-      { label: "spaces touched", value: formatNumber(result.deckCount) },
-    ],
-    fileName: file.name,
-    fileSubtext: `${formatFileSize(file.size)} · import complete`,
-    progress: 100,
-    statusLabel: "Complete",
-    statusVariant: "complete",
+    targetSpaceId,
   });
 
-  return result;
+  try {
+    onStageChange?.({
+      details: [
+        { label: "file selected", value: formatFileSize(file.size) },
+        { label: "archive", value: ".apkg" },
+        { accent: "success", label: "target scheduler", value: "FSRS-5" },
+      ],
+      fileName: file.name,
+      fileSubtext: `${formatFileSize(file.size)} · loading package`,
+      progress: 12,
+      statusLabel: "Parsing…",
+      statusVariant: "parsing",
+    });
+
+    const parsed = await parseApkgFile(file);
+
+    console.info("[import] Parsed Anki package", {
+      cardCount: parsed.cards.length,
+      deckCount: parsed.deckCount,
+      fileName: file.name,
+      noteCount: parsed.noteCount,
+      targetSpaceId,
+    });
+
+    if (parsed.cards.length === 0) {
+      throw new Error(
+        "No importable cards were found in this package. The deck may be empty or use an unsupported note layout.",
+      );
+    }
+
+    onStageChange?.({
+      details: [
+        { label: "cards parsed", value: formatNumber(parsed.cards.length) },
+        { label: "notes detected", value: formatNumber(parsed.noteCount) },
+        { label: "decks found", value: formatNumber(parsed.deckCount) },
+      ],
+      fileName: file.name,
+      fileSubtext: `${formatFileSize(file.size)} · importing cards`,
+      progress: 64,
+      statusLabel: "Importing…",
+      statusVariant: "parsing",
+    });
+
+    const persisted = await persistAnkiImport({
+      cards: parsed.cards,
+      sourceFileName: parsed.sourceFileName,
+      targetSpaceId,
+    });
+
+    const result: ImportExecutionResult = {
+      ...persisted,
+      fileSize: file.size,
+      importedAt: Date.now(),
+      parsedCardCount: parsed.cards.length,
+      sourceFileName: parsed.sourceFileName,
+      status: "complete",
+      statusLabel: "complete",
+    };
+
+    writeImportHistory([result, ...readImportHistory()]);
+
+    onStageChange?.({
+      details: [
+        { accent: "success", label: "cards imported", value: formatNumber(result.importedCount) },
+        { label: "duplicates skipped", value: formatNumber(result.duplicateCount) },
+        {
+          label: targetSpaceId ? "source decks" : "spaces touched",
+          value: formatNumber(result.deckCount),
+        },
+      ],
+      fileName: file.name,
+      fileSubtext: `${formatFileSize(file.size)} · import complete`,
+      progress: 100,
+      statusLabel: "Complete",
+      statusVariant: "complete",
+    });
+
+    console.info("[import] Finished Anki import", {
+      deckCount: result.deckCount,
+      duplicateCount: result.duplicateCount,
+      fileName: file.name,
+      importedCount: result.importedCount,
+      targetSpaceId: result.targetSpaceId,
+      targetSpaceName: result.targetSpaceName,
+    });
+
+    return result;
+  } catch (error: unknown) {
+    console.error("[import] Failed Anki import", {
+      error,
+      fileName: file.name,
+      fileSize: file.size,
+      targetSpaceId,
+    });
+    throw error;
+  }
 }
 
 export function readImportHistory(): ImportExecutionResult[] {
@@ -180,11 +231,11 @@ async function parseApkgFile(file: File): Promise<ParsedAnkiPackage> {
   const collectionEntry = COLLECTION_FILE_NAMES.map((fileName) => archive.file(fileName)).find(Boolean);
 
   if (!collectionEntry) {
-    throw new Error("The .apkg file is missing collection.anki21 or collection.anki2.");
+    throw new Error("The .apkg file is missing collection.anki21b, collection.anki21, or collection.anki2.");
   }
 
   const SQL = await getSqlJs();
-  const database = new SQL.Database(await collectionEntry.async("uint8array"));
+  const database = new SQL.Database(await readCollectionDatabase(collectionEntry));
 
   try {
     const decks = parseDeckMap(readCollectionJson(database, "decks"));
@@ -204,6 +255,24 @@ async function parseApkgFile(file: File): Promise<ParsedAnkiPackage> {
   } finally {
     database.close();
   }
+}
+
+async function readCollectionDatabase(collectionEntry: JSZip.JSZipObject) {
+  const bytes = await collectionEntry.async("uint8array");
+
+  if (collectionEntry.name.endsWith(".anki21b")) {
+    try {
+      return decompressZstd(bytes);
+    } catch (error: unknown) {
+      throw new Error(
+        error instanceof Error
+          ? `Failed to decompress ${collectionEntry.name}: ${error.message}`
+          : `Failed to decompress ${collectionEntry.name}.`,
+      );
+    }
+  }
+
+  return bytes;
 }
 
 async function persistAnkiImport(input: ImportAnkiPayload): Promise<Omit<ImportExecutionResult, "fileSize" | "importedAt" | "parsedCardCount" | "sourceFileName" | "status" | "statusLabel">> {
@@ -415,6 +484,14 @@ function importAnkiCardsInWebStorage(input: ImportAnkiPayload) {
   const spacesByName = new Map(spaces.map((space) => [normalizeAsciiLower(space.name), space]));
   const cardsBySpace = new Map<string, Set<string>>();
   let createdSpaceCount = 0;
+  const targetSpace =
+    input.targetSpaceId !== null && input.targetSpaceId !== undefined
+      ? spaces.find((space) => space.id === input.targetSpaceId) ?? null
+      : null;
+
+  if (input.targetSpaceId && !targetSpace) {
+    return Promise.reject(new Error("Target space not found."));
+  }
 
   for (const space of spaces) {
     cardsBySpace.set(
@@ -432,18 +509,18 @@ function importAnkiCardsInWebStorage(input: ImportAnkiPayload) {
   for (const card of input.cards) {
     const normalizedDeckName = normalizeSpaceName(card.deckName);
     const deckKey = normalizeAsciiLower(normalizedDeckName);
-    let targetSpace = spacesByName.get(deckKey);
+    let destinationSpace = targetSpace ?? spacesByName.get(deckKey);
 
-    if (!targetSpace) {
-      targetSpace = {
+    if (!destinationSpace) {
+      destinationSpace = {
         createdAt: now,
         id: createWebId("space"),
         name: normalizedDeckName,
         updatedAt: now,
       };
-      spaces.push(targetSpace);
-      spacesByName.set(deckKey, targetSpace);
-      cardsBySpace.set(targetSpace.id, new Set());
+      spaces.push(destinationSpace);
+      spacesByName.set(deckKey, destinationSpace);
+      cardsBySpace.set(destinationSpace.id, new Set());
       createdSpaceCount += 1;
     }
 
@@ -453,14 +530,14 @@ function importAnkiCardsInWebStorage(input: ImportAnkiPayload) {
         deckName: normalizedDeckName,
         importedCount: 0,
         skippedCount: 0,
-        spaceId: targetSpace.id,
-        spaceName: targetSpace.name,
+        spaceId: destinationSpace.id,
+        spaceName: destinationSpace.name,
         totalCount: 0,
       };
 
     stats.totalCount += 1;
     const cardKey = cardPairKey(card.front, card.back);
-    const existingCards = cardsBySpace.get(targetSpace.id) ?? new Set<string>();
+    const existingCards = cardsBySpace.get(destinationSpace.id) ?? new Set<string>();
 
     if (existingCards.has(cardKey)) {
       stats.skippedCount += 1;
@@ -475,14 +552,14 @@ function importAnkiCardsInWebStorage(input: ImportAnkiPayload) {
       front: card.front,
       id: createWebId("card"),
       source: "anki",
-      spaceId: targetSpace.id,
+      spaceId: destinationSpace.id,
       state: 0,
       tags: normalizeTags(card.tags),
       updatedAt: now,
     });
     existingCards.add(cardKey);
-    cardsBySpace.set(targetSpace.id, existingCards);
-    targetSpace.updatedAt = now;
+    cardsBySpace.set(destinationSpace.id, existingCards);
+    destinationSpace.updatedAt = now;
     stats.importedCount += 1;
     deckStats.set(deckKey, stats);
   }
@@ -500,6 +577,8 @@ function importAnkiCardsInWebStorage(input: ImportAnkiPayload) {
     decks,
     duplicateCount,
     importedCount,
+    targetSpaceId: targetSpace?.id ?? null,
+    targetSpaceName: targetSpace?.name ?? null,
   });
 }
 
@@ -670,6 +749,12 @@ function isImportExecutionResult(value: unknown): value is ImportExecutionResult
     typeof candidate.parsedCardCount === "number" &&
     Array.isArray(candidate.decks) &&
     (candidate.status === "complete" || candidate.status === "partial") &&
-    typeof candidate.statusLabel === "string"
+    typeof candidate.statusLabel === "string" &&
+    (typeof candidate.targetSpaceId === "undefined" ||
+      candidate.targetSpaceId === null ||
+      typeof candidate.targetSpaceId === "string") &&
+    (typeof candidate.targetSpaceName === "undefined" ||
+      candidate.targetSpaceName === null ||
+      typeof candidate.targetSpaceName === "string")
   );
 }

@@ -34,7 +34,7 @@ export function ImportSummaryCard({ model, onOpenCards, onStudyNow }: ImportSumm
 
       <div className="deck-breakdown">
         <div className="deck-breakdown-header">
-          <span>Deck → Space</span>
+          <span>{model.breakdownLabel ?? "Deck → Space"}</span>
           <span className="col-right">Imported</span>
           <span className="col-right">Skipped</span>
           <span className="col-right">Total</span>

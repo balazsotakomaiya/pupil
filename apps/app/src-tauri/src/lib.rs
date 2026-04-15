@@ -23,13 +23,21 @@ use crate::commands::{
     list_recent_activity, list_space_stats, list_spaces, refresh_tray_status, rename_space,
     reset_all_data, review_card, save_ai_settings, test_ai_provider_connection, update_card,
 };
-use crate::constants::{DEVELOPER_RESET_ONBOARDING_EVENT, DEVELOPER_RESET_ONBOARDING_MENU_ID};
+use crate::constants::{
+    DEVELOPER_OPEN_DEVTOOLS_MENU_ID, DEVELOPER_RESET_ONBOARDING_EVENT,
+    DEVELOPER_RESET_ONBOARDING_MENU_ID,
+};
 
 pub fn run() {
     tauri::Builder::default()
         .manage(StrongholdState::default())
         .menu(build_app_menu)
         .on_menu_event(|app, event| {
+            if event.id().as_ref() == DEVELOPER_OPEN_DEVTOOLS_MENU_ID {
+                if let Some(webview) = app.get_webview_window("main") {
+                    webview.open_devtools();
+                }
+            }
             if event.id().as_ref() == DEVELOPER_RESET_ONBOARDING_MENU_ID {
                 let _ = app.emit(DEVELOPER_RESET_ONBOARDING_EVENT, ());
             }

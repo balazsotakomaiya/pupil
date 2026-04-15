@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { SpaceDetailsTitlebar } from "../app-shell";
 import { CardFormPanel } from "../cards/CardFormPanel";
 import { CardList } from "../cards/CardList";
+import { DeleteSpaceDialog } from "./DeleteSpaceDialog";
 import type { CardRecord } from "../../lib/cards";
 import type { SpaceSummary } from "../../lib/spaces";
 import type { SpaceStats } from "../../lib/stats";
@@ -19,7 +20,9 @@ type SpaceDetailsScreenProps = {
   onBack: () => void;
   onCreateCard: (input: { back: string; front: string; spaceId: string; tags: string[] }) => Promise<void>;
   onDeleteCard: (input: { id: string }) => Promise<void>;
+  onDeleteSpace: () => Promise<void>;
   onOpenAiGenerate: () => void;
+  onOpenImport: () => void;
   onStartStudy: () => void;
   stats: SpaceStats | null;
   onUpdateCard: (input: {
@@ -40,7 +43,9 @@ export function SpaceDetailsScreen({
   onBack,
   onCreateCard,
   onDeleteCard,
+  onDeleteSpace,
   onOpenAiGenerate,
+  onOpenImport,
   onStartStudy,
   stats,
   onUpdateCard,
@@ -50,6 +55,7 @@ export function SpaceDetailsScreen({
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editorSuccessPulseTick, setEditorSuccessPulseTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -150,6 +156,17 @@ export function SpaceDetailsScreen({
     }
   }
 
+  async function handleDeleteSpace() {
+    setIsDeleting(true);
+
+    try {
+      await onDeleteSpace();
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+    }
+  }
+
   function handleOpenNewCard() {
     resetDraft(space.id, setDraft, setEditingCardId, setError);
     setIsEditorOpen(true);
@@ -191,10 +208,21 @@ export function SpaceDetailsScreen({
     <>
       <SpaceDetailsTitlebar
         onBack={onBack}
+        onOpenDeleteDialog={() => setIsDeleteDialogOpen(true)}
         onOpenAiGenerate={onOpenAiGenerate}
+        onOpenImport={onOpenImport}
         onOpenNewCard={handleOpenNewCard}
         spaceName={space.name}
       />
+
+      {isDeleteDialogOpen && (
+        <DeleteSpaceDialog
+          isDeleting={isDeleting}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          onConfirm={() => void handleDeleteSpace()}
+          spaceName={space.name}
+        />
+      )}
 
       <div className="page">
         <section className="space-header">
@@ -412,6 +440,10 @@ export function SpaceDetailsScreen({
               <button className="btn-ghost" onClick={onOpenAiGenerate} type="button">
                 <GenerateIcon />
                 AI Generate
+              </button>
+              <button className="btn-ghost" onClick={onOpenImport} type="button">
+                <ImportIcon />
+                Import
               </button>
             </div>
           </div>
@@ -736,6 +768,16 @@ function GenerateIcon() {
       <path d="M8 1.75l.8 2.6a1 1 0 00.67.67l2.6.8-2.6.8a1 1 0 00-.67.67L8 10.9l-.8-2.61a1 1 0 00-.67-.67l-2.6-.8 2.6-.8a1 1 0 00.67-.67L8 1.75z" />
       <path d="M12.75 9.75l.39 1.29a.7.7 0 00.47.47l1.29.39-1.29.39a.7.7 0 00-.47.47l-.39 1.29-.39-1.29a.7.7 0 00-.47-.47l-1.29-.39 1.29-.39a.7.7 0 00.47-.47l.39-1.29z" />
       <path d="M3 10.75l.3.99a.6.6 0 00.4.4l.99.3-.99.3a.6.6 0 00-.4.4L3 14.13l-.3-.99a.6.6 0 00-.4-.4l-.99-.3.99-.3a.6.6 0 00.4-.4l.3-.99z" />
+    </svg>
+  );
+}
+
+function ImportIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5">
+      <path d="M8 2.25v7" />
+      <path d="M5.25 6.75L8 9.5l2.75-2.75" />
+      <path d="M3 10.75v1A1.25 1.25 0 004.25 13h7.5A1.25 1.25 0 0013 11.75v-1" />
     </svg>
   );
 }

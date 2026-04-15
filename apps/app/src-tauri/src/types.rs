@@ -118,6 +118,7 @@ pub(crate) struct ReviewCardLogInput {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ImportAnkiInput {
     pub(crate) source_file_name: String,
+    pub(crate) target_space_id: Option<String>,
     pub(crate) cards: Vec<ImportAnkiCardInput>,
 }
 
@@ -138,6 +139,8 @@ pub(crate) struct ImportAnkiResult {
     pub(crate) decks: Vec<ImportDeckResult>,
     pub(crate) duplicate_count: i64,
     pub(crate) imported_count: i64,
+    pub(crate) target_space_id: Option<String>,
+    pub(crate) target_space_name: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -304,6 +307,11 @@ pub(crate) struct NormalizedImportAnkiCardInput {
     pub(crate) front: String,
     pub(crate) back: String,
     pub(crate) tags: Vec<String>,
+}
+
+pub(crate) struct NormalizedImportAnkiInput {
+    pub(crate) target_space_id: Option<String>,
+    pub(crate) cards: Vec<NormalizedImportAnkiCardInput>,
 }
 
 pub(crate) struct ImportDeckAccumulator {

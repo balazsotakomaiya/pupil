@@ -18,7 +18,7 @@ use crate::cards::{
 use crate::constants::AI_SYSTEM_PROMPT;
 use crate::imports::import_anki_cards_row;
 use crate::normalize::{
-    normalize_card_input, normalize_card_update_input, normalize_import_anki_cards,
+    normalize_card_input, normalize_card_update_input, normalize_import_anki_input,
     normalize_review_card_input, normalize_space_name,
 };
 use crate::settings::{
@@ -152,9 +152,9 @@ pub(crate) fn import_anki_cards(
     input: ImportAnkiInput,
 ) -> Result<ImportAnkiResult, String> {
     let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
-    let normalized_cards = normalize_import_anki_cards(&input.cards)?;
+    let normalized_input = normalize_import_anki_input(&input)?;
 
-    import_anki_cards_row(&mut connection, &input.source_file_name, normalized_cards)
+    import_anki_cards_row(&mut connection, &input.source_file_name, normalized_input)
         .map_err(map_card_storage_error)
 }
 

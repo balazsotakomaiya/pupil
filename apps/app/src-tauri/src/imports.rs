@@ -3,19 +3,25 @@ use std::collections::{HashMap, HashSet};
 use nanoid::nanoid;
 use rusqlite::{params, Connection};
 
-use crate::spaces::{insert_space_identity, load_all_space_identities, touch_space};
+use crate::spaces::{
+    fetch_space_identity, insert_space_identity, load_all_space_identities, touch_space,
+};
 use crate::types::{
-    ImportAnkiResult, ImportDeckAccumulator, ImportDeckResult, NormalizedImportAnkiCardInput,
+    ImportAnkiResult, ImportDeckAccumulator, ImportDeckResult, NormalizedImportAnkiInput,
 };
 use crate::util::{encode_tags, now_ms};
 
 pub(crate) fn import_anki_cards_row(
     connection: &mut Connection,
     _source_file_name: &str,
-    cards: Vec<NormalizedImportAnkiCardInput>,
+    input: NormalizedImportAnkiInput,
 ) -> rusqlite::Result<ImportAnkiResult> {
     let timestamp = now_ms();
     let transaction = connection.transaction()?;
+    let target_space = match input.target_space_id.as_deref() {
+        Some(space_id) => Some(fetch_space_identity(&transaction, space_id)?),
+        None => None,
+    };
     let existing_spaces = load_all_space_identities(&transaction)?;
     let mut spaces_by_name = existing_spaces
         .into_iter()
@@ -27,16 +33,19 @@ pub(crate) fn import_anki_cards_row(
     let mut created_space_count = 0_i64;
     let mut touched_space_ids = HashSet::<String>::new();
 
-    for card in cards {
+    for card in input.cards {
         let deck_key = card.deck_name.to_ascii_lowercase();
-        let space = match spaces_by_name.get(&deck_key) {
-            Some(existing) => existing.clone(),
-            None => {
-                let created = insert_space_identity(&transaction, &card.deck_name, timestamp)?;
-                spaces_by_name.insert(deck_key.clone(), created.clone());
-                created_space_count += 1;
-                created
-            }
+        let space = match &target_space {
+            Some(space) => space.clone(),
+            None => match spaces_by_name.get(&deck_key) {
+                Some(existing) => existing.clone(),
+                None => {
+                    let created = insert_space_identity(&transaction, &card.deck_name, timestamp)?;
+                    spaces_by_name.insert(deck_key.clone(), created.clone());
+                    created_space_count += 1;
+                    created
+                }
+            },
         };
 
         let existing_pairs = match existing_pairs_by_space.entry(space.id.clone()) {
@@ -110,6 +119,8 @@ pub(crate) fn import_anki_cards_row(
         decks,
         duplicate_count,
         imported_count,
+        target_space_id: target_space.as_ref().map(|space| space.id.clone()),
+        target_space_name: target_space.as_ref().map(|space| space.name.clone()),
     })
 }
 

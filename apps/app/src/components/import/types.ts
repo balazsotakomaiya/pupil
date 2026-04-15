@@ -15,6 +15,7 @@ export type ImportHistoryItem = {
 };
 
 export type ImportSummaryModel = {
+  breakdownLabel?: string;
   deckBreakdown: ImportDeckBreakdownItem[];
   fileName: string;
   metaLabel: string;

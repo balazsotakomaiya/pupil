@@ -35,7 +35,7 @@ import {
 } from "./lib/daily-checkin";
 import { dismissOnboarding, hasDismissedOnboarding, resetOnboarding } from "./lib/onboarding";
 import { isTauriRuntime } from "./lib/runtime";
-import { createSpace, listSpaces, type SpaceSummary } from "./lib/spaces";
+import { createSpace, deleteSpace, listSpaces, type SpaceSummary } from "./lib/spaces";
 import { refreshTrayStatus } from "./lib/tray";
 import {
   getDashboardStats,
@@ -195,6 +195,8 @@ type AiGenerateSessionState =
   | { scope: "global"; initialSpaceId: string | null }
   | { scope: "space"; spaceId: string };
 
+type ImportSessionState = { scope: "space"; spaceId: string };
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<AppTab["id"]>("dashboard");
   const [bootstrapError, setBootstrapError] = useState<string | null>(null);
@@ -211,6 +213,7 @@ export default function App() {
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
   const [studySession, setStudySession] = useState<StudySessionState | null>(null);
   const [aiGenerateSession, setAiGenerateSession] = useState<AiGenerateSessionState | null>(null);
+  const [importSession, setImportSession] = useState<ImportSessionState | null>(null);
   const [isMutatingCards, setIsMutatingCards] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState("");
@@ -279,6 +282,7 @@ export default function App() {
         setSelectedSpaceId(null);
         setStudySession(null);
         setAiGenerateSession(null);
+        setImportSession(null);
         setIsCreateDialogOpen(false);
       }).then((dispose) => {
         unlisten = dispose;
@@ -350,6 +354,10 @@ export default function App() {
     aiGenerateSession?.scope === "space"
       ? spaces.find((space) => space.id === aiGenerateSession.spaceId) ?? null
       : null;
+  const importSpace =
+    importSession?.scope === "space"
+      ? spaces.find((space) => space.id === importSession.spaceId) ?? null
+      : null;
   const studyCards =
     studySession?.scope === "space"
       ? cards.filter((card) => card.spaceId === studySession.spaceId)
@@ -358,6 +366,7 @@ export default function App() {
     !selectedSpace &&
     !studySession &&
     !aiGenerateSession &&
+    !importSession &&
     !isOnboardingDismissed;
 
   async function refreshAppData() {
@@ -497,6 +506,12 @@ export default function App() {
     setSelectedSpaceId(null);
   }
 
+  async function handleDeleteSpace(spaceId: string) {
+    await deleteSpace({ id: spaceId });
+    setSpaces((currentSpaces) => currentSpaces.filter((s) => s.id !== spaceId));
+    setSelectedSpaceId(null);
+  }
+
   async function handleCreateSpace(name: string) {
     const createdSpace = await createSpace({ name });
     setSpaces((currentSpaces) => sortSpaces([createdSpace, ...currentSpaces]));
@@ -547,6 +562,15 @@ export default function App() {
     setAiGenerateSession(null);
   }
 
+  function handleOpenSpaceImport(spaceId: string) {
+    window.scrollTo({ top: 0, behavior: "auto" });
+    setImportSession({ scope: "space", spaceId });
+  }
+
+  function handleCloseImport() {
+    setImportSession(null);
+  }
+
   function handleOpenSettingsFromAi() {
     setAiGenerateSession(null);
     setSelectedSpaceId(null);
@@ -583,6 +607,7 @@ export default function App() {
     setSelectedSpaceId(null);
     setStudySession(null);
     setAiGenerateSession(null);
+    setImportSession(null);
     setDismissedDailyCheckInDay(null);
     await refreshAppData();
   }
@@ -660,6 +685,32 @@ export default function App() {
                 onSaveApprovedCards={handleSaveApprovedAiCards}
                 spaces={spaces}
               />
+            ) : importSession ? (
+              <ImportScreen
+                backLabel={importSpace?.name ?? "Space"}
+                onBack={handleCloseImport}
+                onImportComplete={refreshAppData}
+                onOpenCards={() => {
+                  setImportSession(null);
+                  if (importSpace) {
+                    setSelectedSpaceId(importSpace.id);
+                  }
+                }}
+                onStudyNow={() => {
+                  if (!importSpace) {
+                    return;
+                  }
+
+                  setImportSession(null);
+                  setStudySession({
+                    scope: "space",
+                    spaceId: importSpace.id,
+                    startedAt: Date.now(),
+                  });
+                }}
+                targetSpaceId={importSpace?.id ?? null}
+                targetSpaceName={importSpace?.name ?? null}
+              />
             ) : studySession ? (
               <StudyScreen
                 cards={studyCards}
@@ -677,7 +728,9 @@ export default function App() {
                 onBack={handleCloseSpaceDetails}
                 onCreateCard={handleCreateCard}
                 onDeleteCard={handleDeleteCard}
+                onDeleteSpace={() => handleDeleteSpace(selectedSpace.id)}
                 onOpenAiGenerate={() => handleOpenSpaceAiGenerate(selectedSpace.id)}
+                onOpenImport={() => handleOpenSpaceImport(selectedSpace.id)}
                 onStartStudy={() => handleStartSpaceStudy(selectedSpace.id)}
                 stats={selectedSpaceStats}
                 onUpdateCard={handleUpdateCard}
@@ -723,6 +776,7 @@ export default function App() {
                     onImportComplete={refreshAppData}
                     onOpenCards={() => setActiveTab("cards")}
                     onStudyNow={handleStartGlobalStudy}
+                    spaces={spaces}
                   />
                 ) : activeTab === "settings" ? (
                   <SettingsScreen

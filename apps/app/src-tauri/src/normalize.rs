@@ -1,8 +1,8 @@
 use crate::constants::SPACE_NAME_MAX_LENGTH;
 use crate::types::{
     ImportAnkiCardInput, NormalizedCardInput, NormalizedCardUpdateInput,
-    NormalizedImportAnkiCardInput, NormalizedReviewCardInput, NormalizedReviewCardLogInput,
-    ReviewCardInput, UpdateCardInput,
+    NormalizedImportAnkiCardInput, NormalizedImportAnkiInput, NormalizedReviewCardInput,
+    NormalizedReviewCardLogInput, ReviewCardInput, UpdateCardInput, ImportAnkiInput,
 };
 
 pub(crate) fn normalize_space_name(name: &str) -> Result<String, String> {
@@ -87,20 +87,33 @@ pub(crate) fn normalize_review_card_input(
     })
 }
 
-pub(crate) fn normalize_import_anki_cards(
-    cards: &[ImportAnkiCardInput],
-) -> Result<Vec<NormalizedImportAnkiCardInput>, String> {
-    cards
+pub(crate) fn normalize_import_anki_input(
+    input: &ImportAnkiInput,
+) -> Result<NormalizedImportAnkiInput, String> {
+    let cards = input
+        .cards
         .iter()
-        .map(|card| {
-            Ok(NormalizedImportAnkiCardInput {
-                deck_name: normalize_space_name(&card.deck_name)?,
-                front: normalize_card_text(&card.front, "Front")?,
-                back: normalize_card_text(&card.back, "Back")?,
-                tags: normalize_tags(&card.tags),
-            })
-        })
-        .collect()
+        .map(|card| normalize_import_anki_card(card))
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(NormalizedImportAnkiInput {
+        target_space_id: match input.target_space_id.as_deref() {
+            Some(space_id) => Some(normalize_required_identifier(space_id, "Space")?),
+            None => None,
+        },
+        cards,
+    })
+}
+
+fn normalize_import_anki_card(
+    card: &ImportAnkiCardInput,
+) -> Result<NormalizedImportAnkiCardInput, String> {
+    Ok(NormalizedImportAnkiCardInput {
+        deck_name: normalize_space_name(&card.deck_name)?,
+        front: normalize_card_text(&card.front, "Front")?,
+        back: normalize_card_text(&card.back, "Back")?,
+        tags: normalize_tags(&card.tags),
+    })
 }
 
 fn normalize_card_source(source: Option<&str>) -> Result<String, String> {

@@ -7,7 +7,9 @@ use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Manager};
 
-use crate::constants::{DEVELOPER_RESET_ONBOARDING_MENU_ID, MIGRATIONS};
+use crate::constants::{
+    DEVELOPER_OPEN_DEVTOOLS_MENU_ID, DEVELOPER_RESET_ONBOARDING_MENU_ID, MIGRATIONS,
+};
 use crate::types::AppResult;
 use crate::util::now_ms;
 
@@ -106,6 +108,10 @@ pub(crate) fn build_app_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu
 
     #[cfg(debug_assertions)]
     let developer_menu = {
+        let open_devtools =
+            MenuItemBuilder::with_id(DEVELOPER_OPEN_DEVTOOLS_MENU_ID, "Open DevTools")
+                .accelerator("CmdOrCtrl+Shift+I")
+                .build(app)?;
         let reset_onboarding =
             MenuItemBuilder::with_id(DEVELOPER_RESET_ONBOARDING_MENU_ID, "Reset Onboarding")
                 .accelerator("CmdOrCtrl+Shift+O")
@@ -113,6 +119,8 @@ pub(crate) fn build_app_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu
 
         Some(
             SubmenuBuilder::new(app, "Developer")
+                .item(&open_devtools)
+                .separator()
                 .item(&reset_onboarding)
                 .build()?,
         )
