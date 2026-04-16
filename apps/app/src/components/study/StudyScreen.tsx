@@ -12,7 +12,9 @@ type StudyScreenProps = {
   cards: StudyCardRecord[];
   newCardsBudget: number | null;
   onBack: () => void;
+  onDeleteCard: (input: { id: string }) => Promise<void>;
   onReviewCard: (input: { card: CardRecord; grade: StudyGrade }) => Promise<CardRecord>;
+  onSuspendCard: (input: { id: string; suspended: boolean }) => Promise<CardRecord>;
   sessionKey: number;
   scope: StudyScope;
   scopeLabel: string;
@@ -23,7 +25,9 @@ export function StudyScreen({
   cards,
   newCardsBudget,
   onBack,
+  onDeleteCard,
   onReviewCard,
+  onSuspendCard,
   sessionKey,
   scope,
   scopeLabel,
@@ -44,12 +48,21 @@ export function StudyScreen({
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  // When a card is suspended mid-session we keep it visible so the user can
+  // choose to skip or immediately unsuspend — rather than advancing silently.
+  const [suspendedCardId, setSuspendedCardId] = useState<string | null>(null);
 
   const queue = useMemo(
     () => buildDueQueue(sessionCards, now).filter((card) => sessionCardIds.has(card.id)),
     [sessionCards, now, sessionCardIds],
   );
   const currentCard = queue[0] ?? null;
+  const isSuspendedView = !!suspendedCardId;
+  // While showing a just-suspended card, keep it in the display even though
+  // it has been removed from the due queue.
+  const displayCard = suspendedCardId
+    ? (sessionCards.find((c) => c.id === suspendedCardId) ?? null)
+    : currentCard;
   const reviewedCount = sessionGrades.length;
   const totalCards = queue.length + reviewedCount;
   const currentCounter = queue.length === 0 ? reviewedCount : reviewedCount + 1;
@@ -92,6 +105,7 @@ export function StudyScreen({
     setIsSubmittingReview(false);
     setError(null);
     setNow(Date.now());
+    setSuspendedCardId(null);
   }, [scope, scopeLabel, sessionKey]);
 
   useEffect(() => {
@@ -110,7 +124,7 @@ export function StudyScreen({
         return;
       }
 
-      if (event.code === "Space" && !isAnswerVisible && !isSubmittingReview) {
+      if (event.code === "Space" && !isAnswerVisible && !isSubmittingReview && !isSuspendedView) {
         event.preventDefault();
         setIsAnswerVisible(true);
       }
@@ -147,7 +161,7 @@ export function StudyScreen({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isAnswerVisible, isSubmittingReview, isSummaryVisible, onBack, pressedGrade]);
+  }, [isAnswerVisible, isSubmittingReview, isSummaryVisible, isSuspendedView, onBack, pressedGrade]);
 
   async function handleRate(grade: StudyGrade) {
     if (!currentCard || pressedGrade !== null || isSubmittingReview) {
@@ -179,6 +193,77 @@ export function StudyScreen({
     }
   }
 
+  async function handleQuickDelete() {
+    if (!currentCard || isSubmittingReview) {
+      return;
+    }
+
+    setError(null);
+
+    try {
+      await onDeleteCard({ id: currentCard.id });
+      const nextCards = sessionCards.filter((card) => card.id !== currentCard.id);
+      const nextNow = Date.now();
+      setSessionCards(nextCards);
+      setIsAnswerVisible(false);
+      setNow(nextNow);
+
+      if (buildDueQueue(nextCards, nextNow).filter((card) => sessionCardIds.has(card.id)).length === 0) {
+        setIsSummaryVisible(true);
+      }
+    } catch (nextError: unknown) {
+      setError(nextError instanceof Error ? nextError.message : "Failed to delete card.");
+    }
+  }
+
+  async function handleQuickSuspend() {
+    if (!currentCard || isSubmittingReview) {
+      return;
+    }
+
+    setError(null);
+
+    try {
+      const updatedCard = await onSuspendCard({ id: currentCard.id, suspended: true });
+      const nextCards = sessionCards.map((card) => (card.id === updatedCard.id ? updatedCard : card));
+      setSessionCards(nextCards);
+      // Keep the card visible so the user can decide to skip or unsuspend.
+      setSuspendedCardId(currentCard.id);
+    } catch (nextError: unknown) {
+      setError(nextError instanceof Error ? nextError.message : "Failed to suspend card.");
+    }
+  }
+
+  async function handleUnsuspend() {
+    if (!suspendedCardId || isSubmittingReview) {
+      return;
+    }
+
+    setError(null);
+
+    try {
+      const updatedCard = await onSuspendCard({ id: suspendedCardId, suspended: false });
+      const nextCards = sessionCards.map((card) => (card.id === updatedCard.id ? updatedCard : card));
+      setSessionCards(nextCards);
+      setSuspendedCardId(null);
+      setNow(Date.now());
+    } catch (nextError: unknown) {
+      setError(nextError instanceof Error ? nextError.message : "Failed to unsuspend card.");
+    }
+  }
+
+  function handleSkipSuspended() {
+    setSuspendedCardId(null);
+    setIsAnswerVisible(false);
+    setPressedGrade(null);
+    const nextNow = Date.now();
+    setNow(nextNow);
+
+    if (buildDueQueue(sessionCards, nextNow).filter((card) => sessionCardIds.has(card.id)).length === 0) {
+      setIsSummaryVisible(true);
+    }
+  }
+
   function handleRestart() {
     const admitted = buildAdmittedSet(sessionCards, Date.now(), sessionNewCardsBudget);
     setSessionCardIds(admitted);
@@ -194,7 +279,16 @@ export function StudyScreen({
 
   return (
     <div className="session-shell">
-      <StudyBar current={currentCounter} onEnd={() => setIsSummaryVisible(true)} scopeLabel={scopeLabel} total={totalCards} />
+      <StudyBar
+        current={currentCounter}
+        currentCard={currentCard}
+        isSuspended={isSuspendedView}
+        onDeleteCard={() => void handleQuickDelete()}
+        onEnd={() => setIsSummaryVisible(true)}
+        onSuspendCard={() => void handleQuickSuspend()}
+        scopeLabel={scopeLabel}
+        total={totalCards}
+      />
 
       <div className="session-progress-track">
         <div className="session-progress-fill" style={{ width: `${progress}%` }} />
@@ -213,21 +307,46 @@ export function StudyScreen({
           title={summaryTitle}
           totalMinutes={totalMinutes}
         />
-      ) : currentCard ? (
+      ) : displayCard ? (
         <div className="session-area">
           <div className="session-card-wrap">
-            <StudyReviewCard card={currentCard} isAnswerVisible={isAnswerVisible} />
+            <StudyReviewCard card={displayCard} isAnswerVisible={isAnswerVisible} isSuspended={isSuspendedView} />
           </div>
 
-          <StudyActions
-            error={error}
-            intervalPreviews={intervalPreviews}
-            isAnswerVisible={isAnswerVisible}
-            isSubmitting={isSubmittingReview}
-            onRate={(grade) => void handleRate(grade)}
-            onReveal={() => setIsAnswerVisible(true)}
-            pressedGrade={pressedGrade}
-          />
+          {isSuspendedView ? (
+            <div className="session-suspended-actions">
+              <p className="session-suspended-label">Card suspended</p>
+              <div className="session-suspended-btns">
+                <button
+                  className="session-unsuspend-btn"
+                  disabled={isSubmittingReview}
+                  onClick={() => void handleUnsuspend()}
+                  type="button"
+                >
+                  Unsuspend
+                </button>
+                <button
+                  className="session-skip-btn"
+                  disabled={isSubmittingReview}
+                  onClick={handleSkipSuspended}
+                  type="button"
+                >
+                  Skip
+                </button>
+              </div>
+              {error ? <span className="session-error-text">{error}</span> : null}
+            </div>
+          ) : (
+            <StudyActions
+              error={error}
+              intervalPreviews={intervalPreviews}
+              isAnswerVisible={isAnswerVisible}
+              isSubmitting={isSubmittingReview}
+              onRate={(grade) => void handleRate(grade)}
+              onReveal={() => setIsAnswerVisible(true)}
+              pressedGrade={pressedGrade}
+            />
+          )}
         </div>
       ) : null}
     </div>
@@ -236,7 +355,7 @@ export function StudyScreen({
 
 function buildDueQueue(cards: StudyCardRecord[], now: number) {
   return [...cards]
-    .filter((card) => card.due <= now)
+    .filter((card) => card.due <= now && !card.suspended)
     .sort((left, right) => left.due - right.due || right.updatedAt - left.updatedAt);
 }
 

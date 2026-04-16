@@ -48,4 +48,8 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
         id: "0002_add_learning_steps",
         sql: include_str!("../migrations/0002_add_learning_steps.sql"),
     },
+    Migration {
+        id: "0003_add_suspended",
+        sql: include_str!("../migrations/0003_add_suspended.sql"),
+    },
 ];

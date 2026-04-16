@@ -32,7 +32,8 @@ pub(crate) fn list_card_summaries(
                cards.lapses,
                cards.last_review,
                cards.created_at,
-               cards.updated_at
+               cards.updated_at,
+               cards.is_suspended
         FROM cards
         INNER JOIN spaces ON spaces.id = cards.space_id
         WHERE (?1 IS NULL OR cards.space_id = ?1)
@@ -153,6 +154,25 @@ pub(crate) fn delete_card_row(connection: &mut Connection, id: &str) -> rusqlite
     transaction.commit()?;
 
     Ok(())
+}
+
+pub(crate) fn suspend_card_row(
+    connection: &mut Connection,
+    id: &str,
+    suspended: bool,
+) -> rusqlite::Result<CardSummary> {
+    let timestamp = now_ms();
+    let is_suspended: i64 = if suspended { 1 } else { 0 };
+    let updated_rows = connection.execute(
+        "UPDATE cards SET is_suspended = ?1, updated_at = ?2 WHERE id = ?3",
+        params![is_suspended, timestamp, id],
+    )?;
+
+    if updated_rows == 0 {
+        return Err(rusqlite::Error::QueryReturnedNoRows);
+    }
+
+    fetch_card_summary(connection, id)
 }
 
 pub(crate) fn review_card_row(
@@ -277,7 +297,8 @@ fn fetch_card_summary(connection: &Connection, id: &str) -> rusqlite::Result<Car
                cards.lapses,
                cards.last_review,
                cards.created_at,
-               cards.updated_at
+               cards.updated_at,
+               cards.is_suspended
         FROM cards
         INNER JOIN spaces ON spaces.id = cards.space_id
         WHERE cards.id = ?1
@@ -310,6 +331,7 @@ fn map_card_summary_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<CardSummary
         last_review: row.get(16)?,
         created_at: row.get(17)?,
         updated_at: row.get(18)?,
+        is_suspended: row.get::<_, i64>(19).unwrap_or(0) != 0,
     })
 }
 

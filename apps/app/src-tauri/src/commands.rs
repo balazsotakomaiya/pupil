@@ -13,7 +13,8 @@ use crate::app::{
     open_app_connection, open_connection, pending_migrations, BootstrapStatus,
 };
 use crate::cards::{
-    create_card_row, delete_card_row, list_card_summaries, review_card_row, update_card_row,
+    create_card_row, delete_card_row, list_card_summaries, review_card_row, suspend_card_row,
+    update_card_row,
 };
 use crate::constants::AI_SYSTEM_PROMPT;
 use crate::imports::import_anki_cards_row;
@@ -30,7 +31,8 @@ use crate::types::{
     AiConnectionTestResult, AiSettingsState, BootstrapState, CardSummary, CreateCardInput,
     DashboardStats, ExportDataResult, GenerateCardsInput, GeneratedCardPayload, ImportAnkiInput,
     ImportAnkiResult, RecentActivityEntry, ReviewCardInput, SaveAiSettingsInput,
-    SettingsDataSummary, SpaceStats, SpaceSummary, StudySettingsState, UpdateCardInput,
+    SettingsDataSummary, SpaceStats, SpaceSummary, StudySettingsState, SuspendCardInput,
+    UpdateCardInput,
 };
 use crate::tray;
 use crate::util::{map_card_storage_error, map_storage_error, now_ms};
@@ -136,6 +138,13 @@ pub(crate) fn delete_card(app: AppHandle, id: String) -> Result<(), String> {
     let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
 
     delete_card_row(&mut connection, &id).map_err(map_card_storage_error)
+}
+
+#[tauri::command]
+pub(crate) fn suspend_card(app: AppHandle, input: SuspendCardInput) -> Result<CardSummary, String> {
+    let mut connection = open_app_connection(&app).map_err(|error| error.to_string())?;
+
+    suspend_card_row(&mut connection, &input.id, input.suspended).map_err(map_card_storage_error)
 }
 
 #[tauri::command]

@@ -6,6 +6,7 @@ type CardListProps = {
   mode?: "all" | "space";
   onDeleteCard: (cardId: string) => void;
   onEditCard: (cardId: string) => void;
+  onSuspendCard?: (cardId: string, suspended: boolean) => void;
   onToggleExpand: (cardId: string) => void;
 };
 
@@ -15,6 +16,7 @@ export function CardList({
   mode = "all",
   onDeleteCard,
   onEditCard,
+  onSuspendCard,
   onToggleExpand,
 }: CardListProps) {
   if (cards.length === 0) {
@@ -43,7 +45,7 @@ export function CardList({
         const dueMeta = formatDue(card.due);
 
         return (
-          <article className={`card-row${isExpanded ? " expanded" : ""}`} key={card.id}>
+          <article className={`card-row${isExpanded ? " expanded" : ""}${card.suspended ? " suspended" : ""}`} key={card.id}>
             <button
               className={`card-row-main${mode === "space" ? " space-mode" : ""}`}
               onClick={() => onToggleExpand(card.id)}
@@ -54,7 +56,7 @@ export function CardList({
               <span className="card-source">{formatSource(card.source)}</span>
               <span className={`card-due ${dueMeta.variant === "overdue" ? "overdue" : ""}`}>
                 {dueMeta.variant === "overdue" ? <span className="due-dot" /> : null}
-                {dueMeta.label}
+                {card.suspended ? "Suspended" : dueMeta.label}
               </span>
               {mode === "all" ? <span className="card-space">{card.spaceName}</span> : null}
               <span className="card-chevron">
@@ -85,9 +87,11 @@ export function CardList({
                   <span className="meta-item">
                     <strong>{formatAbsoluteTime(card.updatedAt)}</strong> updated
                   </span>
-                  <span className="meta-item">
-                    <strong>{dueMeta.label}</strong> due
-                  </span>
+                  {!card.suspended ? (
+                    <span className="meta-item">
+                      <strong>{dueMeta.label}</strong> due
+                    </span>
+                  ) : null}
 
                   {card.tags.map((tag) => (
                     <span className="tag" key={`${card.id}-${tag}`}>
@@ -100,6 +104,16 @@ export function CardList({
                       <EditIcon />
                       Edit
                     </button>
+                    {onSuspendCard ? (
+                      <button
+                        className="action-btn"
+                        onClick={() => onSuspendCard(card.id, !card.suspended)}
+                        type="button"
+                      >
+                        <SuspendIcon />
+                        {card.suspended ? "Unsuspend" : "Suspend"}
+                      </button>
+                    ) : null}
                     <button className="action-btn" onClick={() => onDeleteCard(card.id)} type="button">
                       <DeleteIcon />
                       Delete
@@ -211,6 +225,15 @@ function EditIcon() {
   return (
     <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4">
       <path d="M7.5 2L10 4.5M2.5 9.5L9 3l-2 5-4.5 1.5z" />
+    </svg>
+  );
+}
+
+function SuspendIcon() {
+  return (
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="2" y="2" width="3" height="8" rx="0.5" />
+      <rect x="7" y="2" width="3" height="8" rx="0.5" />
     </svg>
   );
 }

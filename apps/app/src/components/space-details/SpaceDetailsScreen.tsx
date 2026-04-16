@@ -27,6 +27,7 @@ type SpaceDetailsScreenProps = {
   onOpenAiGenerate: () => void;
   onOpenImport: () => void;
   onStartStudy: () => void;
+  onSuspendCard: (input: { id: string; suspended: boolean }) => Promise<CardRecord>;
   stats: SpaceStats | null;
   onUpdateCard: (input: {
     back: string;
@@ -50,6 +51,7 @@ export function SpaceDetailsScreen({
   onOpenAiGenerate,
   onOpenImport,
   onStartStudy,
+  onSuspendCard,
   stats,
   onUpdateCard,
   space,
@@ -476,6 +478,7 @@ export function SpaceDetailsScreen({
             mode="space"
             onDeleteCard={(cardId) => void handleDelete(cardId)}
             onEditCard={handleEditCard}
+            onSuspendCard={(cardId, suspended) => void onSuspendCard({ id: cardId, suspended })}
             onToggleExpand={handleToggleExpand}
           />
           <Pagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={totalPages} />

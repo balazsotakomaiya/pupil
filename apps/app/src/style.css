@@ -2758,6 +2758,19 @@ button {
   background: rgba(255, 255, 255, 0.015);
 }
 
+.card-row.suspended {
+  opacity: 0.5;
+}
+
+.card-row.suspended .card-front {
+  color: var(--text-muted);
+}
+
+.card-row.suspended .card-due {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 .card-row-main {
   width: 100%;
   padding: 12px 20px;
@@ -5669,6 +5682,99 @@ button {
   font-weight: 600;
 }
 
+.session-quick-actions {
+  position: relative;
+  -webkit-app-region: no-drag;
+}
+
+.session-overflow-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.session-overflow-btn:hover,
+.session-overflow-btn.active {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+.session-overflow-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.session-overflow-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 100;
+  min-width: 156px;
+  padding: 4px;
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  animation: menuIn 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.session-overflow-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.session-overflow-item:hover {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.session-overflow-item svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0.55;
+  flex-shrink: 0;
+}
+
+.session-overflow-item.danger:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.07);
+}
+
+.session-overflow-item.danger:hover svg {
+  opacity: 0.8;
+}
+
 .session-progress-track {
   position: absolute;
   top: 48px;
@@ -5716,6 +5822,13 @@ button {
 
 .session-card.flipped {
   transform: rotateY(180deg);
+}
+
+.session-card.suspended {
+  opacity: 0.38;
+  filter: saturate(0.2);
+  pointer-events: none;
+  transition: transform 0.48s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, filter 0.3s ease;
 }
 
 .session-card-face {
@@ -5853,6 +5966,75 @@ button {
   align-items: center;
   gap: 12px;
   margin-top: 32px;
+}
+
+.session-suspended-actions {
+  display: flex;
+  width: 100%;
+  max-width: 560px;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.session-suspended-label {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.session-suspended-btns {
+  display: flex;
+  gap: 10px;
+}
+
+.session-unsuspend-btn,
+.session-skip-btn {
+  display: inline-flex;
+  height: 40px;
+  min-width: 110px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 20px;
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.session-unsuspend-btn {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.session-unsuspend-btn:hover {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.session-skip-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+}
+
+.session-skip-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+}
+
+.session-unsuspend-btn:disabled,
+.session-skip-btn:disabled {
+  cursor: wait;
+  opacity: 0.5;
 }
 
 .session-reveal-btn {

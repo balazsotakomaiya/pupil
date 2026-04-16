@@ -20,6 +20,7 @@ type CardsScreenProps = {
   onCreateCard: (input: { back: string; front: string; spaceId: string; tags: string[] }) => Promise<void>;
   onDeleteCard: (input: { id: string }) => Promise<void>;
   onOpenCreateDialog: () => void;
+  onSuspendCard: (input: { id: string; suspended: boolean }) => Promise<CardRecord>;
   onUpdateCard: (input: {
     back: string;
     front: string;
@@ -43,6 +44,7 @@ export function CardsScreen({
   onCreateCard,
   onDeleteCard,
   onOpenCreateDialog,
+  onSuspendCard,
   onUpdateCard,
   spaces,
 }: CardsScreenProps) {
@@ -333,6 +335,7 @@ export function CardsScreen({
           expandedCardId={expandedCardId}
           onDeleteCard={(cardId) => void handleDelete(cardId)}
           onEditCard={handleEditCard}
+          onSuspendCard={(cardId, suspended) => void onSuspendCard({ id: cardId, suspended })}
           onToggleExpand={handleToggleExpand}
         />
         <Pagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={totalPages} />

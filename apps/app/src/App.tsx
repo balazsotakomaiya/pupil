@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { AppTitlebar, CommandPalette, type AppTab } from "./components/app-shell";
-import { AiGenerateScreen } from "./components/ai-generate";
+import { AiGenerateScreen, AiGenerateTitlebar } from "./components/ai-generate";
 import { CardsScreen } from "./components/cards";
 import {
   Dashboard,
@@ -23,6 +23,7 @@ import {
   deleteCard,
   listCards,
   reviewCard,
+  suspendCard,
   updateCard,
   type CardRecord,
 } from "./lib/cards";
@@ -220,6 +221,7 @@ export default function App() {
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
   const [studySession, setStudySession] = useState<StudySessionState | null>(null);
   const [aiGenerateSession, setAiGenerateSession] = useState<AiGenerateSessionState | null>(null);
+  const [showSettingsFromAi, setShowSettingsFromAi] = useState(false);
   const [importSession, setImportSession] = useState<ImportSessionState | null>(null);
   const [isMutatingCards, setIsMutatingCards] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -458,6 +460,20 @@ export default function App() {
     }
   }
 
+  async function handleSuspendCard(input: { id: string; suspended: boolean }) {
+    setIsMutatingCards(true);
+
+    try {
+      const updatedCard = await suspendCard(input);
+      setCards((currentCards) =>
+        currentCards.map((card) => (card.id === updatedCard.id ? updatedCard : card)),
+      );
+      return updatedCard;
+    } finally {
+      setIsMutatingCards(false);
+    }
+  }
+
   async function handleReviewCard(input: { card: CardRecord; grade: 1 | 2 | 3 | 4 }) {
     setIsMutatingCards(true);
 
@@ -582,6 +598,7 @@ export default function App() {
 
   function handleCloseAiGenerate() {
     setAiGenerateSession(null);
+    setShowSettingsFromAi(false);
   }
 
   function handleOpenSpaceImport(spaceId: string) {
@@ -594,9 +611,7 @@ export default function App() {
   }
 
   function handleOpenSettingsFromAi() {
-    setAiGenerateSession(null);
-    setSelectedSpaceId(null);
-    setActiveTab("settings");
+    setShowSettingsFromAi(true);
   }
 
   async function handleSaveApprovedAiCards(input: {
@@ -617,6 +632,7 @@ export default function App() {
       );
       await refreshAppData();
       setAiGenerateSession(null);
+      setShowSettingsFromAi(false);
       setSelectedSpaceId(input.spaceId);
       window.scrollTo({ top: 0, behavior: "auto" });
     } finally {
@@ -701,23 +717,42 @@ export default function App() {
                 onSkip={handleOnboardingSkip}
               />
             ) : aiGenerateSession ? (
-              <AiGenerateScreen
-                backLabel={
-                  aiGenerateSession.scope === "space"
-                    ? aiGenerateSpace?.name ?? "Space"
-                    : "Dashboard"
-                }
-                initialSpaceId={
-                  aiGenerateSession.scope === "space"
-                    ? aiGenerateSession.spaceId
-                    : aiGenerateSession.initialSpaceId
-                }
-                onBack={handleCloseAiGenerate}
-                onCreateSpace={handleCreateSpace}
-                onOpenSettings={handleOpenSettingsFromAi}
-                onSaveApprovedCards={handleSaveApprovedAiCards}
-                spaces={spaces}
-              />
+              <>
+                {/* Always keep AiGenerateScreen mounted so its internal state survives
+                    the detour to Settings. Hidden via display:none while settings is shown. */}
+                <div style={showSettingsFromAi ? { display: "none" } : undefined}>
+                  <AiGenerateScreen
+                    backLabel={
+                      aiGenerateSession.scope === "space"
+                        ? aiGenerateSpace?.name ?? "Space"
+                        : "Dashboard"
+                    }
+                    initialSpaceId={
+                      aiGenerateSession.scope === "space"
+                        ? aiGenerateSession.spaceId
+                        : aiGenerateSession.initialSpaceId
+                    }
+                    onBack={handleCloseAiGenerate}
+                    onCreateSpace={handleCreateSpace}
+                    onOpenSettings={handleOpenSettingsFromAi}
+                    onSaveApprovedCards={handleSaveApprovedAiCards}
+                    spaces={spaces}
+                  />
+                </div>
+                {showSettingsFromAi ? (
+                  <>
+                    <AiGenerateTitlebar backLabel="AI Generate" onBack={() => setShowSettingsFromAi(false)} />
+                    <SettingsScreen
+                      cardsCount={cards.length}
+                      isSavingStudySettings={isSavingStudySettings}
+                      onResetAllData={handleResetAllData}
+                      onSaveStudySettings={handleSaveStudySettings}
+                      spacesCount={spaces.length}
+                      studySettings={studySettings}
+                    />
+                  </>
+                ) : null}
+              </>
             ) : importSession ? (
               <ImportScreen
                 backLabel={importSpace?.name ?? "Space"}
@@ -749,7 +784,9 @@ export default function App() {
                 cards={studyCards}
                 newCardsBudget={newCardsBudget}
                 onBack={handleCloseStudySession}
+                onDeleteCard={handleDeleteCard}
                 onReviewCard={handleReviewCard}
+                onSuspendCard={handleSuspendCard}
                 sessionKey={studySession.startedAt}
                 scope={studySession.scope as StudyScope}
                 scopeLabel={studySession.scope === "space" ? studySpace?.name ?? "Space" : "All spaces"}
@@ -766,6 +803,7 @@ export default function App() {
                 onOpenAiGenerate={() => handleOpenSpaceAiGenerate(selectedSpace.id)}
                 onOpenImport={() => handleOpenSpaceImport(selectedSpace.id)}
                 onStartStudy={() => handleStartSpaceStudy(selectedSpace.id)}
+                onSuspendCard={handleSuspendCard}
                 stats={selectedSpaceStats}
                 onUpdateCard={handleUpdateCard}
                 space={selectedSpace}
@@ -802,6 +840,7 @@ export default function App() {
                     onCreateCard={handleCreateCard}
                     onDeleteCard={handleDeleteCard}
                     onOpenCreateDialog={handleOpenCreateDialog}
+                    onSuspendCard={handleSuspendCard}
                     onUpdateCard={handleUpdateCard}
                     spaces={spaces}
                   />

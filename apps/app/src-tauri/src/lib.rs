@@ -24,7 +24,7 @@ use crate::commands::{
     get_dashboard_stats, get_settings_data_summary, get_study_settings, import_anki_cards,
     list_cards, list_recent_activity, list_space_stats, list_spaces, refresh_tray_status,
     rename_space, reset_all_data, review_card, save_ai_settings, save_study_settings,
-    test_ai_provider_connection, update_card,
+    suspend_card, test_ai_provider_connection, update_card,
 };
 #[cfg(debug_assertions)]
 use crate::constants::{
@@ -69,6 +69,7 @@ pub fn run() {
             create_card,
             update_card,
             delete_card,
+            suspend_card,
             review_card,
             import_anki_cards,
             get_dashboard_stats,

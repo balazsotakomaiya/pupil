@@ -3,11 +3,12 @@ import type { StudyCardRecord } from "./types";
 type StudyReviewCardProps = {
   card: StudyCardRecord;
   isAnswerVisible: boolean;
+  isSuspended?: boolean;
 };
 
-export function StudyReviewCard({ card, isAnswerVisible }: StudyReviewCardProps) {
+export function StudyReviewCard({ card, isAnswerVisible, isSuspended = false }: StudyReviewCardProps) {
   return (
-    <div className={`session-card${isAnswerVisible ? " flipped" : ""}`}>
+    <div className={`session-card${isAnswerVisible ? " flipped" : ""}${isSuspended ? " suspended" : ""}`}>
       <div className="session-card-face front">
         <span className="session-card-label">front</span>
         <span className="session-card-space">{card.spaceName}</span>

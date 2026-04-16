@@ -28,6 +28,7 @@ export type CardRecord = {
   lastReview: number | null;
   createdAt: number;
   updatedAt: number;
+  suspended: boolean;
 };
 
 type StoredWebSpace = {
@@ -98,6 +99,7 @@ export async function createCard(input: {
     back: normalized.back,
     tags: normalized.tags,
     source: normalized.source,
+    suspended: false,
     ...fsrsFields,
     createdAt: now,
     updatedAt: now,
@@ -172,6 +174,30 @@ export async function deleteCard(input: { id: string }): Promise<void> {
 
   writeWebCards(cards.filter((card) => card.id !== input.id));
   touchWebSpace(existingCard.spaceId, readStoredWebSpaces(), Date.now());
+}
+
+export async function suspendCard(input: { id: string; suspended: boolean }): Promise<CardRecord> {
+  if (isTauriRuntime()) {
+    return invoke<CardRecord>("suspend_card", { input });
+  }
+
+  const cards = readWebCards();
+  const cardIndex = cards.findIndex((card) => card.id === input.id);
+
+  if (cardIndex === -1) {
+    throw new Error("Card not found.");
+  }
+
+  const nextCard: CardRecord = {
+    ...cards[cardIndex],
+    suspended: input.suspended,
+    updatedAt: Date.now(),
+  };
+
+  cards[cardIndex] = nextCard;
+  writeWebCards(cards);
+
+  return nextCard;
 }
 
 export async function reviewCard(input: {
@@ -428,6 +454,7 @@ function parseCardRecord(value: unknown): CardRecord[] {
       spaceName: card.spaceName,
       stability: typeof card.stability === "number" ? card.stability : 0,
       state: card.state,
+      suspended: card.suspended === true,
       tags: card.tags.filter((tag): tag is string => typeof tag === "string"),
       updatedAt: card.updatedAt,
     },

@@ -64,6 +64,8 @@ pub(crate) struct CardSummary {
     pub(crate) last_review: Option<i64>,
     pub(crate) created_at: i64,
     pub(crate) updated_at: i64,
+    #[serde(rename = "suspended")]
+    pub(crate) is_suspended: bool,
 }
 
 #[derive(Deserialize)]
@@ -84,6 +86,13 @@ pub(crate) struct UpdateCardInput {
     pub(crate) front: String,
     pub(crate) back: String,
     pub(crate) tags: Vec<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SuspendCardInput {
+    pub(crate) id: String,
+    pub(crate) suspended: bool,
 }
 
 #[derive(Deserialize)]
