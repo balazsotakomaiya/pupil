@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -139,6 +140,36 @@ async function readReleaseState() {
   };
 }
 
+function getGitPushRef() {
+  try {
+    const branch = execFileSync("git", ["branch", "--show-current"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+
+    return branch || "HEAD";
+  } catch {
+    return "HEAD";
+  }
+}
+
+function printNextCommands(version) {
+  const tag = `${RELEASE_TAG_PREFIX}${version}`;
+  const pushRef = getGitPushRef();
+
+  console.log("");
+  console.log("copy/paste next:");
+  console.log(
+    [
+      "git add apps/app/package.json apps/app/src-tauri/Cargo.toml apps/app/src-tauri/Cargo.lock",
+      `bun run release:check --tag ${tag}`,
+      `git commit -m "chore(release): bump desktop app to v${version}"`,
+      `git tag -a ${tag} -m "Pupil v${version}"`,
+      `git push origin ${pushRef} --follow-tags`,
+    ].join(" && \\\n"),
+  );
+}
+
 async function checkReleaseState(tag) {
   const state = await readReleaseState();
 
@@ -186,6 +217,7 @@ async function updateVersion(nextVersion) {
 
   await checkReleaseState(null);
   console.log(`next release tag: ${RELEASE_TAG_PREFIX}${nextVersion}`);
+  printNextCommands(nextVersion);
 }
 
 async function main() {

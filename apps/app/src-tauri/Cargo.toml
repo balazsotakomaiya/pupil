@@ -1,6 +1,6 @@
 [package]
 name = "pupil-app"
-version = "0.0.1"
+version = "0.0.2"
 description = "Pupil desktop app"
 authors = ["Pupil"]
 edition = "2021"
@@ -32,3 +32,5 @@ keyring = { version = "3.6.2", features = ["apple-native"] }
 
 [profile.dev.package.scrypt]
 opt-level = 3
+
+
