@@ -4,7 +4,7 @@ import Nav from "./Nav";
 
 const REPO_URL = "https://github.com/balazsotakomaiya/pupil";
 const RELEASES_URL = `${REPO_URL}/releases`;
-const DOCS_URL = `${REPO_URL}/tree/main/docs`;
+const DOCS_URL = `${REPO_URL}/wiki`;
 const ISSUES_URL = `${REPO_URL}/issues`;
 const DESKTOP_APP_VERSION = appPackage.version;
 

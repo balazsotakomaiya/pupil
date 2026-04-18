@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import Nav from "./Nav";
 
 const REPO_URL = "https://github.com/balazsotakomaiya/pupil";
-const DOCS_URL = `${REPO_URL}/tree/main/docs`;
+const DOCS_URL = `${REPO_URL}/wiki`;
 const ISSUES_URL = `${REPO_URL}/issues`;
 
 export default function Manifesto() {

@@ -520,7 +520,7 @@ export function SettingsScreen({
 
   function handleOpenExternal(kind: "docs" | "github" | "issues") {
     const urls = {
-      docs: "https://github.com/balazsotakomaiya/pupil/tree/main/docs",
+      docs: "https://github.com/balazsotakomaiya/pupil/wiki",
       github: "https://github.com/balazsotakomaiya/pupil",
       issues: "https://github.com/balazsotakomaiya/pupil/issues",
     };
