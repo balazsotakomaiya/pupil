@@ -10,6 +10,8 @@ export type RecentActivityRecord = {
 };
 
 const WEB_REVIEW_LOG_STORAGE_KEY = "pupil.web.review_logs";
+const RECENT_ACTIVITY_SESSION_GAP_MS = 30 * 60 * 1000;
+const MAX_RECENT_ACTIVITY_ROWS = 5;
 
 type StoredReviewLog = {
   reviewTime: number;
@@ -22,22 +24,28 @@ export async function listRecentActivity(): Promise<RecentActivityRecord[]> {
     return invoke<RecentActivityRecord[]>("list_recent_activity");
   }
 
-  const logs = readStoredReviewLogs();
-  const groups = new Map<string, RecentActivityRecord>();
+  const logs = [...readStoredReviewLogs()].sort((left, right) => right.reviewTime - left.reviewTime);
+  const sessions: RecentActivityRecord[] = [];
 
   for (const log of logs) {
-    const bucket = Math.floor(log.reviewTime / 60000);
-    const key = `${log.spaceId}:${bucket}`;
-    const current = groups.get(key);
+    const current = sessions.at(-1);
+    const belongsToCurrentSession =
+      !!current &&
+      current.spaceId === log.spaceId &&
+      current.reviewTime >= log.reviewTime &&
+      current.reviewTime - log.reviewTime <= RECENT_ACTIVITY_SESSION_GAP_MS;
 
-    if (current) {
+    if (belongsToCurrentSession && current) {
       current.reviewCount += 1;
-      current.reviewTime = Math.max(current.reviewTime, log.reviewTime);
       continue;
     }
 
-    groups.set(key, {
-      id: key,
+    if (sessions.length >= MAX_RECENT_ACTIVITY_ROWS) {
+      break;
+    }
+
+    sessions.push({
+      id: `${log.spaceId}:${log.reviewTime}`,
       reviewCount: 1,
       reviewTime: log.reviewTime,
       spaceId: log.spaceId,
@@ -45,9 +53,7 @@ export async function listRecentActivity(): Promise<RecentActivityRecord[]> {
     });
   }
 
-  return Array.from(groups.values())
-    .sort((left, right) => right.reviewTime - left.reviewTime)
-    .slice(0, 5);
+  return sessions;
 }
 
 function readStoredReviewLogs(): StoredReviewLog[] {

@@ -556,15 +556,24 @@ export default function App() {
     return createdSpace;
   }
 
+  async function startStudySession(nextSession: StudySessionState) {
+    try {
+      const nextStudySettings = await getStudySettings();
+      setStudySettings(nextStudySettings);
+    } catch {}
+
+    setStudySession(nextSession);
+  }
+
   function handleStartGlobalStudy() {
     if (dashboardStats?.dueToday) {
       setDismissedDailyCheckInDay(dismissDailyCheckIn(todayDayKey));
     }
-    setStudySession({ scope: "global", startedAt: Date.now() });
+    void startStudySession({ scope: "global", startedAt: Date.now() });
   }
 
   function handleStartSpaceStudy(spaceId: string) {
-    setStudySession({ scope: "space", spaceId, startedAt: Date.now() });
+    void startStudySession({ scope: "space", spaceId, startedAt: Date.now() });
   }
 
   function handleStudySecondaryAction() {
