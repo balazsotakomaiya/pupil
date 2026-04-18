@@ -2,7 +2,10 @@ import { Link } from "react-router-dom";
 import appPackage from "../../app/package.json";
 import Nav from "./Nav";
 
-const RELEASES_URL = "https://github.com/balazsotakomaiya/pupil/releases";
+const REPO_URL = "https://github.com/balazsotakomaiya/pupil";
+const RELEASES_URL = `${REPO_URL}/releases`;
+const DOCS_URL = `${REPO_URL}/wiki`;
+const ISSUES_URL = `${REPO_URL}/issues`;
 const DESKTOP_APP_VERSION = appPackage.version;
 
 type OS = "mac" | "windows" | "linux" | "unknown";
@@ -31,8 +34,8 @@ function DownloadCTA() {
           {icon}
           {label}
         </a>
-        <a href="#" className="btn-secondary">
-          Open Web App
+        <a href={REPO_URL} className="btn-secondary" target="_blank" rel="noopener noreferrer">
+          Open GitHub
         </a>
       </div>
       <a href={RELEASES_URL} className="btn-all-platforms" target="_blank" rel="noopener noreferrer">
@@ -142,11 +145,11 @@ export default function App() {
       <footer className="footer">
         <Link to="/" className="footer-logo">pupil</Link>
         <nav className="footer-links">
-          <a href="https://github.com/balazsotakomaiya/pupil" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href={REPO_URL} target="_blank" rel="noopener noreferrer">GitHub</a>
           <span className="sep">·</span>
-          <a href="/docs">Docs</a>
+          <a href={DOCS_URL} target="_blank" rel="noopener noreferrer">Docs</a>
           <span className="sep">·</span>
-          <a href="https://github.com/balazsotakomaiya/pupil/issues" target="_blank" rel="noopener noreferrer">Issues</a>
+          <a href={ISSUES_URL} target="_blank" rel="noopener noreferrer">Issues</a>
         </nav>
         <a
           href="https://otakomaiya.com"
