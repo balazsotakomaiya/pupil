@@ -560,7 +560,9 @@ export default function App() {
     try {
       const nextStudySettings = await getStudySettings();
       setStudySettings(nextStudySettings);
-    } catch {}
+    } catch (error: unknown) {
+      console.error("Failed to refresh study settings before session start.", error);
+    }
 
     setStudySession(nextSession);
   }

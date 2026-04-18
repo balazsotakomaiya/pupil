@@ -11,6 +11,7 @@ use crate::app::app_data_dir;
 use crate::types::{AppResult, RecentActivityEntry, SettingsDataSummary};
 
 const RECENT_ACTIVITY_SESSION_GAP_MS: i64 = 30 * 60 * 1000;
+const RECENT_ACTIVITY_FETCH_MULTIPLIER: i64 = 50;
 const MIN_RECENT_ACTIVITY_FETCH_LIMIT: i64 = 200;
 
 pub(crate) fn load_recent_activity(
@@ -21,7 +22,7 @@ pub(crate) fn load_recent_activity(
         return Ok(Vec::new());
     }
 
-    let fetch_limit = (limit * 50).max(MIN_RECENT_ACTIVITY_FETCH_LIMIT);
+    let fetch_limit = (limit * RECENT_ACTIVITY_FETCH_MULTIPLIER).max(MIN_RECENT_ACTIVITY_FETCH_LIMIT);
     let mut statement = connection.prepare(
         "
         SELECT review_logs.space_id,
@@ -43,7 +44,6 @@ pub(crate) fn load_recent_activity(
 
         let belongs_to_last_session = sessions.last().is_some_and(|current| {
             current.space_id == space_id
-                && current.review_time >= review_time
                 && current.review_time - review_time <= RECENT_ACTIVITY_SESSION_GAP_MS
         });
 

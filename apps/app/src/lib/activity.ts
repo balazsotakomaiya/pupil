@@ -24,7 +24,8 @@ export async function listRecentActivity(): Promise<RecentActivityRecord[]> {
     return invoke<RecentActivityRecord[]>("list_recent_activity");
   }
 
-  const logs = [...readStoredReviewLogs()].sort((left, right) => right.reviewTime - left.reviewTime);
+  const logs = readStoredReviewLogs();
+  logs.sort((left, right) => right.reviewTime - left.reviewTime);
   const sessions: RecentActivityRecord[] = [];
 
   for (const log of logs) {
@@ -32,7 +33,6 @@ export async function listRecentActivity(): Promise<RecentActivityRecord[]> {
     const belongsToCurrentSession =
       !!current &&
       current.spaceId === log.spaceId &&
-      current.reviewTime >= log.reviewTime &&
       current.reviewTime - log.reviewTime <= RECENT_ACTIVITY_SESSION_GAP_MS;
 
     if (belongsToCurrentSession && current) {
