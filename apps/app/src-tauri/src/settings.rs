@@ -8,41 +8,66 @@ use tauri::{AppHandle, Manager};
 
 use crate::ai::clear_ai_api_key;
 use crate::app::app_data_dir;
+use crate::constants::{
+    MIN_RECENT_ACTIVITY_FETCH_LIMIT, RECENT_ACTIVITY_FETCH_MULTIPLIER,
+    RECENT_ACTIVITY_SESSION_GAP_MS,
+};
 use crate::types::{AppResult, RecentActivityEntry, SettingsDataSummary};
 
 pub(crate) fn load_recent_activity(
     connection: &Connection,
     limit: i64,
 ) -> rusqlite::Result<Vec<RecentActivityEntry>> {
+    if limit <= 0 {
+        return Ok(Vec::new());
+    }
+
+    let fetch_limit = (limit * RECENT_ACTIVITY_FETCH_MULTIPLIER).max(MIN_RECENT_ACTIVITY_FETCH_LIMIT);
     let mut statement = connection.prepare(
         "
         SELECT review_logs.space_id,
                spaces.name,
-               MAX(review_logs.review_time) AS review_time,
-               COUNT(*) AS review_count,
-               strftime('%Y-%m-%d %H:%M', review_logs.review_time / 1000, 'unixepoch', 'localtime') AS bucket
+               review_logs.review_time
         FROM review_logs
         INNER JOIN spaces ON spaces.id = review_logs.space_id
-        GROUP BY review_logs.space_id, spaces.name, bucket
-        ORDER BY review_time DESC
+        ORDER BY review_logs.review_time DESC
         LIMIT ?1
         ",
     )?;
-    let rows = statement.query_map([limit], |row| {
-        let space_id: String = row.get(0)?;
-        let review_time: i64 = row.get(2)?;
-        let bucket: String = row.get(4)?;
+    let mut rows = statement.query([fetch_limit])?;
+    let mut sessions: Vec<RecentActivityEntry> = Vec::new();
 
-        Ok(RecentActivityEntry {
-            id: format!("{space_id}:{bucket}"),
-            review_count: row.get(3)?,
+    while let Some(row) = rows.next()? {
+        let space_id: String = row.get(0)?;
+        let space_name: String = row.get(1)?;
+        let review_time: i64 = row.get(2)?;
+
+        let belongs_to_last_session = sessions.last().is_some_and(|current| {
+            current.space_id == space_id
+                && current.review_time - review_time <= RECENT_ACTIVITY_SESSION_GAP_MS
+        });
+
+        if belongs_to_last_session {
+            if let Some(current) = sessions.last_mut() {
+                current.review_count += 1;
+            }
+            continue;
+        }
+
+        if sessions.len() >= limit as usize {
+            break;
+        }
+
+        sessions.push(RecentActivityEntry {
+            id: format!("{space_id}:{review_time}"),
+            review_count: 1,
             review_time,
             space_id,
-            space_name: row.get(1)?,
-        })
-    })?;
+            space_name,
+        });
+    }
 
-    rows.collect()
+    Ok(sessions)
 }
 
 pub(crate) fn load_settings_data_summary(
