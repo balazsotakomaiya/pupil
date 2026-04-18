@@ -1,13 +1,15 @@
-name: Build
+name: Publish
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    tags:
+      - "app-v*"
 
 jobs:
-  build:
+  publish:
+    permissions:
+      contents: write
+
     strategy:
       fail-fast: false
       matrix:
@@ -15,22 +17,22 @@ jobs:
           - label: Linux x64
             os: ubuntu-22.04
             platform: linux
-            tauri_args: --ci --no-sign
+            tauri_args: --ci
           - label: Windows x64
             os: windows-latest
             platform: windows
-            tauri_args: --ci --no-sign
+            tauri_args: --ci
           - label: macOS Intel
             os: macos-latest
             platform: macos
-            tauri_args: --ci --no-sign --bundles app --target x86_64-apple-darwin
+            tauri_args: --ci --target x86_64-apple-darwin
           - label: macOS Apple Silicon
             os: macos-latest
             platform: macos
-            tauri_args: --ci --no-sign --bundles app --target aarch64-apple-darwin
+            tauri_args: --ci --target aarch64-apple-darwin
 
     runs-on: ${{ matrix.os }}
-    name: Build (${{ matrix.label }})
+    name: Publish (${{ matrix.label }})
 
     steps:
       - name: Checkout
@@ -68,7 +70,21 @@ jobs:
         run: bun install
 
       - name: Validate release contract
-        run: bun run release:check
+        run: bun run release:check --tag "${{ github.ref_name }}"
 
-      - name: Build
-        run: bun run --cwd apps/app tauri build ${{ matrix.tauri_args }}
+      - name: Publish desktop release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: apps/app
+          tagName: ${{ github.ref_name }}
+          releaseName: Pupil v__VERSION__
+          generateReleaseNotes: true
+          releaseDraft: false
+          prerelease: false
+          uploadUpdaterJson: true
+          updaterJsonPreferNsis: false
+          args: ${{ matrix.tauri_args }}

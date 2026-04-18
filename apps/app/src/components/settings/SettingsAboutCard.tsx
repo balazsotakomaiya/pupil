@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { EyeLogo } from "../dashboard/EyeLogo";
+import { APP_VERSION_FALLBACK, formatAppVersion, getAppVersion } from "../../lib/app-version";
 import { ExternalLinkIcon } from "./SettingsIcons";
 
 type SettingsAboutCardProps = {
@@ -12,6 +14,25 @@ export function SettingsAboutCard({
   onOpenGithub,
   onOpenIssues,
 }: SettingsAboutCardProps) {
+  const [versionLabel, setVersionLabel] = useState(() => formatAppVersion(APP_VERSION_FALLBACK));
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadVersion() {
+      const version = await getAppVersion();
+      if (!cancelled) {
+        setVersionLabel(formatAppVersion(version));
+      }
+    }
+
+    void loadVersion();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div className="settings-about-card">
       <div className="settings-about-top">
@@ -20,7 +41,7 @@ export function SettingsAboutCard({
         </div>
         <div>
           <div className="settings-about-name">pupil</div>
-          <div className="settings-about-version">v0.1.0-alpha · Phase 1</div>
+          <div className="settings-about-version">{versionLabel}</div>
         </div>
       </div>
 

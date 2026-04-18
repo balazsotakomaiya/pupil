@@ -4,7 +4,7 @@
 
 | Tool | Version |
 |---|---|
-| Rust | >= 1.77.0 |
+| Rust | >= 1.77.2 |
 | Bun | >= 1.1.0 |
 
 Install Rust via [rustup](https://rustup.rs). Install Bun via [bun.sh](https://bun.sh).
@@ -94,6 +94,12 @@ bun run --cwd apps/app dev
 ```
 
 The first Rust compilation takes a few minutes. Subsequent runs are incremental.
+
+---
+
+## Releases
+
+Desktop release versioning and GitHub Releases publishing live in [`docs/RELEASING.md`](./docs/RELEASING.md).
 
 ---
 

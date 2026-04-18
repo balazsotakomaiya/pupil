@@ -4,7 +4,7 @@ version = "0.0.1"
 description = "Pupil desktop app"
 authors = ["Pupil"]
 edition = "2021"
-rust-version = "1.77.0"
+rust-version = "1.77.2"
 license = "MIT"
 
 [lib]
@@ -24,5 +24,11 @@ sha2 = "0.10.9"
 tauri = { version = "2.4.1", features = ["tray-icon"] }
 tauri-plugin-stronghold = "2.3.1"
 
+[target.'cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))'.dependencies]
+tauri-plugin-updater = "2.4.0"
+
 [target.'cfg(target_os = "macos")'.dependencies]
 keyring = { version = "3.6.2", features = ["apple-native"] }
+
+[profile.dev.package.scrypt]
+opt-level = 3

@@ -12,7 +12,9 @@
     "build": "bun run --workspaces --if-present build",
     "lint": "bun run --workspaces --if-present lint",
     "typecheck": "bun run --workspaces --if-present typecheck",
-    "test": "bun run --workspaces --if-present test"
+    "test": "bun run --workspaces --if-present test",
+    "release:check": "bun ./scripts/desktop-release.mjs check",
+    "release:version": "bun ./scripts/desktop-release.mjs version"
   },
   "devDependencies": {
     "typescript": "^5.8.0"

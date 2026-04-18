@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
+import appPackage from "../../app/package.json";
 import Nav from "./Nav";
 
 const RELEASES_URL = "https://github.com/balazsotakomaiya/pupil/releases";
+const DESKTOP_APP_VERSION = appPackage.version;
 
 type OS = "mac" | "windows" | "linux" | "unknown";
 
@@ -58,7 +60,7 @@ export default function App() {
       {/* Hero */}
       <section className="hero">
         <div className="hero-badge">
-          <span className="hero-badge-chip">v0.1</span>
+          <span className="hero-badge-chip">v{DESKTOP_APP_VERSION}</span>
           Open source · Local-first · FSRS-5
         </div>
         <h1 className="hero-title">
