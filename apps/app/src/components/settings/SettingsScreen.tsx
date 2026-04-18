@@ -520,9 +520,9 @@ export function SettingsScreen({
 
   function handleOpenExternal(kind: "docs" | "github" | "issues") {
     const urls = {
-      docs: "https://github.com",
-      github: "https://github.com",
-      issues: "https://github.com/issues",
+      docs: "https://github.com/balazsotakomaiya/pupil/tree/main/docs",
+      github: "https://github.com/balazsotakomaiya/pupil",
+      issues: "https://github.com/balazsotakomaiya/pupil/issues",
     };
 
     window.open(urls[kind], "_blank", "noopener,noreferrer");

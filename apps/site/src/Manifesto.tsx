@@ -1,6 +1,10 @@
 import { Link } from "react-router-dom";
 import Nav from "./Nav";
 
+const REPO_URL = "https://github.com/balazsotakomaiya/pupil";
+const DOCS_URL = `${REPO_URL}/tree/main/docs`;
+const ISSUES_URL = `${REPO_URL}/issues`;
+
 export default function Manifesto() {
   return (
     <>
@@ -194,7 +198,7 @@ export default function Manifesto() {
             <footer className="manifesto-sign">
               <p>
                 If any of this resonates —{" "}
-                <a href="https://github.com/balazsotakomaiya/pupil" target="_blank" rel="noopener noreferrer">
+                <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
                   Pupil is open source
                 </a>
                 . Try it, break it, contribute to it.
@@ -219,11 +223,11 @@ export default function Manifesto() {
       <footer className="footer">
         <Link to="/" className="footer-logo">pupil</Link>
         <nav className="footer-links">
-          <a href="https://github.com/balazsotakomaiya/pupil" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href={REPO_URL} target="_blank" rel="noopener noreferrer">GitHub</a>
           <span className="sep">·</span>
-          <a href="/docs">Docs</a>
+          <a href={DOCS_URL} target="_blank" rel="noopener noreferrer">Docs</a>
           <span className="sep">·</span>
-          <a href="https://github.com/balazsotakomaiya/pupil/issues" target="_blank" rel="noopener noreferrer">Issues</a>
+          <a href={ISSUES_URL} target="_blank" rel="noopener noreferrer">Issues</a>
         </nav>
         <a
           href="https://otakomaiya.com"
