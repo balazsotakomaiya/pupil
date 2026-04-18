@@ -8,11 +8,11 @@ use tauri::{AppHandle, Manager};
 
 use crate::ai::clear_ai_api_key;
 use crate::app::app_data_dir;
+use crate::constants::{
+    MIN_RECENT_ACTIVITY_FETCH_LIMIT, RECENT_ACTIVITY_FETCH_MULTIPLIER,
+    RECENT_ACTIVITY_SESSION_GAP_MS,
+};
 use crate::types::{AppResult, RecentActivityEntry, SettingsDataSummary};
-
-const RECENT_ACTIVITY_SESSION_GAP_MS: i64 = 30 * 60 * 1000;
-const RECENT_ACTIVITY_FETCH_MULTIPLIER: i64 = 50;
-const MIN_RECENT_ACTIVITY_FETCH_LIMIT: i64 = 200;
 
 pub(crate) fn load_recent_activity(
     connection: &Connection,
