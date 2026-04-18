@@ -28,6 +28,7 @@ jobs:
     outputs:
       release_tag: ${{ steps.resolve.outputs.release_tag }}
       checkout_ref: ${{ steps.resolve.outputs.checkout_ref }}
+      release_commitish: ${{ steps.commitish.outputs.release_commitish }}
     steps:
       - name: Resolve publish target
         id: resolve
@@ -43,6 +44,32 @@ jobs:
 
           echo "release_tag=${release_tag}" >> "$GITHUB_OUTPUT"
           echo "checkout_ref=${checkout_ref}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout publish ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.resolve.outputs.checkout_ref }}
+          fetch-depth: 0
+
+      - name: Resolve release commitish
+        id: commitish
+        shell: bash
+        run: |
+          input_ref="${{ steps.resolve.outputs.checkout_ref }}"
+
+          if [[ "$input_ref" == refs/heads/* ]]; then
+            release_commitish="${input_ref#refs/heads/}"
+          elif [[ "$input_ref" == refs/tags/* ]]; then
+            release_commitish="$(git rev-parse "${input_ref}^{commit}")"
+          elif git show-ref --verify --quiet "refs/heads/${input_ref}"; then
+            release_commitish="${input_ref}"
+          elif git show-ref --verify --quiet "refs/tags/${input_ref}"; then
+            release_commitish="$(git rev-parse "${input_ref}^{commit}")"
+          else
+            release_commitish="${input_ref}"
+          fi
+
+          echo "release_commitish=${release_commitish}" >> "$GITHUB_OUTPUT"
 
       - name: Clear existing release assets
         uses: actions/github-script@v7
@@ -160,7 +187,7 @@ jobs:
           projectPath: apps/app
           tagName: ${{ needs.prepare.outputs.release_tag }}
           releaseName: Pupil v__VERSION__
-          releaseCommitish: ${{ needs.prepare.outputs.checkout_ref }}
+          releaseCommitish: ${{ needs.prepare.outputs.release_commitish }}
           generateReleaseNotes: true
           releaseDraft: false
           prerelease: false
