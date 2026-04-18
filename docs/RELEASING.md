@@ -47,6 +47,19 @@ Updater signing is separate from Apple notarization or Windows code signing. Los
 
 The publish workflow fails fast if the pushed tag does not equal `app-v${apps/app/package.json version}`.
 
+## Recovering a failed publish
+
+If a publish failed and you need to retry it after pushing fixes, use the manual `Publish` workflow in GitHub Actions:
+
+1. Push the fix commit to the branch you want to publish from, usually `main`.
+2. Open `Actions` → `Publish` → `Run workflow`.
+3. Enter:
+   - `tag`: the existing release tag, for example `app-v0.0.2`
+   - `ref`: the branch, tag, or commit SHA to build from, for example `main`
+4. Run the workflow. It will clear the existing assets for that release tag, rebuild from the selected ref, and upload a fresh set of assets.
+
+This recovery path is meant for “the release failed, fix it and republish” situations. It can produce release assets from a newer commit than the git tag originally pointed at. If you want the source tag and shipped binaries to match exactly, move the tag yourself or cut a new version instead.
+
 ## Current release behavior
 
 - Releases are stable-only in v1. There is no prerelease channel yet.

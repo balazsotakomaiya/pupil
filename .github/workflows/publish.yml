@@ -4,9 +4,83 @@ on:
   push:
     tags:
       - "app-v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish, for example app-v0.0.2
+        required: true
+        type: string
+      ref:
+        description: Branch, tag, or commit SHA to build from
+        required: true
+        default: main
+        type: string
+
+concurrency:
+  group: publish-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      release_tag: ${{ steps.resolve.outputs.release_tag }}
+      checkout_ref: ${{ steps.resolve.outputs.checkout_ref }}
+    steps:
+      - name: Resolve publish target
+        id: resolve
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            release_tag="${{ inputs.tag }}"
+            checkout_ref="${{ inputs.ref }}"
+          else
+            release_tag="${GITHUB_REF_NAME}"
+            checkout_ref="${GITHUB_REF}"
+          fi
+
+          echo "release_tag=${release_tag}" >> "$GITHUB_OUTPUT"
+          echo "checkout_ref=${checkout_ref}" >> "$GITHUB_OUTPUT"
+
+      - name: Clear existing release assets
+        uses: actions/github-script@v7
+        env:
+          RELEASE_TAG: ${{ steps.resolve.outputs.release_tag }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const tag = process.env.RELEASE_TAG;
+
+            try {
+              const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+              const assets = release.data.assets ?? [];
+
+              if (assets.length === 0) {
+                core.info(`No existing assets found for ${tag}.`);
+                return;
+              }
+
+              for (const asset of assets) {
+                core.info(`Deleting existing asset ${asset.name} (${asset.id}) from ${tag}.`);
+                await github.rest.repos.deleteReleaseAsset({
+                  owner,
+                  repo,
+                  asset_id: asset.id,
+                });
+              }
+            } catch (error) {
+              if (error.status === 404) {
+                core.info(`No existing release found for ${tag}.`);
+                return;
+              }
+
+              throw error;
+            }
+
   publish:
+    needs: prepare
     permissions:
       contents: write
 
@@ -37,6 +111,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.checkout_ref }}
 
       - name: Install Linux system dependencies
         if: matrix.platform == 'linux'
@@ -72,7 +148,7 @@ jobs:
         run: bun install
 
       - name: Validate release contract
-        run: bun run release:check --tag "${{ github.ref_name }}"
+        run: bun run release:check --tag "${{ needs.prepare.outputs.release_tag }}"
 
       - name: Publish desktop release
         uses: tauri-apps/tauri-action@v0
@@ -82,11 +158,13 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: apps/app
-          tagName: ${{ github.ref_name }}
+          tagName: ${{ needs.prepare.outputs.release_tag }}
           releaseName: Pupil v__VERSION__
+          releaseCommitish: ${{ needs.prepare.outputs.checkout_ref }}
           generateReleaseNotes: true
           releaseDraft: false
           prerelease: false
+          retryAttempts: 2
           uploadUpdaterJson: true
           updaterJsonPreferNsis: false
           args: ${{ matrix.tauri_args }}
