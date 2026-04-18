@@ -25,7 +25,10 @@ function parseArgs(argv) {
   const args = argv.slice(2);
   const command = args[0];
   let requestedVersion = null;
-  let tag = process.env.GITHUB_REF_NAME ?? null;
+  let tag =
+    process.env.GITHUB_REF_TYPE === "tag"
+      ? process.env.GITHUB_REF_NAME ?? normalizeTag(process.env.GITHUB_REF ?? null)
+      : normalizeTag(process.env.GITHUB_REF ?? null);
 
   for (let index = 1; index < args.length; index += 1) {
     const arg = args[index];
@@ -121,7 +124,11 @@ function normalizeTag(tag) {
     return null;
   }
 
-  return tag.startsWith("refs/tags/") ? tag.slice("refs/tags/".length) : tag;
+  if (tag.startsWith("refs/tags/")) {
+    return tag.slice("refs/tags/".length);
+  }
+
+  return null;
 }
 
 async function readReleaseState() {
