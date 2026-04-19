@@ -23,6 +23,16 @@ Updater signing is separate from Apple notarization or Windows code signing. Los
 
 2. Review the changed files, open a version bump PR, and merge it to `main`.
 
+   Before merging, run:
+
+   ```bash
+   bun run lint
+   bun run typecheck
+   bun run test
+   bun run lint:rust
+   bun run format:check
+   ```
+
 3. Create an annotated tag from `main` using the exact desktop release format:
 
    ```bash

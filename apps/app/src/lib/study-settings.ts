@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
 
 export type StudySettings = {
@@ -35,7 +35,7 @@ export const DEFAULT_NEW_CARDS_LIMIT = 20;
 
 export async function getStudySettings(): Promise<StudySettings> {
   if (isTauriRuntime()) {
-    return invoke<StudySettings>("get_study_settings");
+    return invokeCommand<StudySettings>("get_study_settings");
   }
 
   return {
@@ -46,7 +46,7 @@ export async function getStudySettings(): Promise<StudySettings> {
 
 export async function saveStudySettings(newCardsLimit: number | null): Promise<StudySettings> {
   if (isTauriRuntime()) {
-    return invoke<StudySettings>("save_study_settings", { newCardsLimit });
+    return invokeCommand<StudySettings>("save_study_settings", { newCardsLimit });
   }
 
   writeWebNewCardsLimit(newCardsLimit);

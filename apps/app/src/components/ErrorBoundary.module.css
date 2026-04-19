@@ -1,0 +1,50 @@
+.panel {
+  max-width: 560px;
+  margin: 120px auto 0;
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.eyebrow {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+.message {
+  margin: 0 0 20px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+}
+
+.button {
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.buttonPrimary {
+  border-color: transparent;
+  background: var(--text-primary);
+  color: var(--bg);
+}

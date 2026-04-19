@@ -2,7 +2,7 @@
 
 ## Status
 
- In progress
+Completed
 
 Chunk tracker:
 - [x] Chunk 0. Monorepo scaffold + site landing page
@@ -10,11 +10,11 @@ Chunk tracker:
 - [x] Chunk 2. Spaces CRUD
 - [x] Chunk 3. Manual card creation + storage
 - [x] Chunk 4. Anki import (.apkg)
-- [ ] Chunk 5. AI card generation + approval flow
+- [x] Chunk 5. AI card generation + approval flow
 - [x] Chunk 6. Study session + FSRS engine (per-space + global)
 - [x] Chunk 7. Stats (per-space + global)
 - [x] Chunk 8. Streaks + daily check-in
-- [ ] Chunk 9. AI provider settings
+- [x] Chunk 9. AI provider settings
 
 ---
 
@@ -34,7 +34,7 @@ Ship a local-first flashcard app (Mac + Web, mobile stretch) that:
 
 - The repo currently contains the monorepo root, Turborepo config, the shipped marketing site in `apps/site`, and the in-progress desktop app in `apps/app`.
 - `apps/site` is a Vite + React landing page.
-- `packages/` exists but is empty. There is no `packages/core` package yet.
+- The workspace currently lives under `apps/*`; there is no shared package boundary yet.
 - `apps/app` now includes the Tauri v2 + React scaffold, the initial SQLite schema migration runner, and spaces CRUD backed by the local database.
 - Several later sections in this document still describe the target Phase 1 architecture that has not been implemented yet.
 - Important mismatch from the previous draft: shared FSRS helpers, DB helpers, and prompt builders are not implemented yet and must be created as part of the app work rather than assumed as existing infrastructure.

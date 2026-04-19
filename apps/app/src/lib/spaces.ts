@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
 
 export const SPACE_NAME_MAX_LENGTH = 80;
@@ -38,7 +38,7 @@ const WEB_CARD_STORAGE_KEY = "pupil.web.cards";
 
 export async function listSpaces(): Promise<SpaceSummary[]> {
   if (isTauriRuntime()) {
-    return invoke<SpaceSummary[]>("list_spaces");
+    return invokeCommand<SpaceSummary[]>("list_spaces");
   }
 
   return readWebSpaces();
@@ -46,7 +46,7 @@ export async function listSpaces(): Promise<SpaceSummary[]> {
 
 export async function createSpace(input: { name: string }): Promise<SpaceSummary> {
   if (isTauriRuntime()) {
-    return invoke<SpaceSummary>("create_space", { name: input.name });
+    return invokeCommand<SpaceSummary>("create_space", { name: input.name });
   }
 
   const name = normalizeSpaceName(input.name);
@@ -68,7 +68,7 @@ export async function createSpace(input: { name: string }): Promise<SpaceSummary
 
 export async function renameSpace(input: { id: string; name: string }): Promise<SpaceSummary> {
   if (isTauriRuntime()) {
-    return invoke<SpaceSummary>("rename_space", {
+    return invokeCommand<SpaceSummary>("rename_space", {
       id: input.id,
       name: input.name,
     });
@@ -98,7 +98,7 @@ export async function renameSpace(input: { id: string; name: string }): Promise<
 
 export async function deleteSpace(input: { id: string }): Promise<void> {
   if (isTauriRuntime()) {
-    await invoke("delete_space", { id: input.id });
+    await invokeCommand("delete_space", { id: input.id });
     return;
   }
 

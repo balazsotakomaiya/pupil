@@ -44,6 +44,11 @@ Then install JS dependencies and build:
 
 ```bash
 bun install
+bun run lint
+bun run typecheck
+bun run test
+bun run lint:rust
+bun run format:check
 bun run --cwd apps/app tauri build
 ```
 
@@ -94,6 +99,18 @@ bun run --cwd apps/app dev
 ```
 
 The first Rust compilation takes a few minutes. Subsequent runs are incremental.
+
+## Validation
+
+Before opening a PR or cutting a release, run:
+
+```bash
+bun run lint
+bun run typecheck
+bun run test
+bun run lint:rust
+bun run format:check
+```
 
 ---
 

@@ -4,8 +4,7 @@
   "license": "MIT",
   "private": true,
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "scripts": {
     "dev": "bun run --workspaces --if-present dev",

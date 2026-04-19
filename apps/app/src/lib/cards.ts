@@ -1,5 +1,5 @@
-import { invoke } from "@tauri-apps/api/core";
 import { createNewCardFsrsFields, type FsrsReviewGrade, scheduleCard } from "./fsrs";
+import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
 
 export type CardSource = "manual" | "ai" | "anki";
@@ -58,7 +58,7 @@ type StudyDayRecord = {
 
 export async function listCards(input: { spaceId?: string } = {}): Promise<CardRecord[]> {
   if (isTauriRuntime()) {
-    return invoke<CardRecord[]>("list_cards", { spaceId: input.spaceId ?? null });
+    return invokeCommand<CardRecord[]>("list_cards", { spaceId: input.spaceId ?? null });
   }
 
   const cards = readWebCards();
@@ -74,7 +74,7 @@ export async function createCard(input: {
   source?: CardSource;
 }): Promise<CardRecord> {
   if (isTauriRuntime()) {
-    return invoke<CardRecord>("create_card", { input });
+    return invokeCommand<CardRecord>("create_card", { input });
   }
 
   const spaces = readStoredWebSpaces();
@@ -115,7 +115,7 @@ export async function updateCard(input: {
   tags: string[];
 }): Promise<CardRecord> {
   if (isTauriRuntime()) {
-    return invoke<CardRecord>("update_card", { input });
+    return invokeCommand<CardRecord>("update_card", { input });
   }
 
   const normalized = normalizeCardInput(input);
@@ -157,7 +157,7 @@ export async function updateCard(input: {
 
 export async function deleteCard(input: { id: string }): Promise<void> {
   if (isTauriRuntime()) {
-    await invoke("delete_card", { id: input.id });
+    await invokeCommand("delete_card", { id: input.id });
     return;
   }
 
@@ -174,7 +174,7 @@ export async function deleteCard(input: { id: string }): Promise<void> {
 
 export async function suspendCard(input: { id: string; suspended: boolean }): Promise<CardRecord> {
   if (isTauriRuntime()) {
-    return invoke<CardRecord>("suspend_card", { input });
+    return invokeCommand<CardRecord>("suspend_card", { input });
   }
 
   const cards = readWebCards();
@@ -205,7 +205,7 @@ export async function reviewCard(input: {
   const scheduled = scheduleCard(input.card, input.grade, reviewedAt);
 
   if (isTauriRuntime()) {
-    return invoke<CardRecord>("review_card", {
+    return invokeCommand<CardRecord>("review_card", {
       input: {
         difficulty: scheduled.updatedCard.difficulty,
         due: scheduled.updatedCard.due,

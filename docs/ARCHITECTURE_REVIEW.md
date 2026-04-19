@@ -33,7 +33,11 @@ Pupil works well as a concept and the fundamentals are sound — local-first SQL
 - Landed: first test layer via `apps/app/vitest.config.ts`, Vitest coverage for `fsrs`, `study-settings`, and extracted derived-state helpers, plus Rust unit tests in `normalize.rs` and `util.rs`.
 - Landed: `App.tsx` decomposition now has three concrete slices in place. Empty-state seed data lives in `src/lib/seed-data.ts`, derived-state builders live in `src/lib/derived.ts`, and app-wide bootstrap/data/mutation state now lives in `src/lib/app-store.ts`.
 - Landed: `App.tsx` is down from 1,216 lines to 611 lines after moving bootstrap loading, entity snapshots, card/space mutations, reset flow, and study-settings persistence into the Zustand store.
-- Still pending: TanStack Router, direct screen-level store consumption to reduce prop drilling further, error boundaries/toasts, CSS modularization, structured Rust errors, and IPC type-generation.
+- Landed: TanStack Router now owns the app's in-memory navigation flow, and TanStack Query is in place for app-data fetching and mutation invalidation.
+- Landed: frontend error boundaries, typed IPC error mapping, and toast-style notifications now provide crash recovery and consistent user feedback.
+- Landed: the Rust backend now returns structured `AppError` payloads and writes tracing/panic output to rotating log files.
+- Landed: CSS Modules are now available and in use for the new error/notification surfaces, with tokens/reset/utilities split out into `src/styles/`.
+- Landed: prototype HTML references were archived under `docs/design-references/`, and `src/sqljs.d.ts` moved into `src/types/sqljs.d.ts`.
 
 ---
 

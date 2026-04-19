@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
 
 export type BootstrapState = {
@@ -22,7 +22,7 @@ export async function loadBootstrapState(): Promise<BootstrapState> {
     };
   }
 
-  const state = await invoke<Omit<BootstrapState, "mode">>("get_bootstrap_state");
+  const state = await invokeCommand<Omit<BootstrapState, "mode">>("get_bootstrap_state");
 
   return {
     ...state,

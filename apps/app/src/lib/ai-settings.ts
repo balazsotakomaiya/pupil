@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
 
 export type AiDifficulty = "Beginner" | "Intermediate" | "Advanced";
@@ -52,7 +52,7 @@ export async function loadAiSettings(): Promise<AiSettings> {
   if (isTauriRuntime()) {
     if (!pendingTauriAiSettings) {
       pendingTauriAiSettings = withTimeout(
-        invoke<PersistedAiSettings>("get_ai_settings"),
+        invokeCommand<PersistedAiSettings>("get_ai_settings"),
         SETTINGS_COMMAND_TIMEOUT_MS,
         "Loading local AI settings",
       )
@@ -71,7 +71,7 @@ export async function loadAiSettings(): Promise<AiSettings> {
 export async function saveAiSettings(input: SaveAiSettingsInput): Promise<AiSettings> {
   if (isTauriRuntime()) {
     const state = await withTimeout(
-      invoke<PersistedAiSettings>("save_ai_settings", { input }),
+      invokeCommand<PersistedAiSettings>("save_ai_settings", { input }),
       SETTINGS_COMMAND_TIMEOUT_MS,
       "Saving local AI settings",
     );
@@ -101,7 +101,7 @@ export async function testAiProviderConnection(
 ): Promise<AiConnectionTestResult> {
   if (isTauriRuntime()) {
     return withTimeout(
-      invoke<AiConnectionTestResult>("test_ai_provider_connection", { input }),
+      invokeCommand<AiConnectionTestResult>("test_ai_provider_connection", { input }),
       CONNECTION_TEST_TIMEOUT_MS,
       "Testing the AI provider connection",
     );
@@ -124,7 +124,7 @@ export async function generateAiCards(input: {
   topic: string;
 }): Promise<GeneratedAiCard[]> {
   if (isTauriRuntime()) {
-    return invoke<GeneratedAiCard[]>("generate_cards", { input });
+    return invokeCommand<GeneratedAiCard[]>("generate_cards", { input });
   }
 
   return buildMockGeneratedCards(input);

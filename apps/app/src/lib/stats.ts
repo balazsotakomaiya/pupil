@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
 
 export type DashboardStats = {
@@ -37,7 +37,7 @@ type StoredStudyDay = {
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   if (isTauriRuntime()) {
-    return invoke<DashboardStats>("get_dashboard_stats");
+    return invokeCommand<DashboardStats>("get_dashboard_stats");
   }
 
   const cards = readStoredCards();
@@ -60,7 +60,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
 export async function listSpaceStats(): Promise<SpaceStats[]> {
   if (isTauriRuntime()) {
-    return invoke<SpaceStats[]>("list_space_stats");
+    return invokeCommand<SpaceStats[]>("list_space_stats");
   }
 
   const reviewLogs = readStoredReviewLogs();

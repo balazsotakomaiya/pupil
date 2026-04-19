@@ -16,7 +16,9 @@ A local-first spaced-repetition desktop app. The user creates "spaces" (topic bu
 |---|---|
 | Desktop shell | Tauri v2 (Rust) |
 | Frontend | React + Vite + TypeScript |
-| Styling | CSS modules |
+| Routing | TanStack Router (memory history) |
+| Data fetching | TanStack Query |
+| Styling | Global tokens/reset + incremental CSS Modules |
 | Package manager | Bun |
 | Database | SQLite via `rusqlite` (bundled) |
 | Secrets storage | Tauri Stronghold (`tauri-plugin-stronghold`) |
@@ -31,8 +33,9 @@ A local-first spaced-repetition desktop app. The user creates "spaces" (topic bu
 apps/app/
 ├── src/                    # React frontend
 │   ├── components/         # UI components
-│   ├── layouts/            # Page-level layouts
-│   └── lib/                # Frontend utilities and Tauri command wrappers
+│   ├── styles/             # Global design tokens, reset, shared utilities
+│   ├── types/              # Ambient type declarations
+│   └── lib/                # Frontend utilities, query helpers, and Tauri command wrappers
 ├── src-tauri/              # Rust backend
 │   ├── src/
 │   │   ├── main.rs         # Entry point — just calls lib::run()
@@ -52,8 +55,9 @@ apps/app/
 │   ├── migrations/         # SQL schema files (applied in order at startup)
 │   ├── capabilities/       # Tauri capability definitions (IPC permissions)
 │   └── tauri.conf.json     # App metadata, window config, plugin config
-└── references/             # Design reference files (not shipped)
 ```
+
+Archived HTML mockups live in `docs/design-references/`, not inside the app source tree.
 
 ---
 
@@ -79,9 +83,9 @@ The guiding rule is pragmatic separation: keep thin command handlers, keep SQL c
 1. Define the input struct (if needed) with `#[derive(Deserialize)]` and `#[serde(rename_all = "camelCase")]`.
 2. Define the output struct with `#[derive(Serialize)]` and `#[serde(rename_all = "camelCase")]`.
 3. Write the storage function (`fn do_thing_row(...)`) that does the SQL work.
-4. Write the command function annotated with `#[tauri::command]`. It should: open a connection, normalize input, call the storage function, map errors to `String`.
+4. Write the command function annotated with `#[tauri::command]`. It should: open a connection, normalize input, call the storage function, and return a structured `AppError` on failure.
 5. Register the command in the `tauri::generate_handler![...]` list inside `run()`.
-6. Add a corresponding TypeScript wrapper in `src/lib/` using `invoke`.
+6. Add a corresponding TypeScript wrapper in `src/lib/` using `invokeCommand()` from `src/lib/ipc.ts`.
 
 ---
 
@@ -145,4 +149,4 @@ The Rust backend compiles with `cargo` under the hood. First build takes a while
 - **Use transactions** for any write that touches more than one table (e.g., inserting a card and bumping the space's `updated_at`).
 - **Don't add scheduler logic to Rust.** Scheduling is the frontend's job; the backend is a dumb persistence layer for FSRS state.
 - **The `study_days` table has a NULL/non-NULL duality** — `space_id IS NULL` means the global streak row, `space_id = x` means a per-space row. The streak query handles this with `(?1 IS NULL AND space_id IS NULL) OR space_id = ?1`.
-- **Error messages go to end users.** Keep them in plain English. The `map_storage_error` and `map_card_storage_error` functions are the translation layer between SQLite error codes and user-facing strings.
+- **Error messages go to end users.** Keep them in plain English. Rust now returns structured `AppError` payloads, and the TypeScript IPC boundary maps them into typed frontend errors.
