@@ -31,29 +31,29 @@ Pupil works well as a concept and the fundamentals are sound — local-first SQL
 
 - Landed: repo guardrails via `biome.json`, `lefthook.yml`, workspace lint/test scripts, and CI lint/test jobs in `.github/workflows/build.yml`.
 - Landed: first test layer via `apps/app/vitest.config.ts`, Vitest coverage for `fsrs`, `study-settings`, and extracted derived-state helpers, plus Rust unit tests in `normalize.rs` and `util.rs`.
-- Landed: the first `App.tsx` decomposition step. Empty-state seed data now lives in `src/lib/seed-data.ts`, derived-state builders now live in `src/lib/derived.ts`, and `App.tsx` is down from 1,216 lines to 808 lines.
-- Still pending: TanStack Router, Zustand, error boundaries/toasts, CSS modularization, structured Rust errors, and IPC type-generation.
+- Landed: `App.tsx` decomposition now has three concrete slices in place. Empty-state seed data lives in `src/lib/seed-data.ts`, derived-state builders live in `src/lib/derived.ts`, and app-wide bootstrap/data/mutation state now lives in `src/lib/app-store.ts`.
+- Landed: `App.tsx` is down from 1,216 lines to 611 lines after moving bootstrap loading, entity snapshots, card/space mutations, reset flow, and study-settings persistence into the Zustand store.
+- Still pending: TanStack Router, direct screen-level store consumption to reduce prop drilling further, error boundaries/toasts, CSS modularization, structured Rust errors, and IPC type-generation.
 
 ---
 
 ## 1. The god component: App.tsx
 
-**File:** `apps/app/src/App.tsx` — **808 lines** as of April 19, 2026, down from **1,216 lines**.
+**File:** `apps/app/src/App.tsx` — **611 lines** as of April 19, 2026, down from **1,216 lines**.
 
 This is the single most important refactor target. `App.tsx` currently serves as:
 
 - **Router.** A manual `activeTab` string state plus `selectedSpaceId`, `studySession`, `aiGenerateSession`, and `importSession` state objects determine which screen renders. There is no URL-based routing — screens are switched by setting state variables in callbacks.
-- **Global store.** 20+ `useState` hooks hold all application data: spaces, cards, dashboard stats, recent activity, space stats, study settings, onboarding state, dialog state, and more.
-- **Mutation layer.** Every data-mutating operation (`handleCreateCard`, `handleUpdateCard`, `handleDeleteCard`, `handleSuspendCard`, `handleReviewCard`, `handleCreateSpace`, `handleDeleteSpace`, `handleReset`, etc.) is defined inline as async functions that call IPC, update local state, and trigger `refreshAppData()`.
+- **UI/navigation state host.** `activeTab`, `selectedSpaceId`, `studySession`, `aiGenerateSession`, `importSession`, onboarding flags, dialog state, and command palette visibility still live here.
+- **Screen orchestrator.** `App.tsx` still selects the active screen, fans store data/actions out as props, and owns follow-up UI transitions after mutations (closing modals, selecting a space, starting a study session, etc.).
 - **Derived state computer.** ~80 lines of `const` computations derive display-ready data from raw state on every render: `studySummary`, `stats`, `spaceCards`, `activity`, `streakCells`, `newCardsBudget`, etc.
-- **Seed data host.** ~150 lines of fallback constant objects (`FALLBACK_STUDY_SUMMARY`, `FALLBACK_STATS`, `FALLBACK_SPACES`, `FALLBACK_ACTIVITY`, `FALLBACK_STREAK_OFFSETS`) are defined at module scope for the empty-state UI.
 - **Event listener setup.** Three separate `useEffect` hooks register Tauri event listeners (`developer://reset-onboarding`, `tray://study-now`) and a global keyboard shortcut (Cmd+K).
 
 Every new feature adds more state, more handlers, and more derived computations to this file. It is already at the limit of what a single developer can reason about.
 
 ### What to do
 
-**Status:** In progress. The fallback/seed constants and the derived-state builders have already been extracted to `src/lib/seed-data.ts` and `src/lib/derived.ts`. Routing, mutation orchestration, and the bulk of global state are still in `App.tsx`.
+**Status:** In progress. `src/lib/seed-data.ts`, `src/lib/derived.ts`, and `src/lib/app-store.ts` now absorb the empty-state data, derived state helpers, bootstrap loading, app-wide entity snapshots, and most mutations. Routing and the remaining UI/navigation orchestration are still in `App.tsx`.
 
 **Introduce TanStack Router.** Replace the five interdependent navigation variables (`activeTab`, `selectedSpaceId`, `studySession`, `aiGenerateSession`, `importSession`) with TanStack Router. It offers first-class TypeScript inference for route params — route definitions are typed end-to-end so `useParams()` returns the exact shape declared in the route config, with no casting. For a desktop app with no real URLs, `createMemoryHistory()` keeps routing entirely in memory with no address bar concerns. Screens become routes with typed params:
 
@@ -67,11 +67,13 @@ const studyRoute = createRoute({
 
 "Where am I" becomes a single route location rather than five correlated state variables, and navigation becomes `router.navigate({ to: "/study/$scope/$spaceId", params: { scope: "space", spaceId: id } })` instead of calling multiple setters.
 
-**Move seed/fallback data** into `src/lib/seed-data.ts`. These are rendering constants, not application logic.
+**Done: move seed/fallback data** into `src/lib/seed-data.ts`. These are rendering constants, not application logic.
 
-**Move derived state builders** (`buildStudySummary`, `buildStats`, `buildSpaceCards`, `buildActivity`, `buildStreakCells`, `sortCardRecords`, `shouldShowDailyCheckInPrompt`) into `src/lib/derived.ts` or colocated with the features they serve (e.g., `buildStudySummary` lives with the dashboard).
+**Done: move derived state builders** (`buildStudySummary`, `buildStats`, `buildSpaceCards`, `buildActivity`, `buildStreakCells`, `sortCardRecords`, `shouldShowDailyCheckInPrompt`) into `src/lib/derived.ts`.
 
-**Move mutation handlers** into the Zustand store (see next section) or into a custom hook (`useAppMutations`). They are currently async functions that call IPC, then call multiple `setState` functions, then call `refreshAppData()`. This is pure data plumbing that does not belong in a component.
+**Done: move bootstrap and mutation handlers** into the Zustand store in `src/lib/app-store.ts`. Card/space mutations, full refreshes, bootstrap loading, reset, and study-settings persistence no longer belong in `App.tsx`.
+
+**Next: remove screen orchestration from `App.tsx`.** The remaining `handleDeleteSpace`, `handleSaveApprovedAiCards`, and study-session/navigation flows are mostly UI transitions. They should shrink further once routes own location state and screens can read the store directly.
 
 **Target:** `App.tsx` should be ~100–150 lines: bootstrap, router, layout shell.
 
@@ -81,7 +83,9 @@ const studyRoute = createRoute({
 
 ### Current pattern
 
-All application state lives in `useState` hooks at the top of `App.tsx`. Props are drilled through every screen component. There is no React Context, no external state library. Every mutation triggers `refreshAppData()`, which re-fetches **all** entities from the backend in parallel:
+**Status:** The first Zustand slice has landed. `src/lib/app-store.ts` now owns app-wide data state (`spaces`, `cards`, `dashboardStats`, `recentActivity`, `spaceStats`, `studySettings`), bootstrap loading, and the main mutation actions. `App.tsx` still pulls those slices with `useAppStore(...)` and drills them into screens.
+
+The old pattern was a wall of `useState` hooks plus a single `refreshAppData()` function in `App.tsx` that re-fetched **all** entities after most mutations. That looked like:
 
 ```typescript
 async function refreshAppData() {
@@ -104,18 +108,19 @@ async function refreshAppData() {
 }
 ```
 
-This works with tens or even hundreds of cards, but it means editing a single card's front text triggers 6 IPC calls and re-renders the entire component tree.
+The new store is an improvement, but the architecture is still in transition: screens do not subscribe to the store directly yet, and some actions still refresh broader snapshots than they eventually should.
 
 ### Problems
 
 - **Prop drilling.** `StudyScreen`, `CardsScreen`, `SettingsScreen`, etc. receive long prop lists (data + mutation callbacks). Adding a new piece of shared state means threading it through every intermediate component.
-- **Full refresh on every mutation.** No granularity — a card edit refetches spaces, stats, activity, and study settings.
-- **No optimistic updates.** The code already does local state updates before awaiting (e.g., `setCards((current) => [...])` then `await refreshAppData()`), but this is ad-hoc and can cause flicker when the refresh overwrites the optimistic value.
-- **Stale closures.** With 20+ state variables and async handlers, it is easy to capture stale values in closures.
+- **Store usage is centralized too high.** `App.tsx` selects nearly the entire store and redistributes it downward, so the store reduced data plumbing but has not yet eliminated prop drilling.
+- **Refresh granularity is better, but still uneven.** Card updates now refresh targeted slices, while heavier flows like reset/import still reload larger snapshots. That is fine for now, but the refresh map should keep getting more precise.
+- **No formal optimistic-update strategy.** The store now owns the data transitions, but optimistic updates and rollback behavior are still ad-hoc rather than standardized.
+- **Navigation state is still separate from app data state.** Until routes own location, there is still a split brain between local screen-selection state and the centralized store.
 
 ### What to do
 
-**Introduce Zustand.** It fits the codebase perfectly:
+**Status:** Landed. Zustand fits the codebase well and the initial store confirms the direction:
 
 - Tiny (~1KB), no boilerplate, works natively with async/await for Tauri IPC.
 - Components subscribe to slices of state, so a card edit only re-renders components that read cards.
@@ -140,9 +145,13 @@ const useAppStore = create<AppStore>((set, get) => ({
 }));
 ```
 
-**Granular refresh.** After a card mutation, refetch cards and stats. After an import, refetch everything. After a settings change, refetch nothing (the mutation already returns the new value). Map each action to the minimal set of refreshes it requires.
+**Next: move store reads closer to the screens that need them.** `App.tsx` should stop selecting the full app slice. Let feature screens or small feature hooks subscribe to the store directly so shared state stops flowing through the shell component.
+
+**Granular refresh.** After a card mutation, refetch only the affected slices. After an import, refetch everything. After a settings change, refetch nothing (the mutation already returns the new value). The new store is the right place to encode that action-to-refresh map.
 
 **Formalize optimistic updates.** Where the IPC call takes noticeable time (card review, AI generation), update local state immediately and reconcile when the response arrives. Roll back on error.
+
+**Split the store once it grows.** `app-store.ts` is the right transitional step, but if it keeps accreting unrelated concerns, split it into slices or feature stores (`cards`, `spaces`, `settings`, notifications) before it becomes the next god object.
 
 ---
 
@@ -822,22 +831,18 @@ English-only currently. Not urgent, but worth structuring for:
 
 ## 14. Recommended priority order
 
-Sequenced by impact and dependency ordering — later items build on earlier ones.
+Most of the initial foundation work is now landed. From the current snapshot, this is the recommended next sequence:
 
 | # | Item | Effort | Unblocks |
 |---|------|--------|----------|
-| 1 | **Linting + formatting** (Biome, Clippy, Lefthook) | Small | Consistent code quality from this point forward |
-| 2 | **Break up App.tsx** (router, extract constants, extract derived state) | Medium | Readable top-level architecture |
-| 3 | **Zustand store** (replace useState prop drilling) | Medium | Granular refresh, eliminates prop drilling, enables optimistic updates |
-| 4 | **Error boundaries + toast system** | Small | Crash recovery, consistent user feedback |
-| 5 | **Vitest + first TS tests** (fsrs, imports, normalize, derived state) | Small | Regression protection for core scheduling and data logic |
-| 6 | **Rust tests** (normalize, util, integration with in-memory DB) | Small | Regression protection for data layer |
-| 7 | **CSS Modules** (incremental extraction from style.css) | Medium | Maintainable component styles |
-| 8 | **Decompose large files** (SettingsScreen, ai.rs) | Small | Navigable feature code |
-| 9 | **Rust error enum + thiserror + tracing** | Medium | Structured errors, observability |
-| 10 | **CI lint/test/typecheck jobs** | Small | Automated quality gate on every PR |
-| 11 | **Directory restructure** (lib/ grouping, barrel exports, archive references) | Small | Navigable project structure |
-| 12 | **Type safety** (Zod validation tests, then specta/typeshare) | Medium | Eliminates IPC type drift |
-| 13 | **Documentation cleanup** (archive Phase 1, update APP_GAPS, update AGENTS) | Small | Accurate project documentation |
-| 14 | **Accessibility** (ARIA, focus management, keyboard nav) | Medium | Inclusive UX |
-| 15 | **Web fallback abstraction** (DataProvider interface) | Medium | Clean platform separation |
+| 1 | **TanStack Router shell** (memory history, typed route params, screen routes) | Medium | Removes state-based navigation tangle, shrinks `App.tsx` further |
+| 2 | **Finish the Zustand migration** (screen-level subscriptions or feature hooks instead of drilling store slices through `App.tsx`) | Medium | Eliminates the remaining shell-level prop plumbing |
+| 3 | **Error boundaries + toast system** | Small | Crash recovery, consistent user feedback, shared async UX |
+| 4 | **CSS Modules / style extraction** (incremental move out of `style.css`) | Medium | Maintainable component styling as the screen count grows |
+| 5 | **Decompose large files** (`SettingsScreen`, backend `ai.rs`, other 300+ line files) | Small | Keeps feature work navigable as contributors increase |
+| 6 | **Rust error enum + `thiserror` + tracing** | Medium | Structured backend errors and better observability |
+| 7 | **IPC type safety** (boundary validation first, then `specta`/`typeshare` if still useful) | Medium | Eliminates frontend/backend type drift |
+| 8 | **Directory restructure** (`lib/` grouping, feature barrels, archive references) | Small | Makes the post-router/store codebase easier to navigate |
+| 9 | **Documentation cleanup** (archive older planning docs, sync `APP_GAPS`, update contributor docs) | Small | Keeps the project docs aligned with the codebase |
+| 10 | **Accessibility pass** (dialogs, focus management, keyboard nav) | Medium | Inclusive UX and fewer interaction regressions |
+| 11 | **Web fallback abstraction** (`DataProvider` interface) | Medium | Clean platform separation and easier future sync work |

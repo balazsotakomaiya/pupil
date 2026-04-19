@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useState } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { AiGenerateScreen, AiGenerateTitlebar } from "./components/ai-generate";
 import { type AppTab, AppTitlebar, CommandPalette } from "./components/app-shell";
 import { CardsScreen } from "./components/cards";
@@ -8,23 +9,12 @@ import { OnboardingScreen } from "./components/onboarding";
 import { SettingsScreen } from "./components/settings";
 import { SpaceDetailsScreen } from "./components/space-details";
 import { type StudyScope, StudyScreen } from "./components/study";
-import { listRecentActivity, type RecentActivityRecord } from "./lib/activity";
-import { loadBootstrapState } from "./lib/bootstrap";
-import {
-  type CardRecord,
-  createCard,
-  deleteCard,
-  listCards,
-  reviewCard,
-  suspendCard,
-  updateCard,
-} from "./lib/cards";
+import { useAppStore } from "./lib/app-store";
 import {
   dismissDailyCheckIn,
   getDismissedDailyCheckInDay,
   getTodayDayKey,
 } from "./lib/daily-checkin";
-import { resetAllData } from "./lib/data-actions";
 import {
   buildActivity,
   buildSpaceCards,
@@ -32,8 +22,6 @@ import {
   buildStreakCells,
   buildStudySummary,
   shouldShowDailyCheckInPrompt,
-  sortCardRecords,
-  sortSpaces,
 } from "./lib/derived";
 import { dismissOnboarding, hasDismissedOnboarding, resetOnboarding } from "./lib/onboarding";
 import { isTauriRuntime } from "./lib/runtime";
@@ -43,21 +31,7 @@ import {
   FALLBACK_STATS,
   FALLBACK_STUDY_SUMMARY,
 } from "./lib/seed-data";
-import { createSpace, deleteSpace, listSpaces, type SpaceSummary } from "./lib/spaces";
-import {
-  type DashboardStats as DashboardStatsRecord,
-  getDashboardStats,
-  listSpaceStats,
-  type SpaceStats as SpaceStatsRecord,
-} from "./lib/stats";
-import {
-  computeNewCardsBudget,
-  DEFAULT_NEW_CARDS_LIMIT,
-  getStudySettings,
-  type StudySettings,
-  saveStudySettings,
-} from "./lib/study-settings";
-import { refreshTrayStatus } from "./lib/tray";
+import { computeNewCardsBudget } from "./lib/study-settings";
 
 const APP_TABS: AppTab[] = [
   { id: "dashboard", label: "Dashboard" },
@@ -77,87 +51,77 @@ type AiGenerateSessionState =
 type ImportSessionState = { scope: "space"; spaceId: string };
 
 export default function App() {
+  const {
+    bootstrapError,
+    cards,
+    createCard,
+    createSpace,
+    dashboardStats,
+    deleteCard,
+    deleteSpace,
+    initialize,
+    isBootstrapping,
+    isMutatingCards,
+    isSavingStudySettings,
+    recentActivity,
+    refreshAll,
+    refreshStudySettings,
+    resetAllData,
+    reviewCard,
+    saveApprovedAiCards,
+    saveStudySettings,
+    spaces,
+    spaceStats,
+    studySettings,
+    suspendCard,
+    updateCard,
+  } = useAppStore(
+    useShallow((state) => ({
+      bootstrapError: state.bootstrapError,
+      cards: state.cards,
+      createCard: state.createCard,
+      createSpace: state.createSpace,
+      dashboardStats: state.dashboardStats,
+      deleteCard: state.deleteCard,
+      deleteSpace: state.deleteSpace,
+      initialize: state.initialize,
+      isBootstrapping: state.isBootstrapping,
+      isMutatingCards: state.isMutatingCards,
+      isSavingStudySettings: state.isSavingStudySettings,
+      recentActivity: state.recentActivity,
+      refreshAll: state.refreshAll,
+      refreshStudySettings: state.refreshStudySettings,
+      resetAllData: state.resetAllData,
+      reviewCard: state.reviewCard,
+      saveApprovedAiCards: state.saveApprovedAiCards,
+      saveStudySettings: state.saveStudySettings,
+      spaces: state.spaces,
+      spaceStats: state.spaceStats,
+      studySettings: state.studySettings,
+      suspendCard: state.suspendCard,
+      updateCard: state.updateCard,
+    })),
+  );
   const [activeTab, setActiveTab] = useState<AppTab["id"]>("dashboard");
-  const [bootstrapError, setBootstrapError] = useState<string | null>(null);
-  const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isOnboardingDismissed, setIsOnboardingDismissed] = useState(false);
   const [dismissedDailyCheckInDay, setDismissedDailyCheckInDay] = useState<string | null>(() =>
     getDismissedDailyCheckInDay(),
   );
-  const [spaces, setSpaces] = useState<SpaceSummary[]>([]);
-  const [cards, setCards] = useState<CardRecord[]>([]);
-  const [dashboardStats, setDashboardStats] = useState<DashboardStatsRecord | null>(null);
-  const [recentActivity, setRecentActivity] = useState<RecentActivityRecord[]>([]);
-  const [spaceStats, setSpaceStats] = useState<SpaceStatsRecord[]>([]);
   const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null);
   const [studySession, setStudySession] = useState<StudySessionState | null>(null);
   const [aiGenerateSession, setAiGenerateSession] = useState<AiGenerateSessionState | null>(null);
   const [showSettingsFromAi, setShowSettingsFromAi] = useState(false);
   const [importSession, setImportSession] = useState<ImportSessionState | null>(null);
-  const [isMutatingCards, setIsMutatingCards] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState("");
   const [newSpaceError, setNewSpaceError] = useState<string | null>(null);
   const [isCreatingSpace, setIsCreatingSpace] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
-  const [studySettings, setStudySettings] = useState<StudySettings>({
-    newCardsLimit: DEFAULT_NEW_CARDS_LIMIT,
-    newCardsToday: 0,
-  });
-  const [isSavingStudySettings, setIsSavingStudySettings] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function initialize() {
-      try {
-        const dismissed = hasDismissedOnboarding();
-        await loadBootstrapState();
-        const [
-          nextSpaces,
-          nextCards,
-          nextDashboardStats,
-          nextSpaceStats,
-          nextRecentActivity,
-          nextStudySettings,
-        ] = await Promise.all([
-          listSpaces(),
-          listCards(),
-          getDashboardStats(),
-          listSpaceStats(),
-          listRecentActivity(),
-          getStudySettings(),
-        ]);
-
-        if (!cancelled) {
-          setIsOnboardingDismissed(dismissed);
-          setSpaces(nextSpaces);
-          setCards(nextCards);
-          setDashboardStats(nextDashboardStats);
-          setRecentActivity(nextRecentActivity);
-          setSpaceStats(nextSpaceStats);
-          setStudySettings(nextStudySettings);
-          void refreshTrayStatus();
-        }
-      } catch (nextError: unknown) {
-        if (!cancelled) {
-          setBootstrapError(
-            nextError instanceof Error ? nextError.message : "Failed to load app state",
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          setIsBootstrapping(false);
-        }
-      }
-    }
-
+    setIsOnboardingDismissed(hasDismissedOnboarding());
     void initialize();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  }, [initialize]);
 
   useEffect(() => {
     if (!isTauriRuntime()) {
@@ -270,139 +234,13 @@ export default function App() {
     !importSession &&
     !isOnboardingDismissed;
 
-  async function refreshAppData() {
-    const [
-      nextSpaces,
-      nextCards,
-      nextDashboardStats,
-      nextSpaceStats,
-      nextRecentActivity,
-      nextStudySettings,
-    ] = await Promise.all([
-      listSpaces(),
-      listCards(),
-      getDashboardStats(),
-      listSpaceStats(),
-      listRecentActivity(),
-      getStudySettings(),
-    ]);
-    setSpaces(nextSpaces);
-    setCards(nextCards);
-    setDashboardStats(nextDashboardStats);
-    setRecentActivity(nextRecentActivity);
-    setSpaceStats(nextSpaceStats);
-    setStudySettings(nextStudySettings);
-    void refreshTrayStatus();
-  }
-
-  async function handleCreateCard(input: {
-    back: string;
-    front: string;
-    spaceId: string;
-    tags: string[];
-    source?: CardRecord["source"];
-  }) {
-    setIsMutatingCards(true);
-
-    try {
-      const createdCard = await createCard(input);
-      setCards((currentCards) => sortCardRecords([createdCard, ...currentCards]));
-      await refreshAppData();
-    } finally {
-      setIsMutatingCards(false);
-    }
-  }
-
-  async function handleUpdateCard(input: {
-    back: string;
-    front: string;
-    id: string;
-    spaceId: string;
-    tags: string[];
-  }) {
-    setIsMutatingCards(true);
-
-    try {
-      const updatedCard = await updateCard(input);
-      setCards((currentCards) =>
-        sortCardRecords(
-          currentCards.map((card) => (card.id === updatedCard.id ? updatedCard : card)),
-        ),
-      );
-      await refreshAppData();
-    } finally {
-      setIsMutatingCards(false);
-    }
-  }
-
-  async function handleDeleteCard(input: { id: string }) {
-    setIsMutatingCards(true);
-
-    try {
-      await deleteCard(input);
-      setCards((currentCards) => currentCards.filter((card) => card.id !== input.id));
-      await refreshAppData();
-    } finally {
-      setIsMutatingCards(false);
-    }
-  }
-
-  async function handleSuspendCard(input: { id: string; suspended: boolean }) {
-    setIsMutatingCards(true);
-
-    try {
-      const updatedCard = await suspendCard(input);
-      setCards((currentCards) =>
-        currentCards.map((card) => (card.id === updatedCard.id ? updatedCard : card)),
-      );
-      return updatedCard;
-    } finally {
-      setIsMutatingCards(false);
-    }
-  }
-
-  async function handleReviewCard(input: { card: CardRecord; grade: 1 | 2 | 3 | 4 }) {
-    setIsMutatingCards(true);
-
-    try {
-      const updatedCard = await reviewCard(input);
-      const [
-        nextSpaces,
-        nextDashboardStats,
-        nextSpaceStats,
-        nextRecentActivity,
-        nextStudySettings,
-      ] = await Promise.all([
-        listSpaces(),
-        getDashboardStats(),
-        listSpaceStats(),
-        listRecentActivity(),
-        getStudySettings(),
-      ]);
-      setCards((currentCards) =>
-        sortCardRecords(
-          currentCards.map((card) => (card.id === updatedCard.id ? updatedCard : card)),
-        ),
-      );
-      setSpaces(nextSpaces);
-      setDashboardStats(nextDashboardStats);
-      setRecentActivity(nextRecentActivity);
-      setSpaceStats(nextSpaceStats);
-      setStudySettings(nextStudySettings);
-      void refreshTrayStatus();
-      return updatedCard;
-    } finally {
-      setIsMutatingCards(false);
-    }
-  }
-
   async function handleCreateSpaceSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setNewSpaceError(null);
     setIsCreatingSpace(true);
 
     try {
-      await handleCreateSpace(newSpaceName);
+      await createSpace(newSpaceName);
       setNewSpaceName("");
       setIsCreateDialogOpen(false);
     } catch (error: unknown) {
@@ -437,21 +275,13 @@ export default function App() {
   }
 
   async function handleDeleteSpace(spaceId: string) {
-    await deleteSpace({ id: spaceId });
-    setSpaces((currentSpaces) => currentSpaces.filter((s) => s.id !== spaceId));
+    await deleteSpace(spaceId);
     setSelectedSpaceId(null);
-  }
-
-  async function handleCreateSpace(name: string) {
-    const createdSpace = await createSpace({ name });
-    setSpaces((currentSpaces) => sortSpaces([createdSpace, ...currentSpaces]));
-    return createdSpace;
   }
 
   async function startStudySession(nextSession: StudySessionState) {
     try {
-      const nextStudySettings = await getStudySettings();
-      setStudySettings(nextStudySettings);
+      await refreshStudySettings();
     } catch (error: unknown) {
       console.error("Failed to refresh study settings before session start.", error);
     }
@@ -520,26 +350,11 @@ export default function App() {
     cards: Array<{ back: string; front: string; tags: string[] }>;
     spaceId: string;
   }) {
-    setIsMutatingCards(true);
-
-    try {
-      await Promise.all(
-        input.cards.map((card) =>
-          createCard({
-            ...card,
-            source: "ai",
-            spaceId: input.spaceId,
-          }),
-        ),
-      );
-      await refreshAppData();
-      setAiGenerateSession(null);
-      setShowSettingsFromAi(false);
-      setSelectedSpaceId(input.spaceId);
-      window.scrollTo({ top: 0, behavior: "auto" });
-    } finally {
-      setIsMutatingCards(false);
-    }
+    await saveApprovedAiCards(input);
+    setAiGenerateSession(null);
+    setShowSettingsFromAi(false);
+    setSelectedSpaceId(input.spaceId);
+    window.scrollTo({ top: 0, behavior: "auto" });
   }
 
   async function handleResetAllData() {
@@ -549,18 +364,6 @@ export default function App() {
     setAiGenerateSession(null);
     setImportSession(null);
     setDismissedDailyCheckInDay(null);
-    await refreshAppData();
-  }
-
-  async function handleSaveStudySettings(newCardsLimit: number | null) {
-    setIsSavingStudySettings(true);
-
-    try {
-      const saved = await saveStudySettings(newCardsLimit);
-      setStudySettings(saved);
-    } finally {
-      setIsSavingStudySettings(false);
-    }
   }
 
   function handleDismissOnboarding() {
@@ -635,7 +438,7 @@ export default function App() {
                         : aiGenerateSession.initialSpaceId
                     }
                     onBack={handleCloseAiGenerate}
-                    onCreateSpace={handleCreateSpace}
+                    onCreateSpace={createSpace}
                     onOpenSettings={handleOpenSettingsFromAi}
                     onSaveApprovedCards={handleSaveApprovedAiCards}
                     spaces={spaces}
@@ -651,7 +454,7 @@ export default function App() {
                       cardsCount={cards.length}
                       isSavingStudySettings={isSavingStudySettings}
                       onResetAllData={handleResetAllData}
-                      onSaveStudySettings={handleSaveStudySettings}
+                      onSaveStudySettings={saveStudySettings}
                       spacesCount={spaces.length}
                       studySettings={studySettings}
                     />
@@ -662,7 +465,7 @@ export default function App() {
               <ImportScreen
                 backLabel={importSpace?.name ?? "Space"}
                 onBack={handleCloseImport}
-                onImportComplete={refreshAppData}
+                onImportComplete={refreshAll}
                 onOpenCards={() => {
                   setImportSession(null);
                   if (importSpace) {
@@ -675,7 +478,7 @@ export default function App() {
                   }
 
                   setImportSession(null);
-                  setStudySession({
+                  void startStudySession({
                     scope: "space",
                     spaceId: importSpace.id,
                     startedAt: Date.now(),
@@ -689,9 +492,9 @@ export default function App() {
                 cards={studyCards}
                 newCardsBudget={newCardsBudget}
                 onBack={handleCloseStudySession}
-                onDeleteCard={handleDeleteCard}
-                onReviewCard={handleReviewCard}
-                onSuspendCard={handleSuspendCard}
+                onDeleteCard={deleteCard}
+                onReviewCard={reviewCard}
+                onSuspendCard={suspendCard}
                 sessionKey={studySession.startedAt}
                 scope={studySession.scope as StudyScope}
                 scopeLabel={
@@ -704,15 +507,15 @@ export default function App() {
                 cards={cards}
                 isMutating={isMutatingCards}
                 onBack={handleCloseSpaceDetails}
-                onCreateCard={handleCreateCard}
-                onDeleteCard={handleDeleteCard}
+                onCreateCard={createCard}
+                onDeleteCard={deleteCard}
                 onDeleteSpace={() => handleDeleteSpace(selectedSpace.id)}
                 onOpenAiGenerate={() => handleOpenSpaceAiGenerate(selectedSpace.id)}
                 onOpenImport={() => handleOpenSpaceImport(selectedSpace.id)}
                 onStartStudy={() => handleStartSpaceStudy(selectedSpace.id)}
-                onSuspendCard={handleSuspendCard}
+                onSuspendCard={suspendCard}
                 stats={selectedSpaceStats}
-                onUpdateCard={handleUpdateCard}
+                onUpdateCard={updateCard}
                 space={selectedSpace}
               />
             ) : (
@@ -746,16 +549,16 @@ export default function App() {
                   <CardsScreen
                     cards={cards}
                     isMutating={isMutatingCards}
-                    onCreateCard={handleCreateCard}
-                    onDeleteCard={handleDeleteCard}
+                    onCreateCard={createCard}
+                    onDeleteCard={deleteCard}
                     onOpenCreateDialog={handleOpenCreateDialog}
-                    onSuspendCard={handleSuspendCard}
-                    onUpdateCard={handleUpdateCard}
+                    onSuspendCard={suspendCard}
+                    onUpdateCard={updateCard}
                     spaces={spaces}
                   />
                 ) : activeTab === "import" ? (
                   <ImportScreen
-                    onImportComplete={refreshAppData}
+                    onImportComplete={refreshAll}
                     onOpenCards={() => setActiveTab("cards")}
                     onStudyNow={handleStartGlobalStudy}
                     spaces={spaces}
@@ -765,7 +568,7 @@ export default function App() {
                     cardsCount={cards.length}
                     isSavingStudySettings={isSavingStudySettings}
                     onResetAllData={handleResetAllData}
-                    onSaveStudySettings={handleSaveStudySettings}
+                    onSaveStudySettings={saveStudySettings}
                     spacesCount={spaces.length}
                     studySettings={studySettings}
                   />
