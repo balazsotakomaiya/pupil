@@ -12,7 +12,8 @@ use crate::constants::{
     MIN_RECENT_ACTIVITY_FETCH_LIMIT, RECENT_ACTIVITY_FETCH_MULTIPLIER,
     RECENT_ACTIVITY_SESSION_GAP_MS,
 };
-use crate::types::{AppResult, RecentActivityEntry, SettingsDataSummary};
+use crate::error::AppResult;
+use crate::types::{RecentActivityEntry, SettingsDataSummary};
 
 pub(crate) fn load_recent_activity(
     connection: &Connection,

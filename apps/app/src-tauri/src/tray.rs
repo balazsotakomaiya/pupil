@@ -5,6 +5,7 @@ use tauri::{AppHandle, Emitter, Manager};
 
 use crate::analytics::load_dashboard_stats;
 use crate::app::open_app_connection;
+use crate::error::{AppError, AppResult};
 use crate::util::now_ms;
 
 const TRAY_ID: &str = "pupil-tray";
@@ -66,14 +67,14 @@ pub(crate) fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
 }
 
 /// Queries the DB and updates the tray icon, tooltip, and menu to reflect today's study status.
-pub(crate) fn refresh_tray(app: &AppHandle) -> Result<(), String> {
+pub(crate) fn refresh_tray(app: &AppHandle) -> AppResult<()> {
     let Some(tray) = app.tray_by_id(TRAY_ID) else {
         return Ok(());
     };
 
-    let connection = open_app_connection(app).map_err(|e| e.to_string())?;
+    let connection = open_app_connection(app)?;
     let now = now_ms();
-    let stats = load_dashboard_stats(&connection, now).map_err(|e| e.to_string())?;
+    let stats = load_dashboard_stats(&connection, now)?;
 
     // Cards seen at least once (state > 0) that are 3+ days overdue signal slacking.
     let slack_threshold = now - 3 * 24 * 60 * 60 * 1000;
@@ -83,7 +84,7 @@ pub(crate) fn refresh_tray(app: &AppHandle) -> Result<(), String> {
             [slack_threshold],
             |row| row.get(0),
         )
-        .map_err(|e| e.to_string())?;
+        .map_err(AppError::from)?;
 
     let icon = make_status_icon(stats.studied_today, stats.due_today, overdue_count);
     let tooltip = make_tooltip(
@@ -112,17 +113,17 @@ pub(crate) fn refresh_tray(app: &AppHandle) -> Result<(), String> {
     let status_item = MenuItemBuilder::with_id(MENU_STATUS_ID, &status_label)
         .enabled(false)
         .build(app)
-        .map_err(|e| e.to_string())?;
+        .map_err(AppError::from)?;
     let study_item = MenuItemBuilder::with_id(MENU_STUDY_ID, &study_label)
         .enabled(stats.total_cards > 0)
         .build(app)
-        .map_err(|e| e.to_string())?;
+        .map_err(AppError::from)?;
     let open_item = MenuItemBuilder::with_id(MENU_OPEN_ID, "Open Pupil")
         .build(app)
-        .map_err(|e| e.to_string())?;
+        .map_err(AppError::from)?;
     let quit_item = MenuItemBuilder::with_id(MENU_QUIT_ID, "Quit")
         .build(app)
-        .map_err(|e| e.to_string())?;
+        .map_err(AppError::from)?;
 
     let menu = MenuBuilder::new(app)
         .item(&status_item)
@@ -132,7 +133,7 @@ pub(crate) fn refresh_tray(app: &AppHandle) -> Result<(), String> {
         .separator()
         .item(&quit_item)
         .build()
-        .map_err(|e| e.to_string())?;
+        .map_err(AppError::from)?;
 
     let title = if stats.due_today > 0 {
         format!("{} cards to study", stats.due_today)
@@ -140,11 +141,10 @@ pub(crate) fn refresh_tray(app: &AppHandle) -> Result<(), String> {
         String::new()
     };
 
-    tray.set_icon(Some(icon)).map_err(|e| e.to_string())?;
-    tray.set_tooltip(Some(&tooltip))
-        .map_err(|e| e.to_string())?;
-    tray.set_title(Some(&title)).map_err(|e| e.to_string())?;
-    tray.set_menu(Some(menu)).map_err(|e| e.to_string())?;
+    tray.set_icon(Some(icon)).map_err(AppError::from)?;
+    tray.set_tooltip(Some(&tooltip)).map_err(AppError::from)?;
+    tray.set_title(Some(&title)).map_err(AppError::from)?;
+    tray.set_menu(Some(menu)).map_err(AppError::from)?;
 
     Ok(())
 }

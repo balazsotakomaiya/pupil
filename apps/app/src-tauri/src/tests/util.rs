@@ -1,4 +1,5 @@
-use crate::util::{decode_tags, encode_tags, map_card_storage_error, map_storage_error, now_ms};
+use crate::error::AppError;
+use crate::util::{decode_tags, encode_tags, now_ms};
 use rusqlite::ffi::{Error, ErrorCode};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -40,7 +41,7 @@ fn decode_tags_rejects_invalid_json() {
 }
 
 #[test]
-fn map_storage_error_handles_known_sqlite_cases() {
+fn app_error_maps_known_sqlite_cases() {
     let duplicate = rusqlite::Error::SqliteFailure(
         Error {
             code: ErrorCode::ConstraintViolation,
@@ -57,38 +58,42 @@ fn map_storage_error_handles_known_sqlite_cases() {
     );
 
     assert_eq!(
-        map_storage_error(duplicate),
-        "A space with that name already exists."
+        AppError::from_space_storage(duplicate).to_string(),
+        "space already exists"
     );
     assert_eq!(
-        map_storage_error(constraint),
-        "The requested change violates a database constraint."
+        AppError::from_space_storage(constraint).to_string(),
+        "Storage error: The requested change violates a database constraint."
     );
     assert_eq!(
-        map_storage_error(rusqlite::Error::QueryReturnedNoRows),
-        "Space not found."
+        AppError::from_space_storage(rusqlite::Error::QueryReturnedNoRows).to_string(),
+        "space not found"
     );
     assert_eq!(
-        map_card_storage_error(rusqlite::Error::QueryReturnedNoRows),
-        "Card or space not found."
+        AppError::from_card_storage(rusqlite::Error::QueryReturnedNoRows).to_string(),
+        "card not found"
     );
     assert_eq!(
-        map_card_storage_error(rusqlite::Error::SqliteFailure(
+        AppError::from_card_storage(rusqlite::Error::SqliteFailure(
             Error {
                 code: ErrorCode::ConstraintViolation,
                 extended_code: ErrorCode::ConstraintViolation as i32,
             },
             None
-        )),
-        "The requested change violates a database constraint."
+        ))
+        .to_string(),
+        "Storage error: The requested change violates a database constraint."
     );
 }
 
 #[test]
-fn map_storage_error_falls_back_to_the_original_message() {
+fn app_error_falls_back_to_the_original_message() {
     let error = rusqlite::Error::InvalidColumnName("missing".to_string());
 
-    assert_eq!(map_storage_error(error), "Invalid column name: missing");
+    assert_eq!(
+        AppError::from_space_storage(error).to_string(),
+        "Storage error: Invalid column name: missing"
+    );
 }
 
 #[test]

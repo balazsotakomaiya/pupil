@@ -13,20 +13,20 @@ use tauri::menu::MenuItemBuilder;
 use crate::constants::MIGRATIONS;
 #[cfg(debug_assertions)]
 use crate::constants::{DEVELOPER_OPEN_DEVTOOLS_MENU_ID, DEVELOPER_RESET_ONBOARDING_MENU_ID};
-use crate::types::AppResult;
+use crate::error::{AppError, AppResult};
 use crate::util::now_ms;
 
 pub(crate) struct BootstrapStatus {
     pub(crate) backup_created: bool,
 }
 
-pub(crate) fn app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
+pub(crate) fn app_data_dir(app: &AppHandle) -> AppResult<PathBuf> {
     app.path()
         .resolve(".", BaseDirectory::AppData)
-        .map_err(|error| error.to_string())
+        .map_err(Into::into)
 }
 
-pub(crate) fn database_path(app: &AppHandle) -> Result<PathBuf, String> {
+pub(crate) fn database_path(app: &AppHandle) -> AppResult<PathBuf> {
     let app_data_dir = app_data_dir(app)?;
 
     Ok(app_data_dir.join("pupil.db"))
@@ -93,7 +93,7 @@ pub(crate) fn build_app_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu
     );
 
     #[cfg(not(target_os = "macos"))]
-    let app_menu: Option<tauri::menu::Submenu<tauri::Wry>> = None;
+    let _app_menu: Option<tauri::menu::Submenu<tauri::Wry>> = None;
 
     let edit_menu = SubmenuBuilder::new(app, "Edit")
         .cut()
@@ -171,14 +171,21 @@ pub(crate) fn run_migrations(app: &AppHandle, path: &Path) -> AppResult<bool> {
     let transaction = connection.transaction()?;
 
     for migration in pending {
-        transaction.execute_batch(migration.sql)?;
-        transaction.execute(
-            "INSERT INTO schema_migrations (id, applied_at) VALUES (?1, ?2)",
-            (migration.id, now_ms()),
-        )?;
+        tracing::info!(migration_id = migration.id, "applying migration");
+        transaction
+            .execute_batch(migration.sql)
+            .map_err(|error| AppError::migration_failed(format!("{}: {error}", migration.id)))?;
+        transaction
+            .execute(
+                "INSERT INTO schema_migrations (id, applied_at) VALUES (?1, ?2)",
+                (migration.id, now_ms()),
+            )
+            .map_err(|error| AppError::migration_failed(format!("{}: {error}", migration.id)))?;
     }
 
-    transaction.commit()?;
+    transaction
+        .commit()
+        .map_err(|error| AppError::migration_failed(error.to_string()))?;
 
     Ok(backup_created)
 }
