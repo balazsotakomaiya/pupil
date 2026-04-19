@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   describeAiSettingsError,
   loadAiSettings,
@@ -525,7 +526,7 @@ export function SettingsScreen({
       issues: "https://github.com/balazsotakomaiya/pupil/issues",
     };
 
-    window.open(urls[kind], "_blank", "noopener,noreferrer");
+    openUrl(urls[kind]);
   }
 
   async function handleSaveStudySettings(newCardsLimit: number | null) {

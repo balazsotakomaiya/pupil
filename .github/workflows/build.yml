@@ -61,6 +61,13 @@ jobs:
         with:
           workspaces: apps/app/src-tauri -> target
 
+      - name: Cache Tauri Linux bundler tools
+        if: matrix.platform == 'linux'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/tauri
+          key: tauri-linux-tools-v1
+
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -68,6 +75,29 @@ jobs:
 
       - name: Install JS dependencies
         run: bun install
+
+      - name: Prefetch Tauri Linux bundler tools
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p "${HOME}/.cache/tauri"
+
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 5 \
+            --output "${HOME}/.cache/tauri/AppRun-x86_64" \
+            "https://github.com/tauri-apps/binary-releases/releases/download/apprun-old/AppRun-x86_64"
+          chmod +x "${HOME}/.cache/tauri/AppRun-x86_64"
+
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 5 \
+            --output "${HOME}/.cache/tauri/linuxdeploy-x86_64.AppImage" \
+            "https://github.com/tauri-apps/binary-releases/releases/download/linuxdeploy/linuxdeploy-x86_64.AppImage"
+          chmod +x "${HOME}/.cache/tauri/linuxdeploy-x86_64.AppImage"
+
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 5 \
+            --output "${HOME}/.cache/tauri/linuxdeploy-plugin-gtk.sh" \
+            "https://raw.githubusercontent.com/tauri-apps/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh"
+          chmod +x "${HOME}/.cache/tauri/linuxdeploy-plugin-gtk.sh"
 
       - name: Validate release contract
         run: bun run release:check

@@ -55,6 +55,8 @@ pub fn run() {
             app.handle()
                 .plugin(tauri_plugin_updater::Builder::new().build())?;
 
+            app.handle().plugin(tauri_plugin_opener::init())?;
+
             let database_path = database_path(app.handle())?;
             let backup_created = run_migrations(app.handle(), &database_path)?;
 
