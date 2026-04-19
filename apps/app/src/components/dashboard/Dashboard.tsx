@@ -57,11 +57,7 @@ export function Dashboard({
       />
       <div className="ruler-divider" />
 
-      <ActivitySection
-        activity={activity}
-        streakCells={streakCells}
-        streakCount={streakCount}
-      />
+      <ActivitySection activity={activity} streakCells={streakCells} streakCount={streakCount} />
 
       <div className="page-end" />
     </div>

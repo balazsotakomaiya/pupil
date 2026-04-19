@@ -1,14 +1,14 @@
-import { useMemo, useRef, useState, type ChangeEvent, type DragEvent } from "react";
-import { importApkgFile, readImportHistory, type ImportExecutionResult } from "../../lib/imports";
+import { type ChangeEvent, type DragEvent, useMemo, useRef, useState } from "react";
+import { type ImportExecutionResult, importApkgFile, readImportHistory } from "../../lib/imports";
 import type { SpaceSummary } from "../../lib/spaces";
 import { ImportDropZone } from "./ImportDropZone";
-import { ChevronDownIcon } from "./ImportIcons";
 import { ImportHistoryTable } from "./ImportHistoryTable";
+import { ChevronDownIcon } from "./ImportIcons";
 import { ImportNotesCard } from "./ImportNotesCard";
 import { ImportProgressCard } from "./ImportProgressCard";
 import { ImportSummaryCard } from "./ImportSummaryCard";
-import type { ImportHistoryItem, ImportProgressModel, ImportSummaryModel } from "./types";
 import { ImportTitlebar } from "./ImportTitlebar";
+import type { ImportHistoryItem, ImportProgressModel, ImportSummaryModel } from "./types";
 
 type ImportScreenProps = {
   backLabel?: string;

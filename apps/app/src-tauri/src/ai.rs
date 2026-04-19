@@ -278,7 +278,7 @@ pub(crate) fn clear_ai_api_key(app: &AppHandle) -> AppResult<()> {
     #[cfg(target_os = "macos")]
     {
         let _ = app;
-        return clear_ai_api_key_macos();
+        clear_ai_api_key_macos()
     }
 
     #[cfg(not(target_os = "macos"))]
@@ -372,7 +372,7 @@ fn load_ai_api_key(app: &AppHandle) -> AppResult<Option<String>> {
     #[cfg(target_os = "macos")]
     {
         let _ = app;
-        return load_ai_api_key_macos();
+        load_ai_api_key_macos()
     }
 
     #[cfg(not(target_os = "macos"))]
@@ -395,7 +395,7 @@ fn save_ai_api_key(app: &AppHandle, api_key: &str) -> AppResult<()> {
     #[cfg(target_os = "macos")]
     {
         let _ = app;
-        return save_ai_api_key_macos(api_key);
+        save_ai_api_key_macos(api_key)
     }
 
     #[cfg(not(target_os = "macos"))]

@@ -1116,9 +1116,7 @@ html {
 
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 28%),
-    var(--bg);
+  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 28%), var(--bg);
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 15px;
@@ -1398,7 +1396,9 @@ button {
   background: var(--bg-subtle);
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
 }
 
 .welcome-quickstart-card:hover {
@@ -1456,7 +1456,9 @@ button {
 .welcome-quickstart-arrow {
   flex-shrink: 0;
   color: var(--text-tertiary);
-  transition: color 0.15s ease, transform 0.15s ease;
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .welcome-quickstart-card:hover .welcome-quickstart-arrow {
@@ -1491,7 +1493,9 @@ button {
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .welcome-inline-link:hover {
@@ -1687,7 +1691,9 @@ button {
   color: var(--text-tertiary);
   font-size: 12.5px;
   font-weight: 500;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
 }
 
 .titlebar-tab.active {
@@ -1828,7 +1834,9 @@ button {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
   text-align: left;
   white-space: nowrap;
 }
@@ -2010,8 +2018,7 @@ button {
 
 .study-card.daily-checkin-active {
   background:
-    radial-gradient(circle at top left, rgba(248, 182, 75, 0.12), transparent 46%),
-    var(--bg-subtle);
+    radial-gradient(circle at top left, rgba(248, 182, 75, 0.12), transparent 46%), var(--bg-subtle);
   border: 1px solid rgba(248, 182, 75, 0.18);
 }
 
@@ -3489,7 +3496,6 @@ button {
   color: var(--text-primary);
 }
 
-
 .settings-key-save-btn:disabled,
 .settings-key-test-btn:disabled,
 .settings-data-btn:disabled {
@@ -4756,8 +4762,7 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   background:
-    linear-gradient(180deg, rgba(32, 32, 34, 0.96), rgba(17, 17, 18, 0.98)),
-    rgba(17, 17, 17, 0.96);
+    linear-gradient(180deg, rgba(32, 32, 34, 0.96), rgba(17, 17, 18, 0.98)), rgba(17, 17, 17, 0.96);
   box-shadow:
     0 30px 90px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
@@ -4845,7 +4850,9 @@ button {
   background: var(--bg);
   color: var(--text-primary);
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .field-input:focus {
@@ -4878,8 +4885,7 @@ button {
   padding-bottom: 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   background:
-    linear-gradient(180deg, rgba(24, 24, 26, 0.98), rgba(24, 24, 26, 0.9)),
-    rgba(17, 17, 17, 0.92);
+    linear-gradient(180deg, rgba(24, 24, 26, 0.98), rgba(24, 24, 26, 0.9)), rgba(17, 17, 17, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
@@ -4944,7 +4950,9 @@ button {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg-elevated);
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .new-card-toggle-thumb {
@@ -4955,7 +4963,9 @@ button {
   height: 10px;
   border-radius: 999px;
   background: var(--text-tertiary);
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
 }
 
 .new-card-make-another.active .new-card-toggle-track {
@@ -5107,7 +5117,9 @@ button {
   background: transparent;
   color: var(--text-tertiary);
   cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
 }
 
 .new-card-fmt-btn:hover:not(:disabled) {
@@ -5234,7 +5246,9 @@ button {
   background: transparent;
   color: var(--text-tertiary);
   cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
 }
 
 .new-card-tag-remove:hover {
@@ -5698,7 +5712,9 @@ button {
   background: transparent;
   color: var(--text-tertiary);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .session-overflow-btn:hover,
@@ -5751,7 +5767,9 @@ button {
   font-size: 13px;
   font-weight: 500;
   text-align: left;
-  transition: background 0.1s ease, color 0.1s ease;
+  transition:
+    background 0.1s ease,
+    color 0.1s ease;
 }
 
 .session-overflow-item:hover {
@@ -5828,7 +5846,10 @@ button {
   opacity: 0.38;
   filter: saturate(0.2);
   pointer-events: none;
-  transition: transform 0.48s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, filter 0.3s ease;
+  transition:
+    transform 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.3s ease,
+    filter 0.3s ease;
 }
 
 .session-card-face {
@@ -6007,7 +6028,9 @@ button {
   font-weight: 600;
   letter-spacing: -0.2px;
   cursor: pointer;
-  transition: opacity 0.15s ease, background 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease;
 }
 
 .session-unsuspend-btn {
@@ -6095,7 +6118,9 @@ button {
   background: var(--bg-subtle);
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 .session-rating-btn:hover {
@@ -6309,7 +6334,10 @@ button {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 .session-summary-btn:hover {

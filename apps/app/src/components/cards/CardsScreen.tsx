@@ -17,7 +17,12 @@ type CardDraft = {
 type CardsScreenProps = {
   cards: CardRecord[];
   isMutating: boolean;
-  onCreateCard: (input: { back: string; front: string; spaceId: string; tags: string[] }) => Promise<void>;
+  onCreateCard: (input: {
+    back: string;
+    front: string;
+    spaceId: string;
+    tags: string[];
+  }) => Promise<void>;
   onDeleteCard: (input: { id: string }) => Promise<void>;
   onOpenCreateDialog: () => void;
   onSuspendCard: (input: { id: string; suspended: boolean }) => Promise<CardRecord>;
@@ -365,7 +370,11 @@ function buildStateFilters(cards: CardRecord[]) {
   return [
     { label: "All", value: "all" as const, count: null },
     { label: "New", value: 0 as const, count: cards.filter((card) => card.state === 0).length },
-    { label: "Learning", value: 1 as const, count: cards.filter((card) => card.state === 1).length },
+    {
+      label: "Learning",
+      value: 1 as const,
+      count: cards.filter((card) => card.state === 1).length,
+    },
     { label: "Review", value: 2 as const, count: cards.filter((card) => card.state === 2).length },
     {
       label: "Relearning",
@@ -377,9 +386,21 @@ function buildStateFilters(cards: CardRecord[]) {
 
 function buildSourceFilters(cards: CardRecord[]) {
   return [
-    { label: "Manual", value: "manual" as const, count: cards.filter((card) => card.source === "manual").length },
-    { label: "AI", value: "ai" as const, count: cards.filter((card) => card.source === "ai").length },
-    { label: "Anki", value: "anki" as const, count: cards.filter((card) => card.source === "anki").length },
+    {
+      label: "Manual",
+      value: "manual" as const,
+      count: cards.filter((card) => card.source === "manual").length,
+    },
+    {
+      label: "AI",
+      value: "ai" as const,
+      count: cards.filter((card) => card.source === "ai").length,
+    },
+    {
+      label: "Anki",
+      value: "anki" as const,
+      count: cards.filter((card) => card.source === "anki").length,
+    },
   ];
 }
 

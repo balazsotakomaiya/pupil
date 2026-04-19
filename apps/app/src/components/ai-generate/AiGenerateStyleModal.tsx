@@ -71,7 +71,12 @@ export function AiGenerateStyleModal({ isOpen, onClose }: AiGenerateStyleModalPr
       <div className="ai-gen-modal">
         <div className="ai-gen-modal-header">
           <span className="ai-gen-modal-title">Card styles</span>
-          <button aria-label="Close style guide" className="ai-gen-modal-close" onClick={onClose} type="button">
+          <button
+            aria-label="Close style guide"
+            className="ai-gen-modal-close"
+            onClick={onClose}
+            type="button"
+          >
             <CloseIcon />
           </button>
         </div>

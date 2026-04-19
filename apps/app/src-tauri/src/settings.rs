@@ -22,7 +22,8 @@ pub(crate) fn load_recent_activity(
         return Ok(Vec::new());
     }
 
-    let fetch_limit = (limit * RECENT_ACTIVITY_FETCH_MULTIPLIER).max(MIN_RECENT_ACTIVITY_FETCH_LIMIT);
+    let fetch_limit =
+        (limit * RECENT_ACTIVITY_FETCH_MULTIPLIER).max(MIN_RECENT_ACTIVITY_FETCH_LIMIT);
     let mut statement = connection.prepare(
         "
         SELECT review_logs.space_id,

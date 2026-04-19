@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import {
+  type AiSettings,
   generateAiCards,
   hasConfiguredAiKey,
   loadAiSettings,
-  type AiSettings,
 } from "../../lib/ai-settings";
 import type { SpaceSummary } from "../../lib/spaces";
 import { AiGenerateError } from "./AiGenerateError";
@@ -49,7 +49,9 @@ export function AiGenerateScreen({
   const [aiSettings, setAiSettings] = useState<AiSettings>(DEFAULT_AI_SETTINGS);
   const [isSettingsLoading, setIsSettingsLoading] = useState(true);
   const [mode, setMode] = useState<AiGenerateMode>("form");
-  const [draft, setDraft] = useState<AiGenerateDraft>(() => createInitialDraft(spaces, initialSpaceId));
+  const [draft, setDraft] = useState<AiGenerateDraft>(() =>
+    createInitialDraft(spaces, initialSpaceId),
+  );
   const [styleModalOpen, setStyleModalOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [runtimeError, setRuntimeError] = useState<string>("No generation attempt yet.");
@@ -305,11 +307,14 @@ export function AiGenerateScreen({
   );
 }
 
-function createInitialDraft(spaces: SpaceSummary[], initialSpaceId: string | null): AiGenerateDraft {
+function createInitialDraft(
+  spaces: SpaceSummary[],
+  initialSpaceId: string | null,
+): AiGenerateDraft {
   const nextSpaceId =
     initialSpaceId && spaces.some((space) => space.id === initialSpaceId)
       ? initialSpaceId
-      : spaces[0]?.id ?? NEW_SPACE_OPTION_ID;
+      : (spaces[0]?.id ?? NEW_SPACE_OPTION_ID);
 
   return {
     autoCount: false,
@@ -374,7 +379,13 @@ function splitLongPart(part: string) {
     return [part];
   }
 
-  return [part, ...part.split(/\s+/).filter((word) => word.length > 4).slice(0, 3)];
+  return [
+    part,
+    ...part
+      .split(/\s+/)
+      .filter((word) => word.length > 4)
+      .slice(0, 3),
+  ];
 }
 
 function cleanupConcept(value: string) {

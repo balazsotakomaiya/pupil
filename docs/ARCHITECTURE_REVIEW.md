@@ -25,9 +25,20 @@ Pupil works well as a concept and the fundamentals are sound — local-first SQL
 
 ---
 
+## Progress update
+
+**Update: April 19, 2026**
+
+- Landed: repo guardrails via `biome.json`, `lefthook.yml`, workspace lint/test scripts, and CI lint/test jobs in `.github/workflows/build.yml`.
+- Landed: first test layer via `apps/app/vitest.config.ts`, Vitest coverage for `fsrs`, `study-settings`, and extracted derived-state helpers, plus Rust unit tests in `normalize.rs` and `util.rs`.
+- Landed: the first `App.tsx` decomposition step. Empty-state seed data now lives in `src/lib/seed-data.ts`, derived-state builders now live in `src/lib/derived.ts`, and `App.tsx` is down from 1,216 lines to 808 lines.
+- Still pending: TanStack Router, Zustand, error boundaries/toasts, CSS modularization, structured Rust errors, and IPC type-generation.
+
+---
+
 ## 1. The god component: App.tsx
 
-**File:** `apps/app/src/App.tsx` — **1,216 lines.**
+**File:** `apps/app/src/App.tsx` — **808 lines** as of April 19, 2026, down from **1,216 lines**.
 
 This is the single most important refactor target. `App.tsx` currently serves as:
 
@@ -41,6 +52,8 @@ This is the single most important refactor target. `App.tsx` currently serves as
 Every new feature adds more state, more handlers, and more derived computations to this file. It is already at the limit of what a single developer can reason about.
 
 ### What to do
+
+**Status:** In progress. The fallback/seed constants and the derived-state builders have already been extracted to `src/lib/seed-data.ts` and `src/lib/derived.ts`. Routing, mutation orchestration, and the bulk of global state are still in `App.tsx`.
 
 **Introduce TanStack Router.** Replace the five interdependent navigation variables (`activeTab`, `selectedSpaceId`, `studySession`, `aiGenerateSession`, `importSession`) with TanStack Router. It offers first-class TypeScript inference for route params — route definitions are typed end-to-end so `useParams()` returns the exact shape declared in the route config, with no casting. For a desktop app with no real URLs, `createMemoryHistory()` keeps routing entirely in memory with no address bar concerns. Screens become routes with typed params:
 
@@ -363,7 +376,13 @@ pub(crate) fn create_card(app: AppHandle, input: CreateCardInput) -> Result<Card
 
 ### Current state
 
-Zero test files exist in the entire repository. The only quality checks are `typecheck` (tsc) and `build`. The manual acceptance checklist in `PHASE_1_SPEC.md` is not executable.
+This is no longer zero-state. As of April 19, 2026:
+
+- Vitest is wired into `apps/app` via `apps/app/vitest.config.ts`.
+- TypeScript tests cover `fsrs.ts`, `study-settings.ts`, and `derived.ts`.
+- Rust unit tests cover `normalize.rs` and `util.rs`.
+
+Coverage is still intentionally thin, but there is now an executable baseline instead of relying entirely on manual acceptance checks.
 
 ### What to test and how
 
@@ -436,12 +455,14 @@ Add a `test` script to `apps/app/package.json` pointing to `vitest run`. Add `ca
 
 ### Current state
 
-- No ESLint configuration exists (the site package references `eslint src` in its scripts, but there is no `.eslintrc` or `eslint.config.js`).
-- No Prettier, Biome, or any code formatter is configured.
-- No `clippy` or `cargo fmt` enforcement.
-- No git hooks (no Husky, no lint-staged, no lefthook).
+This has been partially addressed as of April 19, 2026:
 
-Two developers working in parallel would immediately produce inconsistent code.
+- Biome is configured at the repo root in `biome.json`.
+- Workspace lint/test scripts now exist in the root and app packages.
+- Lefthook is configured via `lefthook.yml` and installed through the root `prepare` script.
+- Rust formatting and linting are available via `cargo fmt` and `cargo clippy` scripts and are wired into CI.
+
+The baseline is intentionally conservative for now: a11y-heavy/icon-heavy UI patterns and some legacy surfaces are not yet fully lint-clean under stricter rule sets. That cleanup still belongs on the roadmap, but the repo now has enforceable guardrails instead of none.
 
 ### What to do
 
@@ -681,7 +702,7 @@ Two GitHub Actions workflows exist:
 - **`build.yml`** — Builds on push to `main` and PRs. Matrix: Ubuntu 22.04, Windows latest, macOS (Intel + Apple Silicon). Runs `tauri build --ci --no-sign`.
 - **`publish.yml`** — Triggered on `app-v*` tags. Publishes to GitHub Releases.
 
-Neither workflow runs lints, tests, typechecks, or any quality gates.
+This has now started changing. `build.yml` includes dedicated `lint` and `test` jobs as of April 19, 2026, and the build matrix depends on those jobs passing first.
 
 ### What to add
 

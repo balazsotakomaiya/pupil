@@ -65,7 +65,7 @@ export function computeNewCardsBudget(
     return null;
   }
 
-  return Math.max(0, newCardsLimit - newCardsToday);
+  return Math.max(0, newCardsLimit - Math.max(0, newCardsToday));
 }
 
 /**

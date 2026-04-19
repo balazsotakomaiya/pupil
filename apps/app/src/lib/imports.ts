@@ -3,8 +3,8 @@ import { decompress as decompressZstd } from "fzstd";
 import JSZip from "jszip";
 import initSqlJs from "sql.js";
 import sqlWasmUrl from "sql.js/dist/sql-wasm.wasm?url";
-import { SPACE_NAME_MAX_LENGTH } from "./spaces";
 import { isTauriRuntime } from "./runtime";
+import { SPACE_NAME_MAX_LENGTH } from "./spaces";
 
 type ParsedAnkiCard = {
   back: string;
@@ -74,7 +74,11 @@ type StoredWebCard = {
 const IMPORT_HISTORY_STORAGE_KEY = "pupil.web.import-history";
 const WEB_SPACE_STORAGE_KEY = "pupil.web.spaces";
 const WEB_CARD_STORAGE_KEY = "pupil.web.cards";
-const COLLECTION_FILE_NAMES = ["collection.anki21b", "collection.anki21", "collection.anki2"] as const;
+const COLLECTION_FILE_NAMES = [
+  "collection.anki21b",
+  "collection.anki21",
+  "collection.anki2",
+] as const;
 const CLOZE_PATTERN = /\{\{c(\d+)::([\s\S]*?)(?:::(.*?))?\}\}/gi;
 
 let sqlJsPromise: Promise<Awaited<ReturnType<typeof initSqlJs>>> | null = null;
@@ -216,7 +220,9 @@ export function readImportHistory(): ImportExecutionResult[] {
       return [];
     }
 
-    return parsed.filter(isImportExecutionResult).sort((left, right) => right.importedAt - left.importedAt);
+    return parsed
+      .filter(isImportExecutionResult)
+      .sort((left, right) => right.importedAt - left.importedAt);
   } catch {
     return [];
   }
@@ -228,10 +234,14 @@ async function parseApkgFile(file: File): Promise<ParsedAnkiPackage> {
   }
 
   const archive = await JSZip.loadAsync(await file.arrayBuffer());
-  const collectionEntry = COLLECTION_FILE_NAMES.map((fileName) => archive.file(fileName)).find(Boolean);
+  const collectionEntry = COLLECTION_FILE_NAMES.map((fileName) => archive.file(fileName)).find(
+    Boolean,
+  );
 
   if (!collectionEntry) {
-    throw new Error("The .apkg file is missing collection.anki21b, collection.anki21, or collection.anki2.");
+    throw new Error(
+      "The .apkg file is missing collection.anki21b, collection.anki21, or collection.anki2.",
+    );
   }
 
   const SQL = await getSqlJs();
@@ -275,7 +285,14 @@ async function readCollectionDatabase(collectionEntry: JSZip.JSZipObject) {
   return bytes;
 }
 
-async function persistAnkiImport(input: ImportAnkiPayload): Promise<Omit<ImportExecutionResult, "fileSize" | "importedAt" | "parsedCardCount" | "sourceFileName" | "status" | "statusLabel">> {
+async function persistAnkiImport(
+  input: ImportAnkiPayload,
+): Promise<
+  Omit<
+    ImportExecutionResult,
+    "fileSize" | "importedAt" | "parsedCardCount" | "sourceFileName" | "status" | "statusLabel"
+  >
+> {
   if (isTauriRuntime()) {
     return invoke("import_anki_cards", { input });
   }
@@ -319,9 +336,7 @@ function readCount(
   return Number(result[0]?.values?.[0]?.[0] ?? 0);
 }
 
-function readRows(database: {
-  exec: (sql: string) => Array<{ values?: unknown[][] }>;
-}) {
+function readRows(database: { exec: (sql: string) => Array<{ values?: unknown[][] }> }) {
   const result = database.exec(`
     SELECT notes.mid, notes.tags, notes.flds, cards.did, cards.ord
     FROM notes
@@ -384,11 +399,12 @@ function mapAnkiRowToCard(
 }
 
 function normalizeDeckName(value: string) {
-  const flattened = value
-    .split("::")
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .at(-1) ?? "Imported";
+  const flattened =
+    value
+      .split("::")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .at(-1) ?? "Imported";
 
   return normalizeSpaceName(flattened);
 }
@@ -449,9 +465,10 @@ function parseDeckMap(raw: Record<string, unknown>) {
       continue;
     }
 
-    const name = typeof (value as { name?: unknown }).name === "string"
-      ? ((value as { name: string }).name)
-      : "Imported";
+    const name =
+      typeof (value as { name?: unknown }).name === "string"
+        ? (value as { name: string }).name
+        : "Imported";
 
     decks[key] = { name };
   }
@@ -486,7 +503,7 @@ function importAnkiCardsInWebStorage(input: ImportAnkiPayload) {
   let createdSpaceCount = 0;
   const targetSpace =
     input.targetSpaceId !== null && input.targetSpaceId !== undefined
-      ? spaces.find((space) => space.id === input.targetSpaceId) ?? null
+      ? (spaces.find((space) => space.id === input.targetSpaceId) ?? null)
       : null;
 
   if (input.targetSpaceId && !targetSpace) {
@@ -524,16 +541,14 @@ function importAnkiCardsInWebStorage(input: ImportAnkiPayload) {
       createdSpaceCount += 1;
     }
 
-    const stats =
-      deckStats.get(deckKey) ??
-      {
-        deckName: normalizedDeckName,
-        importedCount: 0,
-        skippedCount: 0,
-        spaceId: destinationSpace.id,
-        spaceName: destinationSpace.name,
-        totalCount: 0,
-      };
+    const stats = deckStats.get(deckKey) ?? {
+      deckName: normalizedDeckName,
+      importedCount: 0,
+      skippedCount: 0,
+      spaceId: destinationSpace.id,
+      spaceName: destinationSpace.name,
+      totalCount: 0,
+    };
 
     stats.totalCount += 1;
     const cardKey = cardPairKey(card.front, card.back);
@@ -567,7 +582,9 @@ function importAnkiCardsInWebStorage(input: ImportAnkiPayload) {
   writeStoredWebSpaces(spaces);
   writeStoredWebCards(cards);
 
-  const decks = [...deckStats.values()].sort((left, right) => left.deckName.localeCompare(right.deckName));
+  const decks = [...deckStats.values()].sort((left, right) =>
+    left.deckName.localeCompare(right.deckName),
+  );
   const importedCount = decks.reduce((sum, deck) => sum + deck.importedCount, 0);
   const duplicateCount = decks.reduce((sum, deck) => sum + deck.skippedCount, 0);
 
@@ -587,10 +604,7 @@ function writeImportHistory(history: ImportExecutionResult[]) {
     return;
   }
 
-  window.localStorage.setItem(
-    IMPORT_HISTORY_STORAGE_KEY,
-    JSON.stringify(history.slice(0, 12)),
-  );
+  window.localStorage.setItem(IMPORT_HISTORY_STORAGE_KEY, JSON.stringify(history.slice(0, 12)));
 }
 
 function readStoredWebSpaces(): StoredWebSpace[] {

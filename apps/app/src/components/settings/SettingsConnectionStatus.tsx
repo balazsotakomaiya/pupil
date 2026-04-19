@@ -4,11 +4,7 @@ type SettingsConnectionStatusProps = {
   label: string;
 };
 
-export function SettingsConnectionStatus({
-  detail,
-  kind,
-  label,
-}: SettingsConnectionStatusProps) {
+export function SettingsConnectionStatus({ detail, kind, label }: SettingsConnectionStatusProps) {
   return (
     <div className={`settings-connection-status ${kind}`}>
       <span className="status-dot" />

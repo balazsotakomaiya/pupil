@@ -69,7 +69,14 @@ export function ViewIcon() {
 
 export function ChevronDownIcon() {
   return (
-    <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      viewBox="0 0 13 13"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M3 5l3.5 3.5L10 5" />
     </svg>
   );

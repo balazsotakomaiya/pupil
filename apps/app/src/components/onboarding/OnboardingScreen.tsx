@@ -1,7 +1,7 @@
 import { EyeLogo } from "../dashboard/EyeLogo";
+import { AiGenerateIcon, CreateSpaceIcon, ImportDeckIcon } from "./OnboardingIcons";
 import { OnboardingPathCard } from "./OnboardingPathCard";
 import { OnboardingQuickStart } from "./OnboardingQuickStart";
-import { AiGenerateIcon, CreateSpaceIcon, ImportDeckIcon } from "./OnboardingIcons";
 
 type OnboardingScreenProps = {
   onCreateSpace: () => void;

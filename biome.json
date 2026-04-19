@@ -1,0 +1,66 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.12/schema.json",
+  "files": {
+    "ignoreUnknown": true,
+    "includes": [
+      "**/*.js",
+      "**/*.jsx",
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.mjs",
+      "**/*.cjs",
+      "**/*.json",
+      "**/*.yml",
+      "**/*.yaml",
+      "!apps/app/src-tauri/gen",
+      "!apps/app/src-tauri/target",
+      "!apps/app/references",
+      "!coverage",
+      "!dist",
+      "!build"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "a11y": {
+        "noAutofocus": "off",
+        "noLabelWithoutControl": "off",
+        "noStaticElementInteractions": "off",
+        "noSvgWithoutTitle": "off",
+        "useButtonType": "off",
+        "useKeyWithClickEvents": "off",
+        "useSemanticElements": "off"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "off"
+      }
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  }
+}

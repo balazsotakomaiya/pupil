@@ -6,9 +6,15 @@ type StudyReviewCardProps = {
   isSuspended?: boolean;
 };
 
-export function StudyReviewCard({ card, isAnswerVisible, isSuspended = false }: StudyReviewCardProps) {
+export function StudyReviewCard({
+  card,
+  isAnswerVisible,
+  isSuspended = false,
+}: StudyReviewCardProps) {
   return (
-    <div className={`session-card${isAnswerVisible ? " flipped" : ""}${isSuspended ? " suspended" : ""}`}>
+    <div
+      className={`session-card${isAnswerVisible ? " flipped" : ""}${isSuspended ? " suspended" : ""}`}
+    >
       <div className="session-card-face front">
         <span className="session-card-label">front</span>
         <span className="session-card-space">{card.spaceName}</span>
@@ -61,10 +67,7 @@ function renderStudyHtml(value: string): string {
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
     .replace(/`(.+?)`/g, "<code>$1</code>")
-    .replace(
-      /_____/g,
-      '<span class="session-cloze-blank"></span>',
-    )
+    .replace(/_____/g, '<span class="session-cloze-blank"></span>')
     .replace(/\n/g, "<br>");
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { EyeLogo } from "../dashboard/EyeLogo";
 import { APP_VERSION_FALLBACK, formatAppVersion, getAppVersion } from "../../lib/app-version";
+import { EyeLogo } from "../dashboard/EyeLogo";
 import { ExternalLinkIcon } from "./SettingsIcons";
 
 type SettingsAboutCardProps = {

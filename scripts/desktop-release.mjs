@@ -27,7 +27,7 @@ function parseArgs(argv) {
   let requestedVersion = null;
   let tag =
     process.env.GITHUB_REF_TYPE === "tag"
-      ? process.env.GITHUB_REF_NAME ?? normalizeTag(process.env.GITHUB_REF ?? null)
+      ? (process.env.GITHUB_REF_NAME ?? normalizeTag(process.env.GITHUB_REF ?? null))
       : normalizeTag(process.env.GITHUB_REF ?? null);
 
   for (let index = 1; index < args.length; index += 1) {
@@ -106,7 +106,7 @@ function replaceCargoVersion(contents, nextVersion) {
 
     if (/^version\s*=\s*"[^"]+"$/.test(trimmed)) {
       replaced = true;
-      return 'version = "' + nextVersion + '"';
+      return `version = "${nextVersion}"`;
     }
 
     return line;

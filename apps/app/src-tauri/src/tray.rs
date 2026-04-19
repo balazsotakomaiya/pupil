@@ -20,12 +20,9 @@ pub(crate) fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
     let status_item = MenuItemBuilder::with_id(MENU_STATUS_ID, "Loading...")
         .enabled(false)
         .build(app)?;
-    let study_item = MenuItemBuilder::with_id(MENU_STUDY_ID, "Study Now →")
-        .build(app)?;
-    let open_item = MenuItemBuilder::with_id(MENU_OPEN_ID, "Open Pupil")
-        .build(app)?;
-    let quit_item = MenuItemBuilder::with_id(MENU_QUIT_ID, "Quit")
-        .build(app)?;
+    let study_item = MenuItemBuilder::with_id(MENU_STUDY_ID, "Study Now →").build(app)?;
+    let open_item = MenuItemBuilder::with_id(MENU_OPEN_ID, "Open Pupil").build(app)?;
+    let quit_item = MenuItemBuilder::with_id(MENU_QUIT_ID, "Quit").build(app)?;
 
     let menu = MenuBuilder::new(app)
         .item(&status_item)
@@ -89,7 +86,12 @@ pub(crate) fn refresh_tray(app: &AppHandle) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     let icon = make_status_icon(stats.studied_today, stats.due_today, overdue_count);
-    let tooltip = make_tooltip(stats.studied_today, stats.due_today, overdue_count, stats.global_streak);
+    let tooltip = make_tooltip(
+        stats.studied_today,
+        stats.due_today,
+        overdue_count,
+        stats.global_streak,
+    );
 
     let status_label = if stats.studied_today > 0 && stats.due_today == 0 {
         format!("All caught up · {} reviewed", stats.studied_today)
@@ -139,7 +141,8 @@ pub(crate) fn refresh_tray(app: &AppHandle) -> Result<(), String> {
     };
 
     tray.set_icon(Some(icon)).map_err(|e| e.to_string())?;
-    tray.set_tooltip(Some(&tooltip)).map_err(|e| e.to_string())?;
+    tray.set_tooltip(Some(&tooltip))
+        .map_err(|e| e.to_string())?;
     tray.set_title(Some(&title)).map_err(|e| e.to_string())?;
     tray.set_menu(Some(menu)).map_err(|e| e.to_string())?;
 
@@ -153,11 +156,11 @@ pub(crate) fn refresh_tray(app: &AppHandle) -> Result<(), String> {
 /// - Gray:   no cards yet
 fn make_status_icon(studied_today: i64, due_today: i64, overdue_count: i64) -> Image<'static> {
     let (r, g, b) = if overdue_count > 0 {
-        (239, 68, 68)   // red #ef4444 — slacking, reviews piling up
+        (239, 68, 68) // red #ef4444 — slacking, reviews piling up
     } else if studied_today > 0 && due_today == 0 {
-        (16, 185, 129)  // emerald #10b981 — all done
+        (16, 185, 129) // emerald #10b981 — all done
     } else if due_today > 0 {
-        (245, 158, 11)  // amber #f59e0b — cards due today
+        (245, 158, 11) // amber #f59e0b — cards due today
     } else {
         (107, 114, 128) // gray #6b7280 — nothing yet
     };
@@ -221,13 +224,19 @@ fn make_tooltip(studied_today: i64, due_today: i64, overdue_count: i64, streak: 
     };
 
     if overdue_count > 0 {
-        format!("Pupil · {} cards are 3+ days overdue{}", overdue_count, streak_part)
+        format!(
+            "Pupil · {} cards are 3+ days overdue{}",
+            overdue_count, streak_part
+        )
     } else if studied_today > 0 && due_today == 0 {
         format!("Pupil · All caught up!{}", streak_part)
     } else if due_today > 0 && studied_today == 0 {
         format!("Pupil · {} cards due today{}", due_today, streak_part)
     } else if due_today > 0 {
-        format!("Pupil · {} due · {} reviewed{}", due_today, studied_today, streak_part)
+        format!(
+            "Pupil · {} due · {} reviewed{}",
+            due_today, studied_today, streak_part
+        )
     } else {
         format!("Pupil{}", streak_part)
     }

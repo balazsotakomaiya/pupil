@@ -1,6 +1,6 @@
 import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import "./style.css";
 import App from "./App";
 import Manifesto from "./Manifesto";
@@ -13,7 +13,13 @@ function ScrollToTop() {
   return null;
 }
 
-createRoot(document.getElementById("root")!).render(
+const rootElement = document.getElementById("root");
+
+if (!rootElement) {
+  throw new Error("Root element #root was not found.");
+}
+
+createRoot(rootElement).render(
   <StrictMode>
     <BrowserRouter>
       <ScrollToTop />
@@ -22,5 +28,5 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/manifesto" element={<Manifesto />} />
       </Routes>
     </BrowserRouter>
-  </StrictMode>
+  </StrictMode>,
 );

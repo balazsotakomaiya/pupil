@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CloseIcon } from "../dashboard/CloseIcon";
 import type { SpaceSummary } from "../../lib/spaces";
+import { CloseIcon } from "../dashboard/CloseIcon";
 
 type CardDraft = {
   back: string;
@@ -123,7 +123,9 @@ export function CardFormPanel({
                     <span className="new-card-toggle-thumb" />
                   </span>
                 </button>
-              ) : <span />}
+              ) : (
+                <span />
+              )}
 
               <div className="new-card-actions-right">
                 {hasSelectedCard ? (
@@ -175,7 +177,9 @@ export function CardFormPanel({
                 <div className="new-card-toolbar front-toolbar">
                   <button
                     className="new-card-fmt-btn"
-                    onClick={() => insertFormat(frontRef.current, draft.front, onChange, "front", "**", "**")}
+                    onClick={() =>
+                      insertFormat(frontRef.current, draft.front, onChange, "front", "**", "**")
+                    }
                     title="Bold"
                     type="button"
                   >
@@ -183,7 +187,9 @@ export function CardFormPanel({
                   </button>
                   <button
                     className="new-card-fmt-btn"
-                    onClick={() => insertFormat(frontRef.current, draft.front, onChange, "front", "*", "*")}
+                    onClick={() =>
+                      insertFormat(frontRef.current, draft.front, onChange, "front", "*", "*")
+                    }
                     title="Italic"
                     type="button"
                   >
@@ -191,7 +197,9 @@ export function CardFormPanel({
                   </button>
                   <button
                     className="new-card-fmt-btn"
-                    onClick={() => insertFormat(frontRef.current, draft.front, onChange, "front", "`", "`")}
+                    onClick={() =>
+                      insertFormat(frontRef.current, draft.front, onChange, "front", "`", "`")
+                    }
                     title="Code"
                     type="button"
                   >
@@ -201,7 +209,13 @@ export function CardFormPanel({
                   <button
                     className="new-card-fmt-btn"
                     onClick={() =>
-                      insertCloze(frontRef.current, backRef.current, draft.front, draft.back, onChange)
+                      insertCloze(
+                        frontRef.current,
+                        backRef.current,
+                        draft.front,
+                        draft.back,
+                        onChange,
+                      )
                     }
                     title="Cloze"
                     type="button"
@@ -242,7 +256,9 @@ export function CardFormPanel({
                 <div className="new-card-toolbar">
                   <button
                     className="new-card-fmt-btn"
-                    onClick={() => insertFormat(backRef.current, draft.back, onChange, "back", "**", "**")}
+                    onClick={() =>
+                      insertFormat(backRef.current, draft.back, onChange, "back", "**", "**")
+                    }
                     title="Bold"
                     type="button"
                   >
@@ -250,7 +266,9 @@ export function CardFormPanel({
                   </button>
                   <button
                     className="new-card-fmt-btn"
-                    onClick={() => insertFormat(backRef.current, draft.back, onChange, "back", "*", "*")}
+                    onClick={() =>
+                      insertFormat(backRef.current, draft.back, onChange, "back", "*", "*")
+                    }
                     title="Italic"
                     type="button"
                   >
@@ -258,7 +276,9 @@ export function CardFormPanel({
                   </button>
                   <button
                     className="new-card-fmt-btn"
-                    onClick={() => insertFormat(backRef.current, draft.back, onChange, "back", "`", "`")}
+                    onClick={() =>
+                      insertFormat(backRef.current, draft.back, onChange, "back", "`", "`")
+                    }
                     title="Code"
                     type="button"
                   >
@@ -298,7 +318,9 @@ export function CardFormPanel({
                   {tag}
                   <button
                     className="new-card-tag-remove"
-                    onClick={() => onChange({ tagsText: tags.filter((item) => item !== tag).join(", ") })}
+                    onClick={() =>
+                      onChange({ tagsText: tags.filter((item) => item !== tag).join(", ") })
+                    }
                     type="button"
                   >
                     <TagRemoveIcon />
@@ -376,7 +398,10 @@ export function CardFormPanel({
               onMouseEnter={() => setIsPreviewHovered(true)}
               onMouseLeave={() => setIsPreviewHovered(false)}
             >
-              <div className={`new-card-body${isPreviewHovered ? " hovered" : ""}`} role="presentation">
+              <div
+                className={`new-card-body${isPreviewHovered ? " hovered" : ""}`}
+                role="presentation"
+              >
                 <div className="new-card-face new-card-face-front">
                   <span className="new-card-corner tl">front</span>
                   <div className="new-card-face-inner">
@@ -557,10 +582,7 @@ function renderPreviewHtml(value: string, emptyLabel: string): string {
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
     .replace(/`(.+?)`/g, "<code>$1</code>")
-    .replace(
-      /_____/g,
-      '<span class="new-card-cloze-blank"></span>',
-    )
+    .replace(/_____/g, '<span class="new-card-cloze-blank"></span>')
     .replace(/\n/g, "<br>");
 
   return escaped;

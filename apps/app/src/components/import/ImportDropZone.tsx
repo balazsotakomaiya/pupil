@@ -1,8 +1,4 @@
-import type {
-  DragEventHandler,
-  ChangeEventHandler,
-  RefObject,
-} from "react";
+import type { ChangeEventHandler, DragEventHandler, RefObject } from "react";
 import { BrowseIcon, UploadIcon } from "./ImportIcons";
 
 type ImportDropZoneProps = {
@@ -52,23 +48,23 @@ export function ImportDropZone({
       role="button"
       tabIndex={0}
     >
-        <div className="drop-zone-icon">
-          <UploadIcon />
-        </div>
-        <div className="drop-zone-title">Import from Anki</div>
-        <div className="drop-zone-desc">{description}</div>
-        <div className="drop-zone-hint">{hint}</div>
-        <button className="drop-zone-browse" type="button">
-          <BrowseIcon />
-          Browse files
-        </button>
-        <input
-          accept=".apkg"
-          className="import-file-input"
-          onChange={onFileChange}
-          ref={fileInputRef}
-          type="file"
-        />
+      <div className="drop-zone-icon">
+        <UploadIcon />
+      </div>
+      <div className="drop-zone-title">Import from Anki</div>
+      <div className="drop-zone-desc">{description}</div>
+      <div className="drop-zone-hint">{hint}</div>
+      <button className="drop-zone-browse" type="button">
+        <BrowseIcon />
+        Browse files
+      </button>
+      <input
+        accept=".apkg"
+        className="import-file-input"
+        onChange={onFileChange}
+        ref={fileInputRef}
+        type="file"
+      />
     </div>
   );
 }

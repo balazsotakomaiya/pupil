@@ -12,11 +12,7 @@ type StudySettingsCardProps = {
   settings: StudySettings;
 };
 
-export function StudySettingsCard({
-  isSaving,
-  onSave,
-  settings,
-}: StudySettingsCardProps) {
+export function StudySettingsCard({ isSaving, onSave, settings }: StudySettingsCardProps) {
   const [isCustom, setIsCustom] = useState(() => isCustomValue(settings.newCardsLimit));
   const [customValue, setCustomValue] = useState(() =>
     isCustomValue(settings.newCardsLimit) && settings.newCardsLimit !== null
@@ -29,23 +25,17 @@ export function StudySettingsCard({
       ? Math.max(0, settings.newCardsLimit - (settings.newCardsToday ?? 0))
       : null;
 
-  const activePreset = NEW_CARDS_PRESETS.find(
-    (preset) => preset.value === settings.newCardsLimit,
-  );
+  const activePreset = NEW_CARDS_PRESETS.find((preset) => preset.value === settings.newCardsLimit);
   const showWarning =
     activePreset?.warn === true ||
     (isCustom && settings.newCardsLimit !== null && settings.newCardsLimit >= 40);
   const projectedReviews =
-    settings.newCardsLimit !== null
-      ? estimateDailyReviewsIn30Days(settings.newCardsLimit)
-      : null;
+    settings.newCardsLimit !== null ? estimateDailyReviewsIn30Days(settings.newCardsLimit) : null;
 
   useEffect(() => {
     const custom = isCustomValue(settings.newCardsLimit);
     setIsCustom(custom);
-    setCustomValue(
-      custom && settings.newCardsLimit !== null ? String(settings.newCardsLimit) : "",
-    );
+    setCustomValue(custom && settings.newCardsLimit !== null ? String(settings.newCardsLimit) : "");
   }, [settings.newCardsLimit]);
 
   function handleSelectPreset(preset: NewCardsPreset) {
@@ -115,7 +105,12 @@ export function StudySettingsCard({
           />
           <button
             className="study-settings-custom-save"
-            disabled={isSaving || !customValue.trim() || Number.isNaN(parseInt(customValue, 10)) || parseInt(customValue, 10) < 1}
+            disabled={
+              isSaving ||
+              !customValue.trim() ||
+              Number.isNaN(parseInt(customValue, 10)) ||
+              parseInt(customValue, 10) < 1
+            }
             onClick={handleCustomSubmit}
             type="button"
           >
@@ -128,8 +123,9 @@ export function StudySettingsCard({
         <div className="study-settings-warning">
           <span className="study-settings-warning-icon">⚠</span>
           <span className="study-settings-warning-text">
-            At {settings.newCardsLimit} new cards/day you'll likely face ~{projectedReviews} reviews/day
-            within a month. High new-card rates are the #1 cause of review debt and burnout.
+            At {settings.newCardsLimit} new cards/day you'll likely face ~{projectedReviews}{" "}
+            reviews/day within a month. High new-card rates are the #1 cause of review debt and
+            burnout.
           </span>
         </div>
       ) : null}
@@ -139,13 +135,15 @@ export function StudySettingsCard({
         <span className="study-settings-status-text">
           {budget !== null ? (
             <>
-              <strong>{settings.newCardsToday}</strong> new card{settings.newCardsToday === 1 ? "" : "s"} introduced today
+              <strong>{settings.newCardsToday}</strong> new card
+              {settings.newCardsToday === 1 ? "" : "s"} introduced today
               {" · "}
               <strong>{budget}</strong> remaining
             </>
           ) : (
             <>
-              <strong>{settings.newCardsToday}</strong> new card{settings.newCardsToday === 1 ? "" : "s"} introduced today · no limit set
+              <strong>{settings.newCardsToday}</strong> new card
+              {settings.newCardsToday === 1 ? "" : "s"} introduced today · no limit set
             </>
           )}
         </span>
@@ -156,7 +154,6 @@ export function StudySettingsCard({
 
 function isCustomValue(newCardsLimit: number | null): boolean {
   return (
-    newCardsLimit !== null &&
-    !NEW_CARDS_PRESETS.some((preset) => preset.value === newCardsLimit)
+    newCardsLimit !== null && !NEW_CARDS_PRESETS.some((preset) => preset.value === newCardsLimit)
   );
 }

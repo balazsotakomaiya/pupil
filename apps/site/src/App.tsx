@@ -19,10 +19,10 @@ function detectOS(): OS {
 }
 
 const OS_CONFIG: Record<OS, { label: string; icon: React.ReactNode }> = {
-  mac:     { label: "Download for Mac",     icon: <AppleIcon /> },
+  mac: { label: "Download for Mac", icon: <AppleIcon /> },
   windows: { label: "Download for Windows", icon: <WindowsIcon /> },
-  linux:   { label: "Download for Linux",   icon: <LinuxIcon /> },
-  unknown: { label: "Download",             icon: <DownloadIcon /> },
+  linux: { label: "Download for Linux", icon: <LinuxIcon /> },
+  unknown: { label: "Download", icon: <DownloadIcon /> },
 };
 
 function DownloadCTA() {
@@ -38,7 +38,12 @@ function DownloadCTA() {
           Open GitHub
         </a>
       </div>
-      <a href={RELEASES_URL} className="btn-all-platforms" target="_blank" rel="noopener noreferrer">
+      <a
+        href={RELEASES_URL}
+        className="btn-all-platforms"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         All platforms ↗
       </a>
     </div>
@@ -70,8 +75,8 @@ export default function App() {
           Flashcards that <em>actually</em> work with your brain
         </h1>
         <p className="hero-desc">
-          Pupil generates, organizes, and adapts cards to your knowledge gaps
-          using AI and science-backed spaced repetition. No account needed.
+          Pupil generates, organizes, and adapts cards to your knowledge gaps using AI and
+          science-backed spaced repetition. No account needed.
         </p>
         <DownloadCTA />
 
@@ -88,8 +93,8 @@ export default function App() {
         <p className="section-label">Features</p>
         <h2 className="section-title">Spaced repetition, without the friction</h2>
         <p className="section-desc">
-          All the rigor of the algorithm. None of the setup. Powered by AI
-          so you can go from topic to drill in seconds.
+          All the rigor of the algorithm. None of the setup. Powered by AI so you can go from topic
+          to drill in seconds.
         </p>
         <div className="features-grid">
           {FEATURES.map((f) => (
@@ -133,9 +138,7 @@ export default function App() {
         <h2 className="cta-title">
           Ready to <em>actually</em> remember things?
         </h2>
-        <p className="cta-desc">
-          Free. Open source. No account. Your cards stay on your device.
-        </p>
+        <p className="cta-desc">Free. Open source. No account. Your cards stay on your device.</p>
         <DownloadCTA />
       </section>
 
@@ -143,13 +146,21 @@ export default function App() {
 
       {/* Footer */}
       <footer className="footer">
-        <Link to="/" className="footer-logo">pupil</Link>
+        <Link to="/" className="footer-logo">
+          pupil
+        </Link>
         <nav className="footer-links">
-          <a href={REPO_URL} target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
+            GitHub
+          </a>
           <span className="sep">·</span>
-          <a href={DOCS_URL} target="_blank" rel="noopener noreferrer">Docs</a>
+          <a href={DOCS_URL} target="_blank" rel="noopener noreferrer">
+            Docs
+          </a>
           <span className="sep">·</span>
-          <a href={ISSUES_URL} target="_blank" rel="noopener noreferrer">Issues</a>
+          <a href={ISSUES_URL} target="_blank" rel="noopener noreferrer">
+            Issues
+          </a>
         </nav>
         <a
           href="https://otakomaiya.com"
@@ -194,9 +205,9 @@ function AppMockup() {
           <div className="mockup-stats-row">
             {[
               { value: "142", label: "Total cards" },
-              { value: "14",  label: "Due today" },
+              { value: "14", label: "Due today" },
               { value: "91%", label: "Retention" },
-              { value: "7d",  label: "Streak" },
+              { value: "7d", label: "Streak" },
             ].map((s) => (
               <div className="mockup-stat" key={s.label}>
                 <span className="mockup-stat-value">{s.value}</span>
@@ -208,8 +219,8 @@ function AppMockup() {
           <div className="mockup-spaces">
             {[
               { name: "Systems Design", cards: 43, due: 3 },
-              { name: "Biology",        cards: 28, due: 8 },
-              { name: "Spanish vocab",  cards: 71, due: 1 },
+              { name: "Biology", cards: 28, due: 8 },
+              { name: "Spanish vocab", cards: 71, due: 1 },
             ].map((sp) => (
               <div className="mockup-space-row" key={sp.name}>
                 <div className="mockup-space-icon" />
@@ -256,7 +267,7 @@ const FEATURES = [
   },
   {
     title: "Spaces",
-    desc: "Organize cards into named spaces like \"Systems Design\" or \"Biology\". Study globally or drill a single space.",
+    desc: 'Organize cards into named spaces like "Systems Design" or "Biology". Study globally or drill a single space.',
     icon: <FolderIcon />,
   },
   {
@@ -302,7 +313,16 @@ function AppleIcon() {
 
 function SparklesIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" />
       <path d="M19 15l.75 2.25L22 18l-2.25.75L19 21l-.75-2.25L16 18l2.25-.75L19 15z" />
       <path d="M5 17l.5 1.5L7 19l-1.5.5L5 21l-.5-1.5L3 19l1.5-.5L5 17z" />
@@ -312,7 +332,16 @@ function SparklesIcon() {
 
 function BrainIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-1.78-3.27A3 3 0 0 1 3 13.5a3 3 0 0 1 2-2.83V10a2.5 2.5 0 0 1 4.5-1.5" />
       <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 1.78-3.27A3 3 0 0 0 21 13.5a3 3 0 0 0-2-2.83V10a2.5 2.5 0 0 0-4.5-1.5" />
     </svg>
@@ -321,7 +350,16 @@ function BrainIcon() {
 
 function FolderIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
     </svg>
   );
@@ -329,7 +367,16 @@ function FolderIcon() {
 
 function StarIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
     </svg>
   );
@@ -337,7 +384,16 @@ function StarIcon() {
 
 function ChartIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <line x1="18" y1="20" x2="18" y2="10" />
       <line x1="12" y1="20" x2="12" y2="4" />
       <line x1="6" y1="20" x2="6" y2="14" />
@@ -347,7 +403,16 @@ function ChartIcon() {
 
 function LockIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </svg>
@@ -356,7 +421,16 @@ function LockIcon() {
 
 function ImportIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
@@ -366,7 +440,16 @@ function ImportIcon() {
 
 function CommandIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z" />
     </svg>
   );
@@ -374,7 +457,16 @@ function CommandIcon() {
 
 function FeatherIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z" />
       <line x1="16" y1="8" x2="2" y2="22" />
       <line x1="17.5" y1="15" x2="9" y2="15" />
@@ -392,7 +484,17 @@ function WindowsIcon() {
 
 function LinuxIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <polyline points="4 17 10 11 4 5" />
       <line x1="12" y1="19" x2="20" y2="19" />
     </svg>
@@ -401,7 +503,17 @@ function LinuxIcon() {
 
 function DownloadIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />

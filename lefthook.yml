@@ -1,0 +1,7 @@
+pre-commit:
+  parallel: true
+  commands:
+    biome:
+      run: bun run lint:fix
+    cargo-fmt:
+      run: bun run format:rust

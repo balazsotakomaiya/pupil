@@ -27,6 +27,7 @@ use crate::settings::{
     load_today_new_card_count, reset_all_data_rows, save_new_cards_limit, write_review_logs_csv,
 };
 use crate::spaces::{create_space_row, delete_space_row, list_space_summaries, rename_space_row};
+use crate::tray;
 use crate::types::{
     AiConnectionTestResult, AiSettingsState, BootstrapState, CardSummary, CreateCardInput,
     DashboardStats, ExportDataResult, GenerateCardsInput, GeneratedCardPayload, ImportAnkiInput,
@@ -34,7 +35,6 @@ use crate::types::{
     SettingsDataSummary, SpaceStats, SpaceSummary, StudySettingsState, SuspendCardInput,
     UpdateCardInput,
 };
-use crate::tray;
 use crate::util::{map_card_storage_error, map_storage_error, now_ms};
 
 async fn run_blocking<T: Send + 'static>(

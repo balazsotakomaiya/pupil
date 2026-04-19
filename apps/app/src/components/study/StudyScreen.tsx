@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { previewCardScheduling } from "../../lib/fsrs";
 import type { CardRecord } from "../../lib/cards";
+import { previewCardScheduling } from "../../lib/fsrs";
 import type { SpaceSummary } from "../../lib/spaces";
 import { StudyActions } from "./StudyActions";
 import { StudyBar } from "./StudyBar";
@@ -42,7 +42,10 @@ export function StudyScreen({
     buildAdmittedSet(cards, Date.now(), newCardsBudget),
   );
   const [isSummaryVisible, setIsSummaryVisible] = useState(
-    () => buildDueQueue(cards, Date.now()).filter((c) => buildAdmittedSet(cards, Date.now(), newCardsBudget).has(c.id)).length === 0,
+    () =>
+      buildDueQueue(cards, Date.now()).filter((c) =>
+        buildAdmittedSet(cards, Date.now(), newCardsBudget).has(c.id),
+      ).length === 0,
   );
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
@@ -67,14 +70,21 @@ export function StudyScreen({
   const totalCards = queue.length + reviewedCount;
   const currentCounter = queue.length === 0 ? reviewedCount : reviewedCount + 1;
   const progress =
-    isSummaryVisible || totalCards === 0 ? (isSummaryVisible ? 100 : 0) : (reviewedCount / totalCards) * 100;
+    isSummaryVisible || totalCards === 0
+      ? isSummaryVisible
+        ? 100
+        : 0
+      : (reviewedCount / totalCards) * 100;
   const retention =
     sessionGrades.length > 0
-      ? Math.round((sessionGrades.filter((grade) => grade >= 3).length / sessionGrades.length) * 100)
+      ? Math.round(
+          (sessionGrades.filter((grade) => grade >= 3).length / sessionGrades.length) * 100,
+        )
       : 0;
   const totalMinutes = Math.max(1, Math.round((Date.now() - startedAt) / (60 * 1000)));
   const nextDueLabel = buildNextDueLabel(sessionCards, now);
-  const summaryTitle = reviewedCount === 0 && queue.length === 0 ? "No cards due" : "Session complete";
+  const summaryTitle =
+    reviewedCount === 0 && queue.length === 0 ? "No cards due" : "Session complete";
   const allDueCards = buildDueQueue(sessionCards, now);
   const gatedNewCards = allDueCards.filter((c) => c.state === 0 && !sessionCardIds.has(c.id));
   const hasGatedNewCards = newCardsBudget !== null && gatedNewCards.length > 0;
@@ -100,7 +110,9 @@ export function StudyScreen({
     setSessionGrades([]);
     const admitted = buildAdmittedSet(cards, Date.now(), newCardsBudget);
     setSessionCardIds(admitted);
-    setIsSummaryVisible(buildDueQueue(cards, Date.now()).filter((c) => admitted.has(c.id)).length === 0);
+    setIsSummaryVisible(
+      buildDueQueue(cards, Date.now()).filter((c) => admitted.has(c.id)).length === 0,
+    );
     setStartedAt(Date.now());
     setIsSubmittingReview(false);
     setError(null);
@@ -161,7 +173,14 @@ export function StudyScreen({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isAnswerVisible, isSubmittingReview, isSummaryVisible, isSuspendedView, onBack, pressedGrade]);
+  }, [
+    isAnswerVisible,
+    isSubmittingReview,
+    isSummaryVisible,
+    isSuspendedView,
+    onBack,
+    pressedGrade,
+  ]);
 
   async function handleRate(grade: StudyGrade) {
     if (!currentCard || pressedGrade !== null || isSubmittingReview) {
@@ -174,7 +193,9 @@ export function StudyScreen({
 
     try {
       const updatedCard = await onReviewCard({ card: currentCard, grade });
-      const nextCards = sessionCards.map((card) => (card.id === updatedCard.id ? updatedCard : card));
+      const nextCards = sessionCards.map((card) =>
+        card.id === updatedCard.id ? updatedCard : card,
+      );
       const nextNow = updatedCard.lastReview ?? Date.now();
 
       setSessionGrades((currentGrades) => [...currentGrades, grade]);
@@ -182,7 +203,9 @@ export function StudyScreen({
       setIsAnswerVisible(false);
       setNow(nextNow);
 
-      if (buildDueQueue(nextCards, nextNow).filter((card) => sessionCardIds.has(card.id)).length === 0) {
+      if (
+        buildDueQueue(nextCards, nextNow).filter((card) => sessionCardIds.has(card.id)).length === 0
+      ) {
         setIsSummaryVisible(true);
       }
     } catch (nextError: unknown) {
@@ -208,7 +231,9 @@ export function StudyScreen({
       setIsAnswerVisible(false);
       setNow(nextNow);
 
-      if (buildDueQueue(nextCards, nextNow).filter((card) => sessionCardIds.has(card.id)).length === 0) {
+      if (
+        buildDueQueue(nextCards, nextNow).filter((card) => sessionCardIds.has(card.id)).length === 0
+      ) {
         setIsSummaryVisible(true);
       }
     } catch (nextError: unknown) {
@@ -225,7 +250,9 @@ export function StudyScreen({
 
     try {
       const updatedCard = await onSuspendCard({ id: currentCard.id, suspended: true });
-      const nextCards = sessionCards.map((card) => (card.id === updatedCard.id ? updatedCard : card));
+      const nextCards = sessionCards.map((card) =>
+        card.id === updatedCard.id ? updatedCard : card,
+      );
       setSessionCards(nextCards);
       // Keep the card visible so the user can decide to skip or unsuspend.
       setSuspendedCardId(currentCard.id);
@@ -243,7 +270,9 @@ export function StudyScreen({
 
     try {
       const updatedCard = await onSuspendCard({ id: suspendedCardId, suspended: false });
-      const nextCards = sessionCards.map((card) => (card.id === updatedCard.id ? updatedCard : card));
+      const nextCards = sessionCards.map((card) =>
+        card.id === updatedCard.id ? updatedCard : card,
+      );
       setSessionCards(nextCards);
       setSuspendedCardId(null);
       setNow(Date.now());
@@ -259,7 +288,10 @@ export function StudyScreen({
     const nextNow = Date.now();
     setNow(nextNow);
 
-    if (buildDueQueue(sessionCards, nextNow).filter((card) => sessionCardIds.has(card.id)).length === 0) {
+    if (
+      buildDueQueue(sessionCards, nextNow).filter((card) => sessionCardIds.has(card.id)).length ===
+      0
+    ) {
       setIsSummaryVisible(true);
     }
   }
@@ -270,7 +302,9 @@ export function StudyScreen({
     setIsAnswerVisible(false);
     setPressedGrade(null);
     setSessionGrades([]);
-    setIsSummaryVisible(buildDueQueue(sessionCards, Date.now()).filter((c) => admitted.has(c.id)).length === 0);
+    setIsSummaryVisible(
+      buildDueQueue(sessionCards, Date.now()).filter((c) => admitted.has(c.id)).length === 0,
+    );
     setStartedAt(Date.now());
     setIsSubmittingReview(false);
     setError(null);
@@ -310,7 +344,11 @@ export function StudyScreen({
       ) : displayCard ? (
         <div className="session-area">
           <div className="session-card-wrap">
-            <StudyReviewCard card={displayCard} isAnswerVisible={isAnswerVisible} isSuspended={isSuspendedView} />
+            <StudyReviewCard
+              card={displayCard}
+              isAnswerVisible={isAnswerVisible}
+              isSuspended={isSuspendedView}
+            />
           </div>
 
           {isSuspendedView ? (
@@ -372,8 +410,7 @@ function buildAdmittedSet(
   const dueCards = buildDueQueue(cards, now);
   const reviewCards = dueCards.filter((c) => c.state > 0);
   const newCards = dueCards.filter((c) => c.state === 0);
-  const admittedNewCards =
-    newCardsBudget !== null ? newCards.slice(0, newCardsBudget) : newCards;
+  const admittedNewCards = newCardsBudget !== null ? newCards.slice(0, newCardsBudget) : newCards;
 
   return new Set([...reviewCards, ...admittedNewCards].map((c) => c.id));
 }

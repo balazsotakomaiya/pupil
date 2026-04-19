@@ -33,6 +33,16 @@ It is also designed to be more present in your day than Anki typically is — su
 - Export review history as CSV
 - Store everything locally in SQLite — no account, no sync
 
+## Product direction
+
+Pupil is designed around one idea: studying should feel sharp, calm, and immediate.
+
+- Local-first by default
+- Fast enough to go from idea to deck in under a minute
+- Structured for daily use, not just card authoring
+- Opinionated UI rather than plugin-era complexity
+- Open to future assistant workflows — including a possible MCP bridge so tools like Claude or ChatGPT could push cards directly into Pupil
+
 ## Built with
 
 - **Tauri v2** — native desktop shell
@@ -71,33 +81,51 @@ bun dev
 
 The first Rust build takes a few minutes. Subsequent dev starts are incremental.
 
+## Testing
+
+Run the full test suite:
+
+```bash
+bun run test
+```
+
+Use `bun run test`, not `bun test`, for the full repo suite. `bun test` is Bun's built-in JavaScript test runner and it will not invoke Cargo.
+
+Run only the app's Vitest suite:
+
+```bash
+bun run test:ts
+```
+
+Run only the Rust tests:
+
+```bash
+bun run test:rust
+```
+
+Run linting and typechecking:
+
+```bash
+bun run lint
+bun run typecheck
+```
+
+Run Rust linting and formatting checks:
+
+```bash
+bun run lint:rust
+bun run format:check
+```
+
 ## Project layout
 
 ```
 apps/
   app/      Desktop app (Tauri + React)
   site/     Marketing site
-packages/   Shared packages
 docs/       Specs and design notes
 ```
-
-Key docs:
-
-- [Phase 1 spec](docs/PHASE_1_SPEC.md)
-- [Phase 2 spec](docs/PHASE_2_SPEC.md)
-- [App design notes](apps/app/DESIGN.md)
-- [Agent/contributor guide](apps/app/AGENTS.md)
 
 ## License
 
 Pupil is available under the MIT License. You can use, modify, distribute, and sell software based on it, as long as you keep the copyright notice and license text. See [LICENSE](LICENSE).
-
-## Product direction
-
-Pupil is designed around one idea: studying should feel sharp, calm, and immediate.
-
-- Local-first by default
-- Fast enough to go from idea to deck in under a minute
-- Structured for daily use, not just card authoring
-- Opinionated UI rather than plugin-era complexity
-- Open to future assistant workflows — including a possible MCP bridge so tools like Claude or ChatGPT could push cards directly into Pupil

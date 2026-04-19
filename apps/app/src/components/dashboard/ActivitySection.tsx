@@ -6,11 +6,7 @@ type ActivitySectionProps = {
   streakCount: number;
 };
 
-export function ActivitySection({
-  activity,
-  streakCells,
-  streakCount,
-}: ActivitySectionProps) {
+export function ActivitySection({ activity, streakCells, streakCount }: ActivitySectionProps) {
   return (
     <section className="section">
       <div className="section-head">
@@ -58,7 +54,9 @@ export function ActivitySection({
           </div>
 
           {activity.length === 0 ? (
-            <div className="activity-empty">No study activity yet. Your first reviews will show up here.</div>
+            <div className="activity-empty">
+              No study activity yet. Your first reviews will show up here.
+            </div>
           ) : (
             activity.map((item) => (
               <div className="activity-row" key={item.id}>

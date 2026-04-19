@@ -32,13 +32,24 @@ export function DeleteSpaceDialog({
                 undone.
               </p>
             </div>
-            <button aria-label="Close" className="dialog-close" disabled={isDeleting} onClick={onClose} type="button">
+            <button
+              aria-label="Close"
+              className="dialog-close"
+              disabled={isDeleting}
+              onClick={onClose}
+              type="button"
+            >
               <CloseIcon />
             </button>
           </div>
 
           <div className="dialog-actions">
-            <button className="study-btn-secondary" disabled={isDeleting} onClick={onClose} type="button">
+            <button
+              className="study-btn-secondary"
+              disabled={isDeleting}
+              onClick={onClose}
+              type="button"
+            >
               Cancel
             </button>
             <button

@@ -44,7 +44,12 @@ export function StudyActions({
   if (!isAnswerVisible) {
     return (
       <div className="session-actions">
-        <button className="session-reveal-btn" disabled={isSubmitting} onClick={onReveal} type="button">
+        <button
+          className="session-reveal-btn"
+          disabled={isSubmitting}
+          onClick={onReveal}
+          type="button"
+        >
           Show answer
           <span className="session-reveal-kbd">Space</span>
         </button>

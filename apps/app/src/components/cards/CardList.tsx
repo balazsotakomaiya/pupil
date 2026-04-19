@@ -45,14 +45,19 @@ export function CardList({
         const dueMeta = formatDue(card.due);
 
         return (
-          <article className={`card-row${isExpanded ? " expanded" : ""}${card.suspended ? " suspended" : ""}`} key={card.id}>
+          <article
+            className={`card-row${isExpanded ? " expanded" : ""}${card.suspended ? " suspended" : ""}`}
+            key={card.id}
+          >
             <button
               className={`card-row-main${mode === "space" ? " space-mode" : ""}`}
               onClick={() => onToggleExpand(card.id)}
               type="button"
             >
               <span className="card-front">{card.front}</span>
-              <span className={`card-state ${stateClassName(card.state)}`}>{formatState(card.state)}</span>
+              <span className={`card-state ${stateClassName(card.state)}`}>
+                {formatState(card.state)}
+              </span>
               <span className="card-source">{formatSource(card.source)}</span>
               <span className={`card-due ${dueMeta.variant === "overdue" ? "overdue" : ""}`}>
                 {dueMeta.variant === "overdue" ? <span className="due-dot" /> : null}
@@ -100,7 +105,11 @@ export function CardList({
                   ))}
 
                   <div className="card-expanded-actions">
-                    <button className="action-btn" onClick={() => onEditCard(card.id)} type="button">
+                    <button
+                      className="action-btn"
+                      onClick={() => onEditCard(card.id)}
+                      type="button"
+                    >
                       <EditIcon />
                       Edit
                     </button>
@@ -114,7 +123,11 @@ export function CardList({
                         {card.suspended ? "Unsuspend" : "Suspend"}
                       </button>
                     ) : null}
-                    <button className="action-btn" onClick={() => onDeleteCard(card.id)} type="button">
+                    <button
+                      className="action-btn"
+                      onClick={() => onDeleteCard(card.id)}
+                      type="button"
+                    >
                       <DeleteIcon />
                       Delete
                     </button>

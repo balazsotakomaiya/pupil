@@ -1,9 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import {
-  createNewCardFsrsFields,
-  scheduleCard,
-  type FsrsReviewGrade,
-} from "./fsrs";
+import { createNewCardFsrsFields, type FsrsReviewGrade, scheduleCard } from "./fsrs";
 import { isTauriRuntime } from "./runtime";
 
 export type CardSource = "manual" | "ai" | "anki";
@@ -372,7 +368,11 @@ function touchWebSpace(spaceId: string, spaces: StoredWebSpace[], timestamp: num
 
   window.localStorage.setItem(
     WEB_SPACE_STORAGE_KEY,
-    JSON.stringify(nextSpaces.sort((left, right) => right.updatedAt - left.updatedAt || right.createdAt - left.createdAt)),
+    JSON.stringify(
+      nextSpaces.sort(
+        (left, right) => right.updatedAt - left.updatedAt || right.createdAt - left.createdAt,
+      ),
+    ),
   );
 }
 
@@ -543,9 +543,7 @@ function writeWebStudyDays(days: StudyDayRecord[]): void {
 function upsertWebStudyDay(spaceId: string | null, reviewedAt: number): void {
   const day = formatStudyDay(reviewedAt);
   const currentDays = readWebStudyDays();
-  const exists = currentDays.some(
-    (entry) => entry.day === day && entry.spaceId === spaceId,
-  );
+  const exists = currentDays.some((entry) => entry.day === day && entry.spaceId === spaceId);
 
   if (exists) {
     return;

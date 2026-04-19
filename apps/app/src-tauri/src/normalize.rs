@@ -1,8 +1,8 @@
 use crate::constants::SPACE_NAME_MAX_LENGTH;
 use crate::types::{
-    ImportAnkiCardInput, NormalizedCardInput, NormalizedCardUpdateInput,
+    ImportAnkiCardInput, ImportAnkiInput, NormalizedCardInput, NormalizedCardUpdateInput,
     NormalizedImportAnkiCardInput, NormalizedImportAnkiInput, NormalizedReviewCardInput,
-    NormalizedReviewCardLogInput, ReviewCardInput, UpdateCardInput, ImportAnkiInput,
+    NormalizedReviewCardLogInput, ReviewCardInput, UpdateCardInput,
 };
 
 pub(crate) fn normalize_space_name(name: &str) -> Result<String, String> {
@@ -93,7 +93,7 @@ pub(crate) fn normalize_import_anki_input(
     let cards = input
         .cards
         .iter()
-        .map(|card| normalize_import_anki_card(card))
+        .map(normalize_import_anki_card)
         .collect::<Result<Vec<_>, _>>()?;
 
     Ok(NormalizedImportAnkiInput {

@@ -8,7 +8,13 @@ export function BackIcon() {
 
 export function SparklesIcon() {
   return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4">
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeWidth="1.4"
+    >
       <path d="M8 1.75l.8 2.6a1 1 0 00.67.67l2.6.8-2.6.8a1 1 0 00-.67.67L8 10.9l-.8-2.61a1 1 0 00-.67-.67l-2.6-.8 2.6-.8a1 1 0 00.67-.67L8 1.75z" />
       <path d="M12.75 9.75l.39 1.29a.7.7 0 00.47.47l1.29.39-1.29.39a.7.7 0 00-.47.47l-.39 1.29-.39-1.29a.7.7 0 00-.47-.47l-1.29-.39 1.29-.39a.7.7 0 00.47-.47l.39-1.29z" />
       <path d="M3 10.75l.3.99a.6.6 0 00.4.4l.99.3-.99.3a.6.6 0 00-.4.4L3 14.13l-.3-.99a.6.6 0 00-.4-.4l-.99-.3.99-.3a.6.6 0 00.4-.4l.3-.99z" />
@@ -43,7 +49,11 @@ export function InfoIcon() {
   return (
     <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
       <circle cx="6" cy="6" r="5" />
-      <path d="M6 8.5v.01M6 4a1.25 1.25 0 011.12 1.82L6 7.25" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M6 8.5v.01M6 4a1.25 1.25 0 011.12 1.82L6 7.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -76,7 +86,13 @@ export function MoreIcon() {
 
 export function AlertIcon() {
   return (
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5">
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeWidth="1.5"
+    >
       <circle cx="10" cy="10" r="8" />
       <path d="M10 6v5M10 13.5v.5" />
     </svg>

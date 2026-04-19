@@ -1,4 +1,4 @@
-import { createEmptyCard, fsrs, type Card as FsrsCard } from "ts-fsrs";
+import { createEmptyCard, type Card as FsrsCard, fsrs } from "ts-fsrs";
 import type { CardRecord } from "./cards";
 
 export type FsrsReviewGrade = 1 | 2 | 3 | 4;
@@ -96,13 +96,17 @@ function mapFsrsCard(card: FsrsCard): CardFsrsFields {
   };
 }
 
-function mapReviewLog(log: Parameters<typeof scheduler.next>[0] extends never ? never : {
-  due: Date;
-  elapsed_days: number;
-  review: Date;
-  scheduled_days: number;
-  state: number;
-}) {
+function mapReviewLog(
+  log: Parameters<typeof scheduler.next>[0] extends never
+    ? never
+    : {
+        due: Date;
+        elapsed_days: number;
+        review: Date;
+        scheduled_days: number;
+        state: number;
+      },
+) {
   return {
     due: log.due.getTime(),
     elapsedDays: log.elapsed_days,

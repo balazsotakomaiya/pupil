@@ -38,7 +38,7 @@ export function AiGenerateForm({
 }: AiGenerateFormProps) {
   const selectedExistingSpace =
     draft.spaceId !== NEW_SPACE_OPTION_ID
-      ? spaces.find((space) => space.id === draft.spaceId) ?? null
+      ? (spaces.find((space) => space.id === draft.spaceId) ?? null)
       : null;
 
   return (

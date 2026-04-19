@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
+import type { CardRecord } from "../../lib/cards";
+import type { SpaceSummary } from "../../lib/spaces";
+import type { SpaceStats } from "../../lib/stats";
 import { SpaceDetailsTitlebar } from "../app-shell";
 import { CardFormPanel } from "../cards/CardFormPanel";
 import { CardList } from "../cards/CardList";
 import { Pagination } from "../Pagination";
 import { DeleteSpaceDialog } from "./DeleteSpaceDialog";
-import type { CardRecord } from "../../lib/cards";
-import type { SpaceSummary } from "../../lib/spaces";
-import type { SpaceStats } from "../../lib/stats";
 
 const PAGE_SIZE = 50;
 
@@ -21,7 +21,12 @@ type SpaceDetailsScreenProps = {
   cards: CardRecord[];
   isMutating: boolean;
   onBack: () => void;
-  onCreateCard: (input: { back: string; front: string; spaceId: string; tags: string[] }) => Promise<void>;
+  onCreateCard: (input: {
+    back: string;
+    front: string;
+    spaceId: string;
+    tags: string[];
+  }) => Promise<void>;
   onDeleteCard: (input: { id: string }) => Promise<void>;
   onDeleteSpace: () => Promise<void>;
   onOpenAiGenerate: () => void;
@@ -97,7 +102,9 @@ export function SpaceDetailsScreen({
   const dueTodayCount = spaceCards.filter((card) => card.due < startOfTomorrow).length;
   const overdueCount = spaceCards.filter((card) => card.due < startOfToday.getTime()).length;
   const dueLaterTodayCount = spaceCards.filter((card) => isDueLaterToday(card.due, now)).length;
-  const cardsAddedThisWeek = spaceCards.filter((card) => now - card.createdAt < 7 * DAY_IN_MS).length;
+  const cardsAddedThisWeek = spaceCards.filter(
+    (card) => now - card.createdAt < 7 * DAY_IN_MS,
+  ).length;
   const stateSummary = buildStateSummary(spaceCards);
   const stateRows = buildStateRows(stateSummary);
   const activityBars = buildActivityBars(stats?.reviewActivity7d ?? [], now);
@@ -253,7 +260,9 @@ export function SpaceDetailsScreen({
             <span className="space-tag">updated {formatAgeLabel(space.updatedAt, now)}</span>
           </div>
 
-          <p className="space-desc">{buildSpaceDescription(space, readyCards.length, dueLaterTodayCount)}</p>
+          <p className="space-desc">
+            {buildSpaceDescription(space, readyCards.length, dueLaterTodayCount)}
+          </p>
         </section>
 
         <section className="study-section">
@@ -263,7 +272,9 @@ export function SpaceDetailsScreen({
                 <span className="live-dot" />
                 Cards in this space
               </div>
-              <div className="study-headline">{buildStudyHeadline(readyCards.length, space.cardCount)}</div>
+              <div className="study-headline">
+                {buildStudyHeadline(readyCards.length, space.cardCount)}
+              </div>
               <div className="study-sub">
                 {buildStudySubline(readyCards.length, dueLaterTodayCount, spaceCards, now)}
               </div>
@@ -365,7 +376,9 @@ export function SpaceDetailsScreen({
 
               <div className="chart-axis">
                 <span>0</span>
-                <span>{formatNumber(activityBars.reduce((max, bar) => Math.max(max, bar.count), 0))}</span>
+                <span>
+                  {formatNumber(activityBars.reduce((max, bar) => Math.max(max, bar.count), 0))}
+                </span>
               </div>
             </div>
 
@@ -481,7 +494,11 @@ export function SpaceDetailsScreen({
             onSuspendCard={(cardId, suspended) => void onSuspendCard({ id: cardId, suspended })}
             onToggleExpand={handleToggleExpand}
           />
-          <Pagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={totalPages} />
+          <Pagination
+            currentPage={safePage}
+            onPageChange={setCurrentPage}
+            totalPages={totalPages}
+          />
         </section>
 
         <div className="page-end" />
@@ -494,7 +511,9 @@ export function SpaceDetailsScreen({
         isDeleting={isDeleting}
         isOpen={isEditorOpen}
         isSubmitting={isMutating}
-        onChange={(patch) => setDraft((currentDraft) => ({ ...currentDraft, ...patch, spaceId: space.id }))}
+        onChange={(patch) =>
+          setDraft((currentDraft) => ({ ...currentDraft, ...patch, spaceId: space.id }))
+        }
         onClose={handleCloseEditor}
         onDelete={handleDelete}
         onSubmit={(options) => void handleSubmit(options)}
@@ -781,7 +800,13 @@ function PlusIcon() {
 
 function GenerateIcon() {
   return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4">
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeWidth="1.4"
+    >
       <path d="M8 1.75l.8 2.6a1 1 0 00.67.67l2.6.8-2.6.8a1 1 0 00-.67.67L8 10.9l-.8-2.61a1 1 0 00-.67-.67l-2.6-.8 2.6-.8a1 1 0 00.67-.67L8 1.75z" />
       <path d="M12.75 9.75l.39 1.29a.7.7 0 00.47.47l1.29.39-1.29.39a.7.7 0 00-.47.47l-.39 1.29-.39-1.29a.7.7 0 00-.47-.47l-1.29-.39 1.29-.39a.7.7 0 00.47-.47l.39-1.29z" />
       <path d="M3 10.75l.3.99a.6.6 0 00.4.4l.99.3-.99.3a.6.6 0 00-.4.4L3 14.13l-.3-.99a.6.6 0 00-.4-.4l-.99-.3.99-.3a.6.6 0 00.4-.4l.3-.99z" />
@@ -791,7 +816,13 @@ function GenerateIcon() {
 
 function ImportIcon() {
   return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5">
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeWidth="1.5"
+    >
       <path d="M8 2.25v7" />
       <path d="M5.25 6.75L8 9.5l2.75-2.75" />
       <path d="M3 10.75v1A1.25 1.25 0 004.25 13h7.5A1.25 1.25 0 0013 11.75v-1" />

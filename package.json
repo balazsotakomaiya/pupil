@@ -10,13 +10,22 @@
   "scripts": {
     "dev": "bun run --workspaces --if-present dev",
     "build": "bun run --workspaces --if-present build",
-    "lint": "bun run --workspaces --if-present lint",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "lint:rust": "cargo clippy --manifest-path apps/app/src-tauri/Cargo.toml --all-targets -- -D warnings",
+    "format:rust": "cargo fmt --manifest-path apps/app/src-tauri/Cargo.toml --all",
+    "format:check": "cargo fmt --manifest-path apps/app/src-tauri/Cargo.toml --all --check",
     "typecheck": "bun run --workspaces --if-present typecheck",
-    "test": "bun run --workspaces --if-present test",
+    "test:ts": "bun run --workspaces --if-present test",
+    "test:rust": "cargo test --manifest-path apps/app/src-tauri/Cargo.toml",
+    "test": "bun run test:ts && bun run test:rust",
+    "prepare": "lefthook install",
     "release:check": "bun ./scripts/desktop-release.mjs check",
     "release:version": "bun ./scripts/desktop-release.mjs version"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.12",
+    "@evilmartians/lefthook": "^2.1.6",
     "typescript": "^5.8.0"
   },
   "engines": {

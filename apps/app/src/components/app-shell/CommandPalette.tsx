@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import type { AppTabId } from "./AppTitlebar";
 import type { CardRecord } from "../../lib/cards";
 import type { SpaceSummary } from "../../lib/spaces";
+import type { AppTabId } from "./AppTitlebar";
 
 type CommandPaletteProps = {
   cards: CardRecord[];
@@ -276,8 +276,7 @@ export function CommandPalette({
       items: q
         ? group.items.filter(
             (item) =>
-              item.title.toLowerCase().includes(q) ||
-              item.subtitle.toLowerCase().includes(q),
+              item.title.toLowerCase().includes(q) || item.subtitle.toLowerCase().includes(q),
           )
         : group.items,
     }))
@@ -410,23 +409,19 @@ export function CommandPalette({
                     >
                       <div className="palette-item-icon">{ICONS[item.icon]}</div>
                       <div className="palette-item-content">
-                        <div className="palette-item-title">
-                          {highlight(item.title, q)}
-                        </div>
+                        <div className="palette-item-title">{highlight(item.title, q)}</div>
                         {item.subtitle && (
-                          <div className="palette-item-subtitle">
-                            {highlight(item.subtitle, q)}
-                          </div>
+                          <div className="palette-item-subtitle">{highlight(item.subtitle, q)}</div>
                         )}
                       </div>
                       <div className="palette-item-meta">
-                        {item.badge && (
-                          <span className="palette-item-badge">{item.badge}</span>
-                        )}
+                        {item.badge && <span className="palette-item-badge">{item.badge}</span>}
                         {item.shortcut && (
                           <div className="palette-item-shortcut">
                             {item.shortcut.split("").map((k, i) => (
-                              <span className="palette-kbd" key={i}>{k}</span>
+                              <span className="palette-kbd" key={i}>
+                                {k}
+                              </span>
                             ))}
                           </div>
                         )}

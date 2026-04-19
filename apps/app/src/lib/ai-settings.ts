@@ -85,9 +85,7 @@ export async function saveAiSettings(input: SaveAiSettingsInput): Promise<AiSett
   const nextSettings: AiSettings = {
     apiKey: input.apiKey ?? current.apiKey,
     hasApiKey:
-      typeof input.apiKey === "string"
-        ? input.apiKey.trim().length > 0
-        : current.hasApiKey,
+      typeof input.apiKey === "string" ? input.apiKey.trim().length > 0 : current.hasApiKey,
     baseUrl: input.baseUrl,
     model: input.model,
     maxTokens: input.maxTokens,
@@ -303,7 +301,13 @@ function splitLongPart(part: string) {
     return [part];
   }
 
-  return [part, ...part.split(/\s+/).filter((word) => word.length > 4).slice(0, 3)];
+  return [
+    part,
+    ...part
+      .split(/\s+/)
+      .filter((word) => word.length > 4)
+      .slice(0, 3),
+  ];
 }
 
 function difficultyExplanation(difficulty: AiDifficulty) {

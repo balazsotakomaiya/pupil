@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import {
   describeAiSettingsError,
   loadAiSettings,
@@ -11,6 +11,7 @@ import {
   exportReviewLogsCsv,
   getSettingsDataSummary,
 } from "../../lib/data-actions";
+import type { StudySettings } from "../../lib/study-settings";
 import { SettingsAboutCard } from "./SettingsAboutCard";
 import { SettingsConnectionStatus } from "./SettingsConnectionStatus";
 import { SettingsDataCard } from "./SettingsDataCard";
@@ -26,7 +27,6 @@ import {
 import { SettingsNav, type SettingsSectionId } from "./SettingsNav";
 import { SettingsShortcutsGrid } from "./SettingsShortcutsGrid";
 import { StudySettingsCard } from "./StudySettingsCard";
-import { type StudySettings } from "../../lib/study-settings";
 
 type SettingsScreenProps = {
   cardsCount: number;
@@ -252,9 +252,9 @@ export function SettingsScreen({
 
   useEffect(() => {
     function updateActiveSection() {
-      const entries = (Object.entries(sectionRefs) as Array<
-        [SettingsSectionId, RefObject<HTMLElement | null>]
-      >)
+      const entries = (
+        Object.entries(sectionRefs) as Array<[SettingsSectionId, RefObject<HTMLElement | null>]>
+      )
         .map(([id, ref]) => ({
           id,
           top: ref.current?.getBoundingClientRect().top ?? Number.POSITIVE_INFINITY,
@@ -563,9 +563,8 @@ export function SettingsScreen({
         <div className="settings-section-head">
           <div className="settings-section-title">New Cards Per Day</div>
           <div className="settings-section-desc">
-            Control how many unseen cards are introduced each day. Reviews of
-            cards already in your learning queue always appear when due — this
-            limit only gates new material.
+            Control how many unseen cards are introduced each day. Reviews of cards already in your
+            learning queue always appear when due — this limit only gates new material.
           </div>
         </div>
 
@@ -678,8 +677,7 @@ export function SettingsScreen({
               value={baseUrl}
             />
             <div className="settings-field-hint">
-              OpenAI-compatible endpoint. Change this for Anthropic, Ollama, or a self-hosted
-              proxy.
+              OpenAI-compatible endpoint. Change this for Anthropic, Ollama, or a self-hosted proxy.
             </div>
           </div>
 
@@ -788,7 +786,6 @@ export function SettingsScreen({
               </div>
             </div>
           </div>
-
         </div>
       </section>
 
@@ -804,83 +801,87 @@ export function SettingsScreen({
         </div>
 
         <div className="settings-data-section-body">
-        <div className="settings-data-cards">
-          <SettingsDataCard
-            action={
-              <button
-                className="settings-data-btn"
-                disabled={isExportingDatabase}
-                onClick={() => void handleExportDatabase()}
-                type="button"
-              >
-                <DownloadIcon />
-                {isExportingDatabase ? "Exporting…" : "Export"}
-              </button>
-            }
-            description="Live SQLite file containing all spaces, cards, scheduler state, and study metadata."
-            title="Database"
-            value={
-              <>
-                <strong>{spacesCount}</strong> spaces · <strong>{cardsCount}</strong> cards
-              </>
-            }
-          />
+          <div className="settings-data-cards">
+            <SettingsDataCard
+              action={
+                <button
+                  className="settings-data-btn"
+                  disabled={isExportingDatabase}
+                  onClick={() => void handleExportDatabase()}
+                  type="button"
+                >
+                  <DownloadIcon />
+                  {isExportingDatabase ? "Exporting…" : "Export"}
+                </button>
+              }
+              description="Live SQLite file containing all spaces, cards, scheduler state, and study metadata."
+              title="Database"
+              value={
+                <>
+                  <strong>{spacesCount}</strong> spaces · <strong>{cardsCount}</strong> cards
+                </>
+              }
+            />
 
-          <SettingsDataCard
-            action={
-              <button
-                className="settings-data-btn"
-                disabled={isExportingReviewLogs}
-                onClick={() => void handleExportReviewLogs()}
-                type="button"
-              >
-                <DownloadIcon />
-                {isExportingReviewLogs ? "Exporting…" : "Export CSV"}
-              </button>
-            }
-            description="Review history recorded during study sessions. Export writes a CSV with one row per review."
-            title="Review Logs"
-            value={
-              <>
-                <strong>{reviewLogCount}</strong> reviews
-              </>
-            }
-          />
+            <SettingsDataCard
+              action={
+                <button
+                  className="settings-data-btn"
+                  disabled={isExportingReviewLogs}
+                  onClick={() => void handleExportReviewLogs()}
+                  type="button"
+                >
+                  <DownloadIcon />
+                  {isExportingReviewLogs ? "Exporting…" : "Export CSV"}
+                </button>
+              }
+              description="Review history recorded during study sessions. Export writes a CSV with one row per review."
+              title="Review Logs"
+              value={
+                <>
+                  <strong>{reviewLogCount}</strong> reviews
+                </>
+              }
+            />
 
-          <SettingsDataCard
-            action={
-              <button className="settings-data-btn" onClick={() => void handleCopyPath()} type="button">
-                <CopyIcon />
-                {copyState === "copied" ? "Copied" : "Copy"}
-              </button>
-            }
-            description={<span className="settings-data-card-desc-path">{databasePath}</span>}
-            title="Database Path"
-          />
+            <SettingsDataCard
+              action={
+                <button
+                  className="settings-data-btn"
+                  onClick={() => void handleCopyPath()}
+                  type="button"
+                >
+                  <CopyIcon />
+                  {copyState === "copied" ? "Copied" : "Copy"}
+                </button>
+              }
+              description={<span className="settings-data-card-desc-path">{databasePath}</span>}
+              title="Database Path"
+            />
 
-          <SettingsDataCard
-            action={
-              <button
-                className="settings-data-btn danger"
-                disabled={isResettingData}
-                onClick={() => void handleReset()}
-                type="button"
-              >
-                <TrashIcon />
-                {isResettingData ? "Resetting…" : "Reset"}
-              </button>
-            }
-            description="Delete all spaces, cards, review history, saved AI settings, and the stored API key from this device."
-            title="Reset All Data"
-            tone="danger"
-          />
-        </div>
+            <SettingsDataCard
+              action={
+                <button
+                  className="settings-data-btn danger"
+                  disabled={isResettingData}
+                  onClick={() => void handleReset()}
+                  type="button"
+                >
+                  <TrashIcon />
+                  {isResettingData ? "Resetting…" : "Reset"}
+                </button>
+              }
+              description="Delete all spaces, cards, review history, saved AI settings, and the stored API key from this device."
+              title="Reset All Data"
+              tone="danger"
+            />
+          </div>
 
-        <SettingsConnectionStatus
-          detail={dataStatus.detail}
-          kind={dataStatus.kind}
-          label={dataStatus.label}
-        />
+          <SettingsConnectionStatus
+            detail={dataStatus.detail}
+            kind={dataStatus.kind}
+            label={dataStatus.label}
+          />
         </div>
       </section>
 

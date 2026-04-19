@@ -11,8 +11,12 @@ export default function Nav() {
           pupil
         </Link>
         <ul className="nav-links">
-          <li><a href="/#features">Features</a></li>
-          <li><a href="/#how-it-works">How it works</a></li>
+          <li>
+            <a href="/#features">Features</a>
+          </li>
+          <li>
+            <a href="/#how-it-works">How it works</a>
+          </li>
           <li>
             <Link
               to="/manifesto"
@@ -28,7 +32,13 @@ export default function Nav() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
               GitHub
@@ -97,7 +107,15 @@ function PupilEye() {
         strokeWidth="1.5"
         fill="none"
       />
-      <circle className="pupil-eye-iris" cx="26" cy="26" r="8" stroke="#ededed" strokeWidth="1.5" fill="none" />
+      <circle
+        className="pupil-eye-iris"
+        cx="26"
+        cy="26"
+        r="8"
+        stroke="#ededed"
+        strokeWidth="1.5"
+        fill="none"
+      />
       <g className="pupil-eye-pupil-group">
         <circle className="pupil-eye-pupil" cx="26" cy="26" r="4" fill="#ededed" />
       </g>

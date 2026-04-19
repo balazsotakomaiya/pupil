@@ -74,8 +74,7 @@ export async function listSpaceStats(): Promise<SpaceStats[]> {
     const successfulReviews = recentLogs.filter((log) => log.grade >= 3).length;
 
     return {
-      retention30d:
-        recentLogs.length > 0 ? (successfulReviews / recentLogs.length) * 100 : null,
+      retention30d: recentLogs.length > 0 ? (successfulReviews / recentLogs.length) * 100 : null,
       reviewActivity7d: buildReviewActivity7d(logs, now),
       spaceId,
     };
@@ -190,7 +189,7 @@ function readStoredStudyDays(): StoredStudyDay[] {
 function computeStreak(days: string[], today: string) {
   const daySet = new Set(days);
   let streak = 0;
-  let cursor = new Date(`${today}T00:00:00`);
+  const cursor = new Date(`${today}T00:00:00`);
 
   if (!daySet.has(today)) {
     cursor.setDate(cursor.getDate() - 1);
