@@ -1,12 +1,18 @@
 import { create } from "zustand";
 import type { AppError } from "./errors";
 
+export enum NotificationType {
+  Error = "error",
+  Info = "info",
+  Success = "success",
+}
+
 export type Notification = {
   createdAt: number;
   id: string;
   message: string;
   title?: string;
-  type: "error" | "info" | "success";
+  type: NotificationType;
   error?: AppError;
 };
 
@@ -36,11 +42,11 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
 }));
 
 export function notifySuccess(message: string, title?: string) {
-  return useNotificationStore.getState().notify({ message, title, type: "success" });
+  return useNotificationStore.getState().notify({ message, title, type: NotificationType.Success });
 }
 
 export function notifyInfo(message: string, title?: string) {
-  return useNotificationStore.getState().notify({ message, title, type: "info" });
+  return useNotificationStore.getState().notify({ message, title, type: NotificationType.Info });
 }
 
 export function notifyError(error: AppError, title = "Something went wrong") {
@@ -48,6 +54,6 @@ export function notifyError(error: AppError, title = "Something went wrong") {
     error,
     message: error.message,
     title,
-    type: "error",
+    type: NotificationType.Error,
   });
 }

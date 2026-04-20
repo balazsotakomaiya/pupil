@@ -46,6 +46,8 @@ struct LoggingState {
     _guard: WorkerGuard,
 }
 
+/// Installs a single global panic hook so unexpected backend crashes land in the
+/// tracing log instead of disappearing into stderr only.
 fn install_panic_hook() {
     let _ = PANIC_HOOK_INSTALLED.get_or_init(|| {
         std::panic::set_hook(Box::new(|panic_info| {
@@ -70,6 +72,8 @@ fn install_panic_hook() {
     });
 }
 
+/// Configures file-backed tracing for the desktop app before any commands or
+/// migrations run so startup failures are still captured locally.
 fn init_logging(app: &tauri::AppHandle) -> Result<LoggingState, AppError> {
     let logs_dir = app::app_data_dir(app)?.join("logs");
     fs::create_dir_all(&logs_dir)?;
@@ -88,6 +92,8 @@ fn init_logging(app: &tauri::AppHandle) -> Result<LoggingState, AppError> {
     Ok(LoggingState { _guard: guard })
 }
 
+/// Builds and runs the Tauri application with all plugins, commands, logging,
+/// and database bootstrap wired in one place.
 pub fn run() {
     let builder = tauri::Builder::default()
         .manage(StrongholdState::default())

@@ -694,7 +694,7 @@ Either approach eliminates the manual duplication and makes type drift impossibl
 
 | Document | Current status | Action |
 |----------|---------------|--------|
-| `docs/PHASE_1_SPEC.md` | Phase 1 is shipped. Contains a detailed chunk tracker with implementation status. | Mark as "Phase 1 — Completed" at the top. Keep as historical reference. Remove TODO items that are now done. |
+| `docs/PHASE_1_SPEC.md` | Phase 1 is shipped. The file is redundant with the current app/docs state. | Delete the file and fold any still-useful notes into the current docs set. |
 | `docs/PHASE_2_SPEC.md` | Next iteration plan. | Keep active. Ensure it reflects current priorities. |
 | `docs/APP_GAPS.md` | Lists known gaps. Sections 4 and 5 are marked "Recently closed" but the content below still describes them as open. | Update or remove closed sections. Migrate remaining actionable items to GitHub Issues so they are trackable. The doc goes stale quickly. |
 | `apps/app/DESIGN.md` | Excellent design system documentation. | Keep. Ensure CSS token values in `style.css` (or extracted `tokens.css`) match what is documented here. |

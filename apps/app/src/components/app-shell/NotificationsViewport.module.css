@@ -1,20 +1,20 @@
 .viewport {
   position: fixed;
-  right: 20px;
-  bottom: 20px;
+  right: var(--space-5);
+  bottom: var(--space-5);
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: min(360px, calc(100vw - 32px));
+  gap: var(--space-3);
+  width: min(360px, calc(100vw - (var(--space-4) * 2)));
 }
 
 .item {
-  padding: 14px 16px;
+  padding: calc(var(--space-3) + 2px) var(--space-4);
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: calc(var(--radius-lg) + 6px);
   background: rgba(17, 17, 17, 0.92);
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(var(--space-4));
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
 }
 
@@ -31,25 +31,25 @@
 }
 
 .title {
-  margin: 0 0 4px;
-  font-size: 13px;
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-sm);
   font-weight: 700;
 }
 
 .message {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   line-height: 1.5;
 }
 
 .dismiss {
-  margin-top: 12px;
+  margin-top: var(--space-3);
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--text-tertiary);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   font-weight: 600;
 }

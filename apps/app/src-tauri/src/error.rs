@@ -3,6 +3,8 @@ use serde::Serialize;
 
 pub(crate) type AppResult<T> = Result<T, AppError>;
 
+/// Represents every backend failure shape the renderer needs to classify and
+/// present consistently.
 #[derive(Debug, thiserror::Error, Serialize)]
 #[serde(tag = "code", rename_all = "SCREAMING_SNAKE_CASE")]
 pub(crate) enum AppError {
@@ -31,6 +33,8 @@ pub(crate) enum AppError {
 }
 
 impl AppError {
+    /// Reuses the same SQLite-to-domain mapping for both space and card storage
+    /// operations while letting callers opt into duplicate-name detection.
     fn from_entity_storage(
         error: rusqlite::Error,
         entity: &str,
@@ -58,6 +62,7 @@ impl AppError {
         }
     }
 
+    /// Builds a validation error when a request fails general input checks.
     pub(crate) fn validation(message: impl Into<String>) -> Self {
         Self::Validation {
             message: message.into(),
@@ -65,6 +70,7 @@ impl AppError {
         }
     }
 
+    /// Builds a validation error tied to a specific camelCase field name.
     pub(crate) fn validation_field(message: impl Into<String>, field: impl Into<String>) -> Self {
         Self::Validation {
             message: message.into(),
@@ -72,18 +78,23 @@ impl AppError {
         }
     }
 
+    /// Wraps storage and filesystem failures in a user-displayable variant.
     pub(crate) fn storage_message(message: impl Into<String>) -> Self {
         Self::Storage {
             message: message.into(),
         }
     }
 
+    /// Wraps unexpected internal failures that should be logged and surfaced as
+    /// non-domain issues.
     pub(crate) fn internal_message(message: impl Into<String>) -> Self {
         Self::Internal {
             message: message.into(),
         }
     }
 
+    /// Creates a provider-facing error while optionally preserving a compact
+    /// machine-readable detail payload.
     pub(crate) fn ai_provider(
         message: impl Into<String>,
         detail: Option<impl Into<String>>,
@@ -94,33 +105,44 @@ impl AppError {
         }
     }
 
+    /// Marks a startup migration failure separately so the renderer can
+    /// distinguish boot errors from runtime command failures.
     pub(crate) fn migration_failed(message: impl Into<String>) -> Self {
         Self::MigrationFailed {
             message: message.into(),
         }
     }
 
+    /// Maps SQLite space-related failures into a structured domain/storage
+    /// error for the IPC boundary.
     pub(crate) fn from_space_storage(error: rusqlite::Error) -> Self {
         Self::from_entity_storage(error, "space", true)
     }
 
+    /// Maps card and cross-table card failures into the structured error set
+    /// used by the renderer.
     pub(crate) fn from_card_storage(error: rusqlite::Error) -> Self {
         Self::from_entity_storage(error, "card", false)
     }
 }
 
+/// Converts filesystem errors into the storage variant used for local data
+/// operations.
 impl From<std::io::Error> for AppError {
     fn from(error: std::io::Error) -> Self {
         Self::storage_message(error.to_string())
     }
 }
 
+/// Converts raw rusqlite errors into the generic storage variant when a more
+/// specific mapper is not available.
 impl From<rusqlite::Error> for AppError {
     fn from(error: rusqlite::Error) -> Self {
         Self::storage_message(error.to_string())
     }
 }
 
+/// Converts outbound HTTP client failures into a dedicated network error.
 impl From<reqwest::Error> for AppError {
     fn from(error: reqwest::Error) -> Self {
         Self::Network {
@@ -129,6 +151,7 @@ impl From<reqwest::Error> for AppError {
     }
 }
 
+/// Converts Tauri framework failures into the internal error bucket.
 impl From<tauri::Error> for AppError {
     fn from(error: tauri::Error) -> Self {
         Self::internal_message(error.to_string())
@@ -136,6 +159,7 @@ impl From<tauri::Error> for AppError {
 }
 
 #[cfg(target_os = "macos")]
+/// Converts macOS keyring integration failures into the storage error bucket.
 impl From<keyring::Error> for AppError {
     fn from(error: keyring::Error) -> Self {
         Self::storage_message(error.to_string())
