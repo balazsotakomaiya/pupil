@@ -1,18 +1,18 @@
 import { QueryClient } from "@tanstack/react-query";
 
-const DEFAULT_MUTATION_RETRY_COUNT = 0;
-const DEFAULT_QUERY_RETRY_COUNT = 1;
-const DEFAULT_QUERY_STALE_TIME_MS = 5_000;
+const MUTATION_RETRY_COUNT = 0;
+const QUERY_RETRY_COUNT = 1;
+const QUERY_STALE_TIME_MS = 5_000;
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     mutations: {
-      retry: DEFAULT_MUTATION_RETRY_COUNT,
+      retry: MUTATION_RETRY_COUNT,
     },
     queries: {
       refetchOnWindowFocus: false,
-      retry: DEFAULT_QUERY_RETRY_COUNT,
-      staleTime: DEFAULT_QUERY_STALE_TIME_MS,
+      retry: QUERY_RETRY_COUNT,
+      staleTime: QUERY_STALE_TIME_MS,
     },
   },
 });

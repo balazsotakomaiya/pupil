@@ -51,7 +51,7 @@ function StudyPage({ targetSpaceId }: { targetSpaceId?: string }) {
       await invalidateAfterCardMutation(queryClient);
     },
     onError(error) {
-      notifyError(toAppError(error, "Failed to update the card state."), "Card update failed");
+      notifyError(toAppError(error, "Failed to suspend the card."), "Card update failed");
     },
   });
 
