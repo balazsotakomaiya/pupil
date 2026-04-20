@@ -12,7 +12,12 @@ import {
 } from "@tanstack/react-router";
 import { createContext, type FormEvent, useContext, useEffect, useState } from "react";
 import { AiGenerateScreen, AiGenerateTitlebar } from "./components/ai-generate";
-import { AppTitlebar, CommandPalette, NotificationsViewport } from "./components/app-shell";
+import {
+  type AppTabId,
+  AppTitlebar,
+  CommandPalette,
+  NotificationsViewport,
+} from "./components/app-shell";
 import { CardsScreen } from "./components/cards";
 import { Dashboard, NewSpaceDialog, RulersOverlay } from "./components/dashboard";
 import { ScreenErrorBoundary } from "./components/ErrorBoundary";
@@ -21,9 +26,10 @@ import { OnboardingScreen } from "./components/onboarding";
 import { SettingsScreen } from "./components/settings";
 import { SpaceDetailsScreen } from "./components/space-details";
 import { StudyScreen } from "./components/study";
-import { listRecentActivity } from "./lib/activity";
+import { listRecentActivity, type RecentActivityRecord } from "./lib/activity";
 import { loadBootstrapState } from "./lib/bootstrap";
 import {
+  type CardRecord,
   createCard,
   deleteCard,
   listCards,
@@ -63,8 +69,13 @@ import {
   FALLBACK_STATS,
   FALLBACK_STUDY_SUMMARY,
 } from "./lib/seed-data";
-import { createSpace, deleteSpace, listSpaces } from "./lib/spaces";
-import { getDashboardStats, listSpaceStats } from "./lib/stats";
+import { createSpace, deleteSpace, listSpaces, type SpaceSummary } from "./lib/spaces";
+import {
+  type DashboardStats,
+  getDashboardStats,
+  listSpaceStats,
+  type SpaceStats,
+} from "./lib/stats";
 import { computeNewCardsBudget, getStudySettings, saveStudySettings } from "./lib/study-settings";
 
 const APP_TABS = [
@@ -75,7 +86,13 @@ const APP_TABS = [
 ] as const;
 
 type ShellActions = {
+  dismissOnboarding: () => void;
   openCreateDialog: () => void;
+};
+
+type ApprovedAiCardsInput = {
+  cards: Array<{ back: string; front: string; tags: string[] }>;
+  spaceId: string;
 };
 
 const ShellActionsContext = createContext<ShellActions | null>(null);
@@ -130,34 +147,104 @@ function useStudySettingsQuery() {
   return useCoreQuery(appQueryKeys.studySettings, () => getStudySettings());
 }
 
-function RootShell() {
+function getMainTab(pathname: string): AppTabId | null {
+  if (pathname === "/") {
+    return "dashboard";
+  }
+
+  if (pathname === "/cards") {
+    return "cards";
+  }
+
+  if (pathname === "/import") {
+    return "import";
+  }
+
+  if (pathname === "/settings") {
+    return "settings";
+  }
+
+  return null;
+}
+
+function useCreateSpaceDialog() {
   const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [value, setValue] = useState("");
+
+  const createSpaceMutation = useMutation({
+    mutationFn: async (name: string) => createSpace({ name }),
+    async onError(error: unknown) {
+      const appError = toAppError(error, "Failed to create space.");
+      setError(appError.message);
+      notifyError(appError, "Space creation failed");
+    },
+    async onSuccess() {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: appQueryKeys.spaces }),
+        queryClient.invalidateQueries({ queryKey: appQueryKeys.dashboardStats }),
+      ]);
+      notifySuccess("Space created");
+      setIsOpen(false);
+      setValue("");
+    },
+    onSettled() {
+      setIsSubmitting(false);
+    },
+  });
+
+  function open() {
+    setError(null);
+    setValue("");
+    setIsOpen(true);
+  }
+
+  function close() {
+    setError(null);
+    setIsOpen(false);
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      await createSpaceMutation.mutateAsync(value);
+    } catch {
+      // Mutation callbacks already surface the user-facing error state.
+    }
+  }
+
+  return {
+    close,
+    error,
+    isOpen,
+    isSubmitting,
+    open,
+    setValue,
+    submit,
+    value,
+  };
+}
+
+function RootShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const bootstrapQuery = useCoreQuery(appQueryKeys.bootstrap, () => loadBootstrapState());
   const spacesQuery = useSpacesQuery();
   const cardsQuery = useCardsQuery();
   const dashboardStatsQuery = useDashboardStatsQuery();
+  const createSpaceDialog = useCreateSpaceDialog();
   const [isOnboardingDismissed, setIsOnboardingDismissed] = useState(false);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isCreatingSpace, setIsCreatingSpace] = useState(false);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
-  const [newSpaceName, setNewSpaceName] = useState("");
-  const [newSpaceError, setNewSpaceError] = useState<string | null>(null);
 
   const spaces = spacesQuery.data ?? [];
   const cards = cardsQuery.data ?? [];
   const globalStreak = dashboardStatsQuery.data?.globalStreak ?? null;
-  const mainTab =
-    location.pathname === "/cards"
-      ? "cards"
-      : location.pathname === "/import"
-        ? "import"
-        : location.pathname === "/settings"
-          ? "settings"
-          : location.pathname === "/"
-            ? "dashboard"
-            : null;
+  const mainTab = getMainTab(location.pathname);
 
   useEffect(() => {
     setIsOnboardingDismissed(hasDismissedOnboarding());
@@ -224,7 +311,7 @@ function RootShell() {
       void listen("developer://reset-onboarding", () => {
         resetOnboarding();
         setIsOnboardingDismissed(false);
-        setIsCreateDialogOpen(false);
+        createSpaceDialog.close();
         setIsPaletteOpen(false);
         void navigate({ to: "/onboarding" });
       }).then((dispose) => {
@@ -242,39 +329,20 @@ function RootShell() {
       disposeReset?.();
       disposeStudy?.();
     };
-  }, [navigate]);
-
-  const createSpaceMutation = useMutation({
-    mutationFn: async (name: string) => createSpace({ name }),
-    async onError(error) {
-      const appError = toAppError(error, "Failed to create space.");
-      setNewSpaceError(appError.message);
-      notifyError(appError, "Space creation failed");
-    },
-    async onSuccess() {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: appQueryKeys.spaces }),
-        queryClient.invalidateQueries({ queryKey: appQueryKeys.dashboardStats }),
-      ]);
-      notifySuccess("Space created");
-      setIsCreateDialogOpen(false);
-      setNewSpaceName("");
-    },
-    onSettled() {
-      setIsCreatingSpace(false);
-    },
-  });
-
-  async function handleCreateSpaceSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setNewSpaceError(null);
-    setIsCreatingSpace(true);
-    await createSpaceMutation.mutateAsync(newSpaceName);
-  }
+  }, [createSpaceDialog, navigate]);
 
   function handleDismissOnboarding() {
     dismissOnboarding();
     setIsOnboardingDismissed(true);
+  }
+
+  function handleSelectTab(tabId: AppTabId) {
+    if (tabId === "dashboard") {
+      void navigate({ to: "/" });
+      return;
+    }
+
+    void navigate({ to: `/${tabId}` });
   }
 
   if (bootstrapQuery.error) {
@@ -290,11 +358,8 @@ function RootShell() {
   return (
     <ShellActionsContext.Provider
       value={{
-        openCreateDialog() {
-          setNewSpaceError(null);
-          setNewSpaceName("");
-          setIsCreateDialogOpen(true);
-        },
+        dismissOnboarding: handleDismissOnboarding,
+        openCreateDialog: createSpaceDialog.open,
       }}
     >
       <main className="app-shell">
@@ -305,15 +370,9 @@ function RootShell() {
             <AppTitlebar
               activeTab={mainTab}
               globalStreak={mainTab === "dashboard" ? globalStreak : null}
-              onOpenCreateDialog={() => setIsCreateDialogOpen(true)}
+              onOpenCreateDialog={createSpaceDialog.open}
               onOpenPalette={() => setIsPaletteOpen(true)}
-              onSelectTab={(tabId) => {
-                if (tabId === "dashboard") {
-                  void navigate({ to: "/" });
-                } else {
-                  void navigate({ to: `/${tabId}` });
-                }
-              }}
+              onSelectTab={handleSelectTab}
               tabs={[...APP_TABS]}
             />
           ) : null}
@@ -321,39 +380,14 @@ function RootShell() {
           <Outlet />
         </div>
 
-        {location.pathname === "/onboarding" ? (
-          <OnboardingScreen
-            onCreateSpace={() => {
-              handleDismissOnboarding();
-              setIsCreateDialogOpen(true);
-            }}
-            onGenerateWithAi={() => {
-              handleDismissOnboarding();
-              void navigate({ to: "/generate" });
-            }}
-            onImport={() => {
-              handleDismissOnboarding();
-              void navigate({ to: "/import" });
-            }}
-            onOpenSettings={() => {
-              handleDismissOnboarding();
-              void navigate({ to: "/settings" });
-            }}
-            onSkip={() => {
-              handleDismissOnboarding();
-              void navigate({ to: "/" });
-            }}
-          />
-        ) : null}
-
-        {isCreateDialogOpen ? (
+        {createSpaceDialog.isOpen ? (
           <NewSpaceDialog
-            error={newSpaceError}
-            isSubmitting={isCreatingSpace}
-            onChange={setNewSpaceName}
-            onClose={() => setIsCreateDialogOpen(false)}
-            onSubmit={handleCreateSpaceSubmit}
-            value={newSpaceName}
+            error={createSpaceDialog.error}
+            isSubmitting={createSpaceDialog.isSubmitting}
+            onChange={createSpaceDialog.setValue}
+            onClose={createSpaceDialog.close}
+            onSubmit={createSpaceDialog.submit}
+            value={createSpaceDialog.value}
           />
         ) : null}
 
@@ -364,20 +398,14 @@ function RootShell() {
             onOpenAiGenerate={() => void navigate({ to: "/generate" })}
             onOpenCreateDialog={() => {
               setIsPaletteOpen(false);
-              setIsCreateDialogOpen(true);
+              createSpaceDialog.open();
             }}
             onOpenImport={() => void navigate({ to: "/import" })}
             onOpenSettings={() => void navigate({ to: "/settings" })}
             onOpenSpace={(spaceId) =>
               void navigate({ to: "/spaces/$spaceId", params: { spaceId } })
             }
-            onSelectTab={(tabId) => {
-              if (tabId === "dashboard") {
-                void navigate({ to: "/" });
-              } else {
-                void navigate({ to: `/${tabId}` });
-              }
-            }}
+            onSelectTab={handleSelectTab}
             onStartGlobalStudy={() => void navigate({ to: "/study" })}
             spaces={spaces}
           />
@@ -389,19 +417,58 @@ function RootShell() {
   );
 }
 
+function OnboardingPage() {
+  const navigate = useNavigate();
+  const { dismissOnboarding, openCreateDialog } = useShellActions();
+
+  return (
+    <ScreenErrorBoundary
+      onReset={() => void navigate({ to: "/" })}
+      screen="onboarding"
+      title="Onboarding unavailable"
+    >
+      <OnboardingScreen
+        onCreateSpace={() => {
+          dismissOnboarding();
+          openCreateDialog();
+          void navigate({ to: "/" });
+        }}
+        onGenerateWithAi={() => {
+          dismissOnboarding();
+          void navigate({ to: "/generate" });
+        }}
+        onImport={() => {
+          dismissOnboarding();
+          void navigate({ to: "/import" });
+        }}
+        onOpenSettings={() => {
+          dismissOnboarding();
+          void navigate({ to: "/settings" });
+        }}
+        onSkip={() => {
+          dismissOnboarding();
+          void navigate({ to: "/" });
+        }}
+      />
+    </ScreenErrorBoundary>
+  );
+}
+
 function DashboardPage() {
   const navigate = useNavigate();
   const { openCreateDialog } = useShellActions();
-  const cards = useCardsQuery().data ?? [];
-  const spaces = useSpacesQuery().data ?? [];
-  const dashboardStats = useDashboardStatsQuery().data ?? null;
-  const recentActivity = useRecentActivityQuery().data ?? [];
-  const spaceStats = useSpaceStatsQuery().data ?? [];
+  const cards: CardRecord[] = useCardsQuery().data ?? [];
+  const spaces: SpaceSummary[] = useSpacesQuery().data ?? [];
+  const dashboardStats: DashboardStats | null = useDashboardStatsQuery().data ?? null;
+  const recentActivity: RecentActivityRecord[] = useRecentActivityQuery().data ?? [];
+  const spaceStats: SpaceStats[] = useSpaceStatsQuery().data ?? [];
   const hasRealSpaces = spaces.length > 0;
   const now = Date.now();
   const todayDayKey = getTodayDayKey(now);
   const dismissedDailyCheckInDay = getDismissedDailyCheckInDay();
-  const spaceStatsById = new Map(spaceStats.map((entry) => [entry.spaceId, entry]));
+  const spaceStatsById = new Map<string, SpaceStats>(
+    spaceStats.map((entry: SpaceStats) => [entry.spaceId, entry]),
+  );
   const globalStreak = dashboardStats?.globalStreak ?? (hasRealSpaces ? 0 : 14);
   const studySummary =
     hasRealSpaces && dashboardStats
@@ -444,7 +511,7 @@ function DashboardPage() {
             ? () => {
                 const targetSpace =
                   [...spaces].sort(
-                    (left, right) =>
+                    (left: SpaceSummary, right: SpaceSummary) =>
                       right.dueTodayCount - left.dueTodayCount || right.updatedAt - left.updatedAt,
                   )[0] ?? null;
 
@@ -468,15 +535,15 @@ function CardsPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { openCreateDialog } = useShellActions();
-  const cards = useCardsQuery().data ?? [];
-  const spaces = useSpacesQuery().data ?? [];
+  const cards: CardRecord[] = useCardsQuery().data ?? [];
+  const spaces: SpaceSummary[] = useSpacesQuery().data ?? [];
   const createCardMutation = useMutation({
     mutationFn: createCard,
     onSuccess: async () => {
       await invalidateAfterCardMutation(queryClient);
       notifySuccess("Card saved");
     },
-    onError(error) {
+    onError(error: unknown) {
       notifyError(toAppError(error, "Failed to save card."), "Card save failed");
     },
   });
@@ -489,7 +556,7 @@ function CardsPage() {
       ]);
       notifySuccess("Card updated");
     },
-    onError(error) {
+    onError(error: unknown) {
       notifyError(toAppError(error, "Failed to update card."), "Card update failed");
     },
   });
@@ -499,7 +566,7 @@ function CardsPage() {
       await invalidateAfterCardDeletion(queryClient);
       notifySuccess("Card deleted");
     },
-    onError(error) {
+    onError(error: unknown) {
       notifyError(toAppError(error, "Failed to delete card."), "Card deletion failed");
     },
   });
@@ -544,8 +611,8 @@ function CardsPage() {
 function SettingsPage({ fromAi = false, onBack }: { fromAi?: boolean; onBack?: () => void }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const cards = useCardsQuery().data ?? [];
-  const spaces = useSpacesQuery().data ?? [];
+  const cards: CardRecord[] = useCardsQuery().data ?? [];
+  const spaces: SpaceSummary[] = useSpacesQuery().data ?? [];
   const studySettings = useStudySettingsQuery().data ?? { newCardsLimit: null, newCardsToday: 0 };
   const saveStudySettingsMutation = useMutation({
     mutationFn: saveStudySettings,
@@ -553,7 +620,7 @@ function SettingsPage({ fromAi = false, onBack }: { fromAi?: boolean; onBack?: (
       await queryClient.invalidateQueries({ queryKey: appQueryKeys.studySettings });
       notifySuccess("Study settings saved");
     },
-    onError(error) {
+    onError(error: unknown) {
       notifyError(toAppError(error, "Failed to save study settings."), "Settings save failed");
     },
   });
@@ -564,7 +631,7 @@ function SettingsPage({ fromAi = false, onBack }: { fromAi?: boolean; onBack?: (
       notifySuccess("All local data was reset");
       void navigate({ to: "/onboarding" });
     },
-    onError(error) {
+    onError(error: unknown) {
       notifyError(toAppError(error, "Failed to reset local data."), "Reset failed");
     },
   });
@@ -607,9 +674,9 @@ function SettingsPage({ fromAi = false, onBack }: { fromAi?: boolean; onBack?: (
 function ImportPage({ targetSpaceId }: { targetSpaceId?: string }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const spaces = useSpacesQuery().data ?? [];
+  const spaces: SpaceSummary[] = useSpacesQuery().data ?? [];
   const targetSpace = targetSpaceId
-    ? (spaces.find((space) => space.id === targetSpaceId) ?? null)
+    ? (spaces.find((space: SpaceSummary) => space.id === targetSpaceId) ?? null)
     : null;
 
   return (
@@ -651,11 +718,11 @@ function SpaceDetailsPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { spaceId } = useParams({ from: "/spaces/$spaceId" });
-  const cards = useCardsQuery().data ?? [];
-  const spaces = useSpacesQuery().data ?? [];
-  const spaceStats = useSpaceStatsQuery().data ?? [];
-  const space = spaces.find((entry) => entry.id === spaceId) ?? null;
-  const stats = spaceStats.find((entry) => entry.spaceId === spaceId) ?? null;
+  const cards: CardRecord[] = useCardsQuery().data ?? [];
+  const spaces: SpaceSummary[] = useSpacesQuery().data ?? [];
+  const spaceStats: SpaceStats[] = useSpaceStatsQuery().data ?? [];
+  const space = spaces.find((entry: SpaceSummary) => entry.id === spaceId) ?? null;
+  const stats = spaceStats.find((entry: SpaceStats) => entry.spaceId === spaceId) ?? null;
   const createCardMutation = useMutation({
     mutationFn: createCard,
     onSuccess: async () => {
@@ -741,14 +808,14 @@ function StudyPage({ targetSpaceId }: { targetSpaceId?: string }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [sessionKey] = useState(() => Date.now());
-  const cards = useCardsQuery().data ?? [];
-  const spaces = useSpacesQuery().data ?? [];
+  const cards: CardRecord[] = useCardsQuery().data ?? [];
+  const spaces: SpaceSummary[] = useSpacesQuery().data ?? [];
   const studySettings = useStudySettingsQuery().data ?? { newCardsLimit: null, newCardsToday: 0 };
   const targetSpace = targetSpaceId
-    ? (spaces.find((space) => space.id === targetSpaceId) ?? null)
+    ? (spaces.find((space: SpaceSummary) => space.id === targetSpaceId) ?? null)
     : null;
   const sessionCards = targetSpaceId
-    ? cards.filter((card) => card.spaceId === targetSpaceId)
+    ? cards.filter((card: CardRecord) => card.spaceId === targetSpaceId)
     : cards;
   const reviewMutation = useMutation({
     mutationFn: reviewCard,
@@ -806,9 +873,9 @@ function StudyPage({ targetSpaceId }: { targetSpaceId?: string }) {
 function AiGeneratePage({ targetSpaceId }: { targetSpaceId?: string }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const spaces = useSpacesQuery().data ?? [];
+  const spaces: SpaceSummary[] = useSpacesQuery().data ?? [];
   const targetSpace = targetSpaceId
-    ? (spaces.find((space) => space.id === targetSpaceId) ?? null)
+    ? (spaces.find((space: SpaceSummary) => space.id === targetSpaceId) ?? null)
     : null;
   const [showSettings, setShowSettings] = useState(false);
   const createSpaceMutation = useMutation({
@@ -818,12 +885,9 @@ function AiGeneratePage({ targetSpaceId }: { targetSpaceId?: string }) {
     },
   });
   const saveApprovedMutation = useMutation({
-    mutationFn: async (input: {
-      cards: Array<{ back: string; front: string; tags: string[] }>;
-      spaceId: string;
-    }) => {
+    mutationFn: async (input: ApprovedAiCardsInput) => {
       await Promise.all(
-        input.cards.map((card) =>
+        input.cards.map((card: ApprovedAiCardsInput["cards"][number]) =>
           createCard({
             ...card,
             source: "ai",
@@ -832,22 +896,12 @@ function AiGeneratePage({ targetSpaceId }: { targetSpaceId?: string }) {
         ),
       );
     },
-    onSuccess: async (_, variables) => {
+    onSuccess: async (_result, variables: ApprovedAiCardsInput) => {
       await invalidateAllAppData(queryClient);
       notifySuccess("AI cards saved");
       void navigate({ to: "/spaces/$spaceId", params: { spaceId: variables.spaceId } });
     },
   });
-  if (showSettings) {
-    return (
-      <SettingsPage
-        fromAi
-        onBack={() => {
-          setShowSettings(false);
-        }}
-      />
-    );
-  }
 
   return (
     <ScreenErrorBoundary
@@ -859,21 +913,35 @@ function AiGeneratePage({ targetSpaceId }: { targetSpaceId?: string }) {
       screen="ai-generate"
       title="AI generation unavailable"
     >
-      <AiGenerateScreen
-        backLabel={targetSpace?.name ?? "Dashboard"}
-        initialSpaceId={targetSpaceId ?? spaces[0]?.id ?? null}
-        onBack={() =>
-          targetSpaceId
-            ? void navigate({ to: "/spaces/$spaceId", params: { spaceId: targetSpaceId } })
-            : void navigate({ to: "/" })
-        }
-        onCreateSpace={(name) => createSpaceMutation.mutateAsync(name)}
-        onOpenSettings={() => {
-          setShowSettings(true);
-        }}
-        onSaveApprovedCards={(input) => saveApprovedMutation.mutateAsync(input)}
-        spaces={spaces}
-      />
+      {/* Keep the generator mounted so draft and review state survive the settings detour. */}
+      <div style={showSettings ? { display: "none" } : undefined}>
+        <AiGenerateScreen
+          backLabel={targetSpace?.name ?? "Dashboard"}
+          initialSpaceId={targetSpaceId ?? spaces[0]?.id ?? null}
+          onBack={() =>
+            targetSpaceId
+              ? void navigate({ to: "/spaces/$spaceId", params: { spaceId: targetSpaceId } })
+              : void navigate({ to: "/" })
+          }
+          onCreateSpace={(name) => createSpaceMutation.mutateAsync(name)}
+          onOpenSettings={() => {
+            setShowSettings(true);
+          }}
+          onSaveApprovedCards={(input: ApprovedAiCardsInput) =>
+            saveApprovedMutation.mutateAsync(input)
+          }
+          spaces={spaces}
+        />
+      </div>
+
+      {showSettings ? (
+        <SettingsPage
+          fromAi
+          onBack={() => {
+            setShowSettings(false);
+          }}
+        />
+      ) : null}
     </ScreenErrorBoundary>
   );
 }
@@ -891,7 +959,7 @@ const dashboardRoute = createRoute({
 const onboardingRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/onboarding",
-  component: () => null,
+  component: OnboardingPage,
 });
 
 const cardsRoute = createRoute({

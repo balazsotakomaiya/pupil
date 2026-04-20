@@ -146,12 +146,49 @@ type BackendErrorPayload = {
   message?: string;
 };
 
-function toPayload(error: unknown): BackendErrorPayload | null {
-  if (!error || typeof error !== "object") {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object";
+}
+
+function hasPayloadShape(value: Record<string, unknown>): boolean {
+  return ["code", "detail", "entity", "field", "message"].some((key) => key in value);
+}
+
+function readOptionalString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function readOptionalStringOrNull(value: unknown): string | null | undefined {
+  if (value === null) {
     return null;
   }
 
-  return error as BackendErrorPayload;
+  return readOptionalString(value);
+}
+
+function toPayload(error: unknown): BackendErrorPayload | null {
+  if (!isRecord(error)) {
+    return null;
+  }
+
+  const nestedError = "error" in error && isRecord(error.error) ? error.error : null;
+  const payload = hasPayloadShape(error)
+    ? error
+    : nestedError && hasPayloadShape(nestedError)
+      ? nestedError
+      : null;
+
+  if (!payload) {
+    return null;
+  }
+
+  return {
+    code: readOptionalString(payload.code),
+    detail: readOptionalString(payload.detail),
+    entity: readOptionalString(payload.entity),
+    field: readOptionalStringOrNull(payload.field),
+    message: readOptionalString(payload.message),
+  };
 }
 
 export function toAppError(error: unknown, fallbackMessage = "Something went wrong"): AppError {

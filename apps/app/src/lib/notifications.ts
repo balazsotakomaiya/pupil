@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { AppError } from "./errors";
 
 export type Notification = {
+  createdAt: number;
   id: string;
   message: string;
   title?: string;
@@ -9,10 +10,12 @@ export type Notification = {
   error?: AppError;
 };
 
+type NotificationInput = Omit<Notification, "createdAt" | "id">;
+
 type NotificationStore = {
   dismiss: (id: string) => void;
   items: Notification[];
-  notify: (input: Omit<Notification, "id">) => string;
+  notify: (input: NotificationInput) => string;
 };
 
 export const useNotificationStore = create<NotificationStore>((set) => ({
@@ -23,9 +26,10 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
     }));
   },
   notify(input) {
+    const createdAt = Date.now();
     const id = `notification-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     set((state) => ({
-      items: [...state.items, { ...input, id }],
+      items: [...state.items, { ...input, createdAt, id }],
     }));
     return id;
   },

@@ -31,6 +31,33 @@ pub(crate) enum AppError {
 }
 
 impl AppError {
+    fn from_entity_storage(
+        error: rusqlite::Error,
+        entity: &str,
+        duplicate_on_unique_constraint: bool,
+    ) -> Self {
+        match error {
+            rusqlite::Error::SqliteFailure(sqlite_error, _)
+                if duplicate_on_unique_constraint
+                    && sqlite_error.code == ErrorCode::ConstraintViolation
+                    && sqlite_error.extended_code == 2067 =>
+            {
+                Self::Duplicate {
+                    entity: entity.to_string(),
+                }
+            }
+            rusqlite::Error::SqliteFailure(sqlite_error, _)
+                if sqlite_error.code == ErrorCode::ConstraintViolation =>
+            {
+                Self::storage_message("The requested change violates a database constraint.")
+            }
+            rusqlite::Error::QueryReturnedNoRows => Self::NotFound {
+                entity: entity.to_string(),
+            },
+            other => Self::from(other),
+        }
+    }
+
     pub(crate) fn validation(message: impl Into<String>) -> Self {
         Self::Validation {
             message: message.into(),
@@ -74,39 +101,11 @@ impl AppError {
     }
 
     pub(crate) fn from_space_storage(error: rusqlite::Error) -> Self {
-        match error {
-            rusqlite::Error::SqliteFailure(sqlite_error, _)
-                if sqlite_error.code == ErrorCode::ConstraintViolation
-                    && sqlite_error.extended_code == 2067 =>
-            {
-                Self::Duplicate {
-                    entity: "space".to_string(),
-                }
-            }
-            rusqlite::Error::SqliteFailure(sqlite_error, _)
-                if sqlite_error.code == ErrorCode::ConstraintViolation =>
-            {
-                Self::storage_message("The requested change violates a database constraint.")
-            }
-            rusqlite::Error::QueryReturnedNoRows => Self::NotFound {
-                entity: "space".to_string(),
-            },
-            other => Self::from(other),
-        }
+        Self::from_entity_storage(error, "space", true)
     }
 
     pub(crate) fn from_card_storage(error: rusqlite::Error) -> Self {
-        match error {
-            rusqlite::Error::SqliteFailure(sqlite_error, _)
-                if sqlite_error.code == ErrorCode::ConstraintViolation =>
-            {
-                Self::storage_message("The requested change violates a database constraint.")
-            }
-            rusqlite::Error::QueryReturnedNoRows => Self::NotFound {
-                entity: "card".to_string(),
-            },
-            other => Self::from(other),
-        }
+        Self::from_entity_storage(error, "card", false)
     }
 }
 
