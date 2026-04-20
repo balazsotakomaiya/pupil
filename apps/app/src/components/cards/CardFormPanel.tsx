@@ -49,6 +49,7 @@ export function CardFormPanel({
   const [makeAnother, setMakeAnother] = useState(true);
   const [isSuccessPulsing, setIsSuccessPulsing] = useState(false);
   const [tagInputValue, setTagInputValue] = useState("");
+  const [shakeKey, setShakeKey] = useState(0);
 
   const tags = useMemo(() => parseTags(draft.tagsText), [draft.tagsText]);
   const selectedSpaceName = spaces.find((space) => space.id === draft.spaceId)?.name ?? "Space";
@@ -61,6 +62,7 @@ export function CardFormPanel({
       setIsPreviewHovered(false);
       setMakeAnother(true);
       setIsSuccessPulsing(false);
+      setShakeKey(0);
     }
   }, [isOpen]);
 
@@ -83,8 +85,18 @@ export function CardFormPanel({
     return null;
   }
 
+  const isDraftClean = !draft.front.trim() && !draft.back.trim() && !draft.tagsText.trim();
+
+  function handleBackdropClick() {
+    if (isDraftClean && !hasSelectedCard) {
+      onClose();
+      return;
+    }
+    setShakeKey((k) => k + 1);
+  }
+
   return (
-    <div className="dialog-backdrop" onClick={onClose} role="presentation">
+    <div className="dialog-backdrop" onClick={handleBackdropClick} role="presentation">
       <div
         aria-describedby={error ? "card-form-error" : "card-form-description"}
         aria-labelledby="card-form-title"
@@ -127,7 +139,10 @@ export function CardFormPanel({
                 <span />
               )}
 
-              <div className="new-card-actions-right">
+              <div
+                className={`new-card-actions-right${shakeKey > 0 ? " shake" : ""}`}
+                key={shakeKey}
+              >
                 {hasSelectedCard ? (
                   <button
                     className="new-card-discard-btn danger-btn"

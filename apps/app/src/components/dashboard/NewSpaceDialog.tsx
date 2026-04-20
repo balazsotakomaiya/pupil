@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { FormEvent } from "react";
 import { CloseIcon } from "./CloseIcon";
 
@@ -18,8 +19,18 @@ export function NewSpaceDialog({
   onSubmit,
   value,
 }: NewSpaceDialogProps) {
+  const [shakeKey, setShakeKey] = useState(0);
+
+  function handleBackdropClick() {
+    if (!value.trim()) {
+      onClose();
+      return;
+    }
+    setShakeKey((k) => k + 1);
+  }
+
   return (
-    <div className="dialog-backdrop" onClick={onClose} role="presentation">
+    <div className="dialog-backdrop" onClick={handleBackdropClick} role="presentation">
       <div
         aria-describedby={error ? "new-space-error" : "new-space-description"}
         aria-labelledby="new-space-title"
@@ -58,7 +69,7 @@ export function NewSpaceDialog({
             </p>
           ) : null}
 
-          <div className="dialog-actions">
+          <div className={`dialog-actions${shakeKey > 0 ? " shake" : ""}`} key={shakeKey}>
             <button className="study-btn-secondary" onClick={onClose} type="button">
               Cancel
             </button>
