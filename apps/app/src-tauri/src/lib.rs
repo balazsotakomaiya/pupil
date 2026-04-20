@@ -126,6 +126,9 @@ pub fn run() {
 
             app.manage(BootstrapStatus { backup_created });
             tray::setup_tray(app.handle())?;
+            if let Err(error) = tray::refresh_tray(app.handle()) {
+                tracing::warn!("failed to refresh tray during startup: {error}");
+            }
 
             Ok(())
         })
