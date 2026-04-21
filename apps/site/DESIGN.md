@@ -1,4 +1,4 @@
-# Vigil Site — Design Language
+# Pupil Site — Design Language
 
 A reference for replicating or extending the site's visual identity. Everything here is sourced directly from `src/style.css`, `src/App.tsx`, and `index.html`.
 

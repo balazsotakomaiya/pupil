@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-pub(crate) type AppResult<T> = Result<T, Box<dyn std::error::Error>>;
-
 #[derive(Clone)]
 pub(crate) struct Migration {
     pub(crate) id: &'static str,

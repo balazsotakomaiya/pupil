@@ -33,7 +33,11 @@ Pupil works well as a concept and the fundamentals are sound — local-first SQL
 - Landed: first test layer via `apps/app/vitest.config.ts`, Vitest coverage for `fsrs`, `study-settings`, and extracted derived-state helpers, plus Rust unit tests in `normalize.rs` and `util.rs`.
 - Landed: `App.tsx` decomposition now has three concrete slices in place. Empty-state seed data lives in `src/lib/seed-data.ts`, derived-state builders live in `src/lib/derived.ts`, and app-wide bootstrap/data/mutation state now lives in `src/lib/app-store.ts`.
 - Landed: `App.tsx` is down from 1,216 lines to 611 lines after moving bootstrap loading, entity snapshots, card/space mutations, reset flow, and study-settings persistence into the Zustand store.
-- Still pending: TanStack Router, direct screen-level store consumption to reduce prop drilling further, error boundaries/toasts, CSS modularization, structured Rust errors, and IPC type-generation.
+- Landed: TanStack Router now owns the app's in-memory navigation flow, and TanStack Query is in place for app-data fetching and mutation invalidation.
+- Landed: frontend error boundaries, typed IPC error mapping, and toast-style notifications now provide crash recovery and consistent user feedback.
+- Landed: the Rust backend now returns structured `AppError` payloads and writes tracing/panic output to rotating log files.
+- Landed: CSS Modules are now available and in use for the new error/notification surfaces, with tokens/reset/utilities split out into `src/styles/`.
+- Landed: prototype HTML references were archived under `docs/design-references/`, and `src/sqljs.d.ts` moved into `src/types/sqljs.d.ts`.
 
 ---
 
@@ -690,7 +694,7 @@ Either approach eliminates the manual duplication and makes type drift impossibl
 
 | Document | Current status | Action |
 |----------|---------------|--------|
-| `docs/PHASE_1_SPEC.md` | Phase 1 is shipped. Contains a detailed chunk tracker with implementation status. | Mark as "Phase 1 — Completed" at the top. Keep as historical reference. Remove TODO items that are now done. |
+| `docs/PHASE_1_SPEC.md` | Phase 1 is shipped. The file is redundant with the current app/docs state. | Delete the file and fold any still-useful notes into the current docs set. |
 | `docs/PHASE_2_SPEC.md` | Next iteration plan. | Keep active. Ensure it reflects current priorities. |
 | `docs/APP_GAPS.md` | Lists known gaps. Sections 4 and 5 are marked "Recently closed" but the content below still describes them as open. | Update or remove closed sections. Migrate remaining actionable items to GitHub Issues so they are trackable. The doc goes stale quickly. |
 | `apps/app/DESIGN.md` | Excellent design system documentation. | Keep. Ensure CSS token values in `style.css` (or extracted `tokens.css`) match what is documented here. |

@@ -1,8 +1,8 @@
-import { invoke } from "@tauri-apps/api/core";
 import { decompress as decompressZstd } from "fzstd";
 import JSZip from "jszip";
 import initSqlJs from "sql.js";
 import sqlWasmUrl from "sql.js/dist/sql-wasm.wasm?url";
+import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
 import { SPACE_NAME_MAX_LENGTH } from "./spaces";
 
@@ -294,7 +294,7 @@ async function persistAnkiImport(
   >
 > {
   if (isTauriRuntime()) {
-    return invoke("import_anki_cards", { input });
+    return invokeCommand("import_anki_cards", { input });
   }
 
   return importAnkiCardsInWebStorage(input);

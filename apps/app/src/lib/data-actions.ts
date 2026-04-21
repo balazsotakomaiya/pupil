@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
 
 export type SettingsDataSummary = {
@@ -22,7 +22,7 @@ const WEB_KEYS = [
 
 export async function getSettingsDataSummary(): Promise<SettingsDataSummary> {
   if (isTauriRuntime()) {
-    return invoke<SettingsDataSummary>("get_settings_data_summary");
+    return invokeCommand<SettingsDataSummary>("get_settings_data_summary");
   }
 
   return {
@@ -33,7 +33,7 @@ export async function getSettingsDataSummary(): Promise<SettingsDataSummary> {
 
 export async function exportDatabaseCopy(): Promise<ExportDataResult> {
   if (isTauriRuntime()) {
-    return invoke<ExportDataResult>("export_database_copy");
+    return invokeCommand<ExportDataResult>("export_database_copy");
   }
 
   downloadBlob(
@@ -54,7 +54,7 @@ export async function exportDatabaseCopy(): Promise<ExportDataResult> {
 
 export async function exportReviewLogsCsv(): Promise<ExportDataResult> {
   if (isTauriRuntime()) {
-    return invoke<ExportDataResult>("export_review_logs_csv");
+    return invokeCommand<ExportDataResult>("export_review_logs_csv");
   }
 
   const logs = readStoredArray("pupil.web.review_logs");
@@ -83,7 +83,7 @@ export async function exportReviewLogsCsv(): Promise<ExportDataResult> {
 
 export async function resetAllData(): Promise<void> {
   if (isTauriRuntime()) {
-    await invoke("reset_all_data");
+    await invokeCommand("reset_all_data");
     return;
   }
 

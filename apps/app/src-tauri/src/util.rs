@@ -1,4 +1,3 @@
-use rusqlite::ffi::ErrorCode;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub(crate) fn encode_tags(tags: &[String]) -> rusqlite::Result<Option<String>> {
@@ -21,36 +20,6 @@ pub(crate) fn decode_tags(tags_json: Option<String>) -> rusqlite::Result<Vec<Str
             )
         }),
         _ => Ok(Vec::new()),
-    }
-}
-
-pub(crate) fn map_storage_error(error: rusqlite::Error) -> String {
-    match error {
-        rusqlite::Error::SqliteFailure(sqlite_error, _)
-            if sqlite_error.code == ErrorCode::ConstraintViolation
-                && sqlite_error.extended_code == 2067 =>
-        {
-            "A space with that name already exists.".to_string()
-        }
-        rusqlite::Error::SqliteFailure(sqlite_error, _)
-            if sqlite_error.code == ErrorCode::ConstraintViolation =>
-        {
-            "The requested change violates a database constraint.".to_string()
-        }
-        rusqlite::Error::QueryReturnedNoRows => "Space not found.".to_string(),
-        other => other.to_string(),
-    }
-}
-
-pub(crate) fn map_card_storage_error(error: rusqlite::Error) -> String {
-    match error {
-        rusqlite::Error::SqliteFailure(sqlite_error, _)
-            if sqlite_error.code == ErrorCode::ConstraintViolation =>
-        {
-            "The requested change violates a database constraint.".to_string()
-        }
-        rusqlite::Error::QueryReturnedNoRows => "Card or space not found.".to_string(),
-        other => other.to_string(),
     }
 }
 

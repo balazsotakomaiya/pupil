@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
 
 export async function refreshTrayStatus(): Promise<void> {
@@ -7,7 +7,7 @@ export async function refreshTrayStatus(): Promise<void> {
   }
 
   try {
-    await invoke("refresh_tray_status");
+    await invokeCommand("refresh_tray_status");
   } catch {
     // Non-fatal — tray refresh failures should never break the UI
   }

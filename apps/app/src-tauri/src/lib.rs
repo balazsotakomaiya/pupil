@@ -4,6 +4,7 @@ mod app;
 mod cards;
 mod commands;
 mod constants;
+mod error;
 mod imports;
 mod normalize;
 mod settings;
@@ -14,9 +15,13 @@ mod tray;
 mod types;
 mod util;
 
+use std::fs;
+use std::sync::OnceLock;
+
 #[cfg(debug_assertions)]
 use tauri::Emitter;
 use tauri::Manager;
+use tracing_appender::non_blocking::WorkerGuard;
 
 use crate::ai::StrongholdState;
 use crate::app::{build_app_menu, database_path, run_migrations, BootstrapStatus};
@@ -33,7 +38,62 @@ use crate::constants::{
     DEVELOPER_OPEN_DEVTOOLS_MENU_ID, DEVELOPER_RESET_ONBOARDING_EVENT,
     DEVELOPER_RESET_ONBOARDING_MENU_ID,
 };
+use crate::error::AppError;
 
+static PANIC_HOOK_INSTALLED: OnceLock<()> = OnceLock::new();
+
+struct LoggingState {
+    _guard: WorkerGuard,
+}
+
+/// Installs a single global panic hook so unexpected backend crashes land in the
+/// tracing log instead of disappearing into stderr only.
+fn install_panic_hook() {
+    let _ = PANIC_HOOK_INSTALLED.get_or_init(|| {
+        std::panic::set_hook(Box::new(|panic_info| {
+            let location = panic_info
+                .location()
+                .map(|location| format!("{}:{}", location.file(), location.line()))
+                .unwrap_or_else(|| "unknown location".to_string());
+            let message = panic_info
+                .payload()
+                .downcast_ref::<&str>()
+                .map(|payload| payload.to_string())
+                .or_else(|| {
+                    panic_info
+                        .payload()
+                        .downcast_ref::<String>()
+                        .map(ToOwned::to_owned)
+                })
+                .unwrap_or_else(|| "panic payload unavailable".to_string());
+
+            tracing::error!(location, message, "unhandled panic");
+        }));
+    });
+}
+
+/// Configures file-backed tracing for the desktop app before any commands or
+/// migrations run so startup failures are still captured locally.
+fn init_logging(app: &tauri::AppHandle) -> Result<LoggingState, AppError> {
+    let logs_dir = app::app_data_dir(app)?.join("logs");
+    fs::create_dir_all(&logs_dir)?;
+    let file_appender = tracing_appender::rolling::daily(logs_dir, "pupil.log");
+    let (writer, guard) = tracing_appender::non_blocking(file_appender);
+    let subscriber = tracing_subscriber::fmt()
+        .with_ansi(false)
+        .with_writer(writer)
+        .with_target(true)
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber)
+        .map_err(|error| AppError::internal_message(error.to_string()))?;
+    install_panic_hook();
+
+    Ok(LoggingState { _guard: guard })
+}
+
+/// Builds and runs the Tauri application with all plugins, commands, logging,
+/// and database bootstrap wired in one place.
 pub fn run() {
     let builder = tauri::Builder::default()
         .manage(StrongholdState::default())
@@ -53,6 +113,8 @@ pub fn run() {
 
     builder
         .setup(|app| {
+            app.manage(init_logging(app.handle())?);
+
             #[cfg(desktop)]
             app.handle()
                 .plugin(tauri_plugin_updater::Builder::new().build())?;
@@ -64,6 +126,9 @@ pub fn run() {
 
             app.manage(BootstrapStatus { backup_created });
             tray::setup_tray(app.handle())?;
+            if let Err(error) = tray::refresh_tray(app.handle()) {
+                tracing::warn!("failed to refresh tray during startup: {error}");
+            }
 
             Ok(())
         })

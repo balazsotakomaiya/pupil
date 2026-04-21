@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
 
 export type RecentActivityRecord = {
@@ -21,7 +21,7 @@ type StoredReviewLog = {
 
 export async function listRecentActivity(): Promise<RecentActivityRecord[]> {
   if (isTauriRuntime()) {
-    return invoke<RecentActivityRecord[]>("list_recent_activity");
+    return invokeCommand<RecentActivityRecord[]>("list_recent_activity");
   }
 
   const logs = readStoredReviewLogs();

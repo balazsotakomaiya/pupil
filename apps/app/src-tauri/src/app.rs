@@ -13,31 +13,38 @@ use tauri::menu::MenuItemBuilder;
 use crate::constants::MIGRATIONS;
 #[cfg(debug_assertions)]
 use crate::constants::{DEVELOPER_OPEN_DEVTOOLS_MENU_ID, DEVELOPER_RESET_ONBOARDING_MENU_ID};
-use crate::types::AppResult;
+use crate::error::{AppError, AppResult};
 use crate::util::now_ms;
 
 pub(crate) struct BootstrapStatus {
     pub(crate) backup_created: bool,
 }
 
-pub(crate) fn app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
+/// Resolves the app data directory once so every storage surface uses the same
+/// on-disk root across commands, logging, and migrations.
+pub(crate) fn app_data_dir(app: &AppHandle) -> AppResult<PathBuf> {
     app.path()
         .resolve(".", BaseDirectory::AppData)
-        .map_err(|error| error.to_string())
+        .map_err(Into::into)
 }
 
-pub(crate) fn database_path(app: &AppHandle) -> Result<PathBuf, String> {
+/// Returns the canonical SQLite database location inside the app data folder.
+pub(crate) fn database_path(app: &AppHandle) -> AppResult<PathBuf> {
     let app_data_dir = app_data_dir(app)?;
 
     Ok(app_data_dir.join("pupil.db"))
 }
 
+/// Opens the main application database using the app handle's configured data
+/// path rather than letting each caller rebuild it manually.
 pub(crate) fn open_app_connection(app: &AppHandle) -> AppResult<Connection> {
     let path = database_path(app)?;
 
     open_connection(&path)
 }
 
+/// Opens a SQLite connection with the common PRAGMA and timeout settings the
+/// app expects everywhere.
 pub(crate) fn open_connection(path: &Path) -> AppResult<Connection> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
@@ -50,6 +57,8 @@ pub(crate) fn open_connection(path: &Path) -> AppResult<Connection> {
     Ok(connection)
 }
 
+/// Ensures the schema migration bookkeeping table exists before reads or
+/// writes inspect applied migration state.
 pub(crate) fn ensure_schema_migrations_table(connection: &Connection) -> rusqlite::Result<()> {
     connection.execute_batch(
         "
@@ -61,6 +70,8 @@ pub(crate) fn ensure_schema_migrations_table(connection: &Connection) -> rusqlit
     )
 }
 
+/// Loads the applied migration identifiers in execution order so startup can
+/// compute what still needs to run.
 pub(crate) fn load_applied_migrations(connection: &Connection) -> rusqlite::Result<Vec<String>> {
     let mut statement = connection.prepare("SELECT id FROM schema_migrations ORDER BY id ASC")?;
     let rows = statement.query_map([], |row| row.get::<_, String>(0))?;
@@ -68,6 +79,8 @@ pub(crate) fn load_applied_migrations(connection: &Connection) -> rusqlite::Resu
     rows.collect()
 }
 
+/// Filters the static migration list down to the IDs that have not yet been
+/// recorded in the database.
 pub(crate) fn pending_migrations(applied_migrations: &[String]) -> Vec<String> {
     MIGRATIONS
         .iter()
@@ -76,6 +89,8 @@ pub(crate) fn pending_migrations(applied_migrations: &[String]) -> Vec<String> {
         .collect()
 }
 
+/// Builds the native application menu, including developer-only actions in
+/// debug builds.
 pub(crate) fn build_app_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
     #[cfg(target_os = "macos")]
     let app_menu = Some(
@@ -93,7 +108,7 @@ pub(crate) fn build_app_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu
     );
 
     #[cfg(not(target_os = "macos"))]
-    let app_menu: Option<tauri::menu::Submenu<tauri::Wry>> = None;
+    let _app_menu: Option<tauri::menu::Submenu<tauri::Wry>> = None;
 
     let edit_menu = SubmenuBuilder::new(app, "Edit")
         .cut()
@@ -146,6 +161,8 @@ pub(crate) fn build_app_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu
     builder.item(&edit_menu).item(&window_menu).build()
 }
 
+/// Applies any pending schema migrations and creates a pre-migration backup
+/// when destructive SQL is detected.
 pub(crate) fn run_migrations(app: &AppHandle, path: &Path) -> AppResult<bool> {
     let mut connection = open_connection(path)?;
     ensure_schema_migrations_table(&connection)?;
@@ -171,18 +188,27 @@ pub(crate) fn run_migrations(app: &AppHandle, path: &Path) -> AppResult<bool> {
     let transaction = connection.transaction()?;
 
     for migration in pending {
-        transaction.execute_batch(migration.sql)?;
-        transaction.execute(
-            "INSERT INTO schema_migrations (id, applied_at) VALUES (?1, ?2)",
-            (migration.id, now_ms()),
-        )?;
+        tracing::info!(migration_id = migration.id, "applying migration");
+        transaction
+            .execute_batch(migration.sql)
+            .map_err(|error| AppError::migration_failed(format!("{}: {error}", migration.id)))?;
+        transaction
+            .execute(
+                "INSERT INTO schema_migrations (id, applied_at) VALUES (?1, ?2)",
+                (migration.id, now_ms()),
+            )
+            .map_err(|error| AppError::migration_failed(format!("{}: {error}", migration.id)))?;
     }
 
-    transaction.commit()?;
+    transaction
+        .commit()
+        .map_err(|error| AppError::migration_failed(error.to_string()))?;
 
     Ok(backup_created)
 }
 
+/// Checks whether a migration contains SQL that should trigger a backup before
+/// it runs on a user database.
 fn migration_needs_backup(sql: &str) -> bool {
     let normalized = sql.to_ascii_uppercase();
 
@@ -192,6 +218,8 @@ fn migration_needs_backup(sql: &str) -> bool {
         || normalized.contains("UPDATE ")
 }
 
+/// Copies the current database into the backups directory before destructive
+/// migrations run, but skips the work when no database exists yet.
 fn create_backup_if_database_exists(app: &AppHandle, database_path: &Path) -> AppResult<bool> {
     if !database_path.exists() {
         return Ok(false);
