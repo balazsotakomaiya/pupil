@@ -163,8 +163,10 @@ function getGitPushRef() {
 function printNextCommands(version) {
   const tag = `${RELEASE_TAG_PREFIX}${version}`;
   const pushRef = getGitPushRef();
+  const releaseType = version.includes("-") ? "GitHub prerelease" : "GitHub release";
 
   console.log("");
+  console.log(`${releaseType}: ${tag}`);
   console.log("copy/paste next:");
   console.log(
     [

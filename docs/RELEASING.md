@@ -21,6 +21,12 @@ Updater signing is separate from Apple notarization or Windows code signing. Los
    bun run release:version 0.0.2
    ```
 
+   For prereleases, use a semver prerelease suffix:
+
+   ```bash
+   bun run release:version 1.0.0-alpha.1
+   ```
+
 2. Review the changed files, open a version bump PR, and merge it to `main`.
 
    Before merging, run:
@@ -40,7 +46,16 @@ Updater signing is separate from Apple notarization or Windows code signing. Los
    git push origin app-v0.0.2
    ```
 
+   Prereleases use the same tag format with the semver suffix:
+
+   ```bash
+   git tag -a app-v1.0.0-alpha.1 -m "Pupil v1.0.0-alpha.1"
+   git push origin app-v1.0.0-alpha.1
+   ```
+
 4. GitHub Actions runs `.github/workflows/publish.yml` on the tag and publishes desktop assets to GitHub Releases.
+   Stable versions publish as normal releases.
+   Versions with a semver prerelease suffix, such as `-alpha.1`, publish as GitHub prereleases.
 
 5. Verify the finished release:
    - the release title is `Pupil v0.0.2`
@@ -57,6 +72,13 @@ Updater signing is separate from Apple notarization or Windows code signing. Los
 
 The publish workflow fails fast if the pushed tag does not equal `app-v${apps/app/package.json version}`.
 
+## Prerelease notes
+
+- Use semver prerelease versions like `1.0.0-alpha.1`, `1.0.0-beta.1`, or `1.0.0-rc.1`. Do not use plain `1.0.0` for prereleases.
+- The publish workflow automatically marks any `app-v<version-with-hyphen>` tag as a GitHub prerelease.
+- The app updater still points at `https://github.com/balazsotakomaiya/pupil/releases/latest/download/latest.json`.
+- GitHub's "latest release" endpoint excludes prereleases, so alpha builds will not join the stable auto-update channel until Pupil gets a dedicated prerelease updater endpoint.
+
 ## Recovering a failed publish
 
 If a publish failed and you need to retry it after pushing fixes, use the manual `Publish` workflow in GitHub Actions:
@@ -72,7 +94,8 @@ This recovery path is meant for “the release failed, fix it and republish” s
 
 ## Current release behavior
 
-- Releases are stable-only in v1. There is no prerelease channel yet.
+- GitHub Releases support both stable releases and semver prereleases.
+- The built-in app updater still follows the stable release channel only.
 - Desktop installers are intentionally unsigned in this first phase.
 - macOS users should expect Gatekeeper friction until notarization is added.
 - Windows users should expect SmartScreen friction until code signing is added.
