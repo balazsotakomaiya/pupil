@@ -6,6 +6,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::analytics::load_dashboard_stats;
 use crate::app::open_app_connection;
 use crate::error::{AppError, AppResult};
+use crate::settings::{load_new_cards_limit, load_today_new_card_count};
 use crate::util::now_ms;
 
 const TRAY_ID: &str = "pupil-tray";
@@ -20,6 +21,16 @@ enum TrayStatus {
     DueToday,
     Overdue,
     CaughtUp,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct TrayQueueCounts {
+    admitted_new: i64,
+    due_new: i64,
+    due_review: i64,
+    effective_due: i64,
+    gated_new: i64,
+    overdue_review: i64,
 }
 
 /// Sets up the system tray icon on app startup.
@@ -83,37 +94,41 @@ pub(crate) fn refresh_tray(app: &AppHandle) -> AppResult<()> {
     let connection = open_app_connection(app)?;
     let now = now_ms();
     let stats = load_dashboard_stats(&connection, now)?;
+    let new_cards_limit = load_new_cards_limit(&connection).map_err(AppError::from)?;
+    let new_cards_today = load_today_new_card_count(&connection).map_err(AppError::from)?;
 
-    // Cards seen at least once (state > 0) that are 3+ days overdue signal slacking.
-    let slack_threshold = now - 3 * 24 * 60 * 60 * 1000;
-    let overdue_count: i64 = connection
-        .query_row(
-            "SELECT COUNT(*) FROM cards WHERE state > 0 AND due < ?1",
-            [slack_threshold],
-            |row| row.get(0),
-        )
+    let queue = load_tray_queue_counts(&connection, now, new_cards_limit, new_cards_today)
         .map_err(AppError::from)?;
-
-    let status = tray_status(stats.total_cards, stats.due_today, overdue_count);
+    let status = tray_status(stats.total_cards, queue.effective_due, queue.overdue_review);
     let icon = make_status_icon(status);
     let tooltip = make_tooltip(
         status,
         stats.studied_today,
-        stats.due_today,
-        overdue_count,
+        queue.effective_due,
+        queue.overdue_review,
+        queue.gated_new,
         stats.global_streak,
     );
 
     let status_label = match status {
-        TrayStatus::Overdue | TrayStatus::DueToday => {
+        TrayStatus::Overdue => format!(
+            "{} overdue · {} ready now",
+            queue.overdue_review, queue.effective_due
+        ),
+        TrayStatus::DueToday => {
             if stats.studied_today == 0 {
-                format!("{} cards due today", stats.due_today)
+                format!("{} cards ready now", queue.effective_due)
             } else {
-                format!("{} due · {} reviewed", stats.due_today, stats.studied_today)
+                format!(
+                    "{} ready · {} reviewed",
+                    queue.effective_due, stats.studied_today
+                )
             }
         }
         TrayStatus::CaughtUp => {
-            if stats.studied_today > 0 {
+            if queue.gated_new > 0 {
+                format!("All caught up today · {} new held", queue.gated_new)
+            } else if stats.studied_today > 0 {
                 format!("All caught up · {} reviewed", stats.studied_today)
             } else {
                 "All caught up".to_string()
@@ -122,8 +137,8 @@ pub(crate) fn refresh_tray(app: &AppHandle) -> AppResult<()> {
         TrayStatus::Empty => "No cards yet".to_string(),
     };
 
-    let study_label = if stats.due_today > 0 {
-        format!("Study {} Cards →", stats.due_today)
+    let study_label = if queue.effective_due > 0 {
+        format!("Study {} Cards →", queue.effective_due)
     } else {
         "Study →".to_string()
     };
@@ -153,8 +168,8 @@ pub(crate) fn refresh_tray(app: &AppHandle) -> AppResult<()> {
         .build()
         .map_err(AppError::from)?;
 
-    let title = if stats.due_today > 0 {
-        format!("{} cards to study", stats.due_today)
+    let title = if queue.effective_due > 0 {
+        format!("{} cards to study", queue.effective_due)
     } else {
         String::new()
     };
@@ -192,6 +207,57 @@ fn make_status_icon(status: TrayStatus) -> Image<'static> {
         TrayStatus::Empty => (107, 114, 128), // gray #6b7280 — nothing yet
     };
     make_eye_icon(r, g, b)
+}
+
+fn load_tray_queue_counts(
+    connection: &rusqlite::Connection,
+    now: i64,
+    new_cards_limit: Option<i64>,
+    new_cards_today: i64,
+) -> rusqlite::Result<TrayQueueCounts> {
+    let slack_threshold = now - 3 * 24 * 60 * 60 * 1000;
+    let (due_new, due_review, overdue_review): (i64, i64, i64) = connection.query_row(
+        "
+        SELECT
+          COALESCE(SUM(CASE WHEN state = 0 AND due <= ?1 THEN 1 ELSE 0 END), 0),
+          COALESCE(SUM(CASE WHEN state > 0 AND due <= ?1 THEN 1 ELSE 0 END), 0),
+          COALESCE(SUM(CASE WHEN state > 0 AND due < ?2 THEN 1 ELSE 0 END), 0)
+        FROM cards
+        ",
+        [now, slack_threshold],
+        |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+    )?;
+
+    Ok(build_tray_queue_counts(
+        due_new,
+        due_review,
+        overdue_review,
+        new_cards_limit,
+        new_cards_today,
+    ))
+}
+
+fn build_tray_queue_counts(
+    due_new: i64,
+    due_review: i64,
+    overdue_review: i64,
+    new_cards_limit: Option<i64>,
+    new_cards_today: i64,
+) -> TrayQueueCounts {
+    let admitted_new = match new_cards_limit {
+        Some(limit) => due_new.min((limit - new_cards_today.max(0)).max(0)),
+        None => due_new,
+    };
+    let effective_due = due_review + admitted_new;
+
+    TrayQueueCounts {
+        admitted_new,
+        due_new,
+        due_review,
+        effective_due,
+        gated_new: due_new - admitted_new,
+        overdue_review,
+    }
 }
 
 /// Renders a 22×22 eye (almond/lens shape) filled with the given color.
@@ -248,6 +314,7 @@ fn make_tooltip(
     studied_today: i64,
     due_today: i64,
     overdue_count: i64,
+    gated_new: i64,
     streak: i64,
 ) -> String {
     let streak_part = if streak > 0 {
@@ -257,21 +324,53 @@ fn make_tooltip(
     };
 
     match status {
-        TrayStatus::Overdue => format!(
-            "Pupil · {} cards are 3+ days overdue{}",
-            overdue_count, streak_part
-        ),
-        TrayStatus::DueToday => {
-            if studied_today == 0 {
-                format!("Pupil · {} cards due today{}", due_today, streak_part)
+        TrayStatus::Overdue => {
+            if gated_new > 0 {
+                format!(
+                    "Pupil · {} overdue · {} ready now · {} new held by daily limit{}",
+                    overdue_count, due_today, gated_new, streak_part
+                )
             } else {
                 format!(
-                    "Pupil · {} due · {} reviewed{}",
-                    due_today, studied_today, streak_part
+                    "Pupil · {} overdue · {} ready now{}",
+                    overdue_count, due_today, streak_part
                 )
             }
         }
-        TrayStatus::CaughtUp => format!("Pupil · All caught up!{}", streak_part),
+        TrayStatus::DueToday => {
+            if studied_today == 0 {
+                if gated_new > 0 {
+                    format!(
+                        "Pupil · {} cards ready now · {} new held by daily limit{}",
+                        due_today, gated_new, streak_part
+                    )
+                } else {
+                    format!("Pupil · {} cards ready now{}", due_today, streak_part)
+                }
+            } else {
+                if gated_new > 0 {
+                    format!(
+                        "Pupil · {} ready now · {} reviewed · {} new held by daily limit{}",
+                        due_today, studied_today, gated_new, streak_part
+                    )
+                } else {
+                    format!(
+                        "Pupil · {} ready now · {} reviewed{}",
+                        due_today, studied_today, streak_part
+                    )
+                }
+            }
+        }
+        TrayStatus::CaughtUp => {
+            if gated_new > 0 {
+                format!(
+                    "Pupil · All caught up for today · {} new held by daily limit{}",
+                    gated_new, streak_part
+                )
+            } else {
+                format!("Pupil · All caught up!{}", streak_part)
+            }
+        }
         TrayStatus::Empty => format!("Pupil{}", streak_part),
     }
 }
@@ -285,7 +384,7 @@ fn focus_main_window(app: &AppHandle) {
 
 #[cfg(test)]
 mod tests {
-    use super::{tray_status, TrayStatus};
+    use super::{build_tray_queue_counts, tray_status, TrayQueueCounts, TrayStatus};
 
     #[test]
     fn tray_status_is_empty_when_no_cards_exist() {
@@ -305,5 +404,35 @@ mod tests {
     #[test]
     fn tray_status_prefers_overdue_over_all_other_states() {
         assert_eq!(tray_status(24, 3, 2), TrayStatus::Overdue);
+    }
+
+    #[test]
+    fn tray_queue_counts_respect_remaining_new_card_budget() {
+        assert_eq!(
+            build_tray_queue_counts(202, 8, 2, Some(20), 0),
+            TrayQueueCounts {
+                admitted_new: 20,
+                due_new: 202,
+                due_review: 8,
+                effective_due: 28,
+                gated_new: 182,
+                overdue_review: 2,
+            }
+        );
+    }
+
+    #[test]
+    fn tray_queue_counts_catch_up_for_today_when_new_budget_is_exhausted() {
+        assert_eq!(
+            build_tray_queue_counts(14, 0, 0, Some(20), 20),
+            TrayQueueCounts {
+                admitted_new: 0,
+                due_new: 14,
+                due_review: 0,
+                effective_due: 0,
+                gated_new: 14,
+                overdue_review: 0,
+            }
+        );
     }
 }

@@ -91,6 +91,34 @@ describe("buildStudySummary", () => {
       { label: "other", value: 1 },
     ]);
   });
+
+  it("describes the daily new-card cap when no more cards are actionable", () => {
+    const spaces: SpaceSummary[] = [
+      {
+        id: "space-1",
+        name: "Rust",
+        cardCount: 42,
+        dueTodayCount: 0,
+        streak: 7,
+        createdAt: 100,
+        updatedAt: 200,
+      },
+    ];
+    const stats: DashboardStats = {
+      dueToday: 0,
+      globalStreak: 7,
+      studiedToday: 20,
+      studyDays: ["2026-04-21"],
+      totalCards: 42,
+    };
+
+    const summary = buildStudySummary(spaces, stats, 14);
+
+    expect(summary.eyebrow).toBe("Daily limit reached");
+    expect(summary.headline).toBe("No more cards ready today");
+    expect(summary.description).toContain("14 new cards");
+    expect(summary.description).toContain("daily limit");
+  });
 });
 
 describe("buildStats", () => {
@@ -109,6 +137,31 @@ describe("buildStats", () => {
       { label: "Due today", value: "7", subtext: "Reviews ready now" },
       { label: "Global streak", value: "14", unit: "days", subtext: "Across all study sessions" },
     ]);
+  });
+
+  it("shows gated new cards when the daily cap is active", () => {
+    const stats = buildStats(
+      {
+        dueToday: 28,
+        globalStreak: 14,
+        studiedToday: 0,
+        studyDays: [],
+        totalCards: 1280,
+      },
+      182,
+    );
+
+    expect(stats[1]).toEqual({
+      label: "Studied today",
+      value: "0",
+      unit: " / 28",
+      subtext: "182 new held by limit",
+    });
+    expect(stats[2]).toEqual({
+      label: "Due today",
+      value: "28",
+      subtext: "182 new held by limit",
+    });
   });
 });
 

@@ -14,6 +14,7 @@ import type { DashboardStats, SpaceStats } from "./stats";
 export function buildStudySummary(
   spaces: SpaceSummary[],
   dashboardStats: DashboardStats,
+  gatedNewCount = 0,
 ): StudySummary {
   const totalDueToday = dashboardStats.dueToday;
   const totalCards = spaces.reduce((sum, space) => sum + space.cardCount, 0);
@@ -29,6 +30,20 @@ export function buildStudySummary(
       .slice(0, 3)
       .filter((space) => space.cardCount > 0)
       .map((space) => ({ label: space.name, value: space.cardCount }));
+
+    if (gatedNewCount > 0) {
+      return {
+        eyebrow: "Daily limit reached",
+        headline: "No more cards ready today",
+        description: `${formatCount(gatedNewCount, "new card")} waiting behind your daily limit across ${formatCount(
+          spaces.length,
+          "space",
+        )}. Come back tomorrow or raise the limit in Settings.`,
+        breakdown: largestSpaces,
+        primaryActionLabel: "Study all →",
+        secondaryActionLabel: "Per space",
+      };
+    }
 
     return {
       eyebrow: "Queue cleared",
@@ -59,6 +74,10 @@ export function buildStudySummary(
       dashboardStats.studiedToday,
     )} already reviewed — ${formatNumber(totalDueToday)} remaining${
       leadingNames.length > 0 ? `. Most overdue in ${joinLabels(leadingNames)}.` : "."
+    }${
+      gatedNewCount > 0
+        ? ` ${formatCount(gatedNewCount, "new card")} held by your daily limit.`
+        : ""
     }`,
     breakdown,
     primaryActionLabel: "Study all →",
@@ -66,7 +85,7 @@ export function buildStudySummary(
   };
 }
 
-export function buildStats(stats: DashboardStats): StatCardData[] {
+export function buildStats(stats: DashboardStats, gatedNewCount = 0): StatCardData[] {
   return [
     {
       label: "Total cards",
@@ -77,12 +96,22 @@ export function buildStats(stats: DashboardStats): StatCardData[] {
       label: "Studied today",
       value: formatNumber(stats.studiedToday),
       unit: stats.dueToday > 0 ? ` / ${formatNumber(stats.dueToday)}` : undefined,
-      subtext: stats.dueToday > 0 ? "due remaining" : "Queue cleared",
+      subtext:
+        gatedNewCount > 0
+          ? `${formatNumber(gatedNewCount)} new held by limit`
+          : stats.dueToday > 0
+            ? "due remaining"
+            : "Queue cleared",
     },
     {
       label: "Due today",
       value: formatNumber(stats.dueToday),
-      subtext: stats.dueToday > 0 ? "Reviews ready now" : "Nothing scheduled",
+      subtext:
+        gatedNewCount > 0
+          ? `${formatNumber(gatedNewCount)} new held by limit`
+          : stats.dueToday > 0
+            ? "Reviews ready now"
+            : "Nothing scheduled",
     },
     {
       label: "Global streak",

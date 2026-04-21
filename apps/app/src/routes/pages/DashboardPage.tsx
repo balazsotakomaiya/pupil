@@ -7,6 +7,7 @@ import {
   useRecentActivityQuery,
   useSpaceStatsQuery,
   useSpacesQuery,
+  useStudySettingsQuery,
 } from "../../lib/app-queries";
 import {
   dismissDailyCheckIn,
@@ -27,6 +28,8 @@ import {
   FALLBACK_STATS,
   FALLBACK_STUDY_SUMMARY,
 } from "../../lib/seed-data";
+import { buildStudyQueueSnapshot } from "../../lib/study-queue";
+import { computeNewCardsBudget } from "../../lib/study-settings";
 import { useShellActions } from "../root-shell";
 
 export function DashboardPage() {
@@ -37,21 +40,40 @@ export function DashboardPage() {
   const dashboardStats = useDashboardStatsQuery().data ?? null;
   const recentActivity = useRecentActivityQuery().data ?? [];
   const spaceStats = useSpaceStatsQuery().data ?? [];
+  const studySettings = useStudySettingsQuery().data ?? { newCardsLimit: null, newCardsToday: 0 };
   const hasRealSpaces = spaces.length > 0;
   const now = Date.now();
   const todayDayKey = getTodayDayKey(now);
   const dismissedDailyCheckInDay = getDismissedDailyCheckInDay();
   const spaceStatsById = new Map(spaceStats.map((entry) => [entry.spaceId, entry]));
+  const queueSnapshot = buildStudyQueueSnapshot(
+    cards,
+    now,
+    computeNewCardsBudget(studySettings.newCardsLimit, studySettings.newCardsToday),
+  );
+  const summarySpaces = spaces.map((space) => ({
+    ...space,
+    dueTodayCount: queueSnapshot.actionableDueBySpace.get(space.id) ?? 0,
+  }));
+  const studyDashboardStats = dashboardStats
+    ? {
+        ...dashboardStats,
+        dueToday: queueSnapshot.actionableDueCount,
+      }
+    : null;
   const globalStreak = dashboardStats?.globalStreak ?? (hasRealSpaces ? 0 : 14);
   const studySummary =
-    hasRealSpaces && dashboardStats
-      ? buildStudySummary(spaces, dashboardStats)
+    hasRealSpaces && studyDashboardStats
+      ? buildStudySummary(summarySpaces, studyDashboardStats, queueSnapshot.gatedNewCount)
       : FALLBACK_STUDY_SUMMARY;
   const isDailyCheckInActive =
-    hasRealSpaces && dashboardStats
-      ? shouldShowDailyCheckInPrompt(dashboardStats, dismissedDailyCheckInDay, todayDayKey)
+    hasRealSpaces && studyDashboardStats
+      ? shouldShowDailyCheckInPrompt(studyDashboardStats, dismissedDailyCheckInDay, todayDayKey)
       : false;
-  const stats = hasRealSpaces && dashboardStats ? buildStats(dashboardStats) : FALLBACK_STATS;
+  const stats =
+    hasRealSpaces && studyDashboardStats
+      ? buildStats(studyDashboardStats, queueSnapshot.gatedNewCount)
+      : FALLBACK_STATS;
   const spaceCards = hasRealSpaces
     ? buildSpaceCards(spaces, cards, spaceStatsById, now)
     : FALLBACK_SPACES;
@@ -72,7 +94,7 @@ export function DashboardPage() {
         onStudyPrimaryAction={
           hasRealSpaces
             ? () => {
-                if (dashboardStats?.dueToday) {
+                if (studyDashboardStats?.dueToday) {
                   dismissDailyCheckIn(todayDayKey);
                 }
                 void navigate({ to: "/study" });
@@ -83,7 +105,7 @@ export function DashboardPage() {
           hasRealSpaces
             ? () => {
                 const targetSpace =
-                  [...spaces].sort(
+                  [...summarySpaces].sort(
                     (left, right) =>
                       right.dueTodayCount - left.dueTodayCount || right.updatedAt - left.updatedAt,
                   )[0] ?? null;

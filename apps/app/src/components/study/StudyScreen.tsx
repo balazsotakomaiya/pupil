@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { CardRecord } from "../../lib/cards";
 import { previewCardScheduling } from "../../lib/fsrs";
 import type { SpaceSummary } from "../../lib/spaces";
+import { buildAdmittedSet, buildDueQueue } from "../../lib/study-queue";
 import { StudyActions } from "./StudyActions";
 import { StudyBar } from "./StudyBar";
 import { StudyReviewCard } from "./StudyReviewCard";
@@ -389,30 +390,6 @@ export function StudyScreen({
       ) : null}
     </div>
   );
-}
-
-function buildDueQueue(cards: StudyCardRecord[], now: number) {
-  return [...cards]
-    .filter((card) => card.due <= now && !card.suspended)
-    .sort((left, right) => left.due - right.due || right.updatedAt - left.updatedAt);
-}
-
-/**
- * Build the set of card IDs admitted into a session.
- * - All due review cards (state > 0) are always admitted.
- * - New cards (state === 0) are admitted up to `newCardsBudget`.
- */
-function buildAdmittedSet(
-  cards: StudyCardRecord[],
-  now: number,
-  newCardsBudget: number | null,
-): Set<string> {
-  const dueCards = buildDueQueue(cards, now);
-  const reviewCards = dueCards.filter((c) => c.state > 0);
-  const newCards = dueCards.filter((c) => c.state === 0);
-  const admittedNewCards = newCardsBudget !== null ? newCards.slice(0, newCardsBudget) : newCards;
-
-  return new Set([...reviewCards, ...admittedNewCards].map((c) => c.id));
 }
 
 function buildNextDueLabel(cards: StudyCardRecord[], now: number): string {
