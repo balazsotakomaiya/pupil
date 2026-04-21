@@ -18,7 +18,7 @@ Updater signing is separate from Apple notarization or Windows code signing. Los
 1. Update the desktop version:
 
    ```bash
-   bun run release:version 0.0.2
+   bun run release:version 1.0.0-beta.1
    ```
 
 2. Review the changed files, open a version bump PR, and merge it to `main`.
@@ -36,24 +36,25 @@ Updater signing is separate from Apple notarization or Windows code signing. Los
 3. Create an annotated tag from `main` using the exact desktop release format:
 
    ```bash
-   git tag -a app-v0.0.2 -m "Pupil v0.0.2"
-   git push origin app-v0.0.2
+   git tag -a app-v1.0.0-beta.1 -m "Pupil v1.0.0-beta.1"
+   git push origin app-v1.0.0-beta.1
    ```
 
-4. GitHub Actions runs `.github/workflows/publish.yml` on the tag and publishes desktop assets to GitHub Releases.
+4. GitHub Actions runs `.github/workflows/publish.yml` on the tag and publishes desktop assets to GitHub Releases. Any semver prerelease suffix such as `-alpha.1`, `-beta.1`, or `-rc.1` is detected automatically and the GitHub release is marked as a prerelease.
 
 5. Verify the finished release:
-   - the release title is `Pupil v0.0.2`
+   - the release title is `Pupil v1.0.0-beta.1`
+   - the GitHub release is marked as a prerelease when the version includes a semver prerelease suffix
    - assets exist for Linux x86_64, Windows x86_64, macOS Intel, and macOS Apple Silicon
    - updater signatures are present
-   - `latest.json` is available at:
+   - for stable releases, `latest.json` is available at:
 
      `https://github.com/balazsotakomaiya/pupil/releases/latest/download/latest.json`
 
 ## Validation commands
 
 - `bun run release:check`
-- `bun run release:check --tag app-v0.0.2`
+- `bun run release:check --tag app-v1.0.0-beta.1`
 
 The publish workflow fails fast if the pushed tag does not equal `app-v${apps/app/package.json version}`.
 
@@ -64,7 +65,7 @@ If a publish failed and you need to retry it after pushing fixes, use the manual
 1. Push the fix commit to the branch you want to publish from, usually `main`.
 2. Open `Actions` → `Publish` → `Run workflow`.
 3. Enter:
-   - `tag`: the existing release tag, for example `app-v0.0.2`
+   - `tag`: the existing release tag, for example `app-v1.0.0-beta.1`
    - `ref`: the branch, tag, or commit SHA to build from, for example `main`
 4. Run the workflow. It will clear the existing assets for that release tag, rebuild from the selected ref, and upload a fresh set of assets.
 
@@ -72,7 +73,8 @@ This recovery path is meant for “the release failed, fix it and republish” s
 
 ## Current release behavior
 
-- Releases are stable-only in v1. There is no prerelease channel yet.
+- Semver prerelease versions such as `1.0.0-beta.1` publish as GitHub prereleases automatically.
+- The updater endpoint at `releases/latest/download/latest.json` still tracks the latest stable release only.
 - Desktop installers are intentionally unsigned in this first phase.
 - macOS users should expect Gatekeeper friction until notarization is added.
 - Windows users should expect SmartScreen friction until code signing is added.

@@ -128,7 +128,7 @@ function normalizeTag(tag) {
     return tag.slice("refs/tags/".length);
   }
 
-  return null;
+  return tag;
 }
 
 async function readReleaseState() {

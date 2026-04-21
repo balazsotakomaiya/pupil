@@ -29,6 +29,8 @@ jobs:
       release_tag: ${{ steps.resolve.outputs.release_tag }}
       checkout_ref: ${{ steps.resolve.outputs.checkout_ref }}
       release_commitish: ${{ steps.commitish.outputs.release_commitish }}
+      release_version: ${{ steps.metadata.outputs.release_version }}
+      release_prerelease: ${{ steps.metadata.outputs.release_prerelease }}
     steps:
       - name: Resolve publish target
         id: resolve
@@ -70,6 +72,28 @@ jobs:
           fi
 
           echo "release_commitish=${release_commitish}" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve release metadata
+        id: metadata
+        shell: bash
+        run: |
+          release_tag="${{ steps.resolve.outputs.release_tag }}"
+
+          if [[ "$release_tag" != app-v* ]]; then
+            echo "expected release tag to start with app-v, received: ${release_tag}" >&2
+            exit 1
+          fi
+
+          release_version="${release_tag#app-v}"
+
+          if [[ "$release_version" == *-* ]]; then
+            release_prerelease=true
+          else
+            release_prerelease=false
+          fi
+
+          echo "release_version=${release_version}" >> "$GITHUB_OUTPUT"
+          echo "release_prerelease=${release_prerelease}" >> "$GITHUB_OUTPUT"
 
       - name: Clear existing release assets
         uses: actions/github-script@v7
@@ -216,11 +240,11 @@ jobs:
         with:
           projectPath: apps/app
           tagName: ${{ needs.prepare.outputs.release_tag }}
-          releaseName: Pupil v__VERSION__
+          releaseName: Pupil v${{ needs.prepare.outputs.release_version }}
           releaseCommitish: ${{ needs.prepare.outputs.release_commitish }}
           generateReleaseNotes: true
           releaseDraft: false
-          prerelease: false
+          prerelease: ${{ needs.prepare.outputs.release_prerelease }}
           retryAttempts: 2
           uploadUpdaterJson: true
           updaterJsonPreferNsis: false
