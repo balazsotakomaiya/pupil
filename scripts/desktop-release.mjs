@@ -128,7 +128,11 @@ function normalizeTag(tag) {
     return tag.slice("refs/tags/".length);
   }
 
-  return tag;
+  if (tag.startsWith(RELEASE_TAG_PREFIX)) {
+    return tag;
+  }
+
+  return null;
 }
 
 async function readReleaseState() {
