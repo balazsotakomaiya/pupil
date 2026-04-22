@@ -33,6 +33,7 @@ A local-first spaced-repetition desktop app. The user creates "spaces" (topic bu
 apps/app/
 ├── src/                    # React frontend
 │   ├── components/         # UI components
+│   ├── routes/             # Router shell, route pages, and route-scoped hooks
 │   ├── styles/             # Global design tokens, reset, shared utilities
 │   ├── types/              # Ambient type declarations
 │   └── lib/                # Frontend utilities, query helpers, and Tauri command wrappers
@@ -58,6 +59,20 @@ apps/app/
 ```
 
 Archived HTML mockups live in `docs/design-references/`, not inside the app source tree.
+
+---
+
+## Frontend architecture
+
+The frontend is organized in three main layers:
+
+1. **Route shell and pages** — `src/routes/root-shell.tsx`, `src/routes/useRootShellDataSync.ts`, and `src/routes/pages/*`
+2. **Feature UI** — `src/components/*`
+3. **Data/runtime helpers** — `src/lib/*`
+
+Route pages should compose queries, mutations, and navigation. Presentation stays in components. Long-lived shell side effects should usually live in a dedicated route hook rather than expanding `root-shell.tsx` directly.
+
+TanStack Query is the default server-state layer. If a mutation changes cards, spaces, dashboard stats, or study settings, update the relevant invalidation helper in `src/lib/query.ts`.
 
 ---
 
@@ -139,6 +154,19 @@ bun run --cwd apps/app dev
 ```
 
 The Rust backend compiles with `cargo` under the hood. First build takes a while. Subsequent rebuilds are incremental.
+
+## Testing layout
+
+- Frontend tests live in dedicated `*.test.ts` files, mainly under `src/lib/`.
+- Rust tests live in dedicated files under `src-tauri/src/tests/`.
+- Keep tests out of production modules unless there is a compelling reason they must be co-located.
+
+## Git hooks
+
+- Repo hooks are managed with Lefthook via the root `lefthook.yml`.
+- `bun install` triggers the root `prepare` script, which installs the hooks.
+- The repo `pre-commit` hook runs `bun run lint` and `bun run format:check`.
+- Treat the hook as a guardrail, not as the primary way to discover issues. Run the same checks yourself before committing larger changes.
 
 ---
 

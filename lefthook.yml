@@ -1,7 +1,7 @@
 pre-commit:
   parallel: true
   commands:
-    biome:
-      run: bun run lint:fix
+    lint:
+      run: bun run lint
     cargo-fmt:
-      run: bun run format:rust
+      run: bun run format:check

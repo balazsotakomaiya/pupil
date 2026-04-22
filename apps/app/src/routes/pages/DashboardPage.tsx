@@ -101,22 +101,15 @@ export function DashboardPage() {
               }
             : openCreateDialog
         }
-        onStudySecondaryAction={
+        onSelectSpaceForStudy={
           hasRealSpaces
-            ? () => {
-                const targetSpace =
-                  [...summarySpaces].sort(
-                    (left, right) =>
-                      right.dueTodayCount - left.dueTodayCount || right.updatedAt - left.updatedAt,
-                  )[0] ?? null;
-
-                if (targetSpace) {
-                  void navigate({ to: "/spaces/$spaceId", params: { spaceId: targetSpace.id } });
-                }
+            ? (spaceId) => {
+                void navigate({ to: "/spaces/$spaceId/study", params: { spaceId } });
               }
             : undefined
         }
         spaces={spaceCards}
+        studySpaceOptions={summarySpaces}
         stats={stats}
         streakCells={streakCells}
         streakCount={globalStreak}

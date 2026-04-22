@@ -1862,6 +1862,35 @@ button {
   opacity: 0.9;
 }
 
+.space-picker-menu {
+  min-width: 220px;
+  max-width: 320px;
+}
+
+.space-picker-item {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.space-picker-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.space-picker-stats {
+  display: flex;
+  gap: 8px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.space-picker-due {
+  color: var(--success);
+  font-weight: 600;
+}
+
 .titlebar-btn.active {
   background: rgba(255, 255, 255, 0.05);
   border-color: var(--border-hover);

@@ -1,3 +1,4 @@
+import type { SpaceSummary } from "../../lib/spaces";
 import { ActivitySection } from "./ActivitySection";
 import { SpacesSection } from "./SpacesSection";
 import { StatsSection } from "./StatsSection";
@@ -15,12 +16,13 @@ type DashboardProps = {
   isDailyCheckInActive?: boolean;
   onOpenCreateDialog: () => void;
   onOpenSpace: (spaceId: string) => void;
+  onSelectSpaceForStudy?: (spaceId: string) => void;
   onStudyPrimaryAction?: () => void;
-  onStudySecondaryAction?: () => void;
   spaces: SpaceCardData[];
   stats: StatCardData[];
   streakCells: StreakCellData[];
   streakCount: number;
+  studySpaceOptions: SpaceSummary[];
   studySummary: StudySummary;
 };
 
@@ -29,12 +31,13 @@ export function Dashboard({
   isDailyCheckInActive,
   onOpenCreateDialog,
   onOpenSpace,
+  onSelectSpaceForStudy,
   onStudyPrimaryAction,
-  onStudySecondaryAction,
   spaces,
   stats,
   streakCells,
   streakCount,
+  studySpaceOptions,
   studySummary,
 }: DashboardProps) {
   return (
@@ -42,7 +45,8 @@ export function Dashboard({
       <StudySection
         isDailyCheckInActive={isDailyCheckInActive}
         onPrimaryAction={onStudyPrimaryAction}
-        onSecondaryAction={onStudySecondaryAction}
+        onSelectSpaceForStudy={onSelectSpaceForStudy}
+        spaces={studySpaceOptions}
         summary={studySummary}
       />
       <div className="ruler-divider" />

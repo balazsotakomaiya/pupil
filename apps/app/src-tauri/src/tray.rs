@@ -16,7 +16,7 @@ const MENU_OPEN_ID: &str = "tray-open";
 const MENU_QUIT_ID: &str = "tray-quit";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum TrayStatus {
+pub(crate) enum TrayStatus {
     Empty,
     DueToday,
     Overdue,
@@ -24,13 +24,13 @@ enum TrayStatus {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-struct TrayQueueCounts {
-    admitted_new: i64,
-    due_new: i64,
-    due_review: i64,
-    effective_due: i64,
-    gated_new: i64,
-    overdue_review: i64,
+pub(crate) struct TrayQueueCounts {
+    pub(crate) admitted_new: i64,
+    pub(crate) due_new: i64,
+    pub(crate) due_review: i64,
+    pub(crate) effective_due: i64,
+    pub(crate) gated_new: i64,
+    pub(crate) overdue_review: i64,
 }
 
 /// Sets up the system tray icon on app startup.
@@ -187,7 +187,7 @@ pub(crate) fn refresh_tray(app: &AppHandle) -> AppResult<()> {
 /// - Amber:  cards are due today — time to study
 /// - Green:  all caught up, nothing due
 /// - Gray:   no cards yet
-fn tray_status(total_cards: i64, due_today: i64, overdue_count: i64) -> TrayStatus {
+pub(crate) fn tray_status(total_cards: i64, due_today: i64, overdue_count: i64) -> TrayStatus {
     if overdue_count > 0 {
         TrayStatus::Overdue
     } else if due_today > 0 {
@@ -209,7 +209,7 @@ fn make_status_icon(status: TrayStatus) -> Image<'static> {
     make_eye_icon(r, g, b)
 }
 
-fn load_tray_queue_counts(
+pub(crate) fn load_tray_queue_counts(
     connection: &rusqlite::Connection,
     now: i64,
     new_cards_limit: Option<i64>,
@@ -238,7 +238,7 @@ fn load_tray_queue_counts(
     ))
 }
 
-fn build_tray_queue_counts(
+pub(crate) fn build_tray_queue_counts(
     due_new: i64,
     due_review: i64,
     overdue_review: i64,
@@ -380,103 +380,5 @@ fn focus_main_window(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.set_focus();
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use rusqlite::Connection;
-
-    use super::{
-        build_tray_queue_counts, load_tray_queue_counts, tray_status, TrayQueueCounts, TrayStatus,
-    };
-
-    #[test]
-    fn tray_status_is_empty_when_no_cards_exist() {
-        assert_eq!(tray_status(0, 0, 0), TrayStatus::Empty);
-    }
-
-    #[test]
-    fn tray_status_is_caught_up_when_cards_exist_but_nothing_is_due() {
-        assert_eq!(tray_status(24, 0, 0), TrayStatus::CaughtUp);
-    }
-
-    #[test]
-    fn tray_status_prefers_due_over_caught_up() {
-        assert_eq!(tray_status(24, 3, 0), TrayStatus::DueToday);
-    }
-
-    #[test]
-    fn tray_status_prefers_overdue_over_all_other_states() {
-        assert_eq!(tray_status(24, 3, 2), TrayStatus::Overdue);
-    }
-
-    #[test]
-    fn tray_queue_counts_respect_remaining_new_card_budget() {
-        assert_eq!(
-            build_tray_queue_counts(202, 8, 2, Some(20), 0),
-            TrayQueueCounts {
-                admitted_new: 20,
-                due_new: 202,
-                due_review: 8,
-                effective_due: 28,
-                gated_new: 182,
-                overdue_review: 2,
-            }
-        );
-    }
-
-    #[test]
-    fn tray_queue_counts_catch_up_for_today_when_new_budget_is_exhausted() {
-        assert_eq!(
-            build_tray_queue_counts(14, 0, 0, Some(20), 20),
-            TrayQueueCounts {
-                admitted_new: 0,
-                due_new: 14,
-                due_review: 0,
-                effective_due: 0,
-                gated_new: 14,
-                overdue_review: 0,
-            }
-        );
-    }
-
-    #[test]
-    fn load_tray_queue_counts_ignores_suspended_cards() {
-        let connection = Connection::open_in_memory().expect("open in-memory db");
-        connection
-            .execute_batch(
-                "
-                CREATE TABLE cards (
-                  state INTEGER NOT NULL,
-                  due INTEGER NOT NULL,
-                  is_suspended INTEGER NOT NULL DEFAULT 0
-                );
-
-                INSERT INTO cards (state, due, is_suspended) VALUES
-                  (0, 100, 0),
-                  (0, 100, 0),
-                  (0, 100, 0),
-                  (0, 100, 1),
-                  (1, 100, 0),
-                  (1, 100, 0),
-                  (1, 100, 1),
-                  (1, -300000000, 0),
-                  (1, -300000000, 1);
-                ",
-            )
-            .expect("seed tray cards");
-
-        assert_eq!(
-            load_tray_queue_counts(&connection, 1_000, Some(2), 0).expect("load tray counts"),
-            TrayQueueCounts {
-                admitted_new: 2,
-                due_new: 3,
-                due_review: 3,
-                effective_due: 5,
-                gated_new: 1,
-                overdue_review: 1,
-            }
-        );
     }
 }
