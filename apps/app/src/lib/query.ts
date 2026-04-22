@@ -38,6 +38,13 @@ export async function invalidateAllAppData(client: QueryClient) {
   ]);
 }
 
+export async function invalidateDateSensitiveAppData(client: QueryClient) {
+  await Promise.all([
+    client.invalidateQueries({ queryKey: appQueryKeys.dashboardStats }),
+    client.invalidateQueries({ queryKey: appQueryKeys.studySettings }),
+  ]);
+}
+
 export async function invalidateAfterCardMutation(client: QueryClient) {
   await Promise.all([
     client.invalidateQueries({ queryKey: appQueryKeys.cards }),

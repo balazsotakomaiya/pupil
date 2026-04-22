@@ -223,6 +223,7 @@ fn load_tray_queue_counts(
           COALESCE(SUM(CASE WHEN state > 0 AND due <= ?1 THEN 1 ELSE 0 END), 0),
           COALESCE(SUM(CASE WHEN state > 0 AND due < ?2 THEN 1 ELSE 0 END), 0)
         FROM cards
+        WHERE COALESCE(is_suspended, 0) = 0
         ",
         [now, slack_threshold],
         |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
@@ -384,7 +385,11 @@ fn focus_main_window(app: &AppHandle) {
 
 #[cfg(test)]
 mod tests {
-    use super::{build_tray_queue_counts, tray_status, TrayQueueCounts, TrayStatus};
+    use rusqlite::Connection;
+
+    use super::{
+        build_tray_queue_counts, load_tray_queue_counts, tray_status, TrayQueueCounts, TrayStatus,
+    };
 
     #[test]
     fn tray_status_is_empty_when_no_cards_exist() {
@@ -432,6 +437,45 @@ mod tests {
                 effective_due: 0,
                 gated_new: 14,
                 overdue_review: 0,
+            }
+        );
+    }
+
+    #[test]
+    fn load_tray_queue_counts_ignores_suspended_cards() {
+        let connection = Connection::open_in_memory().expect("open in-memory db");
+        connection
+            .execute_batch(
+                "
+                CREATE TABLE cards (
+                  state INTEGER NOT NULL,
+                  due INTEGER NOT NULL,
+                  is_suspended INTEGER NOT NULL DEFAULT 0
+                );
+
+                INSERT INTO cards (state, due, is_suspended) VALUES
+                  (0, 100, 0),
+                  (0, 100, 0),
+                  (0, 100, 0),
+                  (0, 100, 1),
+                  (1, 100, 0),
+                  (1, 100, 0),
+                  (1, 100, 1),
+                  (1, -300000000, 0),
+                  (1, -300000000, 1);
+                ",
+            )
+            .expect("seed tray cards");
+
+        assert_eq!(
+            load_tray_queue_counts(&connection, 1_000, Some(2), 0).expect("load tray counts"),
+            TrayQueueCounts {
+                admitted_new: 2,
+                due_new: 3,
+                due_review: 3,
+                effective_due: 5,
+                gated_new: 1,
+                overdue_review: 1,
             }
         );
     }

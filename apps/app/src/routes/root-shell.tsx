@@ -9,6 +9,7 @@ import {
   useCardsQuery,
   useDashboardStatsQuery,
   useSpacesQuery,
+  useStudySettingsQuery,
 } from "../lib/app-queries";
 import { toAppError } from "../lib/errors";
 import { log } from "../lib/log";
@@ -17,7 +18,7 @@ import { hasDismissedOnboarding, resetOnboarding } from "../lib/onboarding";
 import { appQueryKeys } from "../lib/query";
 import { isTauriRuntime } from "../lib/runtime";
 import { createSpace } from "../lib/spaces";
-import { refreshTrayStatus } from "../lib/tray";
+import { useRootShellDataSync } from "./useRootShellDataSync";
 
 const APP_TABS = [
   { id: "dashboard", label: "Dashboard" },
@@ -65,6 +66,7 @@ export function RootShell() {
   const spacesQuery = useSpacesQuery();
   const cardsQuery = useCardsQuery();
   const dashboardStatsQuery = useDashboardStatsQuery();
+  const studySettingsQuery = useStudySettingsQuery();
   const [isOnboardingDismissed, setIsOnboardingDismissed] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCreatingSpace, setIsCreatingSpace] = useState(false);
@@ -76,6 +78,8 @@ export function RootShell() {
   const cards = cardsQuery.data ?? [];
   const globalStreak = dashboardStatsQuery.data?.globalStreak ?? null;
   const mainTab = resolveMainTab(location.pathname);
+
+  useRootShellDataSync({ bootstrapQuery, dashboardStatsQuery, studySettingsQuery });
 
   useEffect(() => {
     setIsOnboardingDismissed(hasDismissedOnboarding());
@@ -129,34 +133,6 @@ export function RootShell() {
     window.addEventListener("unhandledrejection", handleUnhandledRejection);
     return () => window.removeEventListener("unhandledrejection", handleUnhandledRejection);
   }, []);
-
-  useEffect(() => {
-    if (!isTauriRuntime()) {
-      return;
-    }
-
-    if (
-      bootstrapQuery.isPending ||
-      dashboardStatsQuery.isPending ||
-      bootstrapQuery.error ||
-      dashboardStatsQuery.error
-    ) {
-      return;
-    }
-
-    void refreshTrayStatus().catch((error: unknown) => {
-      log.warn("Failed to refresh tray status.", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    });
-  }, [
-    bootstrapQuery.dataUpdatedAt,
-    bootstrapQuery.error,
-    bootstrapQuery.isPending,
-    dashboardStatsQuery.dataUpdatedAt,
-    dashboardStatsQuery.error,
-    dashboardStatsQuery.isPending,
-  ]);
 
   useEffect(() => {
     if (!isTauriRuntime()) {
