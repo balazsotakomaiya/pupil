@@ -1,6 +1,6 @@
 # Releasing Pupil Desktop
 
-Desktop releases are versioned from `apps/app/package.json`. That file is the canonical source of truth for the desktop app version. `apps/app/src-tauri/Cargo.toml` must match it, and `apps/app/src-tauri/tauri.conf.json` must keep `"version": "../package.json"`.
+Desktop releases are versioned from `apps/app/package.json`. That file is the canonical source of truth for the desktop app version. `apps/app/src-tauri/Cargo.toml` must match it, `apps/app/src-tauri/tauri.conf.json` must keep `"version": "../package.json"`, and `apps/app/src-tauri/tauri.windows.conf.json` must keep the derived MSI-safe WiX version in sync.
 
 ## One-time setup
 
@@ -26,6 +26,8 @@ Updater signing is separate from Apple notarization or Windows code signing. Los
    ```bash
    bun run release:version 1.0.0-alpha.1
    ```
+
+   The release script also updates the Windows-only WiX version override that MSI packaging requires.
 
 2. Review the changed files, open a version bump PR, and merge it to `main`.
 
@@ -74,7 +76,9 @@ The publish workflow fails fast if the pushed tag does not equal `app-v${apps/ap
 
 ## Prerelease notes
 
-- Use semver prerelease versions like `1.0.0-alpha.1`, `1.0.0-beta.1`, or `1.0.0-rc.1`. Do not use plain `1.0.0` for prereleases.
+- Use semver prerelease versions like `1.0.0-alpha.1`, `1.0.0-beta.1`, or `1.0.0-rc.1`. Numeric prereleases like `1.0.0-7` also work. Do not use plain `1.0.0` for prereleases.
+- Windows MSI builds cannot use text prerelease identifiers directly, so the release script derives `bundle.windows.wix.version` in `apps/app/src-tauri/tauri.windows.conf.json`. For example, `1.0.0-alpha.1` maps to `1.0.0.10001`.
+- The release contract currently supports prerelease channels `alpha`, `beta`, and `rc` for Windows MSI packaging.
 - The publish workflow automatically marks any `app-v<version-with-hyphen>` tag as a GitHub prerelease.
 - The app updater still points at `https://github.com/balazsotakomaiya/pupil/releases/latest/download/latest.json`.
 - GitHub's "latest release" endpoint excludes prereleases, so alpha builds will not join the stable auto-update channel until Pupil gets a dedicated prerelease updater endpoint.
