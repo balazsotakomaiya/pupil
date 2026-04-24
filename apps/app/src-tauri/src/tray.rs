@@ -355,18 +355,16 @@ fn make_tooltip(
                 } else {
                     format!("Pupil · {} cards ready now{}", due_today, streak_part)
                 }
+            } else if gated_new > 0 {
+                format!(
+                    "Pupil · {} ready now · {} reviewed · {} new held by daily limit{}",
+                    due_today, studied_today, gated_new, streak_part
+                )
             } else {
-                if gated_new > 0 {
-                    format!(
-                        "Pupil · {} ready now · {} reviewed · {} new held by daily limit{}",
-                        due_today, studied_today, gated_new, streak_part
-                    )
-                } else {
-                    format!(
-                        "Pupil · {} ready now · {} reviewed{}",
-                        due_today, studied_today, streak_part
-                    )
-                }
+                format!(
+                    "Pupil · {} ready now · {} reviewed{}",
+                    due_today, studied_today, streak_part
+                )
             }
         }
         TrayStatus::CaughtUp => {
