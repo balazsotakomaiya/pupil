@@ -100,7 +100,7 @@ bun run --cwd apps/site dev
 Git hook workflow:
 
 - `bun install` runs the repo `prepare` script, which installs Lefthook.
-- The `pre-commit` hook runs `bun run lint` and `bun run format:check`.
+- The `pre-commit` hook runs `bun run lint`, `bun run lint:rust`, and `bun run format:check`.
 - Do not rely on the hook to auto-fix files for you; make the tree pass locally before committing.
 
 Test placement conventions:

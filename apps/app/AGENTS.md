@@ -165,7 +165,7 @@ The Rust backend compiles with `cargo` under the hood. First build takes a while
 
 - Repo hooks are managed with Lefthook via the root `lefthook.yml`.
 - `bun install` triggers the root `prepare` script, which installs the hooks.
-- The repo `pre-commit` hook runs `bun run lint` and `bun run format:check`.
+- The repo `pre-commit` hook runs `bun run lint`, `bun run lint:rust`, and `bun run format:check`.
 - Treat the hook as a guardrail, not as the primary way to discover issues. Run the same checks yourself before committing larger changes.
 
 ---

@@ -3,5 +3,7 @@ pre-commit:
   commands:
     lint:
       run: bun run lint
+    lint-rust:
+      run: bun run lint:rust
     cargo-fmt:
       run: bun run format:check
