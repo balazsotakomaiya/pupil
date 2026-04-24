@@ -24,6 +24,7 @@ export const appQueryKeys = {
   recentActivity: ["recentActivity"] as const,
   spaceStats: ["spaceStats"] as const,
   spaces: ["spaces"] as const,
+  studyQueueSnapshot: ["studyQueueSnapshot"] as const,
   studySettings: ["studySettings"] as const,
 };
 
@@ -34,6 +35,7 @@ export async function invalidateAllAppData(client: QueryClient) {
     client.invalidateQueries({ queryKey: appQueryKeys.recentActivity }),
     client.invalidateQueries({ queryKey: appQueryKeys.spaceStats }),
     client.invalidateQueries({ queryKey: appQueryKeys.spaces }),
+    client.invalidateQueries({ queryKey: appQueryKeys.studyQueueSnapshot }),
     client.invalidateQueries({ queryKey: appQueryKeys.studySettings }),
   ]);
 }
@@ -41,6 +43,7 @@ export async function invalidateAllAppData(client: QueryClient) {
 export async function invalidateDateSensitiveAppData(client: QueryClient) {
   await Promise.all([
     client.invalidateQueries({ queryKey: appQueryKeys.dashboardStats }),
+    client.invalidateQueries({ queryKey: appQueryKeys.studyQueueSnapshot }),
     client.invalidateQueries({ queryKey: appQueryKeys.studySettings }),
   ]);
 }
@@ -51,6 +54,7 @@ export async function invalidateAfterCardMutation(client: QueryClient) {
     client.invalidateQueries({ queryKey: appQueryKeys.dashboardStats }),
     client.invalidateQueries({ queryKey: appQueryKeys.spaceStats }),
     client.invalidateQueries({ queryKey: appQueryKeys.spaces }),
+    client.invalidateQueries({ queryKey: appQueryKeys.studyQueueSnapshot }),
   ]);
 }
 
@@ -59,6 +63,7 @@ export async function invalidateAfterCardDeletion(client: QueryClient) {
     client.invalidateQueries({ queryKey: appQueryKeys.cards }),
     client.invalidateQueries({ queryKey: appQueryKeys.dashboardStats }),
     client.invalidateQueries({ queryKey: appQueryKeys.spaces }),
+    client.invalidateQueries({ queryKey: appQueryKeys.studyQueueSnapshot }),
   ]);
 }
 
@@ -69,6 +74,7 @@ export async function invalidateAfterReview(client: QueryClient) {
     client.invalidateQueries({ queryKey: appQueryKeys.recentActivity }),
     client.invalidateQueries({ queryKey: appQueryKeys.spaceStats }),
     client.invalidateQueries({ queryKey: appQueryKeys.spaces }),
+    client.invalidateQueries({ queryKey: appQueryKeys.studyQueueSnapshot }),
     client.invalidateQueries({ queryKey: appQueryKeys.studySettings }),
   ]);
 }

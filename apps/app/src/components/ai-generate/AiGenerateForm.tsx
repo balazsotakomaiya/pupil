@@ -1,4 +1,5 @@
 import type { SpaceSummary } from "../../lib/spaces";
+import styles from "./AiGenerate.module.css";
 import {
   ChevronDownIcon,
   InfoIcon,
@@ -42,38 +43,38 @@ export function AiGenerateForm({
       : null;
 
   return (
-    <div className="ai-gen-state-view active">
-      <div className="ai-gen-form-section">
-        <div className="ai-gen-form-title">Generate flashcards</div>
-        <div className="ai-gen-form-desc">
+    <div className={styles.aiGenStateView}>
+      <div className={styles.aiGenFormSection}>
+        <div className={styles.aiGenFormTitle}>Generate flashcards</div>
+        <div className={styles.aiGenFormDesc}>
           Describe what you want to learn. Pupil generates cards you review and approve before
           saving.
         </div>
 
-        <div className="ai-gen-field-group">
-          <div className="ai-gen-field">
-            <label className="ai-gen-field-label" htmlFor="ai-gen-topic">
+        <div className={styles.aiGenFieldGroup}>
+          <div className={styles.aiGenField}>
+            <label className={styles.aiGenFieldLabel} htmlFor="ai-gen-topic">
               Topic
             </label>
             <textarea
-              className="ai-gen-topic-input"
+              className={styles.aiGenTopicInput}
               id="ai-gen-topic"
               onChange={(event) => onChange({ topic: event.target.value })}
               placeholder="e.g. The transformer architecture — self-attention, multi-head attention, positional encoding, layer normalization…"
               value={draft.topic}
             />
-            <div className="ai-gen-field-hint">
+            <div className={styles.aiGenFieldHint}>
               Be specific. The more context you give, the better the cards.
             </div>
           </div>
 
-          <div className="ai-gen-field">
-            <label className="ai-gen-field-label" htmlFor="ai-gen-space">
+          <div className={styles.aiGenField}>
+            <label className={styles.aiGenFieldLabel} htmlFor="ai-gen-space">
               Space
             </label>
-            <div className="ai-gen-select-wrap">
+            <div className={styles.aiGenSelectWrap}>
               <select
-                className="ai-gen-select-input"
+                className={styles.aiGenSelectInput}
                 id="ai-gen-space"
                 onChange={(event) => onChange({ spaceId: event.target.value })}
                 value={draft.spaceId}
@@ -85,32 +86,32 @@ export function AiGenerateForm({
                 ))}
                 <option value={NEW_SPACE_OPTION_ID}>+ Create new space</option>
               </select>
-              <div className="ai-gen-select-chevron">
+              <div className={styles.aiGenSelectChevron}>
                 <ChevronDownIcon />
               </div>
             </div>
             {draft.spaceId === NEW_SPACE_OPTION_ID ? (
               <input
-                className="ai-gen-new-space-input"
+                className={styles.aiGenNewSpaceInput}
                 onChange={(event) => onChange({ newSpaceName: event.target.value })}
                 placeholder="Name the new space"
                 type="text"
                 value={draft.newSpaceName}
               />
             ) : selectedExistingSpace ? (
-              <div className="ai-gen-field-hint">
+              <div className={styles.aiGenFieldHint}>
                 Saving generated cards into {selectedExistingSpace.name}.
               </div>
             ) : null}
           </div>
 
-          <div className="ai-gen-config-row">
-            <div className="ai-gen-field">
-              <label className="ai-gen-field-label">Difficulty</label>
-              <div className="ai-gen-chip-group">
+          <div className={styles.aiGenConfigRow}>
+            <div className={styles.aiGenField}>
+              <label className={styles.aiGenFieldLabel}>Difficulty</label>
+              <div className={styles.aiGenChipGroup}>
                 {DIFFICULTIES.map((difficulty) => (
                   <button
-                    className={`ai-gen-chip${draft.difficulty === difficulty ? " active" : ""}`}
+                    className={`${styles.aiGenChip}${draft.difficulty === difficulty ? ` ${styles.active}` : ""}`}
                     key={difficulty}
                     onClick={() => onChange({ difficulty })}
                     type="button"
@@ -121,22 +122,22 @@ export function AiGenerateForm({
               </div>
             </div>
 
-            <div className="ai-gen-field">
-              <label className="ai-gen-field-label">
+            <div className={styles.aiGenField}>
+              <label className={styles.aiGenFieldLabel}>
                 Style
                 <button
                   aria-label="Explain card styles"
-                  className="ai-gen-info-btn"
+                  className={styles.aiGenInfoBtn}
                   onClick={onOpenStyleModal}
                   type="button"
                 >
                   <InfoIcon />
                 </button>
               </label>
-              <div className="ai-gen-chip-group">
+              <div className={styles.aiGenChipGroup}>
                 {STYLES.map((style) => (
                   <button
-                    className={`ai-gen-chip${draft.style === style ? " active" : ""}`}
+                    className={`${styles.aiGenChip}${draft.style === style ? ` ${styles.active}` : ""}`}
                     key={style}
                     onClick={() => onChange({ style })}
                     type="button"
@@ -147,20 +148,22 @@ export function AiGenerateForm({
               </div>
             </div>
 
-            <div className="ai-gen-field">
-              <label className="ai-gen-field-label">Count</label>
-              <div className="ai-gen-count-row">
-                <div className={`ai-gen-count-stepper${draft.autoCount ? " disabled" : ""}`}>
+            <div className={styles.aiGenField}>
+              <label className={styles.aiGenFieldLabel}>Count</label>
+              <div className={styles.aiGenCountRow}>
+                <div
+                  className={`${styles.aiGenCountStepper}${draft.autoCount ? ` ${styles.disabled}` : ""}`}
+                >
                   <button
-                    className="ai-gen-count-btn"
+                    className={styles.aiGenCountBtn}
                     onClick={() => onChange({ count: Math.max(1, draft.count - 1) })}
                     type="button"
                   >
                     <MinusIcon />
                   </button>
-                  <div className="ai-gen-count-value">{draft.count}</div>
+                  <div className={styles.aiGenCountValue}>{draft.count}</div>
                   <button
-                    className="ai-gen-count-btn"
+                    className={styles.aiGenCountBtn}
                     onClick={() => onChange({ count: Math.min(30, draft.count + 1) })}
                     type="button"
                   >
@@ -168,17 +171,17 @@ export function AiGenerateForm({
                   </button>
                 </div>
                 <button
-                  className={`ai-gen-auto-toggle${draft.autoCount ? " active" : ""}`}
+                  className={`${styles.aiGenAutoToggle}${draft.autoCount ? ` ${styles.active}` : ""}`}
                   onClick={() => onChange({ autoCount: !draft.autoCount })}
                   type="button"
                 >
-                  <span className="ai-gen-auto-toggle-label">Auto</span>
-                  <div className="ai-gen-toggle-track">
-                    <div className="ai-gen-toggle-thumb" />
+                  <span className={styles.aiGenAutoToggleLabel}>Auto</span>
+                  <div className={styles.aiGenToggleTrack}>
+                    <div className={styles.aiGenToggleThumb} />
                   </div>
                 </button>
               </div>
-              <div className="ai-gen-field-hint">
+              <div className={styles.aiGenFieldHint}>
                 {draft.autoCount
                   ? "The AI will decide how many cards this topic needs."
                   : "Or let the AI decide how many cards the topic needs."}
@@ -186,24 +189,24 @@ export function AiGenerateForm({
             </div>
           </div>
 
-          <div className="ai-gen-form-bottom">
-            <div className="ai-gen-form-bottom-left">
-              <button className="ai-gen-generate-btn" onClick={onGenerate} type="button">
+          <div className={styles.aiGenFormBottom}>
+            <div className={styles.aiGenFormBottomLeft}>
+              <button className={styles.aiGenGenerateBtn} onClick={onGenerate} type="button">
                 <SparklesIcon />
                 {draft.autoCount ? "Generate cards" : `Generate ${draft.count} cards`}
               </button>
-              {error ? <div className="ai-gen-inline-error">{error}</div> : null}
+              {error ? <div className={styles.aiGenInlineError}>{error}</div> : null}
             </div>
-            <div className="ai-gen-model-indicator">
-              <button className="ai-gen-model-link" onClick={onOpenSettings} type="button">
-                <span className="ai-gen-model-dot" />
+            <div className={styles.aiGenModelIndicator}>
+              <button className={styles.aiGenModelLink} onClick={onOpenSettings} type="button">
+                <span className={styles.aiGenModelDot} />
                 {model}
               </button>
-              <span className="ai-gen-model-sep">·</span>
+              <span className={styles.aiGenModelSep}>·</span>
               <span className="ai-gen-model-endpoint">{endpointHost}</span>
               <button
                 aria-label="Change model in settings"
-                className="ai-gen-model-change-btn"
+                className={styles.aiGenModelChangeBtn}
                 onClick={onOpenSettings}
                 type="button"
               >

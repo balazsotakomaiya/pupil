@@ -40,6 +40,7 @@ export function SpaceDetailsPage() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: appQueryKeys.cards }),
         queryClient.invalidateQueries({ queryKey: appQueryKeys.spaces }),
+        queryClient.invalidateQueries({ queryKey: appQueryKeys.studyQueueSnapshot }),
       ]);
       notifySuccess("Card updated");
     },

@@ -1,3 +1,4 @@
+import styles from "./AiGenerate.module.css";
 import { CheckIcon, CloseIcon } from "./AiGenerateIcons";
 import { AiGenerateReviewCard } from "./AiGenerateReviewCard";
 import type { GeneratedCardCandidate } from "./types";
@@ -31,29 +32,33 @@ export function AiGenerateReviewList({
   const discardedCount = cards.filter((card) => card.status === "discarded").length;
 
   return (
-    <div className="ai-gen-state-view active">
-      <div className="ai-gen-review-section">
-        <div className="ai-gen-review-header">
-          <div className="ai-gen-review-header-left">
-            <div className="ai-gen-review-title">Review generated cards</div>
-            <div className="ai-gen-review-count">
+    <div className={styles.aiGenStateView}>
+      <div className={styles.aiGenReviewSection}>
+        <div className={styles.aiGenReviewHeader}>
+          <div className={styles.aiGenReviewHeaderLeft}>
+            <div className={styles.aiGenReviewTitle}>Review generated cards</div>
+            <div className={styles.aiGenReviewCount}>
               <strong>{approvedCount}</strong> approved · <strong>{discardedCount}</strong>{" "}
               discarded · <strong>{cards.length}</strong> total
             </div>
           </div>
-          <div className="ai-gen-review-bulk-actions">
-            <button className="ai-gen-bulk-btn" onClick={onBulkDiscard} type="button">
+          <div className={styles.aiGenReviewBulkActions}>
+            <button className={styles.aiGenBulkBtn} onClick={onBulkDiscard} type="button">
               <CloseIcon />
               Discard all
             </button>
-            <button className="ai-gen-bulk-btn approve" onClick={onBulkApprove} type="button">
+            <button
+              className={`${styles.aiGenBulkBtn} ${styles.approve}`}
+              onClick={onBulkApprove}
+              type="button"
+            >
               <CheckIcon />
               Approve all
             </button>
           </div>
         </div>
 
-        <div className="ai-gen-review-list">
+        <div className={styles.aiGenReviewList}>
           {cards.map((card, index) => (
             <AiGenerateReviewCard
               card={card}
@@ -68,12 +73,12 @@ export function AiGenerateReviewList({
           ))}
         </div>
 
-        <div className="ai-gen-save-bar">
-          <div className="ai-gen-save-bar-info">
+        <div className={styles.aiGenSaveBar}>
+          <div className={styles.aiGenSaveBarInfo}>
             <strong>{approvedCount}</strong> cards ready to save to {targetSpaceName}
           </div>
           <button
-            className="ai-gen-save-bar-btn"
+            className={styles.aiGenSaveBarBtn}
             disabled={approvedCount === 0 || isSaving || isRegenerating !== null}
             onClick={onSave}
             type="button"

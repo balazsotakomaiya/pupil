@@ -9,6 +9,7 @@ import {
   useCardsQuery,
   useDashboardStatsQuery,
   useSpacesQuery,
+  useStudyQueueSnapshotQuery,
   useStudySettingsQuery,
 } from "../lib/app-queries";
 import { toAppError } from "../lib/errors";
@@ -18,6 +19,8 @@ import { hasDismissedOnboarding, resetOnboarding } from "../lib/onboarding";
 import { appQueryKeys } from "../lib/query";
 import { isTauriRuntime } from "../lib/runtime";
 import { createSpace } from "../lib/spaces";
+import { buildStudyQueueCountMap } from "../lib/study-queue";
+import shellStyles from "./AppShell.module.css";
 import { useRootShellDataSync } from "./useRootShellDataSync";
 
 const APP_TABS = [
@@ -66,6 +69,7 @@ export function RootShell() {
   const spacesQuery = useSpacesQuery();
   const cardsQuery = useCardsQuery();
   const dashboardStatsQuery = useDashboardStatsQuery();
+  const studyQueueSnapshotQuery = useStudyQueueSnapshotQuery();
   const studySettingsQuery = useStudySettingsQuery();
   const [isOnboardingDismissed, setIsOnboardingDismissed] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -76,6 +80,15 @@ export function RootShell() {
 
   const spaces = spacesQuery.data ?? [];
   const cards = cardsQuery.data ?? [];
+  const studyQueueCountsBySpace = studyQueueSnapshotQuery.data
+    ? buildStudyQueueCountMap(studyQueueSnapshotQuery.data.actionableDueBySpace)
+    : null;
+  const paletteSpaces = studyQueueCountsBySpace
+    ? spaces.map((space) => ({
+        ...space,
+        dueTodayCount: studyQueueCountsBySpace.get(space.id) ?? 0,
+      }))
+    : spaces;
   const globalStreak = dashboardStatsQuery.data?.globalStreak ?? null;
   const mainTab = resolveMainTab(location.pathname);
 
@@ -212,10 +225,10 @@ export function RootShell() {
 
   return (
     <ShellActionsContext.Provider value={{ openCreateDialog }}>
-      <main className="app-shell">
+      <main className={shellStyles.appShell}>
         {location.pathname.startsWith("/study") ? null : <RulersOverlay />}
 
-        <div className="dashboard-shell">
+        <div className={shellStyles.dashboardShell}>
           {mainTab ? (
             <AppTitlebar
               activeTab={mainTab}
@@ -269,7 +282,7 @@ export function RootShell() {
               }
             }}
             onStartGlobalStudy={() => void navigate({ to: "/study" })}
-            spaces={spaces}
+            spaces={paletteSpaces}
           />
         ) : null}
 

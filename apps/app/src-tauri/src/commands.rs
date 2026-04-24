@@ -28,13 +28,14 @@ use crate::settings::{
     load_today_new_card_count, reset_all_data_rows, save_new_cards_limit, write_review_logs_csv,
 };
 use crate::spaces::{create_space_row, delete_space_row, list_space_summaries, rename_space_row};
+use crate::study_queue::load_study_queue_snapshot;
 use crate::tray;
 use crate::types::{
     AiConnectionTestResult, AiSettingsState, BootstrapState, CardSummary, CreateCardInput,
     DashboardStats, ExportDataResult, GenerateCardsInput, GeneratedCardPayload, ImportAnkiInput,
     ImportAnkiResult, RecentActivityEntry, ReviewCardInput, SaveAiSettingsInput,
-    SettingsDataSummary, SpaceStats, SpaceSummary, StudySettingsState, SuspendCardInput,
-    UpdateCardInput,
+    SettingsDataSummary, SpaceStats, SpaceSummary, StudyQueueSnapshot, StudySettingsState,
+    SuspendCardInput, UpdateCardInput,
 };
 use crate::util::now_ms;
 
@@ -190,6 +191,18 @@ pub(crate) fn get_dashboard_stats(app: AppHandle) -> Result<DashboardStats, AppE
     let now = now_ms();
 
     load_dashboard_stats(&connection, now).map_err(AppError::from)
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(app))]
+pub(crate) fn get_study_queue_snapshot(app: AppHandle) -> Result<StudyQueueSnapshot, AppError> {
+    let connection = open_app_connection(&app)?;
+    let now = now_ms();
+    let new_cards_limit = load_new_cards_limit(&connection)?;
+    let new_cards_today = load_today_new_card_count(&connection)?;
+
+    load_study_queue_snapshot(&connection, now, new_cards_limit, new_cards_today)
+        .map_err(AppError::from)
 }
 
 #[tauri::command]

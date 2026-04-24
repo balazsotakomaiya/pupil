@@ -1,3 +1,4 @@
+import styles from "./Import.module.css";
 import { FileIcon } from "./ImportIcons";
 import type { ImportProgressModel } from "./types";
 
@@ -7,31 +8,33 @@ type ImportProgressCardProps = {
 
 export function ImportProgressCard({ model }: ImportProgressCardProps) {
   return (
-    <div className="import-progress-card">
-      <div className="import-progress-top">
-        <div className="import-file-info">
-          <div className="import-file-icon">
+    <div className={styles.importProgressCard}>
+      <div className={styles.importProgressTop}>
+        <div className={styles.importFileInfo}>
+          <div className={styles.importFileIcon}>
             <FileIcon />
           </div>
           <div>
-            <div className="import-file-name">{model.fileName}</div>
-            <div className="import-file-size">{model.fileSubtext}</div>
+            <div className={styles.importFileName}>{model.fileName}</div>
+            <div className={styles.importFileSize}>{model.fileSubtext}</div>
           </div>
         </div>
-        <span className={`import-status-badge ${model.statusVariant}`}>{model.statusLabel}</span>
+        <span className={`${styles.importStatusBadge} ${styles[model.statusVariant]}`}>
+          {model.statusLabel}
+        </span>
       </div>
 
-      <div className="progress-bar-wrap">
+      <div className={styles.progressBarWrap}>
         <div
-          className={`progress-bar${model.statusVariant === "complete" ? " done" : ""}`}
+          className={`${styles.progressBar}${model.statusVariant === "complete" ? ` ${styles.done}` : ""}`}
           style={{ width: `${model.progress}%` }}
         />
       </div>
 
-      <div className="import-progress-details">
+      <div className={styles.importProgressDetails}>
         {model.details.map((detail) => (
-          <span className="import-detail" key={`${detail.label}-${detail.value}`}>
-            <strong className={detail.accent === "success" ? "val-success" : undefined}>
+          <span className={styles.importDetail} key={`${detail.label}-${detail.value}`}>
+            <strong className={detail.accent === "success" ? styles.valSuccess : undefined}>
               {detail.value}
             </strong>{" "}
             {detail.label}

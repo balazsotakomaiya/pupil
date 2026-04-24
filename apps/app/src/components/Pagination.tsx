@@ -1,3 +1,5 @@
+import styles from "./Pagination.module.css";
+
 type PaginationProps = {
   currentPage: number;
   onPageChange: (page: number) => void;
@@ -10,9 +12,9 @@ export function Pagination({ currentPage, onPageChange, totalPages }: Pagination
   }
 
   return (
-    <div className="pagination">
+    <div className={styles.pagination}>
       <button
-        className="pagination-btn"
+        className={styles.paginationBtn}
         disabled={currentPage === 1}
         onClick={() => onPageChange(currentPage - 1)}
         type="button"
@@ -20,11 +22,11 @@ export function Pagination({ currentPage, onPageChange, totalPages }: Pagination
         <ChevronLeftIcon />
         Prev
       </button>
-      <span className="pagination-info">
+      <span className={styles.paginationInfo}>
         {currentPage} / {totalPages}
       </span>
       <button
-        className="pagination-btn"
+        className={styles.paginationBtn}
         disabled={currentPage === totalPages}
         onClick={() => onPageChange(currentPage + 1)}
         type="button"

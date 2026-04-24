@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { SpaceSummary } from "../../lib/spaces";
 import { CloseIcon } from "../dashboard/CloseIcon";
+import styles from "./CardFormPanel.module.css";
 
 type CardDraft = {
   back: string;
@@ -101,19 +102,19 @@ export function CardFormPanel({
         aria-describedby={error ? "card-form-error" : "card-form-description"}
         aria-labelledby="card-form-title"
         aria-modal="true"
-        className={`dialog card-dialog${isSuccessPulsing ? " success-pulse" : ""}`}
+        className={`dialog ${styles.cardDialog}${isSuccessPulsing ? ` ${styles.successPulse}` : ""}`}
         onClick={(event) => event.stopPropagation()}
         ref={dialogRef}
         role="dialog"
       >
-        <div className="dialog-form new-card-dialog-form">
-          <div className="new-card-sticky-top">
-            <div className="new-card-head">
+        <div className={`dialog-form ${styles.newCardDialogForm}`}>
+          <div className={styles.newCardStickyTop}>
+            <div className={styles.newCardHead}>
               <div>
-                <h2 className="new-card-title" id="card-form-title">
+                <h2 className={styles.newCardTitle} id="card-form-title">
                   {hasSelectedCard ? "Edit Card" : "New Card"}
                 </h2>
-                <p className="new-card-description" id="card-form-description">
+                <p className={styles.newCardDescription} id="card-form-description">
                   Write a focused prompt/answer pair. Keep the front atomic and the back tight.
                 </p>
               </div>
@@ -122,17 +123,17 @@ export function CardFormPanel({
               </button>
             </div>
 
-            <div className="new-card-actions-bar">
+            <div className={styles.newCardActionsBar}>
               {!hasSelectedCard ? (
                 <button
                   aria-pressed={makeAnother}
-                  className={`new-card-make-another${makeAnother ? " active" : ""}`}
+                  className={`${styles.newCardMakeAnother}${makeAnother ? ` ${styles.active}` : ""}`}
                   onClick={() => setMakeAnother((current) => !current)}
                   type="button"
                 >
-                  <span className="new-card-make-another-label">Make another</span>
-                  <span className="new-card-toggle-track">
-                    <span className="new-card-toggle-thumb" />
+                  <span className={styles.newCardMakeAnotherLabel}>Make another</span>
+                  <span className={styles.newCardToggleTrack}>
+                    <span className={styles.newCardToggleThumb} />
                   </span>
                 </button>
               ) : (
@@ -140,12 +141,12 @@ export function CardFormPanel({
               )}
 
               <div
-                className={`new-card-actions-right${shakeKey > 0 ? " shake" : ""}`}
+                className={`${styles.newCardActionsRight}${shakeKey > 0 ? ` ${styles.shake}` : ""}`}
                 key={shakeKey}
               >
                 {hasSelectedCard ? (
                   <button
-                    className="new-card-discard-btn danger-btn"
+                    className={`${styles.newCardDiscardBtn} danger-btn`}
                     disabled={isDeleting || isSubmitting}
                     onClick={onDelete}
                     type="button"
@@ -153,13 +154,13 @@ export function CardFormPanel({
                     {isDeleting ? "Deleting..." : "Delete"}
                   </button>
                 ) : (
-                  <button className="new-card-discard-btn" onClick={onClose} type="button">
+                  <button className={styles.newCardDiscardBtn} onClick={onClose} type="button">
                     Discard
                   </button>
                 )}
 
                 <button
-                  className="new-card-save-btn"
+                  className={styles.newCardSaveBtn}
                   disabled={isSubmitting || isDeleting}
                   onClick={() => onSubmit({ keepOpen: !hasSelectedCard && makeAnother })}
                   type="button"
@@ -177,21 +178,21 @@ export function CardFormPanel({
             </div>
           </div>
 
-          <div className="new-card-editor-section">
-            <div className="new-card-editor-pair">
-              <div className="new-card-field-block">
-                <div className="new-card-field-chrome">
-                  <span className="new-card-field-label">Front</span>
+          <div className={styles.newCardEditorSection}>
+            <div className={styles.newCardEditorPair}>
+              <div className={styles.newCardFieldBlock}>
+                <div className={styles.newCardFieldChrome}>
+                  <span className={styles.newCardFieldLabel}>Front</span>
                   <span
-                    className={`new-card-word-count${wordCountClassName(frontWordCount, FRONT_LIMIT)}`}
+                    className={`${styles.newCardWordCount}${wordCountClassName(frontWordCount, FRONT_LIMIT, styles)}`}
                   >
                     {frontWordCount} / {FRONT_LIMIT} words
                   </span>
                 </div>
 
-                <div className="new-card-toolbar front-toolbar">
+                <div className={`${styles.newCardToolbar} ${styles.frontToolbar}`}>
                   <button
-                    className="new-card-fmt-btn"
+                    className={styles.newCardFmtBtn}
                     onClick={() =>
                       insertFormat(frontRef.current, draft.front, onChange, "front", "**", "**")
                     }
@@ -201,7 +202,7 @@ export function CardFormPanel({
                     <BoldIcon />
                   </button>
                   <button
-                    className="new-card-fmt-btn"
+                    className={styles.newCardFmtBtn}
                     onClick={() =>
                       insertFormat(frontRef.current, draft.front, onChange, "front", "*", "*")
                     }
@@ -211,7 +212,7 @@ export function CardFormPanel({
                     <ItalicIcon />
                   </button>
                   <button
-                    className="new-card-fmt-btn"
+                    className={styles.newCardFmtBtn}
                     onClick={() =>
                       insertFormat(frontRef.current, draft.front, onChange, "front", "`", "`")
                     }
@@ -220,9 +221,9 @@ export function CardFormPanel({
                   >
                     <CodeIcon />
                   </button>
-                  <span className="new-card-fmt-sep" />
+                  <span className={styles.newCardFmtSep} />
                   <button
-                    className="new-card-fmt-btn"
+                    className={styles.newCardFmtBtn}
                     onClick={() =>
                       insertCloze(
                         frontRef.current,
@@ -237,11 +238,11 @@ export function CardFormPanel({
                   >
                     <ClozeIcon />
                   </button>
-                  <span className="new-card-fmt-hint">Markdown</span>
+                  <span className={styles.newCardFmtHint}>Markdown</span>
                 </div>
 
                 <textarea
-                  className="new-card-textarea front"
+                  className={`${styles.newCardTextarea} ${styles.front}`}
                   onChange={(event) => onChange({ front: event.target.value })}
                   placeholder="A clear, single question or prompt..."
                   ref={frontRef}
@@ -250,7 +251,7 @@ export function CardFormPanel({
                 />
 
                 <div
-                  className={`new-card-limit-guidance${frontWordCount > FRONT_LIMIT ? " over" : ""}`}
+                  className={`${styles.newCardLimitGuidance}${frontWordCount > FRONT_LIMIT ? ` ${styles.over}` : ""}`}
                 >
                   {frontWordCount > FRONT_LIMIT
                     ? `${frontWordCount - FRONT_LIMIT} word${frontWordCount - FRONT_LIMIT === 1 ? "" : "s"} over. Can this be tighter?`
@@ -258,19 +259,19 @@ export function CardFormPanel({
                 </div>
               </div>
 
-              <div className="new-card-field-block">
-                <div className="new-card-field-chrome">
-                  <span className="new-card-field-label">Back</span>
+              <div className={styles.newCardFieldBlock}>
+                <div className={styles.newCardFieldChrome}>
+                  <span className={styles.newCardFieldLabel}>Back</span>
                   <span
-                    className={`new-card-word-count${wordCountClassName(backWordCount, BACK_LIMIT)}`}
+                    className={`${styles.newCardWordCount}${wordCountClassName(backWordCount, BACK_LIMIT, styles)}`}
                   >
                     {backWordCount} / {BACK_LIMIT} words
                   </span>
                 </div>
 
-                <div className="new-card-toolbar">
+                <div className={styles.newCardToolbar}>
                   <button
-                    className="new-card-fmt-btn"
+                    className={styles.newCardFmtBtn}
                     onClick={() =>
                       insertFormat(backRef.current, draft.back, onChange, "back", "**", "**")
                     }
@@ -280,7 +281,7 @@ export function CardFormPanel({
                     <BoldIcon />
                   </button>
                   <button
-                    className="new-card-fmt-btn"
+                    className={styles.newCardFmtBtn}
                     onClick={() =>
                       insertFormat(backRef.current, draft.back, onChange, "back", "*", "*")
                     }
@@ -290,7 +291,7 @@ export function CardFormPanel({
                     <ItalicIcon />
                   </button>
                   <button
-                    className="new-card-fmt-btn"
+                    className={styles.newCardFmtBtn}
                     onClick={() =>
                       insertFormat(backRef.current, draft.back, onChange, "back", "`", "`")
                     }
@@ -299,11 +300,11 @@ export function CardFormPanel({
                   >
                     <CodeIcon />
                   </button>
-                  <span className="new-card-fmt-hint">Markdown</span>
+                  <span className={styles.newCardFmtHint}>Markdown</span>
                 </div>
 
                 <textarea
-                  className="new-card-textarea back"
+                  className={`${styles.newCardTextarea} ${styles.back}`}
                   onChange={(event) => onChange({ back: event.target.value })}
                   placeholder="A direct answer. Just enough context to be unambiguous..."
                   ref={backRef}
@@ -312,7 +313,7 @@ export function CardFormPanel({
                 />
 
                 <div
-                  className={`new-card-limit-guidance${backWordCount > BACK_LIMIT ? " over" : ""}`}
+                  className={`${styles.newCardLimitGuidance}${backWordCount > BACK_LIMIT ? ` ${styles.over}` : ""}`}
                 >
                   {backWordCount > BACK_LIMIT
                     ? `${backWordCount - BACK_LIMIT} word${backWordCount - BACK_LIMIT === 1 ? "" : "s"} over. Try splitting into two cards.`
@@ -322,17 +323,17 @@ export function CardFormPanel({
             </div>
           </div>
 
-          <div className="new-card-tags-section">
-            <div className="new-card-section-chrome">
-              <span className="new-card-field-label">Tags</span>
-              <span className="new-card-word-count subdued">optional</span>
+          <div className={styles.newCardTagsSection}>
+            <div className={styles.newCardSectionChrome}>
+              <span className={styles.newCardFieldLabel}>Tags</span>
+              <span className={`${styles.newCardWordCount} ${styles.subdued}`}>optional</span>
             </div>
-            <div className="new-card-tags-input-wrap">
+            <div className={styles.newCardTagsInputWrap}>
               {tags.map((tag) => (
-                <span className="new-card-tag-pill" key={tag}>
+                <span className={styles.newCardTagPill} key={tag}>
                   {tag}
                   <button
-                    className="new-card-tag-remove"
+                    className={styles.newCardTagRemove}
                     onClick={() =>
                       onChange({ tagsText: tags.filter((item) => item !== tag).join(", ") })
                     }
@@ -343,7 +344,7 @@ export function CardFormPanel({
                 </span>
               ))}
               <input
-                className="new-card-tag-input"
+                className={styles.newCardTagInput}
                 onChange={(event) => setTagInputValue(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === ",") {
@@ -369,13 +370,13 @@ export function CardFormPanel({
             </div>
           </div>
 
-          <div className="new-card-space-section">
-            <div className="new-card-section-chrome">
-              <span className="new-card-field-label">Space</span>
+          <div className={styles.newCardSpaceSection}>
+            <div className={styles.newCardSectionChrome}>
+              <span className={styles.newCardFieldLabel}>Space</span>
             </div>
-            <div className="new-card-select-wrap">
+            <div className={styles.newCardSelectWrap}>
               <select
-                className="new-card-select-input"
+                className={styles.newCardSelectInput}
                 onChange={(event) => onChange({ spaceId: event.target.value })}
                 value={draft.spaceId}
               >
@@ -385,106 +386,114 @@ export function CardFormPanel({
                   </option>
                 ))}
               </select>
-              <span className="new-card-select-chevron">
+              <span className={styles.newCardSelectChevron}>
                 <ChevronIcon />
               </span>
             </div>
           </div>
 
           {error ? (
-            <p className="field-error new-card-error" id="card-form-error" role="alert">
+            <p className={`field-error ${styles.newCardError}`} id="card-form-error" role="alert">
               {error}
             </p>
           ) : null}
 
-          <div className="ruler-divider new-card-divider" />
+          <div className={`ruler-divider ${styles.newCardDivider}`} />
 
-          <div className="new-card-preview-section">
-            <div className="new-card-preview-header">
-              <span className="new-card-preview-label">Preview</span>
-              <span className="new-card-preview-hint">
+          <div className={styles.newCardPreviewSection}>
+            <div className={styles.newCardPreviewHeader}>
+              <span className={styles.newCardPreviewLabel}>Preview</span>
+              <span className={styles.newCardPreviewHint}>
                 <PreviewFlipIcon />
                 Hover to flip
               </span>
             </div>
 
             <div
-              className={`new-card-scene${isPreviewHovered ? " hovered" : ""}`}
+              className={`${styles.newCardScene}${isPreviewHovered ? ` ${styles.hovered}` : ""}`}
               onMouseEnter={() => setIsPreviewHovered(true)}
               onMouseLeave={() => setIsPreviewHovered(false)}
             >
               <div
-                className={`new-card-body${isPreviewHovered ? " hovered" : ""}`}
+                className={`${styles.newCardBody}${isPreviewHovered ? ` ${styles.hovered}` : ""}`}
                 role="presentation"
               >
-                <div className="new-card-face new-card-face-front">
-                  <span className="new-card-corner tl">front</span>
-                  <div className="new-card-face-inner">
+                <div className={`${styles.newCardFace} ${styles.newCardFaceFront}`}>
+                  <span className={`${styles.newCardCorner} ${styles.tl}`}>front</span>
+                  <div className={styles.newCardFaceInner}>
                     <div
-                      className="new-card-face-text"
+                      className={styles.newCardFaceText}
                       dangerouslySetInnerHTML={{
                         __html: renderPreviewHtml(draft.front, "Start typing..."),
                       }}
                     />
                   </div>
                   {tags.length > 0 ? (
-                    <div className="new-card-face-tags">
+                    <div className={styles.newCardFaceTags}>
                       {tags.map((tag) => (
-                        <span className="new-card-face-tag" key={`preview-${tag}`}>
+                        <span className={styles.newCardFaceTag} key={`preview-${tag}`}>
                           {tag}
                         </span>
                       ))}
                     </div>
                   ) : null}
-                  <span className="new-card-corner br">{selectedSpaceName}</span>
+                  <span className={`${styles.newCardCorner} ${styles.br}`}>
+                    {selectedSpaceName}
+                  </span>
                 </div>
 
-                <div className="new-card-face new-card-face-back">
-                  <span className="new-card-corner tl">back</span>
-                  <div className="new-card-face-inner">
+                <div className={`${styles.newCardFace} ${styles.newCardFaceBack}`}>
+                  <span className={`${styles.newCardCorner} ${styles.tl}`}>back</span>
+                  <div className={styles.newCardFaceInner}>
                     <div
-                      className="new-card-face-text back"
+                      className={`${styles.newCardFaceText} ${styles.back}`}
                       dangerouslySetInnerHTML={{
                         __html: renderPreviewHtml(draft.back, "Start typing..."),
                       }}
                     />
                   </div>
-                  <span className="new-card-corner br">{selectedSpaceName}</span>
+                  <span className={`${styles.newCardCorner} ${styles.br}`}>
+                    {selectedSpaceName}
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="new-card-dots">
-              <span className={`new-card-dot${!isPreviewHovered ? " active" : ""}`} />
-              <span className={`new-card-dot${isPreviewHovered ? " active" : ""}`} />
+            <div className={styles.newCardDots}>
+              <span
+                className={`${styles.newCardDot}${!isPreviewHovered ? ` ${styles.active}` : ""}`}
+              />
+              <span
+                className={`${styles.newCardDot}${isPreviewHovered ? ` ${styles.active}` : ""}`}
+              />
             </div>
           </div>
 
-          <div className="new-card-opinion-box">
-            <div className="new-card-opinion-title">What makes a good card</div>
-            <div className="new-card-opinion-list">
-              <div className="new-card-opinion-item">
-                <span className="new-card-opinion-bullet" />
+          <div className={styles.newCardOpinionBox}>
+            <div className={styles.newCardOpinionTitle}>What makes a good card</div>
+            <div className={styles.newCardOpinionList}>
+              <div className={styles.newCardOpinionItem}>
+                <span className={styles.newCardOpinionBullet} />
                 <span>
                   <strong>Front: 30 words max.</strong> One question testing one atomic piece of
                   knowledge.
                 </span>
               </div>
-              <div className="new-card-opinion-item">
-                <span className="new-card-opinion-bullet" />
+              <div className={styles.newCardOpinionItem}>
+                <span className={styles.newCardOpinionBullet} />
                 <span>
                   <strong>Back: 60 words max.</strong> A direct answer with just enough context.
                 </span>
               </div>
-              <div className="new-card-opinion-item">
-                <span className="new-card-opinion-bullet" />
+              <div className={styles.newCardOpinionItem}>
+                <span className={styles.newCardOpinionBullet} />
                 <span>
                   <strong>Use formatting sparingly.</strong> Bold a key term, code-wrap a function,
                   and keep it scannable.
                 </span>
               </div>
-              <div className="new-card-opinion-item">
-                <span className="new-card-opinion-bullet" />
+              <div className={styles.newCardOpinionItem}>
+                <span className={styles.newCardOpinionBullet} />
                 <span>
                   <strong>Cloze cards:</strong> use <code>_____</code> on the front and put the
                   answer on the back.
@@ -503,13 +512,13 @@ function wordCount(value: string): number {
   return trimmed ? trimmed.split(/\s+/).length : 0;
 }
 
-function wordCountClassName(count: number, limit: number): string {
+function wordCountClassName(count: number, limit: number, s: Record<string, string>): string {
   if (count > limit) {
-    return " over";
+    return ` ${s.over}`;
   }
 
   if (count > limit * 0.8) {
-    return " warn";
+    return ` ${s.warn}`;
   }
 
   return "";

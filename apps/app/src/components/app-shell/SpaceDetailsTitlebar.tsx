@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { EyeLogo } from "../dashboard/EyeLogo";
+import styles from "./AppTitlebar.module.css";
 
 type SpaceDetailsTitlebarProps = {
   onBack: () => void;
@@ -35,35 +36,35 @@ export function SpaceDetailsTitlebar({
   }, [isMenuOpen]);
 
   return (
-    <div className="titlebar">
-      <div className="titlebar-left">
-        <div className="titlebar-logo">
+    <div className={styles.titlebar}>
+      <div className={styles.titlebarLeft}>
+        <div className={styles.titlebarLogo}>
           <EyeLogo />
-          <span className="titlebar-logo-text">pupil</span>
+          <span className={styles.titlebarLogoText}>pupil</span>
         </div>
 
-        <div className="titlebar-sep" />
+        <div className={styles.titlebarSep} />
 
-        <button className="back-btn" onClick={onBack} type="button">
+        <button className={styles.backBtn} onClick={onBack} type="button">
           <BackIcon />
           Dashboard
         </button>
 
-        <div className="titlebar-sep" />
+        <div className={styles.titlebarSep} />
 
-        <span className="breadcrumb-name">{spaceName}</span>
+        <span className={styles.breadcrumbName}>{spaceName}</span>
       </div>
 
-      <div className="titlebar-right">
-        <button className="titlebar-btn-label" onClick={onOpenNewCard} type="button">
+      <div className={styles.titlebarRight}>
+        <button className={styles.titlebarBtnLabel} onClick={onOpenNewCard} type="button">
           <PlusIcon />
           New Card
         </button>
-        <button className="titlebar-btn-label" onClick={onOpenAiGenerate} type="button">
+        <button className={styles.titlebarBtnLabel} onClick={onOpenAiGenerate} type="button">
           <GenerateIcon />
           AI Generate
         </button>
-        <button className="titlebar-btn-label" onClick={onOpenImport} type="button">
+        <button className={styles.titlebarBtnLabel} onClick={onOpenImport} type="button">
           <ImportIcon />
           Import
         </button>
@@ -71,7 +72,7 @@ export function SpaceDetailsTitlebar({
           <button
             aria-expanded={isMenuOpen}
             aria-label="More actions"
-            className={`titlebar-btn${isMenuOpen ? " active" : ""}`}
+            className={`${styles.titlebarBtn}${isMenuOpen ? ` ${styles.active}` : ""}`}
             onClick={() => setIsMenuOpen((open) => !open)}
             type="button"
           >

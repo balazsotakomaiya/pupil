@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import styles from "./Study.module.css";
 import type { StudyCardRecord } from "./types";
 
 type StudyBarProps = {
@@ -62,25 +63,25 @@ export function StudyBar({
   }
 
   return (
-    <div className="session-bar">
-      <div className="session-bar-left">
-        <button className="session-exit-btn" onClick={onEnd} type="button">
+    <div className={styles.sessionBar}>
+      <div className={styles.sessionBarLeft}>
+        <button className={styles.sessionExitBtn} onClick={onEnd} type="button">
           <BackIcon />
           End
         </button>
-        <span className="session-scope">{scopeLabel}</span>
+        <span className={styles.sessionScope}>{scopeLabel}</span>
       </div>
 
-      <div className="session-bar-right">
-        <span className="session-counter">
+      <div className={styles.sessionBarRight}>
+        <span className={styles.sessionCounter}>
           <strong>{current}</strong> / <span>{total}</span>
         </span>
 
         {currentCard && !isSuspended ? (
-          <div className="session-quick-actions" ref={menuRef}>
+          <div className={styles.sessionQuickActions} ref={menuRef}>
             <button
               aria-label="Card actions"
-              className={`session-overflow-btn${isMenuOpen ? " active" : ""}`}
+              className={`${styles.sessionOverflowBtn}${isMenuOpen ? ` ${styles.active}` : ""}`}
               onClick={() => setIsMenuOpen((open) => !open)}
               type="button"
             >
@@ -88,9 +89,9 @@ export function StudyBar({
             </button>
 
             {isMenuOpen ? (
-              <div className="session-overflow-menu" role="menu">
+              <div className={styles.sessionOverflowMenu} role="menu">
                 <button
-                  className="session-overflow-item"
+                  className={styles.sessionOverflowItem}
                   onClick={handleSuspend}
                   role="menuitem"
                   type="button"
@@ -99,7 +100,7 @@ export function StudyBar({
                   Suspend card
                 </button>
                 <button
-                  className="session-overflow-item danger"
+                  className={`${styles.sessionOverflowItem} ${styles.danger}`}
                   onClick={handleDelete}
                   role="menuitem"
                   type="button"

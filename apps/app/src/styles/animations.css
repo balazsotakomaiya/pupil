@@ -1,0 +1,185 @@
+/* Global keyframe animations shared across the app.
+   Referenced by component styles (both global shared.css and CSS modules). */
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes modalIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes eyeEntrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes textUp {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes blink {
+  0%,
+  16%,
+  24%,
+  34%,
+  42%,
+  100% {
+    d: path("M 2 26 C 12 10, 40 10, 50 26 C 40 42, 12 42, 2 26 Z");
+  }
+  18.5%,
+  21.5% {
+    d: path("M 2 26 C 12 23, 40 23, 50 26 C 40 29, 12 29, 2 26 Z");
+  }
+  36.5%,
+  39.5% {
+    d: path("M 2 26 C 12 23, 40 23, 50 26 C 40 29, 12 29, 2 26 Z");
+  }
+}
+
+@keyframes iris-blink {
+  0%,
+  16%,
+  24%,
+  34%,
+  42%,
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  18.5%,
+  21.5%,
+  36.5%,
+  39.5% {
+    transform: scaleY(0.1);
+    opacity: 0;
+  }
+}
+
+@keyframes pupil-hide {
+  0%,
+  16%,
+  24%,
+  34%,
+  42%,
+  100% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  18.5%,
+  21.5%,
+  36.5%,
+  39.5% {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+}
+
+@keyframes look {
+  0%,
+  42% {
+    transform: translateX(0);
+  }
+  58% {
+    transform: translateX(3px);
+  }
+  74% {
+    transform: translateX(-2px);
+  }
+  90%,
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes nudge-shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-4px); }
+  30% { transform: translateX(4px); }
+  45% { transform: translateX(-3px); }
+  60% { transform: translateX(3px); }
+  75% { transform: translateX(-1px); }
+  90% { transform: translateX(1px); }
+}
+
+@keyframes dialog-heartbeat {
+  0% {
+    transform: scale(1);
+    box-shadow:
+      0 30px 90px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  38% {
+    transform: scale(1.012);
+    box-shadow:
+      0 36px 100px rgba(0, 0, 0, 0.56),
+      0 0 0 1px rgba(16, 185, 129, 0.2),
+      0 0 0 10px rgba(16, 185, 129, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 30px 90px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes paletteIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}

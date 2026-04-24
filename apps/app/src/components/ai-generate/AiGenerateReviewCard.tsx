@@ -1,3 +1,4 @@
+import styles from "./AiGenerate.module.css";
 import { CheckIcon, CloseIcon, RotateIcon } from "./AiGenerateIcons";
 import type { GeneratedCardCandidate } from "./types";
 
@@ -21,18 +22,20 @@ export function AiGenerateReviewCard({
   total,
 }: AiGenerateReviewCardProps) {
   return (
-    <div className={`ai-gen-review-card${card.status === "discarded" ? " discarded" : ""}`}>
-      <div className="ai-gen-review-card-body">
-        <div className="ai-gen-review-card-front">{card.front}</div>
-        <div className="ai-gen-review-card-back">{card.back}</div>
+    <div
+      className={`${styles.aiGenReviewCard}${card.status === "discarded" ? ` ${styles.discarded}` : ""}`}
+    >
+      <div className={styles.aiGenReviewCardBody}>
+        <div className={styles.aiGenReviewCardFront}>{card.front}</div>
+        <div className={styles.aiGenReviewCardBack}>{card.back}</div>
       </div>
-      <div className="ai-gen-review-card-actions">
-        <span className="ai-gen-review-card-num">
+      <div className={styles.aiGenReviewCardActions}>
+        <span className={styles.aiGenReviewCardNum}>
           {index + 1} of {total}
         </span>
-        <div className="ai-gen-review-card-btns">
+        <div className={styles.aiGenReviewCardBtns}>
           <button
-            className="ai-gen-rc-btn"
+            className={styles.aiGenRcBtn}
             disabled={isRegenerating}
             onClick={onRegenerate}
             type="button"
@@ -41,7 +44,7 @@ export function AiGenerateReviewCard({
             {isRegenerating ? "Regenerating…" : "Regenerate"}
           </button>
           <button
-            className="ai-gen-rc-btn"
+            className={styles.aiGenRcBtn}
             disabled={isRegenerating}
             onClick={onDiscard}
             type="button"
@@ -50,7 +53,7 @@ export function AiGenerateReviewCard({
             Discard
           </button>
           <button
-            className={`ai-gen-rc-btn${card.status === "approved" ? " approved" : " approve"}`}
+            className={`${styles.aiGenRcBtn}${card.status === "approved" ? ` ${styles.approved}` : ` ${styles.approve}`}`}
             disabled={isRegenerating}
             onClick={onApprove}
             type="button"

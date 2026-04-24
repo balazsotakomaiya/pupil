@@ -3,6 +3,7 @@ import type { CardRecord } from "../../lib/cards";
 import { previewCardScheduling } from "../../lib/fsrs";
 import type { SpaceSummary } from "../../lib/spaces";
 import { buildAdmittedSet, buildDueQueue } from "../../lib/study-queue";
+import styles from "./Study.module.css";
 import { StudyActions } from "./StudyActions";
 import { StudyBar } from "./StudyBar";
 import { StudyReviewCard } from "./StudyReviewCard";
@@ -313,7 +314,7 @@ export function StudyScreen({
   }
 
   return (
-    <div className="session-shell">
+    <div className={styles.sessionShell}>
       <StudyBar
         current={currentCounter}
         currentCard={currentCard}
@@ -325,8 +326,8 @@ export function StudyScreen({
         total={totalCards}
       />
 
-      <div className="session-progress-track">
-        <div className="session-progress-fill" style={{ width: `${progress}%` }} />
+      <div className={styles.sessionProgressTrack}>
+        <div className={styles.sessionProgressFill} style={{ width: `${progress}%` }} />
       </div>
 
       {isSummaryVisible ? (
@@ -343,8 +344,8 @@ export function StudyScreen({
           totalMinutes={totalMinutes}
         />
       ) : displayCard ? (
-        <div className="session-area">
-          <div className="session-card-wrap">
+        <div className={styles.sessionArea}>
+          <div className={styles.sessionCardWrap}>
             <StudyReviewCard
               card={displayCard}
               isAnswerVisible={isAnswerVisible}
@@ -353,11 +354,11 @@ export function StudyScreen({
           </div>
 
           {isSuspendedView ? (
-            <div className="session-suspended-actions">
-              <p className="session-suspended-label">Card suspended</p>
-              <div className="session-suspended-btns">
+            <div className={styles.sessionSuspendedActions}>
+              <p className={styles.sessionSuspendedLabel}>Card suspended</p>
+              <div className={styles.sessionSuspendedBtns}>
                 <button
-                  className="session-unsuspend-btn"
+                  className={styles.sessionUnsuspendBtn}
                   disabled={isSubmittingReview}
                   onClick={() => void handleUnsuspend()}
                   type="button"
@@ -365,7 +366,7 @@ export function StudyScreen({
                   Unsuspend
                 </button>
                 <button
-                  className="session-skip-btn"
+                  className={styles.sessionSkipBtn}
                   disabled={isSubmittingReview}
                   onClick={handleSkipSuspended}
                   type="button"
@@ -373,7 +374,7 @@ export function StudyScreen({
                   Skip
                 </button>
               </div>
-              {error ? <span className="session-error-text">{error}</span> : null}
+              {error ? <span className={styles.sessionErrorText}>{error}</span> : null}
             </div>
           ) : (
             <StudyActions

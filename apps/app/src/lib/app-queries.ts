@@ -5,6 +5,7 @@ import { listCards } from "./cards";
 import { appQueryKeys } from "./query";
 import { listSpaces } from "./spaces";
 import { getDashboardStats, listSpaceStats } from "./stats";
+import { getStudyQueueSnapshot } from "./study-queue";
 import { getStudySettings } from "./study-settings";
 
 function useCoreQuery<T>(queryKey: readonly unknown[], queryFn: () => Promise<T>) {
@@ -24,6 +25,10 @@ export function useCardsQuery() {
 
 export function useDashboardStatsQuery() {
   return useCoreQuery(appQueryKeys.dashboardStats, () => getDashboardStats());
+}
+
+export function useStudyQueueSnapshotQuery() {
+  return useCoreQuery(appQueryKeys.studyQueueSnapshot, () => getStudyQueueSnapshot());
 }
 
 export function useRecentActivityQuery() {

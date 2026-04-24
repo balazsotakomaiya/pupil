@@ -18,7 +18,7 @@ A local-first spaced-repetition desktop app. The user creates "spaces" (topic bu
 | Frontend | React + Vite + TypeScript |
 | Routing | TanStack Router (memory history) |
 | Data fetching | TanStack Query |
-| Styling | Global tokens/reset + incremental CSS Modules |
+| Styling | CSS Modules (scoped, collocated `*.module.css`) + global tokens/reset/shared |
 | Package manager | Bun |
 | Database | SQLite via `rusqlite` (bundled) |
 | Secrets storage | Tauri Stronghold (`tauri-plugin-stronghold`) |
@@ -167,6 +167,30 @@ The Rust backend compiles with `cargo` under the hood. First build takes a while
 - `bun install` triggers the root `prepare` script, which installs the hooks.
 - The repo `pre-commit` hook runs `bun run lint` and `bun run format:check`.
 - Treat the hook as a guardrail, not as the primary way to discover issues. Run the same checks yourself before committing larger changes.
+
+---
+
+## CSS conventions
+
+All component-specific styles use scoped CSS Modules — a collocated `ComponentName.module.css` file next to each component. **Do not add new styles to global CSS files.**
+
+Global CSS lives in `src/styles/`:
+
+| File | Purpose |
+|---|---|
+| `tokens.css` | Design tokens (colors, spacing, typography, etc.) |
+| `reset.css` | Base reset — box-sizing, body, font inheritance |
+| `utilities.css` | Single-purpose utility classes |
+| `animations.css` | Named `@keyframes` used across multiple components |
+| `shared.css` | Global classes shared by multiple features (`.page`, `.section`, `.dialog-*`, `.field-*`, `.more-menu-*`, etc.), scrollbars, responsive overrides |
+
+Rules:
+- **New component styles → collocated `.module.css` file.** Never add to `shared.css` unless the class is genuinely used in multiple unrelated components.
+- **Class names in modules use camelCase** (`.cardState`, not `.card-state`). Access via `styles.cardState` in JSX.
+- **Compound state selectors**: `.cardState.stateLearning {}` → both classes scoped. JSX: `` `${styles.cardState} ${styles.stateLearning}` ``.
+- **`@keyframes` names**: Define in `animations.css`. Reference by name from any module (Vite resolves them globally).
+- **`dangerouslySetInnerHTML` targets**: Use `:global(.class-name)` in the module.
+- **Do not re-add a `style.css` root file.** The old monolith has been fully migrated.
 
 ---
 

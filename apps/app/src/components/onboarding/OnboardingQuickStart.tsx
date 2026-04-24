@@ -1,3 +1,4 @@
+import styles from "./Onboarding.module.css";
 import { ChevronRightIcon, ExploreAppIcon } from "./OnboardingIcons";
 
 type OnboardingQuickStartProps = {
@@ -6,20 +7,20 @@ type OnboardingQuickStartProps = {
 
 export function OnboardingQuickStart({ onClick }: OnboardingQuickStartProps) {
   return (
-    <button className="welcome-quickstart-card" onClick={onClick} type="button">
-      <div className="welcome-quickstart-left">
-        <div className="welcome-quickstart-icon">
+    <button className={styles.welcomeQuickstartCard} onClick={onClick} type="button">
+      <div className={styles.welcomeQuickstartLeft}>
+        <div className={styles.welcomeQuickstartIcon}>
           <ExploreAppIcon />
         </div>
-        <div className="welcome-quickstart-text">
-          <div className="welcome-quickstart-title">Just explore the app</div>
-          <div className="welcome-quickstart-desc">
+        <div className={styles.welcomeQuickstartText}>
+          <div className={styles.welcomeQuickstartTitle}>Just explore the app</div>
+          <div className={styles.welcomeQuickstartDesc}>
             Skip setup and head to the dashboard. You can create spaces, import, or generate cards
             later.
           </div>
         </div>
       </div>
-      <div className="welcome-quickstart-arrow">
+      <div className={styles.welcomeQuickstartArrow}>
         <ChevronRightIcon />
       </div>
     </button>

@@ -1,3 +1,5 @@
+import styles from "./AiGenerate.module.css";
+
 type AiGenerateLoadingProps = {
   model: string;
   topic: string;
@@ -5,15 +7,15 @@ type AiGenerateLoadingProps = {
 
 export function AiGenerateLoading({ model, topic }: AiGenerateLoadingProps) {
   return (
-    <div className="ai-gen-state-view active">
-      <div className="ai-gen-loading-section">
-        <div className="ai-gen-loading-spinner" />
-        <div className="ai-gen-loading-title">Generating cards…</div>
-        <div className="ai-gen-loading-desc">
+    <div className={styles.aiGenStateView}>
+      <div className={styles.aiGenLoadingSection}>
+        <div className={styles.aiGenLoadingSpinner} />
+        <div className={styles.aiGenLoadingTitle}>Generating cards…</div>
+        <div className={styles.aiGenLoadingDesc}>
           Asking the model about {topic.trim() || "your topic"}.
         </div>
-        <div className="ai-gen-loading-model">
-          <span className="ai-gen-model-dot" />
+        <div className={styles.aiGenLoadingModel}>
+          <span className={styles.aiGenModelDot} />
           {model}
         </div>
       </div>

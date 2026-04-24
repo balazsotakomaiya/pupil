@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CardRecord } from "../../lib/cards";
 import type { SpaceSummary } from "../../lib/spaces";
 import type { AppTabId } from "./AppTitlebar";
+import styles from "./CommandPalette.module.css";
 
 type CommandPaletteProps = {
   cards: CardRecord[];
@@ -110,7 +111,7 @@ function highlight(text: string, query: string): React.ReactNode {
   return (
     <>
       {text.slice(0, idx)}
-      <mark className="palette-match">{text.slice(idx, idx + query.length)}</mark>
+      <mark className={styles.paletteMatch}>{text.slice(idx, idx + query.length)}</mark>
       {text.slice(idx + query.length)}
     </>
   );
@@ -341,15 +342,15 @@ export function CommandPalette({
 
   return (
     <div
-      className="palette-overlay"
+      className={styles.paletteOverlay}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="palette" role="dialog" aria-modal="true" aria-label="Command palette">
+      <div className={styles.palette} role="dialog" aria-modal="true" aria-label="Command palette">
         {/* Input row */}
-        <div className="palette-input-wrap">
-          <div className="palette-input-icon">
+        <div className={styles.paletteInputWrap}>
+          <div className={styles.paletteInputIcon}>
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="7" cy="7" r="5" />
               <path d="M10.5 10.5L14 14" />
@@ -357,18 +358,18 @@ export function CommandPalette({
           </div>
 
           {activeScope !== null && (
-            <div className="palette-scope-chip">
+            <div className={styles.paletteScopeChip}>
               <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3">
                 <rect x="1.5" y="1.5" width="9" height="9" rx="2" />
               </svg>
               <span>{SCOPES[scopeIdx].label}</span>
-              <span className="palette-scope-sep">›</span>
+              <span className={styles.paletteScopeSep}>›</span>
             </div>
           )}
 
           <input
             ref={inputRef}
-            className="palette-input"
+            className={styles.paletteInput}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -381,51 +382,55 @@ export function CommandPalette({
             spellCheck={false}
           />
 
-          <div className="palette-input-shortcut">
-            <span className="palette-kbd">esc</span>
+          <div className={styles.paletteInputShortcut}>
+            <span className={styles.paletteKbd}>esc</span>
           </div>
         </div>
 
         {/* Results */}
-        <div className="palette-results" ref={resultsRef}>
+        <div className={styles.paletteResults} ref={resultsRef}>
           {flatItems.length === 0 ? (
-            <div className="palette-empty">
-              <span className="palette-empty-text">No results for "{query}"</span>
+            <div className={styles.paletteEmpty}>
+              <span className={styles.paletteEmptyText}>No results for "{query}"</span>
             </div>
           ) : (
             visibleGroups.map((group) => (
-              <div className="palette-group" key={group.id}>
-                <div className="palette-group-label">{group.label}</div>
+              <div className={styles.paletteGroup} key={group.id}>
+                <div className={styles.paletteGroupLabel}>{group.label}</div>
                 {group.items.map((item) => {
                   const idx = flatIdx++;
                   const isSelected = idx === safeSelectedIdx;
                   return (
                     <div
                       key={item.id}
-                      className={`palette-item${isSelected ? " selected" : ""}`}
+                      className={`${styles.paletteItem}${isSelected ? ` ${styles.selected}` : ""}`}
                       data-idx={idx}
                       onMouseEnter={() => setSelectedIdx(idx)}
                       onClick={() => item.onSelect()}
                     >
-                      <div className="palette-item-icon">{ICONS[item.icon]}</div>
-                      <div className="palette-item-content">
-                        <div className="palette-item-title">{highlight(item.title, q)}</div>
+                      <div className={styles.paletteItemIcon}>{ICONS[item.icon]}</div>
+                      <div className={styles.paletteItemContent}>
+                        <div className={styles.paletteItemTitle}>{highlight(item.title, q)}</div>
                         {item.subtitle && (
-                          <div className="palette-item-subtitle">{highlight(item.subtitle, q)}</div>
+                          <div className={styles.paletteItemSubtitle}>
+                            {highlight(item.subtitle, q)}
+                          </div>
                         )}
                       </div>
-                      <div className="palette-item-meta">
-                        {item.badge && <span className="palette-item-badge">{item.badge}</span>}
+                      <div className={styles.paletteItemMeta}>
+                        {item.badge && (
+                          <span className={styles.paletteItemBadge}>{item.badge}</span>
+                        )}
                         {item.shortcut && (
-                          <div className="palette-item-shortcut">
+                          <div className={styles.paletteItemShortcut}>
                             {item.shortcut.split("").map((k, i) => (
-                              <span className="palette-kbd" key={i}>
+                              <span className={styles.paletteKbd} key={i}>
                                 {k}
                               </span>
                             ))}
                           </div>
                         )}
-                        <div className="palette-item-arrow">{ICONS.arrow}</div>
+                        <div className={styles.paletteItemArrow}>{ICONS.arrow}</div>
                       </div>
                     </div>
                   );
@@ -436,23 +441,23 @@ export function CommandPalette({
         </div>
 
         {/* Footer */}
-        <div className="palette-footer">
-          <div className="palette-footer-hints">
-            <div className="palette-footer-hint">
-              <span className="palette-kbd">↑</span>
-              <span className="palette-kbd">↓</span>
+        <div className={styles.paletteFooter}>
+          <div className={styles.paletteFooterHints}>
+            <div className={styles.paletteFooterHint}>
+              <span className={styles.paletteKbd}>↑</span>
+              <span className={styles.paletteKbd}>↓</span>
               Navigate
             </div>
-            <div className="palette-footer-hint">
-              <span className="palette-kbd">↵</span>
+            <div className={styles.paletteFooterHint}>
+              <span className={styles.paletteKbd}>↵</span>
               Open
             </div>
-            <div className="palette-footer-hint">
-              <span className="palette-kbd">tab</span>
+            <div className={styles.paletteFooterHint}>
+              <span className={styles.paletteKbd}>tab</span>
               Scope
             </div>
           </div>
-          <div className="palette-footer-logo">⌘K</div>
+          <div className={styles.paletteFooterLogo}>⌘K</div>
         </div>
       </div>
     </div>

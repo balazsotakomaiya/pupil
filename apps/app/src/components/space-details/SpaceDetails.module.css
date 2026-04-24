@@ -1,0 +1,418 @@
+/* ── Space header ── */
+
+.spaceHeader {
+  padding: 48px 0 0;
+}
+
+.spaceHeaderTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 12px;
+}
+
+.spaceTitle {
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1.15;
+}
+
+.spaceTags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.spaceTag {
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.spaceHeader .spaceDesc {
+  max-width: 600px;
+  margin-bottom: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ── Toolbar top-right ── */
+
+.toolbarTopRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Charts grid ── */
+
+.chartsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.chartCard,
+.reviewsTable {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.chartCard {
+  padding: 24px;
+}
+
+.chartCard:hover,
+.reviewsTable:hover {
+  border-color: var(--border-hover);
+}
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.chartTitle {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chartPeriod {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* ── Bar chart ── */
+
+.barChart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 100px;
+}
+
+.barCol {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bar {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: #ededed18;
+  transition: background 0.15s ease;
+}
+
+.bar:hover {
+  background: #ededed30;
+}
+
+.bar.today {
+  border: 1px solid var(--success);
+  border-bottom: none;
+  background: var(--success-dim);
+}
+
+.barLabel {
+  margin-top: 6px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.3px;
+}
+
+.chartAxis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.chartAxis span,
+.stateCount,
+.statePct,
+.reviewGrade,
+.reviewInterval,
+.reviewTime {
+  font-family: var(--font-mono);
+}
+
+.chartAxis span {
+  color: var(--text-tertiary);
+  font-size: 9px;
+  letter-spacing: 0.3px;
+}
+
+/* ── State breakdown ── */
+
+.stateBreakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stateBarVisual {
+  display: flex;
+  overflow: hidden;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+}
+
+.stateSegment {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.stateLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stateRow,
+.stateRowLeft,
+.stateRowRight {
+  display: flex;
+  align-items: center;
+}
+
+.stateRow {
+  justify-content: space-between;
+}
+
+.stateRowLeft {
+  gap: 8px;
+}
+
+.stateRowRight {
+  gap: 12px;
+}
+
+.stateDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.stateName {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.stateCount {
+  min-width: 32px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: right;
+}
+
+.statePct {
+  min-width: 36px;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  text-align: right;
+}
+
+/* ── State colors ── */
+
+.clrNew {
+  background: var(--text-primary);
+}
+
+.clrLearning {
+  background: var(--text-secondary);
+}
+
+.clrReview {
+  background: var(--success);
+}
+
+.clrRelearning {
+  background: var(--text-tertiary);
+}
+
+/* ── Reviews table ── */
+
+.reviewsTable {
+  overflow: hidden;
+}
+
+.reviewsHeader,
+.reviewRow {
+  display: grid;
+  grid-template-columns: 1fr 80px 80px 90px;
+  gap: 12px;
+  align-items: center;
+}
+
+.reviewsHeader {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.reviewsHeader .colRight {
+  text-align: right;
+}
+
+.reviewRow {
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  transition: background 0.15s ease;
+}
+
+.reviewRow:last-child {
+  border-bottom: none;
+}
+
+.reviewRow:hover {
+  background: var(--bg-elevated);
+}
+
+.reviewFront {
+  overflow: hidden;
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.reviewGrade {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.reviewGrade.stateNew {
+  color: var(--text-secondary);
+}
+
+.reviewGrade.stateLearning {
+  color: #fbbf24;
+}
+
+.reviewGrade.stateReview {
+  color: var(--success);
+}
+
+.reviewGrade.stateRelearning {
+  color: #fca5a5;
+}
+
+.reviewInterval,
+.reviewTime {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.reviewTime {
+  text-align: right;
+}
+
+/* ── Search compact ── */
+
+.searchCompact {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.searchCompact svg {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  width: 14px;
+  height: 14px;
+  color: var(--text-tertiary);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.searchCompact input {
+  width: 100%;
+  height: 36px;
+  padding: 0 14px 0 38px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.searchCompact input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.searchCompact input:focus {
+  border-color: var(--border-hover);
+}
+
+/* ── Detail empty ── */
+
+.detailEmpty {
+  padding: 24px;
+}
+
+.detailEmpty p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 768px) {
+  .chartsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .reviewsHeader,
+  .reviewRow {
+    grid-template-columns: 1fr 70px 80px;
+  }
+
+  .reviewsHeader .colRight,
+  .reviewTime {
+    display: none;
+  }
+}

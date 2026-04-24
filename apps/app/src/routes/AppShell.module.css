@@ -1,0 +1,8 @@
+.appShell {
+  min-height: 100vh;
+}
+
+.dashboardShell {
+  position: relative;
+  min-height: 100vh;
+}

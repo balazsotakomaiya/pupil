@@ -1,3 +1,4 @@
+import styles from "../app-shell/AppTitlebar.module.css";
 import { EyeLogo } from "../dashboard/EyeLogo";
 import { BackIcon } from "./AiGenerateIcons";
 
@@ -8,26 +9,26 @@ type AiGenerateTitlebarProps = {
 
 export function AiGenerateTitlebar({ backLabel, onBack }: AiGenerateTitlebarProps) {
   return (
-    <div className="titlebar">
-      <div className="titlebar-left">
-        <div className="titlebar-logo">
+    <div className={styles.titlebar}>
+      <div className={styles.titlebarLeft}>
+        <div className={styles.titlebarLogo}>
           <EyeLogo />
-          <span className="titlebar-logo-text">pupil</span>
+          <span className={styles.titlebarLogoText}>pupil</span>
         </div>
 
-        <div className="titlebar-sep" />
+        <div className={styles.titlebarSep} />
 
-        <button className="back-btn" onClick={onBack} type="button">
+        <button className={styles.backBtn} onClick={onBack} type="button">
           <BackIcon />
           {backLabel}
         </button>
 
-        <div className="titlebar-sep" />
+        <div className={styles.titlebarSep} />
 
-        <span className="breadcrumb-name">AI Generate</span>
+        <span className={styles.breadcrumbName}>AI Generate</span>
       </div>
 
-      <div className="titlebar-right" />
+      <div className={styles.titlebarRight} />
     </div>
   );
 }

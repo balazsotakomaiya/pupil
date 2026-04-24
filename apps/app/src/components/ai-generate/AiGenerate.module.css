@@ -1,0 +1,1077 @@
+.aiGenPage {
+  max-width: 860px;
+}
+
+.aiGenStateView {
+  display: block;
+}
+
+.aiGenNoKeySection {
+  padding: 80px 0;
+  text-align: center;
+}
+
+.aiGenNoKeyIcon {
+  display: flex;
+  width: 56px;
+  height: 56px;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-subtle);
+}
+
+.aiGenNoKeyIcon svg {
+  width: 24px;
+  height: 24px;
+  color: var(--text-tertiary);
+}
+
+.aiGenNoKeyTitle {
+  margin-bottom: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.aiGenNoKeyDesc {
+  max-width: 380px;
+  margin: 0 auto 24px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.aiGenNoKeyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 22px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--text-primary);
+  color: var(--bg);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: opacity 0.15s ease;
+}
+
+.aiGenNoKeyBtn:hover {
+  opacity: 0.85;
+}
+
+.aiGenNoKeyBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.aiGenNoKeyHint {
+  margin-top: 16px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.aiGenNoKeyHint code {
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg-elevated);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.aiGenFormSection {
+  padding: 48px 0 40px;
+}
+
+.aiGenFormTitle {
+  margin-bottom: 4px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.aiGenFormDesc {
+  margin-bottom: 32px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.aiGenFieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.aiGenField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.aiGenFieldLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.aiGenFieldHint {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.aiGenTopicInput,
+.aiGenNewSpaceInput {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.aiGenTopicInput {
+  min-height: 88px;
+  padding: 16px 18px;
+  resize: none;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.15px;
+  line-height: 1.55;
+}
+
+.aiGenTopicInput::placeholder,
+.aiGenNewSpaceInput::placeholder {
+  color: var(--text-tertiary);
+}
+
+.aiGenNewSpaceInput {
+  height: 40px;
+  padding: 0 14px;
+  margin-top: 8px;
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+
+.aiGenTopicInput:focus,
+.aiGenNewSpaceInput:focus,
+.aiGenSelectInput:focus {
+  border-color: var(--border-hover);
+}
+
+.aiGenSelectWrap {
+  position: relative;
+}
+
+.aiGenSelectInput {
+  width: 100%;
+  height: 38px;
+  padding: 0 36px 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  appearance: none;
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.aiGenSelectChevron {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.aiGenSelectChevron svg {
+  width: 13px;
+  height: 13px;
+}
+
+.aiGenConfigRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+}
+
+.aiGenChipGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.aiGenChip {
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 500;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.aiGenChip:hover,
+.aiGenChip.active {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.aiGenChip.active {
+  background: var(--bg-elevated);
+}
+
+.active {}
+
+.aiGenInfoBtn {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.aiGenInfoBtn:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+.aiGenInfoBtn svg {
+  width: 10px;
+  height: 10px;
+}
+
+.aiGenCountRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.aiGenCountStepper {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  transition: opacity 0.2s ease;
+}
+
+.aiGenCountStepper.disabled {
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.disabled {}
+
+.aiGenCountBtn {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.aiGenCountBtn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+.aiGenCountBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.aiGenCountValue {
+  width: 42px;
+  height: 34px;
+  border-right: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 34px;
+  text-align: center;
+}
+
+.aiGenAutoToggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.aiGenAutoToggleLabel {
+  color: var(--text-tertiary);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.aiGenAutoToggle:hover .aiGenAutoToggleLabel,
+.aiGenAutoToggle.active .aiGenAutoToggleLabel {
+  color: var(--text-secondary);
+}
+
+.aiGenToggleTrack {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.aiGenToggleThumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.aiGenAutoToggle.active .aiGenToggleTrack {
+  border-color: #10b98140;
+  background: #10b98125;
+}
+
+.aiGenAutoToggle.active .aiGenToggleThumb {
+  background: var(--success);
+  transform: translateX(12px);
+}
+
+.aiGenFormBottom {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.aiGenFormBottomLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aiGenGenerateBtn,
+.aiGenSaveBarBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--text-primary);
+  color: var(--bg);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.aiGenGenerateBtn {
+  padding: 12px 28px;
+}
+
+.aiGenGenerateBtn:hover,
+.aiGenSaveBarBtn:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.aiGenGenerateBtn svg,
+.aiGenSaveBarBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.aiGenInlineError {
+  color: #ef8b8b;
+  font-size: 12px;
+}
+
+.aiGenModelIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.aiGenModelLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px dashed #10b98160;
+  background: transparent;
+  color: var(--success);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.aiGenModelLink:hover {
+  border-color: #34d39980;
+  color: #34d399;
+}
+
+.aiGenModelDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--success);
+  flex-shrink: 0;
+}
+
+.aiGenModelSep {
+  opacity: 0.3;
+}
+
+.aiGenModelChangeBtn {
+  display: flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.aiGenModelChangeBtn:hover {
+  border-color: var(--border-hover);
+  color: var(--text-secondary);
+}
+
+.aiGenModelChangeBtn svg {
+  width: 10px;
+  height: 10px;
+}
+
+.aiGenLoadingSection,
+.aiGenErrorSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.aiGenLoadingSection {
+  padding: 120px 0;
+}
+
+.aiGenLoadingSpinner {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 24px;
+  border: 2px solid var(--border);
+  border-top-color: var(--text-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.aiGenLoadingTitle,
+.aiGenErrorTitle {
+  margin-bottom: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.aiGenLoadingDesc,
+.aiGenErrorDesc {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.aiGenLoadingModel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.aiGenErrorSection {
+  padding: 80px 0;
+}
+
+.aiGenErrorIcon {
+  display: flex;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  border: 1px solid #ef444425;
+  border-radius: 12px;
+  background: #ef444415;
+}
+
+.aiGenErrorIcon svg {
+  width: 20px;
+  height: 20px;
+  color: #ef4444;
+}
+
+.aiGenErrorDesc {
+  max-width: 360px;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.aiGenErrorDetail {
+  max-width: 400px;
+  margin-bottom: 20px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  word-break: break-word;
+}
+
+.aiGenErrorActions {
+  display: flex;
+  gap: 8px;
+}
+
+.aiGenErrorBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.aiGenErrorBtn:hover {
+  border-color: var(--border-hover);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+}
+
+.aiGenErrorBtn.primary {
+  border: 0;
+  background: var(--text-primary);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.primary {}
+
+.aiGenReviewSection {
+  padding: 40px 0;
+}
+
+.aiGenReviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.aiGenReviewHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aiGenReviewTitle {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.aiGenReviewCount {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.aiGenReviewCount strong {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.aiGenReviewBulkActions {
+  display: flex;
+  gap: 6px;
+}
+
+.aiGenBulkBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.aiGenBulkBtn:hover {
+  border-color: var(--border-hover);
+  color: var(--text-secondary);
+}
+
+.aiGenBulkBtn.approve {
+  border-color: #10b98130;
+  color: var(--success);
+}
+
+.approve {}
+
+.aiGenReviewList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aiGenReviewCard {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  transition:
+    border-color 0.2s ease,
+    opacity 0.3s ease;
+}
+
+.aiGenReviewCard:hover {
+  border-color: var(--border-hover);
+}
+
+.aiGenReviewCard.discarded {
+  opacity: 0.3;
+}
+
+.discarded {}
+
+.aiGenReviewCardBody {
+  padding: 20px 24px;
+}
+
+.aiGenReviewCardFront {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.aiGenReviewCardBack {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.aiGenReviewCardActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px;
+  border-top: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.aiGenReviewCardNum {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.aiGenReviewCardBtns {
+  display: flex;
+  gap: 4px;
+}
+
+.aiGenRcBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.aiGenRcBtn:hover {
+  border-color: var(--border-hover);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-secondary);
+}
+
+.aiGenRcBtn svg,
+.aiGenBulkBtn svg {
+  width: 11px;
+  height: 11px;
+}
+
+.aiGenRcBtn.approve {
+  border-color: #10b98130;
+  color: var(--success);
+}
+
+.aiGenRcBtn.approve:hover {
+  border-color: #10b98150;
+  background: var(--success-dim);
+}
+
+.aiGenRcBtn.approved {
+  border-color: #10b98130;
+  background: var(--success-dim);
+  color: var(--success);
+}
+
+.approved {}
+
+.aiGenSaveBar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0 24px;
+  background: linear-gradient(transparent, var(--bg) 30%);
+  z-index: 10;
+}
+
+.aiGenSaveBarInfo {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.aiGenSaveBarInfo strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.aiGenSaveBarBtn {
+  padding: 10px 24px;
+}
+
+.aiGenSaveBarBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.aiGenModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.aiGenModalOverlay.open {
+  display: flex;
+}
+
+.open {}
+
+.aiGenModal {
+  width: 100%;
+  max-width: 520px;
+  overflow: hidden;
+  border: 1px solid var(--border-hover);
+  border-radius: 16px;
+  background: var(--bg-subtle);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* @keyframes spin and @keyframes modalIn are in styles/animations.css */
+
+.aiGenModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+}
+
+.aiGenModalTitle {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.aiGenModalClose {
+  display: flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.aiGenModalClose:hover {
+  border-color: var(--border-hover);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+}
+
+.aiGenModalClose svg {
+  width: 13px;
+  height: 13px;
+}
+
+.aiGenModalBody {
+  padding: 0 24px 24px;
+}
+
+.aiGenStyleExplain {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.aiGenStyleCard {
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  transition: border-color 0.2s ease;
+}
+
+.aiGenStyleCard:hover {
+  border-color: var(--border-hover);
+}
+
+.aiGenStyleCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.aiGenStyleCardName {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+}
+
+.aiGenStyleCardBadge {
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-subtle);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.aiGenStyleCardDesc {
+  margin-bottom: 14px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.aiGenStyleCardExample {
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+}
+
+.aiGenStyleExampleLabel {
+  margin-bottom: 6px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.aiGenStyleExamplePair {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.aiGenStyleExampleSide {
+  padding-top: 1px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.aiGenStyleExampleText {
+  color: var(--text-secondary);
+}
+
+.aiGenStyleExampleText strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .aiGenConfigRow {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .aiGenConfigRow .aiGenField:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .aiGenReviewHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .aiGenFormBottom,
+  .aiGenSaveBar,
+  .aiGenReviewCardActions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .aiGenFormBottom {
+    gap: 14px;
+  }
+
+  .aiGenGenerateBtn,
+  .aiGenSaveBarBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .aiGenReviewCardBody {
+    padding: 16px 18px;
+  }
+
+  .aiGenReviewCardActions {
+    padding: 8px 18px;
+  }
+
+  .aiGenReviewCardBtns,
+  .aiGenReviewBulkActions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .aiGenRcBtn,
+  .aiGenBulkBtn {
+    flex: 1 1 120px;
+    justify-content: center;
+  }
+
+  .aiGenModalOverlay {
+    padding: 16px;
+  }
+}

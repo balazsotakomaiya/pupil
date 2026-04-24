@@ -1,3 +1,5 @@
+import styles from "./Settings.module.css";
+
 type ShortcutItem = {
   keys: string[];
   label: string;
@@ -9,13 +11,13 @@ type SettingsShortcutsGridProps = {
 
 export function SettingsShortcutsGrid({ items }: SettingsShortcutsGridProps) {
   return (
-    <div className="settings-shortcuts-grid">
+    <div className={styles.settingsShortcutsGrid}>
       {items.map((item) => (
-        <div className="settings-shortcut-row" key={`${item.label}-${item.keys.join("-")}`}>
+        <div className={styles.settingsShortcutRow} key={`${item.label}-${item.keys.join("-")}`}>
           <span>{item.label}</span>
-          <div className="settings-shortcut-keys">
+          <div className={styles.settingsShortcutKeys}>
             {item.keys.map((key) => (
-              <span className="settings-kbd" key={`${item.label}-${key}`}>
+              <span className={styles.settingsKbd} key={`${item.label}-${key}`}>
                 {key}
               </span>
             ))}

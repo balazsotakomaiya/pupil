@@ -3,10 +3,11 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { queryClient } from "./lib/query";
+import "./styles/animations.css";
 import "./styles/tokens.css";
 import "./styles/reset.css";
 import "./styles/utilities.css";
-import "./style.css";
+import "./styles/shared.css";
 
 const rootElement = document.getElementById("root");
 

@@ -1,0 +1,485 @@
+.cardsPage {
+  padding-top: 0;
+}
+
+.toolbarSection {
+  padding: 40px 0 0;
+}
+
+.toolbarTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.toolbarTopLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cardCount {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.cardCount strong {
+  color: var(--text-secondary);
+}
+
+.toolbarTopRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.searchRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.searchInputWrap {
+  position: relative;
+  flex: 1;
+}
+
+.searchInputWrap svg {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  height: 38px;
+  padding: 0 14px 0 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.searchInput::placeholder {
+  color: var(--text-tertiary);
+}
+
+.searchInput:focus {
+  border-color: var(--border-hover);
+}
+
+.sortBtn,
+.spaceFilterChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.sortBtn:hover,
+.spaceFilterChip:hover {
+  border-color: var(--border-hover);
+  color: var(--text-secondary);
+}
+
+.sortBtn svg,
+.spaceFilterChip svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0.5;
+}
+
+.filterRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.filterChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+  user-select: none;
+}
+
+.filterChip:hover {
+  color: var(--text-secondary);
+  border-color: var(--border-hover);
+}
+
+.filterChip.active {
+  border-color: var(--border-hover);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.chipCount {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.filterSep {
+  width: 1px;
+  height: 22px;
+  margin: 0 4px;
+  align-self: center;
+  background: var(--border);
+}
+
+.spaceFilterChip {
+  position: relative;
+  overflow: hidden;
+}
+
+.spaceFilterSelect {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-transform: none;
+  letter-spacing: 0;
+  outline: none;
+  cursor: pointer;
+}
+
+.cardListSection {
+  padding: 24px 0 40px;
+}
+
+.cardList,
+.placeholderPanel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+}
+
+.cardList {
+  overflow: hidden;
+}
+
+.cardListHeader,
+.cardRowMain {
+  display: grid;
+  grid-template-columns: 1fr 130px 80px 72px 90px 32px;
+  gap: 12px;
+  align-items: center;
+}
+
+.cardListHeader.spaceMode,
+.cardRowMain.spaceMode {
+  grid-template-columns: 1fr 80px 72px 90px 32px;
+}
+
+.cardListHeader {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.colRight {
+  text-align: right;
+}
+
+.cardRow {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s ease;
+}
+
+.cardRow:last-child {
+  border-bottom: none;
+}
+
+.cardRow:hover {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.cardRow.suspended {
+  opacity: 0.5;
+}
+
+.cardRow.suspended .cardFront {
+  color: var(--text-muted);
+}
+
+.cardRow.suspended .cardDue {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.cardRowMain {
+  width: 100%;
+  padding: 12px 20px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cardFront {
+  overflow: hidden;
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.1px;
+}
+
+.cardSpace {
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.cardState,
+.cardSource {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.cardState.stateNew {
+  color: var(--text-secondary);
+}
+
+.cardState.stateLearning {
+  color: #fbbf24;
+}
+
+.cardState.stateReview {
+  color: var(--success);
+}
+
+.cardState.stateRelearning {
+  color: #fca5a5;
+}
+
+.cardDue {
+  color: var(--text-tertiary);
+  text-align: right;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.cardDue.overdue {
+  color: var(--text-secondary);
+}
+
+.cardChevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  transition:
+    transform 0.15s ease,
+    color 0.15s ease;
+}
+
+.cardChevron svg {
+  width: 14px;
+  height: 14px;
+}
+
+.cardRow.expanded .cardChevron {
+  color: var(--text-secondary);
+  transform: rotate(90deg);
+}
+
+.cardExpanded {
+  display: none;
+  padding: 0 20px 16px;
+}
+
+.cardRow.expanded .cardExpanded {
+  display: block;
+}
+
+.cardExpandedInner {
+  padding: 20px;
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+}
+
+.cardQa {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.cardQaLabel {
+  margin-bottom: 8px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.cardQaText {
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.cardQaText.backText {
+  color: var(--text-secondary);
+}
+
+.cardExpandedMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.metaItem {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.metaItem strong {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.tag {
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-subtle);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+.cardExpandedActions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.actionBtn:hover {
+  color: var(--text-secondary);
+  border-color: var(--border-hover);
+}
+
+.actionBtn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.emptyState {
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.emptyState p {
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .cardListHeader,
+  .cardRowMain {
+    grid-template-columns: 1fr 70px 32px;
+  }
+
+  .cardListHeader.spaceMode,
+  .cardRowMain.spaceMode {
+    grid-template-columns: 1fr 70px 80px 32px;
+  }
+
+  .colSpace,
+  .cardSource,
+  .cardSpace,
+  .colDue {
+    display: none;
+  }
+
+  .cardRowMain.spaceMode .cardDue {
+    display: block;
+  }
+}

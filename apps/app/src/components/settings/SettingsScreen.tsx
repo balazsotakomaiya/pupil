@@ -12,6 +12,7 @@ import {
   getSettingsDataSummary,
 } from "../../lib/data-actions";
 import type { StudySettings } from "../../lib/study-settings";
+import styles from "./Settings.module.css";
 import { SettingsAboutCard } from "./SettingsAboutCard";
 import { SettingsConnectionStatus } from "./SettingsConnectionStatus";
 import { SettingsDataCard } from "./SettingsDataCard";
@@ -547,10 +548,10 @@ export function SettingsScreen({
   const areSettingsActionsBusy = isSavingSettings || isTestingConnection;
 
   return (
-    <div className="page settings-page">
-      <section className="settings-header">
-        <h1 className="settings-title">Settings</h1>
-        <p className="settings-desc">
+    <div className={`page ${styles.settingsPage}`}>
+      <section className={styles.settingsHeader}>
+        <h1 className={styles.settingsTitle}>Settings</h1>
+        <p className={styles.settingsDesc}>
           AI provider configuration, data management, and app preferences.
         </p>
       </section>
@@ -559,10 +560,10 @@ export function SettingsScreen({
 
       <div className="ruler-divider" />
 
-      <section className="settings-section" id="study" ref={studyRef}>
-        <div className="settings-section-head">
-          <div className="settings-section-title">New Cards Per Day</div>
-          <div className="settings-section-desc">
+      <section className={styles.settingsSection} id="study" ref={studyRef}>
+        <div className={styles.settingsSectionHead}>
+          <div className={styles.settingsSectionTitle}>New Cards Per Day</div>
+          <div className={styles.settingsSectionDesc}>
             Control how many unseen cards are introduced each day. Reviews of cards already in your
             learning queue always appear when due — this limit only gates new material.
           </div>
@@ -577,26 +578,26 @@ export function SettingsScreen({
 
       <div className="ruler-divider" />
 
-      <section className="settings-section" id="ai" ref={aiRef}>
-        <div className="settings-section-head">
-          <div className="settings-section-title">AI Provider</div>
-          <div className="settings-section-desc">
+      <section className={styles.settingsSection} id="ai" ref={aiRef}>
+        <div className={styles.settingsSectionHead}>
+          <div className={styles.settingsSectionTitle}>AI Provider</div>
+          <div className={styles.settingsSectionDesc}>
             Pupil stores the API key safely on this device and keeps the non-secret provider
             settings in the local app database. Generation and provider tests now use these saved
             values directly.
           </div>
         </div>
 
-        <div className="settings-field-group">
-          <div className="settings-field">
-            <label className="settings-field-label" htmlFor="settings-api-key">
+        <div className={styles.settingsFieldGroup}>
+          <div className={styles.settingsField}>
+            <label className={styles.settingsFieldLabel} htmlFor="settings-api-key">
               API Key
-              <span className="settings-label-badge">Stored safely</span>
+              <span className={styles.settingsLabelBadge}>Stored safely</span>
             </label>
-            <div className="settings-key-input-wrap">
-              <div className="settings-key-field-wrap">
+            <div className={styles.settingsKeyInputWrap}>
+              <div className={styles.settingsKeyFieldWrap}>
                 <input
-                  className="settings-text-input settings-text-input-mono"
+                  className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
                   disabled={isSettingsBusy}
                   id="settings-api-key"
                   onChange={(event) => {
@@ -616,7 +617,7 @@ export function SettingsScreen({
                 />
                 <button
                   aria-label={showApiKey ? "Hide API key" : "Show API key"}
-                  className="settings-key-reveal"
+                  className={styles.settingsKeyReveal}
                   disabled={isSettingsBusy}
                   onClick={() => setShowApiKey((current) => !current)}
                   type="button"
@@ -624,9 +625,9 @@ export function SettingsScreen({
                   {showApiKey ? <EyeClosedIcon /> : <EyeOpenIcon />}
                 </button>
               </div>
-              <div className="settings-key-actions">
+              <div className={styles.settingsKeyActions}>
                 <button
-                  className="settings-key-save-btn"
+                  className={styles.settingsKeySaveBtn}
                   disabled={areSettingsActionsBusy || !apiKeyEdited}
                   onClick={() => void handleSaveSettings()}
                   type="button"
@@ -634,7 +635,7 @@ export function SettingsScreen({
                   {isSavingSettings ? "Saving…" : "Save"}
                 </button>
                 <button
-                  className="settings-key-test-btn"
+                  className={styles.settingsKeyTestBtn}
                   disabled={areSettingsActionsBusy}
                   onClick={() => void handleTestConnection()}
                   type="button"
@@ -644,7 +645,7 @@ export function SettingsScreen({
                 </button>
               </div>
             </div>
-            <div className="settings-field-hint">{apiKeyHint}</div>
+            <div className={styles.settingsFieldHint}>{apiKeyHint}</div>
           </div>
 
           <SettingsConnectionStatus
@@ -653,15 +654,15 @@ export function SettingsScreen({
             label={connectionStatus.label}
           />
 
-          <div className="settings-field">
-            <label className="settings-field-label" htmlFor="settings-base-url">
+          <div className={styles.settingsField}>
+            <label className={styles.settingsFieldLabel} htmlFor="settings-base-url">
               Base URL
               {recentlySaved && lastSavedField === "baseUrl" && (
-                <span className="settings-autosave-badge">Saved</span>
+                <span className={styles.settingsAutosaveBadge}>Saved</span>
               )}
             </label>
             <input
-              className="settings-text-input settings-text-input-mono"
+              className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
               disabled={isSettingsBusy}
               id="settings-base-url"
               onChange={(event) => {
@@ -676,20 +677,20 @@ export function SettingsScreen({
               type="text"
               value={baseUrl}
             />
-            <div className="settings-field-hint">
+            <div className={styles.settingsFieldHint}>
               OpenAI-compatible endpoint. Change this for Anthropic, Ollama, or a self-hosted proxy.
             </div>
           </div>
 
-          <div className="settings-field">
-            <label className="settings-field-label" htmlFor="settings-model">
+          <div className={styles.settingsField}>
+            <label className={styles.settingsFieldLabel} htmlFor="settings-model">
               Model
               {recentlySaved && lastSavedField === "model" && (
-                <span className="settings-autosave-badge">Saved</span>
+                <span className={styles.settingsAutosaveBadge}>Saved</span>
               )}
             </label>
             <input
-              className="settings-text-input settings-text-input-mono"
+              className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
               disabled={isSettingsBusy}
               id="settings-model"
               onChange={(event) => {
@@ -701,10 +702,10 @@ export function SettingsScreen({
               type="text"
               value={model}
             />
-            <div className="settings-model-chips">
+            <div className={styles.settingsModelChips}>
               {["gpt-5.4", "claude-sonnet-4-6", "claude-opus-4-6"].map((chip) => (
                 <button
-                  className={`settings-model-chip${model === chip ? " active" : ""}`}
+                  className={`${styles.settingsModelChip}${model === chip ? ` ${styles.active}` : ""}`}
                   disabled={isSettingsBusy}
                   key={chip}
                   onClick={() => {
@@ -718,14 +719,14 @@ export function SettingsScreen({
                 </button>
               ))}
             </div>
-            <div className="settings-field-hint">
+            <div className={styles.settingsFieldHint}>
               Pick a recommended model or type any model identifier your provider supports.
             </div>
           </div>
 
           <div>
             <button
-              className={`settings-advanced-toggle${advancedOpen ? " open" : ""}`}
+              className={`${styles.settingsAdvancedToggle}${advancedOpen ? ` ${styles.open}` : ""}`}
               onClick={() => setAdvancedOpen((current) => !current)}
               type="button"
             >
@@ -733,17 +734,19 @@ export function SettingsScreen({
               Advanced
             </button>
 
-            <div className={`settings-advanced-fields${advancedOpen ? " open" : ""}`}>
-              <div className="settings-field-row">
-                <div className="settings-field">
-                  <label className="settings-field-label" htmlFor="settings-max-tokens">
+            <div
+              className={`${styles.settingsAdvancedFields}${advancedOpen ? ` ${styles.open}` : ""}`}
+            >
+              <div className={styles.settingsFieldRow}>
+                <div className={styles.settingsField}>
+                  <label className={styles.settingsFieldLabel} htmlFor="settings-max-tokens">
                     Max Tokens
                     {recentlySaved && lastSavedField === "maxTokens" && (
-                      <span className="settings-autosave-badge">Saved</span>
+                      <span className={styles.settingsAutosaveBadge}>Saved</span>
                     )}
                   </label>
                   <input
-                    className="settings-text-input settings-text-input-mono"
+                    className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
                     disabled={isSettingsBusy}
                     id="settings-max-tokens"
                     onChange={(event) => {
@@ -757,15 +760,15 @@ export function SettingsScreen({
                   />
                 </div>
 
-                <div className="settings-field">
-                  <label className="settings-field-label" htmlFor="settings-temperature">
+                <div className={styles.settingsField}>
+                  <label className={styles.settingsFieldLabel} htmlFor="settings-temperature">
                     Temperature
                     {recentlySaved && lastSavedField === "temperature" && (
-                      <span className="settings-autosave-badge">Saved</span>
+                      <span className={styles.settingsAutosaveBadge}>Saved</span>
                     )}
                   </label>
                   <input
-                    className="settings-text-input settings-text-input-mono"
+                    className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
                     disabled={isSettingsBusy}
                     id="settings-temperature"
                     onChange={(event) => {
@@ -780,7 +783,7 @@ export function SettingsScreen({
                 </div>
               </div>
 
-              <div className="settings-field-hint">
+              <div className={styles.settingsFieldHint}>
                 Lower temperature produces more predictable cards. Higher adds variety but can
                 reduce accuracy.
               </div>
@@ -791,21 +794,21 @@ export function SettingsScreen({
 
       <div className="ruler-divider" />
 
-      <section className="settings-section" id="data" ref={dataRef}>
-        <div className="settings-section-head">
-          <div className="settings-section-title">Data</div>
-          <div className="settings-section-desc">
+      <section className={styles.settingsSection} id="data" ref={dataRef}>
+        <div className={styles.settingsSectionHead}>
+          <div className={styles.settingsSectionTitle}>Data</div>
+          <div className={styles.settingsSectionDesc}>
             All study data is stored locally. Export creates a real copy of the database or review
             logs, and reset clears this device.
           </div>
         </div>
 
-        <div className="settings-data-section-body">
-          <div className="settings-data-cards">
+        <div className={styles.settingsDataSectionBody}>
+          <div className={styles.settingsDataCards}>
             <SettingsDataCard
               action={
                 <button
-                  className="settings-data-btn"
+                  className={styles.settingsDataBtn}
                   disabled={isExportingDatabase}
                   onClick={() => void handleExportDatabase()}
                   type="button"
@@ -826,7 +829,7 @@ export function SettingsScreen({
             <SettingsDataCard
               action={
                 <button
-                  className="settings-data-btn"
+                  className={styles.settingsDataBtn}
                   disabled={isExportingReviewLogs}
                   onClick={() => void handleExportReviewLogs()}
                   type="button"
@@ -847,7 +850,7 @@ export function SettingsScreen({
             <SettingsDataCard
               action={
                 <button
-                  className="settings-data-btn"
+                  className={styles.settingsDataBtn}
                   onClick={() => void handleCopyPath()}
                   type="button"
                 >
@@ -855,14 +858,14 @@ export function SettingsScreen({
                   {copyState === "copied" ? "Copied" : "Copy"}
                 </button>
               }
-              description={<span className="settings-data-card-desc-path">{databasePath}</span>}
+              description={<span className={styles.settingsDataCardDescPath}>{databasePath}</span>}
               title="Database Path"
             />
 
             <SettingsDataCard
               action={
                 <button
-                  className="settings-data-btn danger"
+                  className={`${styles.settingsDataBtn} ${styles.danger}`}
                   disabled={isResettingData}
                   onClick={() => void handleReset()}
                   type="button"
@@ -887,10 +890,10 @@ export function SettingsScreen({
 
       <div className="ruler-divider" />
 
-      <section className="settings-section" id="shortcuts" ref={shortcutsRef}>
-        <div className="settings-section-head">
-          <div className="settings-section-title">Keyboard Shortcuts</div>
-          <div className="settings-section-desc">
+      <section className={styles.settingsSection} id="shortcuts" ref={shortcutsRef}>
+        <div className={styles.settingsSectionHead}>
+          <div className={styles.settingsSectionTitle}>Keyboard Shortcuts</div>
+          <div className={styles.settingsSectionDesc}>
             Active during study sessions and general navigation.
           </div>
         </div>
@@ -900,9 +903,9 @@ export function SettingsScreen({
 
       <div className="ruler-divider" />
 
-      <section className="settings-section" id="about" ref={aboutRef}>
-        <div className="settings-section-head">
-          <div className="settings-section-title">About</div>
+      <section className={styles.settingsSection} id="about" ref={aboutRef}>
+        <div className={styles.settingsSectionHead}>
+          <div className={styles.settingsSectionTitle}>About</div>
         </div>
 
         <SettingsAboutCard

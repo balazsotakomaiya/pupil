@@ -1,0 +1,580 @@
+.importPage {
+  padding-top: 0;
+}
+
+.importHero {
+  padding: 56px 0 48px;
+}
+
+.importTarget {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 32px;
+}
+
+.importTargetLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.importTargetSelectWrap {
+  position: relative;
+}
+
+.importTargetSelect {
+  width: 100%;
+  height: 38px;
+  padding: 0 36px 0 14px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.importTargetSelect:hover {
+  border-color: var(--text-tertiary);
+}
+
+.importTargetSelect:focus {
+  border-color: var(--border-hover);
+}
+
+.importTargetChevron {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+}
+
+.importTargetChevron svg {
+  width: 13px;
+  height: 13px;
+}
+
+.importTargetHint {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.dropZone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 72px 40px;
+  border: 1px dashed var(--border-hover);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.dropZone:hover {
+  border-color: var(--text-tertiary);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.dropZone.dragOver {
+  border-color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.dropZone code,
+.noteItem code {
+  padding: 1px 5px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.dropZoneIcon,
+.importFileIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+
+.dropZoneIcon {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 4px;
+  border-radius: 14px;
+  background: var(--bg-subtle);
+}
+
+.dropZoneIcon svg {
+  width: 24px;
+  height: 24px;
+  color: var(--text-tertiary);
+}
+
+.dropZoneTitle {
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.dropZoneDesc {
+  max-width: 380px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dropZoneHint {
+  margin-top: 4px;
+  padding: 4px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.dropZoneBrowse {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.dropZoneBrowse:hover {
+  border-color: var(--border-hover);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+}
+
+.dropZoneBrowse svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.5;
+}
+
+.importFileInput {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.importSectionTight {
+  padding-bottom: 24px;
+}
+
+.importStates {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 8px;
+}
+
+.importProgressCard,
+.importSummary,
+.historyTable,
+.notesCard {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  transition: border-color 0.2s ease;
+}
+
+.importProgressCard:hover,
+.importSummary:hover,
+.notesCard:hover {
+  border-color: var(--border-hover);
+}
+
+.importProgressCard {
+  padding: 28px;
+}
+
+.importProgressTop,
+.importSummaryTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.importProgressTop {
+  margin-bottom: 20px;
+}
+
+.importFileInfo,
+.importSummaryLeft,
+.importSummaryActions {
+  display: flex;
+  align-items: center;
+}
+
+.importFileInfo,
+.importSummaryLeft {
+  gap: 12px;
+}
+
+.importFileIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+}
+
+.importFileIcon svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text-tertiary);
+}
+
+.importFileName,
+.importSummaryHeadline {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.importFileSize,
+.historyDate {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.importStatusBadge,
+.historyStatus {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.importStatusBadge {
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+.importStatusBadge.parsing,
+.importStatusBadge.error,
+.importStatusBadge.queued {
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.importStatusBadge.parsing {
+  color: var(--text-secondary);
+}
+
+.importStatusBadge.complete {
+  border: 1px solid #10b98130;
+  background: var(--success-dim);
+  color: var(--success);
+}
+
+.importStatusBadge.error {
+  color: #fca5a5;
+}
+
+.importStatusBadge.queued {
+  color: var(--text-secondary);
+}
+
+.progressBarWrap {
+  overflow: hidden;
+  height: 3px;
+  margin-bottom: 16px;
+  border-radius: 2px;
+  background: var(--bg-elevated);
+}
+
+.progressBar {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--text-tertiary);
+  transition: width 0.4s ease;
+}
+
+.progressBar.done {
+  background: var(--success);
+}
+
+.importProgressDetails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.importDetail {
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+.importDetail strong {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.importDetail .valSuccess {
+  color: var(--success);
+}
+
+.importSummary {
+  overflow: hidden;
+}
+
+.importSummaryTop {
+  padding: 24px 28px;
+}
+
+.importSummaryMeta {
+  margin-top: 2px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.importSummaryActions {
+  gap: 6px;
+}
+
+.importSummaryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.importSummaryBtn:hover {
+  border-color: var(--border-hover);
+  color: var(--text-secondary);
+}
+
+.importSummaryBtn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.importSummaryBtn.primary {
+  border: none;
+  background: var(--text-primary);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.importSummaryBtn.primary:hover {
+  opacity: 0.85;
+}
+
+.deckBreakdown {
+  border-top: 1px solid var(--border);
+}
+
+.deckBreakdownHeader,
+.deckRow {
+  display: grid;
+  grid-template-columns: 1fr 80px 80px 80px;
+  gap: 12px;
+}
+
+.deckBreakdownHeader {
+  padding: 8px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.deckBreakdownHeader .colRight {
+  text-align: right;
+}
+
+.deckRow {
+  padding: 10px 28px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  transition: background 0.15s ease;
+}
+
+.deckRow:last-child {
+  border-bottom: none;
+}
+
+.deckRow:hover {
+  background: var(--bg-elevated);
+}
+
+.deckName,
+.historyFile {
+  overflow: hidden;
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.deckVal,
+.historyCards,
+.historyDupes {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.deckVal,
+.historyDupes {
+  color: var(--text-tertiary);
+}
+
+.deckVal.imported,
+.historyCards {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.historyRow {
+  display: grid;
+  grid-template-columns: 1fr 120px 80px 80px 100px;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  transition: background 0.15s ease;
+}
+
+.historyRow:last-child {
+  border-bottom: none;
+}
+
+.historyRow:hover {
+  background: var(--bg-elevated);
+}
+
+.historyStatus {
+  text-align: right;
+}
+
+.historyStatus.ok,
+.historyStatus.complete {
+  color: var(--success);
+}
+
+.historyStatus.partial {
+  color: var(--text-secondary);
+}
+
+.notesSection {
+  padding: 32px 0 0;
+}
+
+.notesCard {
+  padding: 24px;
+}
+
+.notesTitle {
+  margin-bottom: 14px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.notesList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.noteItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.noteBullet {
+  width: 4px;
+  height: 4px;
+  margin-top: 7px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .historyRow {
+    grid-template-columns: 1fr 100px 70px 90px;
+  }
+
+  .historyDupes {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .dropZone {
+    padding: 48px 24px;
+  }
+
+  .historyRow {
+    grid-template-columns: 1fr 70px 80px;
+  }
+
+  .historyDate,
+  .historyDupes {
+    display: none;
+  }
+}

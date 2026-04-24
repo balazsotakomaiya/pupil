@@ -1,4 +1,5 @@
 import type { CardRecord } from "../../lib/cards";
+import styles from "./Cards.module.css";
 
 type CardListProps = {
   cards: CardRecord[];
@@ -21,8 +22,8 @@ export function CardList({
 }: CardListProps) {
   if (cards.length === 0) {
     return (
-      <div className="card-list">
-        <div className="empty-state">
+      <div className={styles.cardList}>
+        <div className={styles.emptyState}>
           <p>No cards match the current filters.</p>
         </div>
       </div>
@@ -30,13 +31,13 @@ export function CardList({
   }
 
   return (
-    <div className="card-list">
-      <div className={`card-list-header${mode === "space" ? " space-mode" : ""}`}>
+    <div className={styles.cardList}>
+      <div className={`${styles.cardListHeader}${mode === "space" ? ` ${styles.spaceMode}` : ""}`}>
         <span>Front</span>
         <span>State</span>
-        <span className="col-source">Source</span>
-        <span className="col-due col-right">Due</span>
-        {mode === "all" ? <span className="col-space">Space</span> : null}
+        <span className={styles.cardSource}>Source</span>
+        <span className={`${styles.cardDue} ${styles.colRight}`}>Due</span>
+        {mode === "all" ? <span className={styles.cardSpace}>Space</span> : null}
         <span />
       </div>
 
@@ -46,67 +47,69 @@ export function CardList({
 
         return (
           <article
-            className={`card-row${isExpanded ? " expanded" : ""}${card.suspended ? " suspended" : ""}`}
+            className={`${styles.cardRow}${isExpanded ? ` ${styles.expanded}` : ""}${card.suspended ? ` ${styles.suspended}` : ""}`}
             key={card.id}
           >
             <button
-              className={`card-row-main${mode === "space" ? " space-mode" : ""}`}
+              className={`${styles.cardRowMain}${mode === "space" ? ` ${styles.spaceMode}` : ""}`}
               onClick={() => onToggleExpand(card.id)}
               type="button"
             >
-              <span className="card-front">{card.front}</span>
-              <span className={`card-state ${stateClassName(card.state)}`}>
+              <span className={styles.cardFront}>{card.front}</span>
+              <span className={`${styles.cardState} ${stateClassName(card.state)}`}>
                 {formatState(card.state)}
               </span>
-              <span className="card-source">{formatSource(card.source)}</span>
-              <span className={`card-due ${dueMeta.variant === "overdue" ? "overdue" : ""}`}>
+              <span className={styles.cardSource}>{formatSource(card.source)}</span>
+              <span
+                className={`${styles.cardDue}${dueMeta.variant === "overdue" ? ` ${styles.overdue}` : ""}`}
+              >
                 {dueMeta.variant === "overdue" ? <span className="due-dot" /> : null}
                 {card.suspended ? "Suspended" : dueMeta.label}
               </span>
-              {mode === "all" ? <span className="card-space">{card.spaceName}</span> : null}
-              <span className="card-chevron">
+              {mode === "all" ? <span className={styles.cardSpace}>{card.spaceName}</span> : null}
+              <span className={styles.cardChevron}>
                 <ChevronIcon />
               </span>
             </button>
 
-            <div className="card-expanded">
-              <div className="card-expanded-inner">
-                <div className="card-qa">
+            <div className={styles.cardExpanded}>
+              <div className={styles.cardExpandedInner}>
+                <div className={styles.cardQa}>
                   <div className="card-qa-side">
-                    <div className="card-qa-label">Front</div>
-                    <div className="card-qa-text">{card.front}</div>
+                    <div className={styles.cardQaLabel}>Front</div>
+                    <div className={styles.cardQaText}>{card.front}</div>
                   </div>
                   <div className="card-qa-side">
-                    <div className="card-qa-label">Back</div>
-                    <div className="card-qa-text back-text">{card.back}</div>
+                    <div className={styles.cardQaLabel}>Back</div>
+                    <div className={`${styles.cardQaText} ${styles.backText}`}>{card.back}</div>
                   </div>
                 </div>
 
-                <div className="card-expanded-meta">
-                  <span className="meta-item">
+                <div className={styles.cardExpandedMeta}>
+                  <span className={styles.metaItem}>
                     <strong>{card.spaceName}</strong> space
                   </span>
-                  <span className="meta-item">
+                  <span className={styles.metaItem}>
                     <strong>{formatSource(card.source)}</strong> source
                   </span>
-                  <span className="meta-item">
+                  <span className={styles.metaItem}>
                     <strong>{formatAbsoluteTime(card.updatedAt)}</strong> updated
                   </span>
                   {!card.suspended ? (
-                    <span className="meta-item">
+                    <span className={styles.metaItem}>
                       <strong>{dueMeta.label}</strong> due
                     </span>
                   ) : null}
 
                   {card.tags.map((tag) => (
-                    <span className="tag" key={`${card.id}-${tag}`}>
+                    <span className={styles.tag} key={`${card.id}-${tag}`}>
                       {tag}
                     </span>
                   ))}
 
-                  <div className="card-expanded-actions">
+                  <div className={styles.cardExpandedActions}>
                     <button
-                      className="action-btn"
+                      className={styles.actionBtn}
                       onClick={() => onEditCard(card.id)}
                       type="button"
                     >
@@ -115,7 +118,7 @@ export function CardList({
                     </button>
                     {onSuspendCard ? (
                       <button
-                        className="action-btn"
+                        className={styles.actionBtn}
                         onClick={() => onSuspendCard(card.id, !card.suspended)}
                         type="button"
                       >
@@ -124,7 +127,7 @@ export function CardList({
                       </button>
                     ) : null}
                     <button
-                      className="action-btn"
+                      className={styles.actionBtn}
                       onClick={() => onDeleteCard(card.id)}
                       type="button"
                     >
@@ -158,13 +161,13 @@ function formatState(state: number): string {
 function stateClassName(state: number): string {
   switch (state) {
     case 1:
-      return "state-learning";
+      return styles.stateLearning;
     case 2:
-      return "state-review";
+      return styles.stateReview;
     case 3:
-      return "state-relearning";
+      return styles.stateRelearning;
     default:
-      return "state-new";
+      return styles.stateNew;
   }
 }
 

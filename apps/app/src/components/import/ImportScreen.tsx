@@ -1,6 +1,7 @@
 import { type ChangeEvent, type DragEvent, useMemo, useRef, useState } from "react";
 import { type ImportExecutionResult, importApkgFile, readImportHistory } from "../../lib/imports";
 import type { SpaceSummary } from "../../lib/spaces";
+import styles from "./Import.module.css";
 import { ImportDropZone } from "./ImportDropZone";
 import { ImportHistoryTable } from "./ImportHistoryTable";
 import { ChevronDownIcon } from "./ImportIcons";
@@ -156,16 +157,16 @@ export function ImportScreen({
     <>
       {onBack && backLabel ? <ImportTitlebar backLabel={backLabel} onBack={onBack} /> : null}
 
-      <div className="page import-page">
-        <section className="import-hero">
+      <div className={`page ${styles.importPage}`}>
+        <section className={styles.importHero}>
           {!targetSpaceId && spaces && spaces.length > 0 ? (
-            <div className="import-target">
-              <label className="import-target-label" htmlFor="import-target-space">
+            <div className={styles.importTarget}>
+              <label className={styles.importTargetLabel} htmlFor="import-target-space">
                 Import into
               </label>
-              <div className="import-target-select-wrap">
+              <div className={styles.importTargetSelectWrap}>
                 <select
-                  className="import-target-select"
+                  className={styles.importTargetSelect}
                   id="import-target-space"
                   onChange={(e) => setSelectedSpaceId(e.target.value || null)}
                   value={selectedSpaceId ?? ""}
@@ -177,11 +178,11 @@ export function ImportScreen({
                     </option>
                   ))}
                 </select>
-                <div className="import-target-chevron">
+                <div className={styles.importTargetChevron}>
                   <ChevronDownIcon />
                 </div>
               </div>
-              <div className="import-target-hint">
+              <div className={styles.importTargetHint}>
                 {selectedSpaceId
                   ? "All imported cards will be merged into this space."
                   : "Each Anki deck will become a separate Pupil space."}
@@ -205,12 +206,12 @@ export function ImportScreen({
           <>
             <div className="ruler-divider" />
 
-            <section className="section import-section-tight">
+            <section className={`section ${styles.importSectionTight}`}>
               <div className="section-head">
                 <span className="section-label">Active Import</span>
               </div>
 
-              <div className="import-states">
+              <div className={styles.importStates}>
                 <ImportProgressCard model={activeImportModel} />
               </div>
             </section>
@@ -221,7 +222,7 @@ export function ImportScreen({
           <>
             <div className="ruler-divider" />
 
-            <section className="section import-section-tight">
+            <section className={`section ${styles.importSectionTight}`}>
               <div className="section-head">
                 <span className="section-label">Last Import</span>
               </div>
@@ -251,7 +252,7 @@ export function ImportScreen({
 
         <div className="ruler-divider" />
 
-        <section className="notes-section">
+        <section className={styles.notesSection}>
           <ImportNotesCard items={importNotes} />
         </section>
 

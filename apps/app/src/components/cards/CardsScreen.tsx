@@ -4,6 +4,7 @@ import type { SpaceSummary } from "../../lib/spaces";
 import { Pagination } from "../Pagination";
 import { CardFormPanel } from "./CardFormPanel";
 import { CardList } from "./CardList";
+import styles from "./Cards.module.css";
 
 const PAGE_SIZE = 50;
 
@@ -142,7 +143,7 @@ export function CardsScreen({
 
   if (spaces.length === 0) {
     return (
-      <div className="page cards-page">
+      <div className={`page ${styles.cardsPage}`}>
         <section className="section">
           <div className="placeholder-panel">
             <span className="section-label">Manual cards</span>
@@ -247,17 +248,17 @@ export function CardsScreen({
   }
 
   return (
-    <div className="page cards-page">
-      <section className="toolbar-section">
-        <div className="toolbar-top">
-          <div className="toolbar-top-left">
+    <div className={`page ${styles.cardsPage}`}>
+      <section className={styles.toolbarSection}>
+        <div className={styles.toolbarTop}>
+          <div className={styles.toolbarTopLeft}>
             <span className="section-label">All Cards</span>
-            <span className="card-count">
+            <span className={styles.cardCount}>
               <strong>{cards.length}</strong> cards ·{" "}
               <strong>{cards.filter((card) => card.due <= Date.now()).length}</strong> due
             </span>
           </div>
-          <div className="toolbar-top-right">
+          <div className={styles.toolbarTopRight}>
             <button className="btn-ghost" onClick={handleOpenNewCard} type="button">
               <PlusIcon />
               New Card
@@ -265,18 +266,18 @@ export function CardsScreen({
           </div>
         </div>
 
-        <div className="search-row">
-          <div className="search-input-wrap">
+        <div className={styles.searchRow}>
+          <div className={styles.searchInputWrap}>
             <SearchIcon />
             <input
-              className="search-input"
+              className={styles.searchInput}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search cards by front, back, or tags..."
               value={searchQuery}
             />
           </div>
           <button
-            className="sort-btn"
+            className={styles.sortBtn}
             onClick={() => setSortMode((currentMode) => (currentMode === "due" ? "recent" : "due"))}
             type="button"
           >
@@ -285,39 +286,41 @@ export function CardsScreen({
           </button>
         </div>
 
-        <div className="filter-row">
+        <div className={styles.filterRow}>
           {buildStateFilters(cards).map((filter) => (
             <button
-              className={`filter-chip${stateFilter === filter.value ? " active" : ""}`}
+              className={`${styles.filterChip}${stateFilter === filter.value ? ` ${styles.active}` : ""}`}
               key={filter.label}
               onClick={() => setStateFilter(filter.value)}
               type="button"
             >
               {filter.label}
-              {filter.count !== null ? <span className="chip-count">{filter.count}</span> : null}
+              {filter.count !== null ? (
+                <span className={styles.chipCount}>{filter.count}</span>
+              ) : null}
             </button>
           ))}
 
-          <div className="filter-sep" />
+          <div className={styles.filterSep} />
 
           {buildSourceFilters(cards).map((filter) => (
             <button
-              className={`filter-chip${sourceFilter === filter.value ? " active" : ""}`}
+              className={`${styles.filterChip}${sourceFilter === filter.value ? ` ${styles.active}` : ""}`}
               key={filter.label}
               onClick={() => setSourceFilter(filter.value)}
               type="button"
             >
               {filter.label}
-              <span className="chip-count">{filter.count}</span>
+              <span className={styles.chipCount}>{filter.count}</span>
             </button>
           ))}
 
-          <div className="filter-sep" />
+          <div className={styles.filterSep} />
 
-          <label className="space-filter-chip">
+          <label className={styles.spaceFilterChip}>
             <GridIcon />
             <select
-              className="space-filter-select"
+              className={styles.spaceFilterSelect}
               onChange={(event) => setSpaceFilter(event.target.value)}
               value={spaceFilter}
             >
@@ -334,7 +337,7 @@ export function CardsScreen({
 
       <div className="ruler-divider" />
 
-      <section className="card-list-section">
+      <section className={styles.cardListSection}>
         <CardList
           cards={paginatedCards}
           expandedCardId={expandedCardId}

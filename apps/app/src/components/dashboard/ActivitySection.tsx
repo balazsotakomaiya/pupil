@@ -1,3 +1,4 @@
+import styles from "./Dashboard.module.css";
 import type { ActivityItem, StreakCellData } from "./types";
 
 type ActivitySectionProps = {
@@ -13,60 +14,60 @@ export function ActivitySection({ activity, streakCells, streakCount }: Activity
         <span className="section-label">Activity</span>
       </div>
 
-      <div className="bottom-grid">
-        <div className="streak-wrap">
-          <div className="streak-header">
-            <span className="streak-title">Study calendar</span>
-            <span className="streak-count">
+      <div className={styles.bottomGrid}>
+        <div className={styles.streakWrap}>
+          <div className={styles.streakHeader}>
+            <span className={styles.streakTitle}>Study calendar</span>
+            <span className={styles.streakCount}>
               <strong>{streakCount} day</strong> streak
             </span>
           </div>
 
-          <div className="streak-grid">
+          <div className={styles.streakGrid}>
             {streakCells.map((cell) => (
               <div
                 aria-hidden="true"
-                className={`streak-cell${cell.studied ? " studied" : ""}${cell.today ? " today" : ""}`}
+                className={`${styles.streakCell}${cell.studied ? ` ${styles.studied}` : ""}${cell.today ? ` ${styles.today}` : ""}`}
                 key={cell.id}
               />
             ))}
           </div>
 
-          <div className="streak-legend">
-            <div className="streak-legend-item">
-              <div className="streak-legend-swatch streak-legend-swatch-idle" />
+          <div className={styles.streakLegend}>
+            <div className={styles.streakLegendItem}>
+              <div className={`${styles.streakLegendSwatch} ${styles.streakLegendSwatchIdle}`} />
               No study
             </div>
-            <div className="streak-legend-item">
-              <div className="streak-legend-swatch streak-legend-swatch-studied" />
+            <div className={styles.streakLegendItem}>
+              <div className={`${styles.streakLegendSwatch} ${styles.streakLegendSwatchStudied}`} />
               Studied
             </div>
-            <div className="streak-legend-item">
-              <div className="streak-legend-swatch streak-legend-swatch-today" />
+            <div className={styles.streakLegendItem}>
+              <div className={`${styles.streakLegendSwatch} ${styles.streakLegendSwatchToday}`} />
               Today
             </div>
           </div>
         </div>
 
-        <div className="activity-wrap">
-          <div className="activity-header-bar">
-            <span className="ah-title">Recent</span>
+        <div className={styles.activityWrap}>
+          <div className={styles.activityHeaderBar}>
+            <span className={styles.ahTitle}>Recent</span>
           </div>
 
           {activity.length === 0 ? (
-            <div className="activity-empty">
+            <div className={styles.activityEmpty}>
               No study activity yet. Your first reviews will show up here.
             </div>
           ) : (
             activity.map((item) => (
-              <div className="activity-row" key={item.id}>
-                <span className="activity-time">{item.timeLabel}</span>
-                <span className="activity-desc">
+              <div className={styles.activityRow} key={item.id}>
+                <span className={styles.activityTime}>{item.timeLabel}</span>
+                <span className={styles.activityDesc}>
                   {item.prefix}
                   <strong>{item.highlight}</strong>
                   {item.suffix ?? ""}
                 </span>
-                <span className="activity-type">{item.typeLabel}</span>
+                <span className={styles.activityType}>{item.typeLabel}</span>
               </div>
             ))
           )}

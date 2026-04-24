@@ -7,6 +7,7 @@ use crate::analytics::load_dashboard_stats;
 use crate::app::open_app_connection;
 use crate::error::{AppError, AppResult};
 use crate::settings::{load_new_cards_limit, load_today_new_card_count};
+use crate::study_queue::load_study_queue_snapshot;
 use crate::util::now_ms;
 
 const TRAY_ID: &str = "pupil-tray";
@@ -23,6 +24,7 @@ pub(crate) enum TrayStatus {
     CaughtUp,
 }
 
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct TrayQueueCounts {
     pub(crate) admitted_new: i64,
@@ -96,38 +98,41 @@ pub(crate) fn refresh_tray(app: &AppHandle) -> AppResult<()> {
     let stats = load_dashboard_stats(&connection, now)?;
     let new_cards_limit = load_new_cards_limit(&connection).map_err(AppError::from)?;
     let new_cards_today = load_today_new_card_count(&connection).map_err(AppError::from)?;
-
-    let queue = load_tray_queue_counts(&connection, now, new_cards_limit, new_cards_today)
+    let queue = load_study_queue_snapshot(&connection, now, new_cards_limit, new_cards_today)
         .map_err(AppError::from)?;
-    let status = tray_status(stats.total_cards, queue.effective_due, queue.overdue_review);
+    let status = tray_status(
+        stats.total_cards,
+        queue.actionable_due_count,
+        queue.overdue_review_count,
+    );
     let icon = make_status_icon(status);
     let tooltip = make_tooltip(
         status,
         stats.studied_today,
-        queue.effective_due,
-        queue.overdue_review,
-        queue.gated_new,
+        queue.actionable_due_count,
+        queue.overdue_review_count,
+        queue.gated_new_count,
         stats.global_streak,
     );
 
     let status_label = match status {
         TrayStatus::Overdue => format!(
             "{} overdue · {} ready now",
-            queue.overdue_review, queue.effective_due
+            queue.overdue_review_count, queue.actionable_due_count
         ),
         TrayStatus::DueToday => {
             if stats.studied_today == 0 {
-                format!("{} cards ready now", queue.effective_due)
+                format!("{} cards ready now", queue.actionable_due_count)
             } else {
                 format!(
                     "{} ready · {} reviewed",
-                    queue.effective_due, stats.studied_today
+                    queue.actionable_due_count, stats.studied_today
                 )
             }
         }
         TrayStatus::CaughtUp => {
-            if queue.gated_new > 0 {
-                format!("All caught up today · {} new held", queue.gated_new)
+            if queue.gated_new_count > 0 {
+                format!("All caught up today · {} new held", queue.gated_new_count)
             } else if stats.studied_today > 0 {
                 format!("All caught up · {} reviewed", stats.studied_today)
             } else {
@@ -137,8 +142,8 @@ pub(crate) fn refresh_tray(app: &AppHandle) -> AppResult<()> {
         TrayStatus::Empty => "No cards yet".to_string(),
     };
 
-    let study_label = if queue.effective_due > 0 {
-        format!("Study {} Cards →", queue.effective_due)
+    let study_label = if queue.actionable_due_count > 0 {
+        format!("Study {} Cards →", queue.actionable_due_count)
     } else {
         "Study →".to_string()
     };
@@ -168,8 +173,8 @@ pub(crate) fn refresh_tray(app: &AppHandle) -> AppResult<()> {
         .build()
         .map_err(AppError::from)?;
 
-    let title = if queue.effective_due > 0 {
-        format!("{} cards to study", queue.effective_due)
+    let title = if queue.actionable_due_count > 0 {
+        format!("{} cards to study", queue.actionable_due_count)
     } else {
         String::new()
     };
@@ -209,6 +214,7 @@ fn make_status_icon(status: TrayStatus) -> Image<'static> {
     make_eye_icon(r, g, b)
 }
 
+#[cfg(test)]
 pub(crate) fn load_tray_queue_counts(
     connection: &rusqlite::Connection,
     now: i64,
@@ -238,6 +244,7 @@ pub(crate) fn load_tray_queue_counts(
     ))
 }
 
+#[cfg(test)]
 pub(crate) fn build_tray_queue_counts(
     due_new: i64,
     due_review: i64,

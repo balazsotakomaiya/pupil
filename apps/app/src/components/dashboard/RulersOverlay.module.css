@@ -1,0 +1,61 @@
+/* ── Rulers overlay ── */
+
+.rulers {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.rulerV {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--ruler) 0px,
+    var(--ruler) 1px,
+    transparent 1px,
+    transparent 5px
+  );
+}
+
+.rulerV.left {
+  left: 0;
+}
+
+.rulerV.right {
+  right: 0;
+}
+
+.rulerV.contentLeft {
+  left: max(32px, calc((100vw - 960px) / 2));
+}
+
+.rulerV.contentRight {
+  right: max(32px, calc((100vw - 960px) / 2));
+}
+
+.rulerH {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--ruler) 0px,
+    var(--ruler) 1px,
+    transparent 1px,
+    transparent 5px
+  );
+}
+
+.rulerH.top {
+  top: 0;
+}
+
+.rulerH.bottom {
+  bottom: 0;
+}

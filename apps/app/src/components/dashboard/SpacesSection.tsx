@@ -1,3 +1,4 @@
+import styles from "./Dashboard.module.css";
 import { PlusIcon } from "./PlusIcon";
 import { SpaceCard } from "./SpaceCard";
 import type { SpaceCardData } from "./types";
@@ -19,7 +20,7 @@ export function SpacesSection({ onOpenCreateDialog, onOpenSpace, spaces }: Space
         </button>
       </div>
 
-      <div className="spaces-grid">
+      <div className={styles.spacesGrid}>
         {spaces.map((space) => (
           <SpaceCard key={space.id} onOpen={() => onOpenSpace(space.id)} space={space} />
         ))}

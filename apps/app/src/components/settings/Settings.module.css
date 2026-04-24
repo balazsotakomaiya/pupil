@@ -1,0 +1,846 @@
+.settingsPage {
+  padding-top: 0;
+}
+
+.settingsHeader {
+  padding: 48px 0 8px;
+}
+
+.settingsTitle {
+  margin: 0 0 6px;
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1.15;
+}
+
+.settingsDesc {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.settingsNav {
+  display: flex;
+  gap: 2px;
+  padding: 24px 0 0;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.settingsNavItem {
+  margin-bottom: -1px;
+  padding: 8px 16px 12px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.settingsNavItem:hover {
+  color: var(--text-secondary);
+}
+
+.settingsNavItem.active {
+  border-bottom-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.settingsSection {
+  padding: 40px 0;
+}
+
+.settingsSectionHead {
+  margin-bottom: 24px;
+}
+
+.settingsSectionTitle {
+  margin-bottom: 4px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.settingsSectionDesc {
+  max-width: 520px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.settingsFieldGroup {
+  display: flex;
+  flex-direction: column;
+  max-width: 560px;
+  gap: 20px;
+}
+
+.settingsAdvancedFields.open {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settingsDataCards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settingsAboutMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.settingsField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settingsFieldLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.settingsLabelBadge {
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.settingsFieldHint {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.settingsTextInput,
+.settingsSelectInput {
+  width: 100%;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.settingsTextInput::placeholder {
+  color: var(--text-tertiary);
+}
+
+.settingsTextInput:focus,
+.settingsSelectInput:focus {
+  border-color: var(--border-hover);
+}
+
+.settingsTextInputMono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.3px;
+}
+
+.settingsKeyInputWrap {
+  display: flex;
+  gap: 6px;
+}
+
+.settingsKeyFieldWrap {
+  position: relative;
+  flex: 1;
+}
+
+.settingsKeyFieldWrap .settingsTextInput {
+  flex: 1;
+  padding-right: 40px;
+}
+
+.settingsKeyReveal {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: color 0.15s ease;
+}
+
+.settingsKeyReveal:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.settingsKeyReveal:hover {
+  color: var(--text-secondary);
+}
+
+.settingsKeyReveal:disabled:hover {
+  color: var(--text-tertiary);
+}
+
+.settingsKeyReveal svg {
+  width: 14px;
+  height: 14px;
+}
+
+.settingsKeyActions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.settingsKeySaveBtn,
+.settingsKeyTestBtn,
+.settingsDataBtn,
+.settingsAboutLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.settingsKeySaveBtn,
+.settingsKeyTestBtn {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.settingsKeySaveBtn:hover,
+.settingsKeyTestBtn:hover,
+.settingsDataBtn:hover,
+.settingsAboutLink:hover {
+  border-color: var(--border-hover);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+}
+
+.settingsKeySaveBtn:disabled,
+.settingsKeyTestBtn:disabled,
+.settingsDataBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.settingsKeySaveBtn:disabled:hover,
+.settingsKeyTestBtn:disabled:hover,
+.settingsDataBtn:disabled:hover {
+  border-color: var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.settingsAutosaveBadge {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--success);
+}
+
+.settingsKeySaveBtn svg,
+.settingsKeyTestBtn svg,
+.settingsDataBtn svg,
+.settingsAboutLink svg,
+.settingsSelectChevron svg {
+  width: 13px;
+  height: 13px;
+  opacity: 0.5;
+}
+
+.settingsConnectionStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.settingsConnectionStatus.success {
+  border: 1px solid #10b98130;
+  background: var(--success-dim);
+  color: var(--success);
+}
+
+.settingsConnectionStatus.error {
+  border: 1px solid #ef444430;
+  background: #ef444415;
+  color: #ef4444;
+}
+
+.settingsConnectionStatus.idle {
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+.settingsConnectionStatus .statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.settingsConnectionStatus.success .statusDot {
+  background: var(--success);
+}
+
+.settingsConnectionStatus.error .statusDot {
+  background: #ef4444;
+}
+
+.settingsConnectionStatus.idle .statusDot {
+  background: var(--text-tertiary);
+}
+
+.settingsConnectionStatus .statusDetail {
+  margin-left: 4px;
+  opacity: 0.7;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.settingsFieldRow,
+.settingsShortcutsGrid {
+  display: grid;
+}
+
+.settingsFieldRow {
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.settingsAdvancedToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.settingsAdvancedToggle:hover {
+  color: var(--text-secondary);
+}
+
+.settingsAdvancedToggle svg {
+  width: 13px;
+  height: 13px;
+  transition: transform 0.15s ease;
+}
+
+.settingsAdvancedToggle.open svg {
+  transform: rotate(90deg);
+}
+
+.settingsAdvancedFields {
+  display: none;
+  padding-top: 12px;
+}
+
+.settingsModelChips,
+.settingsAboutLinks {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.settingsModelChips {
+  margin-top: 4px;
+}
+
+.settingsModelChip {
+  padding: 3px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.settingsModelChip:hover {
+  border-color: var(--border-hover);
+  color: var(--text-secondary);
+}
+
+.settingsModelChip.active {
+  border-color: var(--border-hover);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.settingsDataSectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 560px;
+}
+
+.settingsDataCard,
+.settingsAboutCard {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  transition: border-color 0.2s ease;
+}
+
+.settingsDataCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+}
+
+.settingsDataCard:hover,
+.settingsAboutCard:hover {
+  border-color: var(--border-hover);
+}
+
+.settingsDataCard.danger {
+  border-color: #ef444425;
+}
+
+.settingsDataCardLeft,
+.settingsDataCardRight {
+  display: flex;
+  align-items: center;
+}
+
+.settingsDataCardLeft {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.settingsDataCardRight {
+  gap: 12px;
+}
+
+.settingsDataCardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.settingsDataCardDesc {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.settingsDataCardDescPath {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2px;
+}
+
+.settingsDataCardValue {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.settingsDataCardValue strong {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.settingsDataBtn {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.settingsDataBtn.danger {
+  border-color: #ef444440;
+  color: #ef4444;
+}
+
+.settingsDataBtn.danger:hover {
+  border-color: #ef4444;
+  background: #ef444415;
+}
+
+.settingsDataBtn.danger:disabled:hover {
+  border-color: #ef444440;
+  background: transparent;
+}
+
+.settingsShortcutsGrid {
+  max-width: 560px;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+}
+
+.settingsShortcutRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.settingsShortcutRow:nth-child(odd) {
+  border-right: 1px solid var(--border);
+}
+
+.settingsShortcutRow:nth-last-child(-n + 2) {
+  border-bottom: none;
+}
+
+.settingsShortcutKeys {
+  display: flex;
+  gap: 4px;
+}
+
+.settingsKbd {
+  min-width: 22px;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.settingsAboutCard {
+  max-width: 560px;
+  padding: 28px;
+}
+
+.settingsAboutTop {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.settingsAboutLogoBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+}
+
+.settingsAboutName {
+  font-family: "Syne", var(--font-sans);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.settingsAboutVersion,
+.settingsAboutVal {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.settingsAboutVersion {
+  margin-top: 1px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.settingsAboutRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settingsAboutLabel {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.settingsAboutVal {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.settingsAboutLinks {
+  margin-top: 16px;
+}
+
+.settingsAboutLink {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.settingsSelectWrap {
+  position: relative;
+}
+
+.settingsSelectChevron {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+/* ── Study settings ── */
+.studySettingsCard {
+  max-width: 560px;
+}
+
+.studySettingsLimitGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.studySettingsLimitBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 2px;
+  padding: 14px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.studySettingsLimitBtn:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.studySettingsLimitBtn.active {
+  border-color: var(--accent);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.studySettingsLimitLabel {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.studySettingsLimitValue {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  line-height: 1.3;
+}
+
+.studySettingsLimitBtn.active .studySettingsLimitValue {
+  color: var(--text-secondary);
+}
+
+.studySettingsCustomRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.studySettingsCustomInput {
+  flex: 1;
+  max-width: 160px;
+}
+
+.studySettingsCustomSave {
+  height: 38px;
+  padding: 0 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.studySettingsCustomSave:hover {
+  border-color: var(--border-hover);
+}
+
+.studySettingsCustomSave:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.studySettingsWarning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  margin-bottom: 12px;
+}
+
+.studySettingsWarningIcon {
+  flex-shrink: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.studySettingsWarningText {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.studySettingsStatus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+}
+
+.studySettingsStatusDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.studySettingsStatusText {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+
+.studySettingsStatusText strong {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .settingsFieldRow,
+  .settingsShortcutsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .settingsKeyInputWrap,
+  .settingsKeyActions {
+    flex-direction: column;
+  }
+
+  .settingsKeySaveBtn,
+  .settingsKeyTestBtn {
+    justify-content: center;
+  }
+
+  .settingsShortcutRow:nth-child(odd) {
+    border-right: none;
+  }
+
+  .settingsDataCard {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .settingsDataCardRight {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 640px) {
+  .settingsNav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .settingsAboutRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+}

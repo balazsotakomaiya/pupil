@@ -25,7 +25,10 @@ export function SettingsPage({
   const saveStudySettingsMutation = useMutation({
     mutationFn: saveStudySettings,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: appQueryKeys.studySettings });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: appQueryKeys.studyQueueSnapshot }),
+        queryClient.invalidateQueries({ queryKey: appQueryKeys.studySettings }),
+      ]);
       notifySuccess("Study settings saved");
     },
     onError(error) {

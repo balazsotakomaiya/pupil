@@ -1,4 +1,5 @@
 import { EyeLogo } from "../dashboard/EyeLogo";
+import styles from "./Onboarding.module.css";
 import { AiGenerateIcon, CreateSpaceIcon, ImportDeckIcon } from "./OnboardingIcons";
 import { OnboardingPathCard } from "./OnboardingPathCard";
 import { OnboardingQuickStart } from "./OnboardingQuickStart";
@@ -20,26 +21,26 @@ export function OnboardingScreen({
 }: OnboardingScreenProps) {
   return (
     <>
-      <div className="welcome-titlebar" />
+      <div className={styles.welcomeTitlebar} />
 
-      <div className="welcome-page">
-        <div className="welcome-hero">
-          <div className="welcome-hero-eye">
-            <EyeLogo className="welcome-eye-logo" height={64} width={64} />
+      <div className={styles.welcomePage}>
+        <div className={styles.welcomeHero}>
+          <div className={styles.welcomeHeroEye}>
+            <EyeLogo className={styles.welcomeEyeLogo} height={64} width={64} />
           </div>
 
-          <div className="welcome-hero-wordmark">pupil</div>
+          <div className={styles.welcomeHeroWordmark}>pupil</div>
 
-          <p className="welcome-hero-desc">
+          <p className={styles.welcomeHeroDesc}>
             Local-first flashcards with spaced repetition and AI generation. Everything stays on
             your machine. Pick a starting point below.
           </p>
         </div>
 
-        <div className="welcome-paths-section">
-          <div className="welcome-paths-label">Get started</div>
+        <div className={styles.welcomePathsSection}>
+          <div className={styles.welcomePathsLabel}>Get started</div>
 
-          <div className="welcome-paths-grid">
+          <div className={styles.welcomePathsGrid}>
             <OnboardingPathCard
               ctaLabel="Create"
               description="Start from scratch. Name a topic and add cards manually, one at a time."
@@ -72,21 +73,21 @@ export function OnboardingScreen({
           </div>
         </div>
 
-        <div className="welcome-or-row">
-          <div className="welcome-or-line" />
-          <span className="welcome-or-text">or skip ahead</span>
-          <div className="welcome-or-line" />
+        <div className={styles.welcomeOrRow}>
+          <div className={styles.welcomeOrLine} />
+          <span className={styles.welcomeOrText}>or skip ahead</span>
+          <div className={styles.welcomeOrLine} />
         </div>
 
-        <div className="welcome-quickstart">
+        <div className={styles.welcomeQuickstart}>
           <OnboardingQuickStart onClick={onSkip} />
         </div>
 
-        <div className="welcome-bottom">
-          <p className="welcome-api-hint">
+        <div className={styles.welcomeBottom}>
+          <p className={styles.welcomeApiHint}>
             AI generation requires an API key from Anthropic, OpenAI, or any compatible provider.
             You can add one later in{" "}
-            <button className="welcome-inline-link" onClick={onOpenSettings} type="button">
+            <button className={styles.welcomeInlineLink} onClick={onOpenSettings} type="button">
               Settings
             </button>
             . Everything else works without it.

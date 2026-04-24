@@ -1,3 +1,4 @@
+import styles from "./Import.module.css";
 import type { ImportHistoryItem } from "./types";
 
 type ImportHistoryTableProps = {
@@ -6,14 +7,16 @@ type ImportHistoryTableProps = {
 
 export function ImportHistoryTable({ items }: ImportHistoryTableProps) {
   return (
-    <div className="history-table">
+    <div className={styles.historyTable}>
       {items.map((item) => (
-        <div className="history-row" key={`${item.fileName}-${item.dateLabel}`}>
-          <span className="history-file">{item.fileName}</span>
-          <span className="history-date">{item.dateLabel}</span>
-          <span className="history-cards">{item.cardsImported}</span>
-          <span className="history-dupes">{item.duplicateCount}</span>
-          <span className={`history-status ${item.status}`}>{item.statusLabel}</span>
+        <div className={styles.historyRow} key={`${item.fileName}-${item.dateLabel}`}>
+          <span className={styles.historyFile}>{item.fileName}</span>
+          <span className={styles.historyDate}>{item.dateLabel}</span>
+          <span className={styles.historyCards}>{item.cardsImported}</span>
+          <span className={styles.historyDupes}>{item.duplicateCount}</span>
+          <span className={`${styles.historyStatus} ${styles[item.status]}`}>
+            {item.statusLabel}
+          </span>
         </div>
       ))}
     </div>

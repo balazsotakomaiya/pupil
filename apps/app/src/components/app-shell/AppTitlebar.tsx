@@ -1,6 +1,7 @@
 import { EyeLogo } from "../dashboard/EyeLogo";
 import { PlusIcon } from "../dashboard/PlusIcon";
 import { SearchIcon } from "../dashboard/SearchIcon";
+import styles from "./AppTitlebar.module.css";
 
 export type AppTabId = "dashboard" | "cards" | "import" | "settings";
 
@@ -27,20 +28,20 @@ export function AppTitlebar({
   tabs,
 }: AppTitlebarProps) {
   return (
-    <div className="titlebar">
-      <div className="titlebar-left">
-        <div className="titlebar-logo">
+    <div className={styles.titlebar}>
+      <div className={styles.titlebarLeft}>
+        <div className={styles.titlebarLogo}>
           <EyeLogo />
-          <span className="titlebar-logo-text">pupil</span>
+          <span className={styles.titlebarLogoText}>pupil</span>
         </div>
 
-        <div className="titlebar-sep" />
+        <div className={styles.titlebarSep} />
 
-        <div className="titlebar-tabs">
+        <div className={styles.titlebarTabs}>
           {tabs.map((tab) => (
             <button
               aria-current={activeTab === tab.id ? "page" : undefined}
-              className={`titlebar-tab${activeTab === tab.id ? " active" : ""}`}
+              className={`${styles.titlebarTab}${activeTab === tab.id ? ` ${styles.active}` : ""}`}
               key={tab.id}
               onClick={() => onSelectTab(tab.id)}
               type="button"
@@ -51,18 +52,23 @@ export function AppTitlebar({
         </div>
       </div>
 
-      <div className="titlebar-right">
+      <div className={styles.titlebarRight}>
         {activeTab === "dashboard" && globalStreak !== undefined && globalStreak !== null ? (
-          <div className="titlebar-status">
+          <div className={styles.titlebarStatus}>
             <span className="streak-dot" />
             {globalStreak > 0 ? `${globalStreak} day streak` : "No streak yet"}
           </div>
         ) : null}
-        <button className="titlebar-btn-label" onClick={onOpenCreateDialog} type="button">
+        <button className={styles.titlebarBtnLabel} onClick={onOpenCreateDialog} type="button">
           <PlusIcon />
           New Space
         </button>
-        <button aria-label="Search" className="titlebar-btn" onClick={onOpenPalette} type="button">
+        <button
+          aria-label="Search"
+          className={styles.titlebarBtn}
+          onClick={onOpenPalette}
+          type="button"
+        >
           <SearchIcon />
         </button>
       </div>

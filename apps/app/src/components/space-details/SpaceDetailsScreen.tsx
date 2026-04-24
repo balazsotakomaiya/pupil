@@ -7,6 +7,7 @@ import { CardFormPanel } from "../cards/CardFormPanel";
 import { CardList } from "../cards/CardList";
 import { Pagination } from "../Pagination";
 import { DeleteSpaceDialog } from "./DeleteSpaceDialog";
+import styles from "./SpaceDetails.module.css";
 
 const PAGE_SIZE = 50;
 
@@ -226,6 +227,13 @@ export function SpaceDetailsScreen({
     setExpandedCardId((currentCardId) => (currentCardId === cardId ? null : cardId));
   }
 
+  const colorClass: Record<string, string> = {
+    learning: styles.clrLearning,
+    new: styles.clrNew,
+    relearning: styles.clrRelearning,
+    review: styles.clrReview,
+  };
+
   return (
     <>
       <SpaceDetailsTitlebar
@@ -247,20 +255,20 @@ export function SpaceDetailsScreen({
       )}
 
       <div className="page">
-        <section className="space-header">
-          <div className="space-header-top">
+        <section className={styles.spaceHeader}>
+          <div className={styles.spaceHeaderTop}>
             <div>
-              <h1 className="space-title">{space.name}</h1>
+              <h1 className={styles.spaceTitle}>{space.name}</h1>
             </div>
           </div>
 
-          <div className="space-tags">
-            <span className="space-tag">local space</span>
-            <span className="space-tag">created {formatAgeLabel(space.createdAt, now)}</span>
-            <span className="space-tag">updated {formatAgeLabel(space.updatedAt, now)}</span>
+          <div className={styles.spaceTags}>
+            <span className={styles.spaceTag}>local space</span>
+            <span className={styles.spaceTag}>created {formatAgeLabel(space.createdAt, now)}</span>
+            <span className={styles.spaceTag}>updated {formatAgeLabel(space.updatedAt, now)}</span>
           </div>
 
-          <p className="space-desc">
+          <p className={styles.spaceDesc}>
             {buildSpaceDescription(space, readyCards.length, dueLaterTodayCount)}
           </p>
         </section>
@@ -354,27 +362,27 @@ export function SpaceDetailsScreen({
         <div className="ruler-divider" />
 
         <section className="section">
-          <div className="charts-grid">
-            <div className="chart-card">
-              <div className="chart-header">
-                <span className="chart-title">Review activity</span>
-                <span className="chart-period">last 7 days</span>
+          <div className={styles.chartsGrid}>
+            <div className={styles.chartCard}>
+              <div className={styles.chartHeader}>
+                <span className={styles.chartTitle}>Review activity</span>
+                <span className={styles.chartPeriod}>last 7 days</span>
               </div>
 
-              <div className="bar-chart">
+              <div className={styles.barChart}>
                 {activityBars.map((bar) => (
-                  <div className="bar-col" key={bar.label}>
+                  <div className={styles.barCol} key={bar.label}>
                     <div
-                      className={`bar${bar.isToday ? " today" : ""}`}
+                      className={`${styles.bar}${bar.isToday ? ` ${styles.today}` : ""}`}
                       style={{ height: `${bar.height}%` }}
                       title={`${bar.count} reviews`}
                     />
-                    <span className="bar-label">{bar.label}</span>
+                    <span className={styles.barLabel}>{bar.label}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="chart-axis">
+              <div className={styles.chartAxis}>
                 <span>0</span>
                 <span>
                   {formatNumber(activityBars.reduce((max, bar) => Math.max(max, bar.count), 0))}
@@ -382,18 +390,18 @@ export function SpaceDetailsScreen({
               </div>
             </div>
 
-            <div className="chart-card">
-              <div className="chart-header">
-                <span className="chart-title">Card states</span>
-                <span className="chart-period">{formatNumber(space.cardCount)} total</span>
+            <div className={styles.chartCard}>
+              <div className={styles.chartHeader}>
+                <span className={styles.chartTitle}>Card states</span>
+                <span className={styles.chartPeriod}>{formatNumber(space.cardCount)} total</span>
               </div>
 
-              <div className="state-breakdown">
-                <div className="state-bar-visual">
+              <div className={styles.stateBreakdown}>
+                <div className={styles.stateBarVisual}>
                   {stateRows.map((state) =>
                     state.count > 0 ? (
                       <div
-                        className={`state-segment ${state.className}`}
+                        className={`${styles.stateSegment} ${colorClass[state.key]}`}
                         key={state.key}
                         style={{ width: `${state.percentage}%` }}
                         title={`${state.label}: ${state.count}`}
@@ -402,16 +410,16 @@ export function SpaceDetailsScreen({
                   )}
                 </div>
 
-                <div className="state-legend">
+                <div className={styles.stateLegend}>
                   {stateRows.map((state) => (
-                    <div className="state-row" key={`legend-${state.key}`}>
-                      <div className="state-row-left">
-                        <span className={`state-dot ${state.className}`} />
-                        <span className="state-name">{state.label}</span>
+                    <div className={styles.stateRow} key={`legend-${state.key}`}>
+                      <div className={styles.stateRowLeft}>
+                        <span className={`${styles.stateDot} ${colorClass[state.key]}`} />
+                        <span className={styles.stateName}>{state.label}</span>
                       </div>
-                      <div className="state-row-right">
-                        <span className="state-count">{formatNumber(state.count)}</span>
-                        <span className="state-pct">{Math.round(state.percentage)}%</span>
+                      <div className={styles.stateRowRight}>
+                        <span className={styles.stateCount}>{formatNumber(state.count)}</span>
+                        <span className={styles.statePct}>{Math.round(state.percentage)}%</span>
                       </div>
                     </div>
                   ))}
@@ -429,27 +437,29 @@ export function SpaceDetailsScreen({
           </div>
 
           {recentChanges.length > 0 ? (
-            <div className="reviews-table">
-              <div className="reviews-header">
+            <div className={styles.reviewsTable}>
+              <div className={styles.reviewsHeader}>
                 <span>Front</span>
                 <span>Status</span>
                 <span>Source</span>
-                <span className="col-right">Updated</span>
+                <span className={styles.colRight}>Updated</span>
               </div>
 
               {recentChanges.map((card) => (
-                <div className="review-row" key={`change-${card.id}`}>
-                  <span className="review-front">{card.front}</span>
-                  <span className={`review-grade ${stateClassName(card.state)}`}>
+                <div className={styles.reviewRow} key={`change-${card.id}`}>
+                  <span className={styles.reviewFront}>{card.front}</span>
+                  <span className={`${styles.reviewGrade} ${stateClassName(card.state)}`}>
                     {formatState(card.state)}
                   </span>
-                  <span className="review-interval">{formatSource(card.source)}</span>
-                  <span className="review-time">{formatRelativeTime(card.updatedAt, now)}</span>
+                  <span className={styles.reviewInterval}>{formatSource(card.source)}</span>
+                  <span className={styles.reviewTime}>
+                    {formatRelativeTime(card.updatedAt, now)}
+                  </span>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="placeholder-panel detail-empty">
+            <div className={`placeholder-panel ${styles.detailEmpty}`}>
               <p>No card activity in this space yet.</p>
             </div>
           )}
@@ -460,7 +470,7 @@ export function SpaceDetailsScreen({
         <section className="section">
           <div className="section-head">
             <span className="section-label">Cards</span>
-            <div className="toolbar-top-right">
+            <div className={styles.toolbarTopRight}>
               <button className="btn-ghost" onClick={handleOpenNewCard} type="button">
                 <PlusIcon />
                 New Card
@@ -476,7 +486,7 @@ export function SpaceDetailsScreen({
             </div>
           </div>
 
-          <div className="search-compact">
+          <div className={styles.searchCompact}>
             <SearchIcon />
             <input
               onChange={(event) => setSearchQuery(event.target.value)}
@@ -769,13 +779,13 @@ function formatState(state: number): string {
 function stateClassName(state: number): string {
   switch (state) {
     case 1:
-      return "state-learning";
+      return styles.stateLearning;
     case 2:
-      return "state-review";
+      return styles.stateReview;
     case 3:
-      return "state-relearning";
+      return styles.stateRelearning;
     default:
-      return "state-new";
+      return styles.stateNew;
   }
 }
 

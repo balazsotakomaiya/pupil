@@ -9,6 +9,7 @@ mod imports;
 mod normalize;
 mod settings;
 mod spaces;
+mod study_queue;
 #[cfg(test)]
 mod tests;
 mod tray;
@@ -28,10 +29,10 @@ use crate::app::{build_app_menu, database_path, run_migrations, BootstrapStatus}
 use crate::commands::{
     create_card, create_space, delete_card, delete_space, export_database_copy,
     export_review_logs_csv, generate_cards, get_ai_settings, get_bootstrap_state,
-    get_dashboard_stats, get_settings_data_summary, get_study_settings, import_anki_cards,
-    list_cards, list_recent_activity, list_space_stats, list_spaces, refresh_tray_status,
-    rename_space, reset_all_data, review_card, save_ai_settings, save_study_settings, suspend_card,
-    test_ai_provider_connection, update_card,
+    get_dashboard_stats, get_settings_data_summary, get_study_queue_snapshot, get_study_settings,
+    import_anki_cards, list_cards, list_recent_activity, list_space_stats, list_spaces,
+    refresh_tray_status, rename_space, reset_all_data, review_card, save_ai_settings,
+    save_study_settings, suspend_card, test_ai_provider_connection, update_card,
 };
 #[cfg(debug_assertions)]
 use crate::constants::{
@@ -95,9 +96,17 @@ fn init_logging(app: &tauri::AppHandle) -> Result<LoggingState, AppError> {
 /// Builds and runs the Tauri application with all plugins, commands, logging,
 /// and database bootstrap wired in one place.
 pub fn run() {
+    #[cfg(debug_assertions)]
+    let mcp_plugin = tauri_plugin_mcp_bridge::Builder::new()
+        .bind_address("127.0.0.1")
+        .build();
+
     let builder = tauri::Builder::default()
         .manage(StrongholdState::default())
         .menu(build_app_menu);
+
+    #[cfg(debug_assertions)]
+    let builder = builder.plugin(mcp_plugin);
 
     #[cfg(debug_assertions)]
     let builder = builder.on_menu_event(|app, event| {
@@ -146,6 +155,7 @@ pub fn run() {
             review_card,
             import_anki_cards,
             get_dashboard_stats,
+            get_study_queue_snapshot,
             list_space_stats,
             get_ai_settings,
             save_ai_settings,

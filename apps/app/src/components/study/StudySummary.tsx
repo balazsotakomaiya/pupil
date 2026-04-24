@@ -1,3 +1,5 @@
+import styles from "./Study.module.css";
+
 type StudySummaryProps = {
   backLabel: string;
   nextDueLabel: string;
@@ -24,49 +26,53 @@ export function StudySummary({
   totalMinutes,
 }: StudySummaryProps) {
   return (
-    <div className="session-summary-screen visible">
-      <div className="session-summary-check">
+    <div className={`${styles.sessionSummaryScreen} visible`}>
+      <div className={styles.sessionSummaryCheck}>
         <SummaryCheckIcon />
       </div>
-      <div className="session-summary-title">{title}</div>
-      <div className="session-summary-sub">{subtitle}</div>
+      <div className={styles.sessionSummaryTitle}>{title}</div>
+      <div className={styles.sessionSummarySub}>{subtitle}</div>
 
-      <div className="session-summary-stats">
-        <div className="session-summary-stat">
-          <div className="session-summary-stat-value">{reviewedCount}</div>
-          <div className="session-summary-stat-label">Reviewed</div>
+      <div className={styles.sessionSummaryStats}>
+        <div className={styles.sessionSummaryStat}>
+          <div className={styles.sessionSummaryStatValue}>{reviewedCount}</div>
+          <div className={styles.sessionSummaryStatLabel}>Reviewed</div>
         </div>
-        <div className="session-summary-stat">
-          <div className="session-summary-stat-value">
+        <div className={styles.sessionSummaryStat}>
+          <div className={styles.sessionSummaryStatValue}>
             {retention}
             <span className="unit">%</span>
           </div>
-          <div className="session-summary-stat-label">Retention</div>
+          <div className={styles.sessionSummaryStatLabel}>Retention</div>
         </div>
-        <div className="session-summary-stat">
-          <div className="session-summary-stat-value">
+        <div className={styles.sessionSummaryStat}>
+          <div className={styles.sessionSummaryStatValue}>
             {totalMinutes}
             <span className="unit">m</span>
           </div>
-          <div className="session-summary-stat-label">Duration</div>
+          <div className={styles.sessionSummaryStatLabel}>Duration</div>
         </div>
       </div>
 
-      <div className="session-summary-streak">
-        <span className="session-summary-streak-dot" />
-        <span className="session-summary-streak-text">{streakLabel}</span>
+      <div className={styles.sessionSummaryStreak}>
+        <span className={styles.sessionSummaryStreakDot} />
+        <span className={styles.sessionSummaryStreakText}>{streakLabel}</span>
       </div>
 
-      <div className="session-summary-actions">
-        <button className="session-summary-btn" onClick={onRestart} type="button">
+      <div className={styles.sessionSummaryActions}>
+        <button className={styles.sessionSummaryBtn} onClick={onRestart} type="button">
           Study again
         </button>
-        <button className="session-summary-btn primary" onClick={onBack} type="button">
+        <button
+          className={`${styles.sessionSummaryBtn} ${styles.primary}`}
+          onClick={onBack}
+          type="button"
+        >
           {backLabel}
         </button>
       </div>
 
-      <div className="session-summary-next-due">{nextDueLabel}</div>
+      <div className={styles.sessionSummaryNextDue}>{nextDueLabel}</div>
     </div>
   );
 }

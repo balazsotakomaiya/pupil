@@ -1,3 +1,5 @@
+import styles from "./Settings.module.css";
+
 export type SettingsSectionId = "study" | "ai" | "data" | "shortcuts" | "about";
 
 type SettingsNavProps = {
@@ -15,10 +17,10 @@ const NAV_ITEMS: Array<{ id: SettingsSectionId; label: string }> = [
 
 export function SettingsNav({ activeSection, onSelect }: SettingsNavProps) {
   return (
-    <div className="settings-nav">
+    <div className={styles.settingsNav}>
       {NAV_ITEMS.map((item) => (
         <button
-          className={`settings-nav-item${activeSection === item.id ? " active" : ""}`}
+          className={`${styles.settingsNavItem}${activeSection === item.id ? ` ${styles.active}` : ""}`}
           key={item.id}
           onClick={() => onSelect(item.id)}
           type="button"

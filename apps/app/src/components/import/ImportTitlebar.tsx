@@ -1,5 +1,6 @@
 import { BackIcon } from "../ai-generate/AiGenerateIcons";
 import { EyeLogo } from "../dashboard/EyeLogo";
+import styles from "./ImportTitlebar.module.css";
 
 type ImportTitlebarProps = {
   backLabel: string;
@@ -8,26 +9,26 @@ type ImportTitlebarProps = {
 
 export function ImportTitlebar({ backLabel, onBack }: ImportTitlebarProps) {
   return (
-    <div className="titlebar">
-      <div className="titlebar-left">
-        <div className="titlebar-logo">
+    <div className={styles.titlebar}>
+      <div className={styles.titlebarLeft}>
+        <div className={styles.titlebarLogo}>
           <EyeLogo />
-          <span className="titlebar-logo-text">pupil</span>
+          <span className={styles.titlebarLogoText}>pupil</span>
         </div>
 
-        <div className="titlebar-sep" />
+        <div className={styles.titlebarSep} />
 
-        <button className="back-btn" onClick={onBack} type="button">
+        <button className={styles.backBtn} onClick={onBack} type="button">
           <BackIcon />
           {backLabel}
         </button>
 
-        <div className="titlebar-sep" />
+        <div className={styles.titlebarSep} />
 
-        <span className="breadcrumb-name">Import</span>
+        <span className={styles.breadcrumbName}>Import</span>
       </div>
 
-      <div className="titlebar-right" />
+      <div className={styles.titlebarRight} />
     </div>
   );
 }

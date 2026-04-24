@@ -10,11 +10,20 @@ body,
   min-height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
-  background: var(--bg);
+  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 28%), var(--bg);
   color: var(--text-primary);
   font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 button,

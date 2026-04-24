@@ -1,0 +1,589 @@
+/* Shared global styles - used across multiple feature areas.
+   Do not add component-specific styles here; use a collocated CSS module instead. */
+
+/* ─────────────────────── Layout ─────────────────────── */
+
+.ruler-divider {
+  height: 1px;
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--ruler) 0px,
+    var(--ruler) 1px,
+    transparent 1px,
+    transparent 5px
+  );
+}
+
+.page {
+  position: relative;
+  z-index: 2;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+.page-end {
+  height: 64px;
+}
+
+.stats-section,
+.section {
+  padding: 40px 0;
+}
+
+.study-section {
+  padding: 56px 0 48px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.section-label {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* ─────────────────────── Status panel ─────────────────────── */
+
+.status-panel {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 0.5rem;
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.status-panel strong {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.status-panel p {
+  max-width: 32rem;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* ─────────────────────── Buttons ─────────────────────── */
+
+/* Base ghost-style button - used by study-btn-secondary, btn-ghost, and dialog-close.
+   AppTitlebar's titlebar-btn and titlebar-btn-label repeat these styles in their own module. */
+.study-btn-secondary,
+.btn-ghost,
+.dialog-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.study-btn-secondary:hover,
+.btn-ghost:hover,
+.dialog-close:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.btn-ghost {
+  padding: 6px 14px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.btn-ghost svg {
+  width: 13px;
+  height: 13px;
+  opacity: 0.6;
+}
+
+.study-btn-secondary {
+  padding: 10px 18px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.study-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--text-primary);
+  color: var(--bg);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  transition: opacity 0.15s ease;
+}
+
+.study-btn:hover {
+  opacity: 0.85;
+}
+
+.study-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.study-btn.danger-btn {
+  background: #ef4444;
+  color: #fff;
+}
+
+.study-btn.danger-btn:hover {
+  opacity: 0.88;
+}
+
+/* ─────────────────────── Study widget (Dashboard + SpaceDetails) ─────────────────────── */
+
+.study-card,
+.stat-card {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.study-card:hover,
+.stat-card:hover {
+  border-color: var(--border-hover);
+}
+
+.study-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 36px 40px;
+}
+
+.study-card.daily-checkin-active {
+  background:
+    radial-gradient(circle at top left, rgba(248, 182, 75, 0.12), transparent 46%), var(--bg-subtle);
+  border: 1px solid rgba(248, 182, 75, 0.18);
+}
+
+.study-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.study-eyebrow,
+.stat-eyebrow {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.study-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: pulse 2.5s ease-in-out infinite;
+}
+
+.study-headline {
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 600;
+  letter-spacing: -0.8px;
+  line-height: 1.15;
+}
+
+.study-sub {
+  max-width: 420px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.study-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────── Stats widget (Dashboard + SpaceDetails) ─────────────────────── */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.stat-card {
+  padding: 20px 22px;
+}
+
+.stat-eyebrow {
+  margin-bottom: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  margin-bottom: 4px;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.stat-value .unit {
+  margin-left: 2px;
+  color: var(--text-tertiary);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.stat-sub {
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+.stat-sub .up {
+  color: var(--success);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* ─────────────────────── Dialog ─────────────────────── */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.dialog {
+  width: min(100%, 460px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(32, 32, 34, 0.96), rgba(17, 17, 18, 0.98)), rgba(17, 17, 17, 0.96);
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.dialog-form {
+  padding: 24px;
+}
+
+.dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.dialog-head h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  letter-spacing: -0.4px;
+}
+
+.dialog-head p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.dialog-close {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.dialog-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.dialog-actions.shake {
+  animation: nudge-shake 0.45s ease;
+}
+
+/* ─────────────────────── Field ─────────────────────── */
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field-label {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.field-select {
+  appearance: none;
+}
+
+.field-textarea {
+  resize: vertical;
+  min-height: 132px;
+}
+
+.field-input {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text-primary);
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.field-input:focus {
+  border-color: var(--border-hover);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.field-error {
+  margin: 10px 0 0;
+  color: #fca5a5;
+  font-size: 13px;
+}
+
+.danger-btn {
+  color: #fca5a5;
+}
+
+.danger-btn:hover {
+  color: #fecaca;
+}
+
+/* ─────────────────────── Misc shared ─────────────────────── */
+
+.streak-dot,
+.due-dot {
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.streak-dot {
+  width: 5px;
+  height: 5px;
+}
+
+.placeholder-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  display: grid;
+  gap: 12px;
+  padding: 32px;
+}
+
+.placeholder-panel h2 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.5px;
+}
+
+.placeholder-panel p {
+  max-width: 560px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* ─────────────────── More-menu (shared by titlebar + dashboard) ─────────────────── */
+
+.more-menu-wrap {
+  position: relative;
+}
+
+.more-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 148px;
+  padding: 4px;
+  border: 1px solid var(--border-hover);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.more-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.more-menu-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.more-menu-item.danger {
+  color: #ef4444;
+}
+
+.more-menu-item.danger:hover {
+  background: #ef444415;
+  color: #ef4444;
+}
+
+.more-menu-item svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+/* ─────────────────── Scrollbars ─────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: var(--border);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
+
+/* ─────────────────── Responsive overrides ─────────────────── */
+
+@media (max-width: 768px) {
+  .page {
+    padding: 0 20px;
+  }
+
+  .study-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 28px;
+  }
+
+  .study-right,
+  .study-btn {
+    width: 100%;
+  }
+
+  .study-right {
+    flex-direction: column;
+  }
+
+  .study-btn-secondary,
+  .study-btn {
+    justify-content: center;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .section-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dialog-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .placeholder-panel {
+    padding: 20px;
+  }
+
+  .dialog-backdrop {
+    padding: 12px;
+  }
+}

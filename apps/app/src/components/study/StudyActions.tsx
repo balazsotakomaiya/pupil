@@ -1,4 +1,5 @@
 import type { FsrsPreview } from "../../lib/fsrs";
+import styles from "./Study.module.css";
 import type { StudyGrade } from "./types";
 
 type StudyActionsProps = {
@@ -43,43 +44,43 @@ export function StudyActions({
 }: StudyActionsProps) {
   if (!isAnswerVisible) {
     return (
-      <div className="session-actions">
+      <div className={styles.sessionActions}>
         <button
-          className="session-reveal-btn"
+          className={styles.sessionRevealBtn}
           disabled={isSubmitting}
           onClick={onReveal}
           type="button"
         >
           Show answer
-          <span className="session-reveal-kbd">Space</span>
+          <span className={styles.sessionRevealKbd}>Space</span>
         </button>
-        {error ? <span className="session-error-text">{error}</span> : null}
+        {error ? <span className={styles.sessionErrorText}>{error}</span> : null}
       </div>
     );
   }
 
   return (
-    <div className="session-actions">
-      <div className="session-rating-row">
+    <div className={styles.sessionActions}>
+      <div className={styles.sessionRatingRow}>
         {([1, 2, 3, 4] as const).map((grade) => (
           <button
             disabled={isSubmitting}
-            className={`session-rating-btn ${GRADE_CLASS_NAMES[grade]}${
-              pressedGrade === grade ? " pressed" : ""
+            className={`${styles.sessionRatingBtn} ${styles[GRADE_CLASS_NAMES[grade]]}${
+              pressedGrade === grade ? ` ${styles.pressed}` : ""
             }`}
             key={grade}
             onClick={() => onRate(grade)}
             type="button"
           >
-            <span className="session-rating-label">{GRADE_LABELS[grade]}</span>
-            <span className="session-rating-interval">
+            <span className={styles.sessionRatingLabel}>{GRADE_LABELS[grade]}</span>
+            <span className={styles.sessionRatingInterval}>
               {intervalPreviews.find((preview) => preview.grade === grade)?.intervalLabel ?? "—"}
             </span>
-            <span className="session-rating-key">{GRADE_KEYS[grade]}</span>
+            <span className={styles.sessionRatingKey}>{GRADE_KEYS[grade]}</span>
           </button>
         ))}
       </div>
-      <span className="session-rating-hint">
+      <span className={styles.sessionRatingHint}>
         {error ? error : isSubmitting ? "Saving review…" : "Press 1–4 to rate"}
       </span>
     </div>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { SpaceSummary } from "../../lib/spaces";
+import styles from "./Dashboard.module.css";
 import type { StudySummary } from "./types";
 
 type StudySectionProps = {
@@ -52,9 +53,9 @@ export function StudySection({
           <div className="study-headline">{summary.headline}</div>
           <div className="study-sub">{summary.description}</div>
           {summary.breakdown.length > 0 ? (
-            <div className="study-breakdown">
+            <div className={styles.studyBreakdown}>
               {summary.breakdown.map((item) => (
-                <span className="study-breakdown-item" key={item.label}>
+                <span className={styles.studyBreakdownItem} key={item.label}>
                   <strong>{item.value}</strong> {item.label}
                 </span>
               ))}
@@ -73,10 +74,10 @@ export function StudySection({
               {summary.secondaryActionLabel}
             </button>
             {isPickerOpen && hasStudyableSpaces && (
-              <div className="more-menu space-picker-menu">
+              <div className={`more-menu ${styles.spacePickerMenu}`}>
                 {studyableSpaces.map((space) => (
                   <button
-                    className="more-menu-item space-picker-item"
+                    className={`more-menu-item ${styles.spacePickerItem}`}
                     key={space.id}
                     onClick={() => {
                       setIsPickerOpen(false);
@@ -84,10 +85,10 @@ export function StudySection({
                     }}
                     type="button"
                   >
-                    <span className="space-picker-name">{space.name}</span>
-                    <span className="space-picker-stats">
+                    <span className={styles.spacePickerName}>{space.name}</span>
+                    <span className={styles.spacePickerStats}>
                       {space.dueTodayCount > 0 && (
-                        <span className="space-picker-due">{space.dueTodayCount} due</span>
+                        <span className={styles.spacePickerDue}>{space.dueTodayCount} due</span>
                       )}
                       <span>{space.cardCount} cards</span>
                     </span>

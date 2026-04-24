@@ -6,6 +6,7 @@ import {
   loadAiSettings,
 } from "../../lib/ai-settings";
 import type { SpaceSummary } from "../../lib/spaces";
+import styles from "./AiGenerate.module.css";
 import { AiGenerateError } from "./AiGenerateError";
 import { AiGenerateForm, NEW_SPACE_OPTION_ID } from "./AiGenerateForm";
 import { AiGenerateLoading } from "./AiGenerateLoading";
@@ -259,7 +260,7 @@ export function AiGenerateScreen({
     <>
       <AiGenerateTitlebar backLabel={backLabel} onBack={onBack} />
 
-      <div className="page ai-gen-page">
+      <div className={`page ${styles.aiGenPage}`}>
         {isSettingsLoading ? (
           <AiGenerateLoading model="AI provider" topic="Loading saved settings" />
         ) : mode === "no-key" ? (

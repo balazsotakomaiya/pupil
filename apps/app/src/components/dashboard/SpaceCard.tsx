@@ -1,3 +1,4 @@
+import styles from "./Dashboard.module.css";
 import type { SpaceCardData } from "./types";
 
 type SpaceCardProps = {
@@ -7,35 +8,35 @@ type SpaceCardProps = {
 
 export function SpaceCard({ onOpen, space }: SpaceCardProps) {
   return (
-    <button className="space-card" onClick={onOpen} type="button">
-      <div className="space-top">
-        <span className="space-name">{space.name}</span>
+    <button className={styles.spaceCard} onClick={onOpen} type="button">
+      <div className={styles.spaceTop}>
+        <span className={styles.spaceName}>{space.name}</span>
         {space.streakLabel ? (
-          <span className="space-streak">
+          <span className={styles.spaceStreak}>
             <span className="streak-dot" />
             {space.streakLabel}
           </span>
         ) : (
-          <span className="space-streak" />
+          <span className={styles.spaceStreak} />
         )}
       </div>
-      <div className="space-desc">{space.description}</div>
-      <div className="space-meta">
+      <div className={styles.spaceDesc}>{space.description}</div>
+      <div className={styles.spaceMeta}>
         {space.meta.map((item) => (
-          <div className="space-meta-item" key={`${space.id}-${item.label}`}>
+          <div className={styles.spaceMetaItem} key={`${space.id}-${item.label}`}>
             {item.variant === "aux" ? (
-              <span className="space-source">{item.value}</span>
+              <span className={styles.spaceSource}>{item.value}</span>
             ) : item.variant === "due" ? (
-              <span className="space-meta-val">
-                <span className="due-indicator">
+              <span className={styles.spaceMetaVal}>
+                <span className={styles.dueIndicator}>
                   <span className="due-dot" />
                   {item.value}
                 </span>
               </span>
             ) : (
-              <span className="space-meta-val">{item.value}</span>
+              <span className={styles.spaceMetaVal}>{item.value}</span>
             )}
-            <span className="space-meta-label">{item.label}</span>
+            <span className={styles.spaceMetaLabel}>{item.label}</span>
           </div>
         ))}
       </div>

@@ -5,6 +5,7 @@ import {
   type NewCardsPreset,
   type StudySettings,
 } from "../../lib/study-settings";
+import styles from "./Settings.module.css";
 
 type StudySettingsCardProps = {
   isSaving: boolean;
@@ -58,38 +59,38 @@ export function StudySettingsCard({ isSaving, onSave, settings }: StudySettingsC
   }
 
   return (
-    <div className="study-settings-card">
-      <div className="study-settings-limit-grid">
+    <div className={styles.studySettingsCard}>
+      <div className={styles.studySettingsLimitGrid}>
         {NEW_CARDS_PRESETS.map((preset) => (
           <button
-            className={`study-settings-limit-btn${
-              !isCustom && settings.newCardsLimit === preset.value ? " active" : ""
+            className={`${styles.studySettingsLimitBtn}${
+              !isCustom && settings.newCardsLimit === preset.value ? ` ${styles.active}` : ""
             }`}
             disabled={isSaving}
             key={preset.label}
             onClick={() => handleSelectPreset(preset)}
             type="button"
           >
-            <span className="study-settings-limit-label">{preset.label}</span>
-            <span className="study-settings-limit-value">{preset.description}</span>
+            <span className={styles.studySettingsLimitLabel}>{preset.label}</span>
+            <span className={styles.studySettingsLimitValue}>{preset.description}</span>
           </button>
         ))}
 
         <button
-          className={`study-settings-limit-btn${isCustom ? " active" : ""}`}
+          className={`${styles.studySettingsLimitBtn}${isCustom ? ` ${styles.active}` : ""}`}
           disabled={isSaving}
           onClick={handleSelectCustom}
           type="button"
         >
-          <span className="study-settings-limit-label">Custom</span>
-          <span className="study-settings-limit-value">Set your own limit</span>
+          <span className={styles.studySettingsLimitLabel}>Custom</span>
+          <span className={styles.studySettingsLimitValue}>Set your own limit</span>
         </button>
       </div>
 
       {isCustom ? (
-        <div className="study-settings-custom-row">
+        <div className={styles.studySettingsCustomRow}>
           <input
-            className="settings-text-input study-settings-custom-input"
+            className={`${styles.settingsTextInput} ${styles.studySettingsCustomInput}`}
             disabled={isSaving}
             inputMode="numeric"
             onChange={(event) => setCustomValue(event.target.value)}
@@ -104,7 +105,7 @@ export function StudySettingsCard({ isSaving, onSave, settings }: StudySettingsC
             value={customValue}
           />
           <button
-            className="study-settings-custom-save"
+            className={styles.studySettingsCustomSave}
             disabled={
               isSaving ||
               !customValue.trim() ||
@@ -120,9 +121,9 @@ export function StudySettingsCard({ isSaving, onSave, settings }: StudySettingsC
       ) : null}
 
       {showWarning && projectedReviews !== null ? (
-        <div className="study-settings-warning">
-          <span className="study-settings-warning-icon">⚠</span>
-          <span className="study-settings-warning-text">
+        <div className={styles.studySettingsWarning}>
+          <span className={styles.studySettingsWarningIcon}>⚠</span>
+          <span className={styles.studySettingsWarningText}>
             At {settings.newCardsLimit} new cards/day you'll likely face ~{projectedReviews}{" "}
             reviews/day within a month. High new-card rates are the #1 cause of review debt and
             burnout.
@@ -130,9 +131,9 @@ export function StudySettingsCard({ isSaving, onSave, settings }: StudySettingsC
         </div>
       ) : null}
 
-      <div className="study-settings-status">
-        <span className="study-settings-status-dot" />
-        <span className="study-settings-status-text">
+      <div className={styles.studySettingsStatus}>
+        <span className={styles.studySettingsStatusDot} />
+        <span className={styles.studySettingsStatusText}>
           {budget !== null ? (
             <>
               <strong>{settings.newCardsToday}</strong> new card

@@ -1,0 +1,214 @@
+.titlebar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 52px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-app-region: drag;
+  -webkit-backdrop-filter: blur(12px);
+  user-select: none;
+}
+
+.titlebarLeft,
+.titlebarLogo,
+.titlebarTabs,
+.titlebarRight {
+  display: flex;
+  align-items: center;
+}
+
+.titlebarLeft {
+  gap: 20px;
+  min-width: 0;
+}
+
+.titlebarLogo {
+  gap: 7px;
+  color: var(--text-primary);
+  -webkit-app-region: no-drag;
+}
+
+.titlebarLogoText {
+  font-family: "Syne", var(--font-sans);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.titlebarSep {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+}
+
+.titlebarTabs {
+  gap: 2px;
+  min-width: 0;
+  -webkit-app-region: no-drag;
+}
+
+.titlebarTab {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  padding: 5px 11px;
+  border-radius: 5px;
+  color: var(--text-tertiary);
+  font-size: 12.5px;
+  font-weight: 500;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.titlebarTab.active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.titlebarRight {
+  gap: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.titlebarStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.backBtn:hover {
+  color: var(--text-secondary);
+}
+
+.backBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.breadcrumbName {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.titlebarBtn,
+.titlebarBtnLabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.titlebarBtn:hover,
+.titlebarBtnLabel:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.titlebarBtn {
+  width: 30px;
+  height: 30px;
+}
+
+.titlebarBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.titlebarBtnLabel {
+  height: 30px;
+  padding: 0 11px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.titlebarBtnLabel svg {
+  width: 13px;
+  height: 13px;
+  opacity: 0.6;
+}
+
+.titlebarBtn.active {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .titlebar {
+    height: auto;
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 12px;
+  }
+
+  .titlebarLeft,
+  .titlebarRight {
+    width: 100%;
+  }
+
+  .titlebarLeft {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .titlebarRight {
+    flex-wrap: wrap;
+  }
+
+  .titlebarTabs {
+    flex-wrap: wrap;
+  }
+
+  .titlebarTab {
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+
+  .titlebarStatus {
+    margin-right: auto;
+  }
+}

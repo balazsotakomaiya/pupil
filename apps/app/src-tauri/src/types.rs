@@ -253,6 +253,22 @@ pub(crate) struct StudySettingsState {
     pub(crate) new_cards_today: i64,
 }
 
+#[derive(Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct StudyQueueSpaceCount {
+    pub(crate) space_id: String,
+    pub(crate) due_count: i64,
+}
+
+#[derive(Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct StudyQueueSnapshot {
+    pub(crate) actionable_due_by_space: Vec<StudyQueueSpaceCount>,
+    pub(crate) actionable_due_count: i64,
+    pub(crate) gated_new_count: i64,
+    pub(crate) overdue_review_count: i64,
+}
+
 pub(crate) struct NormalizedAiSettingsInput {
     pub(crate) api_key: Option<String>,
     pub(crate) base_url: String,

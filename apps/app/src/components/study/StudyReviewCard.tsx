@@ -1,3 +1,4 @@
+import styles from "./Study.module.css";
 import type { StudyCardRecord } from "./types";
 
 type StudyReviewCardProps = {
@@ -13,21 +14,21 @@ export function StudyReviewCard({
 }: StudyReviewCardProps) {
   return (
     <div
-      className={`session-card${isAnswerVisible ? " flipped" : ""}${isSuspended ? " suspended" : ""}`}
+      className={`${styles.sessionCard}${isAnswerVisible ? ` ${styles.flipped}` : ""}${isSuspended ? ` ${styles.suspended}` : ""}`}
     >
-      <div className="session-card-face front">
-        <span className="session-card-label">front</span>
-        <span className="session-card-space">{card.spaceName}</span>
-        <div className="session-card-content">
+      <div className={`${styles.sessionCardFace} ${styles.front}`}>
+        <span className={styles.sessionCardLabel}>front</span>
+        <span className={styles.sessionCardSpace}>{card.spaceName}</span>
+        <div className={styles.sessionCardContent}>
           <div
-            className="session-card-text"
+            className={styles.sessionCardText}
             dangerouslySetInnerHTML={{ __html: renderStudyHtml(card.front) }}
           />
         </div>
         {card.tags.length > 0 ? (
-          <div className="session-card-tags">
+          <div className={styles.sessionCardTags}>
             {card.tags.map((tag) => (
-              <span className="session-card-tag" key={`${card.id}-${tag}-front`}>
+              <span className={styles.sessionCardTag} key={`${card.id}-${tag}-front`}>
                 {tag}
               </span>
             ))}
@@ -35,23 +36,23 @@ export function StudyReviewCard({
         ) : null}
       </div>
 
-      <div className="session-card-face back">
-        <span className="session-card-label">back</span>
-        <span className="session-card-space">{card.spaceName}</span>
-        <div className="session-card-content">
+      <div className={`${styles.sessionCardFace} ${styles.back}`}>
+        <span className={styles.sessionCardLabel}>back</span>
+        <span className={styles.sessionCardSpace}>{card.spaceName}</span>
+        <div className={styles.sessionCardContent}>
           <div
-            className="session-card-front-echo"
+            className={styles.sessionCardFrontEcho}
             dangerouslySetInnerHTML={{ __html: renderStudyHtml(card.front) }}
           />
           <div
-            className="session-card-text"
+            className={styles.sessionCardText}
             dangerouslySetInnerHTML={{ __html: renderStudyHtml(card.back) }}
           />
         </div>
         {card.tags.length > 0 ? (
-          <div className="session-card-tags">
+          <div className={styles.sessionCardTags}>
             {card.tags.map((tag) => (
-              <span className="session-card-tag" key={`${card.id}-${tag}-back`}>
+              <span className={styles.sessionCardTag} key={`${card.id}-${tag}-back`}>
                 {tag}
               </span>
             ))}

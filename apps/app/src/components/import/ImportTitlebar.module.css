@@ -1,0 +1,103 @@
+.titlebar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 52px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-app-region: drag;
+  -webkit-backdrop-filter: blur(12px);
+  user-select: none;
+}
+
+.titlebarLeft,
+.titlebarLogo,
+.titlebarRight {
+  display: flex;
+  align-items: center;
+}
+
+.titlebarLeft {
+  gap: 20px;
+  min-width: 0;
+}
+
+.titlebarLogo {
+  gap: 7px;
+  color: var(--text-primary);
+  -webkit-app-region: no-drag;
+}
+
+.titlebarLogoText {
+  font-family: "Syne", var(--font-sans);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.titlebarSep {
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+}
+
+.titlebarRight {
+  gap: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.15s ease;
+  -webkit-app-region: no-drag;
+}
+
+.backBtn:hover {
+  color: var(--text-secondary);
+}
+
+.backBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.breadcrumbName {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .titlebar {
+    height: auto;
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 12px;
+  }
+
+  .titlebarLeft,
+  .titlebarRight {
+    width: 100%;
+  }
+
+  .titlebarLeft {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}

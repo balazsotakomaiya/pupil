@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import styles from "./Onboarding.module.css";
 import { ChevronRightIcon } from "./OnboardingIcons";
 
 type OnboardingPathCardProps = {
@@ -19,12 +20,12 @@ export function OnboardingPathCard({
   title,
 }: OnboardingPathCardProps) {
   return (
-    <button className="welcome-path-card" onClick={onClick} type="button">
-      {badge ? <span className="welcome-path-badge">{badge}</span> : null}
-      <div className="welcome-path-icon">{icon}</div>
-      <div className="welcome-path-title">{title}</div>
-      <div className="welcome-path-desc">{description}</div>
-      <div className="welcome-path-cta">
+    <button className={styles.welcomePathCard} onClick={onClick} type="button">
+      {badge ? <span className={styles.welcomePathBadge}>{badge}</span> : null}
+      <div className={styles.welcomePathIcon}>{icon}</div>
+      <div className={styles.welcomePathTitle}>{title}</div>
+      <div className={styles.welcomePathDesc}>{description}</div>
+      <div className={styles.welcomePathCta}>
         {ctaLabel}
         <ChevronRightIcon />
       </div>

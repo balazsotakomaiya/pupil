@@ -1,0 +1,358 @@
+.welcomeTitlebar {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  justify-content: flex-end;
+  height: 52px;
+  padding: 0 20px;
+  user-select: none;
+  -webkit-app-region: drag;
+}
+
+.welcomePage {
+  display: flex;
+  min-height: calc(100vh - 52px);
+  flex-direction: column;
+  align-items: center;
+  padding: 0 32px;
+}
+
+.welcomeHero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 48px;
+  padding-top: min(10vh, 80px);
+  text-align: center;
+}
+
+.welcomeHeroEye {
+  margin-bottom: 28px;
+  opacity: 0;
+  animation: eyeEntrance 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+}
+
+.welcomeEyeLogo {
+  color: var(--text-primary);
+}
+
+.welcomeHeroWordmark,
+.welcomeHeroDesc,
+.welcomePathsSection,
+.welcomeOrRow,
+.welcomeQuickstart,
+.welcomeBottom {
+  opacity: 0;
+  animation: textUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.welcomeHeroWordmark {
+  margin-bottom: 12px;
+  font-family: "Syne", var(--font-sans);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  animation-delay: 0.5s;
+}
+
+.welcomeHeroDesc {
+  max-width: 420px;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.6;
+  animation-delay: 0.65s;
+}
+
+.welcomePathsSection {
+  width: 100%;
+  max-width: 720px;
+  animation-delay: 0.85s;
+}
+
+.welcomePathsLabel {
+  margin-bottom: 20px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.welcomePathsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.welcomePathCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 28px 24px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.welcomePathCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-hover);
+  background: var(--bg-elevated);
+}
+
+.welcomePathIcon {
+  display: flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  transition: border-color 0.2s ease;
+}
+
+.welcomePathCard:hover .welcomePathIcon {
+  border-color: var(--border-hover);
+}
+
+.welcomePathIcon svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text-tertiary);
+  transition: color 0.15s ease;
+}
+
+.welcomePathCard:hover .welcomePathIcon svg {
+  color: var(--text-secondary);
+}
+
+.welcomePathTitle {
+  margin-bottom: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.welcomePathDesc {
+  flex: 1;
+  margin-bottom: 20px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.welcomePathDesc code {
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg-elevated);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.welcomePathCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.welcomePathCard:hover .welcomePathCta {
+  color: var(--text-secondary);
+}
+
+.welcomePathCta svg {
+  width: 12px;
+  height: 12px;
+  transition: transform 0.15s ease;
+}
+
+.welcomePathCard:hover .welcomePathCta svg {
+  transform: translateX(2px);
+}
+
+.welcomePathBadge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 2px 8px;
+  border: 1px solid #10b98125;
+  border-radius: 999px;
+  background: var(--success-dim);
+  color: var(--success);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.welcomeOrRow {
+  display: flex;
+  width: 100%;
+  max-width: 720px;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0;
+  animation-delay: 0.95s;
+}
+
+.welcomeOrLine {
+  flex: 1;
+  height: 1px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--ruler) 0px,
+    var(--ruler) 1px,
+    transparent 1px,
+    transparent 5px
+  );
+}
+
+.welcomeOrText {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.welcomeQuickstart {
+  width: 100%;
+  max-width: 720px;
+  animation-delay: 1s;
+}
+
+.welcomeQuickstartCard {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.welcomeQuickstartCard:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-elevated);
+}
+
+.welcomeQuickstartLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.welcomeQuickstartIcon {
+  display: flex;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  transition: border-color 0.2s ease;
+}
+
+.welcomeQuickstartCard:hover .welcomeQuickstartIcon {
+  border-color: var(--border-hover);
+}
+
+.welcomeQuickstartIcon svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text-tertiary);
+}
+
+.welcomeQuickstartText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.welcomeQuickstartTitle {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.welcomeQuickstartDesc {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.welcomeQuickstartArrow {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.welcomeQuickstartCard:hover .welcomeQuickstartArrow {
+  transform: translateX(2px);
+  color: var(--text-secondary);
+}
+
+.welcomeQuickstartArrow svg {
+  width: 16px;
+  height: 16px;
+}
+
+.welcomeBottom {
+  margin-top: 48px;
+  padding-bottom: 48px;
+  text-align: center;
+  animation-delay: 1.05s;
+}
+
+.welcomeApiHint {
+  max-width: 400px;
+  margin: 0 auto;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.welcomeInlineLink {
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.welcomeInlineLink:hover {
+  border-color: var(--text-tertiary);
+  color: var(--text-primary);
+}

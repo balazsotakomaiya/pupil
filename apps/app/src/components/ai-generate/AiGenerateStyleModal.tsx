@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import styles from "./AiGenerate.module.css";
 import { CloseIcon } from "./AiGenerateIcons";
 
 type AiGenerateStyleModalProps = {
@@ -60,7 +61,7 @@ export function AiGenerateStyleModal({ isOpen, onClose }: AiGenerateStyleModalPr
   return (
     <div
       aria-modal="true"
-      className="ai-gen-modal-overlay open"
+      className={`${styles.aiGenModalOverlay} ${styles.open}`}
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           onClose();
@@ -68,36 +69,36 @@ export function AiGenerateStyleModal({ isOpen, onClose }: AiGenerateStyleModalPr
       }}
       role="dialog"
     >
-      <div className="ai-gen-modal">
-        <div className="ai-gen-modal-header">
-          <span className="ai-gen-modal-title">Card styles</span>
+      <div className={styles.aiGenModal}>
+        <div className={styles.aiGenModalHeader}>
+          <span className={styles.aiGenModalTitle}>Card styles</span>
           <button
             aria-label="Close style guide"
-            className="ai-gen-modal-close"
+            className={styles.aiGenModalClose}
             onClick={onClose}
             type="button"
           >
             <CloseIcon />
           </button>
         </div>
-        <div className="ai-gen-modal-body">
-          <div className="ai-gen-style-explain">
+        <div className={styles.aiGenModalBody}>
+          <div className={styles.aiGenStyleExplain}>
             {STYLE_CARDS.map((styleCard) => (
-              <div className="ai-gen-style-card" key={styleCard.name}>
-                <div className="ai-gen-style-card-header">
-                  <span className="ai-gen-style-card-name">{styleCard.name}</span>
-                  <span className="ai-gen-style-card-badge">{styleCard.badge}</span>
+              <div className={styles.aiGenStyleCard} key={styleCard.name}>
+                <div className={styles.aiGenStyleCardHeader}>
+                  <span className={styles.aiGenStyleCardName}>{styleCard.name}</span>
+                  <span className={styles.aiGenStyleCardBadge}>{styleCard.badge}</span>
                 </div>
-                <div className="ai-gen-style-card-desc">{styleCard.description}</div>
-                <div className="ai-gen-style-card-example">
-                  <div className="ai-gen-style-example-label">Example</div>
-                  <div className="ai-gen-style-example-pair">
-                    <span className="ai-gen-style-example-side">F</span>
-                    <span className="ai-gen-style-example-text">
+                <div className={styles.aiGenStyleCardDesc}>{styleCard.description}</div>
+                <div className={styles.aiGenStyleCardExample}>
+                  <div className={styles.aiGenStyleExampleLabel}>Example</div>
+                  <div className={styles.aiGenStyleExamplePair}>
+                    <span className={styles.aiGenStyleExampleSide}>F</span>
+                    <span className={styles.aiGenStyleExampleText}>
                       <strong>{styleCard.exampleFront}</strong>
                     </span>
-                    <span className="ai-gen-style-example-side">B</span>
-                    <span className="ai-gen-style-example-text">{styleCard.exampleBack}</span>
+                    <span className={styles.aiGenStyleExampleSide}>B</span>
+                    <span className={styles.aiGenStyleExampleText}>{styleCard.exampleBack}</span>
                   </div>
                 </div>
               </div>
