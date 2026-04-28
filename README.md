@@ -8,6 +8,27 @@ Pupil is a local-first flashcard app for people who want the power of spaced rep
 
 Create focused study spaces. Import Anki decks. Generate cards from any topic with AI. Study with FSRS. Everything stays on your machine.
 
+## Screenshots
+
+<p>
+  <img src="apps/site/src/assets/screenshots/dashboard.png" alt="Pupil dashboard showing due cards, study stats, and learning spaces" width="100%">
+</p>
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="apps/site/src/assets/screenshots/ai-generate.png" alt="AI Generate screen with prompt, space, difficulty, style, and count controls">
+    </td>
+    <td width="50%">
+      <img src="apps/site/src/assets/screenshots/study-review.png" alt="Study screen showing a revealed flashcard answer and FSRS rating buttons">
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Generate cards from a topic</strong></td>
+    <td><strong>Review with FSRS scheduling</strong></td>
+  </tr>
+</table>
+
 ## Why Pupil
 
 Most flashcard tools force a tradeoff.
