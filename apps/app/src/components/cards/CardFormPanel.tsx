@@ -97,17 +97,17 @@ export function CardFormPanel({
   }
 
   return (
-    <div className="dialog-backdrop" onClick={handleBackdropClick} role="presentation">
+    <div className={styles.cardBackdrop} onClick={handleBackdropClick} role="presentation">
       <div
         aria-describedby={error ? "card-form-error" : "card-form-description"}
         aria-labelledby="card-form-title"
         aria-modal="true"
-        className={`dialog ${styles.cardDialog}${isSuccessPulsing ? ` ${styles.successPulse}` : ""}`}
+        className={`${styles.cardDialog}${isSuccessPulsing ? ` ${styles.successPulse}` : ""}`}
         onClick={(event) => event.stopPropagation()}
         ref={dialogRef}
         role="dialog"
       >
-        <div className={`dialog-form ${styles.newCardDialogForm}`}>
+        <div className={styles.newCardDialogForm}>
           <div className={styles.newCardStickyTop}>
             <div className={styles.newCardHead}>
               <div>
@@ -118,7 +118,12 @@ export function CardFormPanel({
                   Write a focused prompt/answer pair. Keep the front atomic and the back tight.
                 </p>
               </div>
-              <button aria-label="Close" className="dialog-close" onClick={onClose} type="button">
+              <button
+                aria-label="Close"
+                className={styles.newCardCloseButton}
+                onClick={onClose}
+                type="button"
+              >
                 <CloseIcon />
               </button>
             </div>
@@ -146,7 +151,7 @@ export function CardFormPanel({
               >
                 {hasSelectedCard ? (
                   <button
-                    className={`${styles.newCardDiscardBtn} danger-btn`}
+                    className={`${styles.newCardDiscardBtn} ${styles.danger}`}
                     disabled={isDeleting || isSubmitting}
                     onClick={onDelete}
                     type="button"
@@ -393,12 +398,12 @@ export function CardFormPanel({
           </div>
 
           {error ? (
-            <p className={`field-error ${styles.newCardError}`} id="card-form-error" role="alert">
+            <p className={styles.newCardError} id="card-form-error" role="alert">
               {error}
             </p>
           ) : null}
 
-          <div className={`ruler-divider ${styles.newCardDivider}`} />
+          <div className={styles.newCardDivider} />
 
           <div className={styles.newCardPreviewSection}>
             <div className={styles.newCardPreviewHeader}>
@@ -424,7 +429,12 @@ export function CardFormPanel({
                     <div
                       className={styles.newCardFaceText}
                       dangerouslySetInnerHTML={{
-                        __html: renderPreviewHtml(draft.front, "Start typing..."),
+                        __html: renderPreviewHtml(
+                          draft.front,
+                          "Start typing...",
+                          styles.newCardFaceEmpty,
+                          styles.newCardClozeBlank,
+                        ),
                       }}
                     />
                   </div>
@@ -448,7 +458,12 @@ export function CardFormPanel({
                     <div
                       className={`${styles.newCardFaceText} ${styles.back}`}
                       dangerouslySetInnerHTML={{
-                        __html: renderPreviewHtml(draft.back, "Start typing..."),
+                        __html: renderPreviewHtml(
+                          draft.back,
+                          "Start typing...",
+                          styles.newCardFaceEmpty,
+                          styles.newCardClozeBlank,
+                        ),
                       }}
                     />
                   </div>
@@ -597,16 +612,21 @@ function insertCloze(
   });
 }
 
-function renderPreviewHtml(value: string, emptyLabel: string): string {
+function renderPreviewHtml(
+  value: string,
+  emptyLabel: string,
+  emptyClassName: string,
+  clozeClassName: string,
+): string {
   if (!value.trim()) {
-    return `<span class="new-card-face-empty">${emptyLabel}</span>`;
+    return `<span class="${emptyClassName}">${emptyLabel}</span>`;
   }
 
   const escaped = escapeHtml(value)
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
     .replace(/`(.+?)`/g, "<code>$1</code>")
-    .replace(/_____/g, '<span class="new-card-cloze-blank"></span>')
+    .replace(/_____/g, `<span class="${clozeClassName}"></span>`)
     .replace(/\n/g, "<br>");
 
   return escaped;

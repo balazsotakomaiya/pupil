@@ -12,6 +12,9 @@ export default function Nav() {
         </Link>
         <ul className="nav-links">
           <li>
+            <a href="/#screenshots">App</a>
+          </li>
+          <li>
             <a href="/#features">Features</a>
           </li>
           <li>

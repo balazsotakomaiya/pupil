@@ -8,6 +8,7 @@ type SpaceDetailsTitlebarProps = {
   onOpenAiGenerate: () => void;
   onOpenImport: () => void;
   onOpenNewCard: () => void;
+  onOpenRenameDialog: () => void;
   spaceName: string;
 };
 
@@ -17,6 +18,7 @@ export function SpaceDetailsTitlebar({
   onOpenAiGenerate,
   onOpenImport,
   onOpenNewCard,
+  onOpenRenameDialog,
   spaceName,
 }: SpaceDetailsTitlebarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -80,6 +82,17 @@ export function SpaceDetailsTitlebar({
           </button>
           {isMenuOpen && (
             <div className="more-menu">
+              <button
+                className="more-menu-item"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  onOpenRenameDialog();
+                }}
+                type="button"
+              >
+                <EditIcon />
+                Rename space
+              </button>
               <button
                 className="more-menu-item danger"
                 onClick={() => {
@@ -153,6 +166,15 @@ function MoreIcon() {
       <circle cx="8" cy="3.5" r="1.5" />
       <circle cx="8" cy="8" r="1.5" />
       <circle cx="8" cy="12.5" r="1.5" />
+    </svg>
+  );
+}
+
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.35">
+      <path d="M6.75 2.25l3 3L4.25 10.75H1.5v-2.5L6.75 2.25z" />
+      <path d="M5.75 3.25l3 3" />
     </svg>
   );
 }

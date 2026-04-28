@@ -23,6 +23,7 @@ type StoredWebSpace = {
 type StoredWebCard = {
   id: string;
   spaceId: string;
+  spaceName?: string;
   front: string;
   back: string;
   tags: string[];
@@ -33,8 +34,15 @@ type StoredWebCard = {
   updatedAt: number;
 };
 
+type StoredWebReviewLog = {
+  reviewTime: number;
+  spaceId: string;
+  spaceName?: string;
+};
+
 const WEB_SPACE_STORAGE_KEY = "pupil.web.spaces";
 const WEB_CARD_STORAGE_KEY = "pupil.web.cards";
+const WEB_REVIEW_LOG_STORAGE_KEY = "pupil.web.review_logs";
 
 export async function listSpaces(): Promise<SpaceSummary[]> {
   if (isTauriRuntime()) {
@@ -92,6 +100,8 @@ export async function renameSpace(input: { id: string; name: string }): Promise<
 
   spaces[nextIndex] = nextSpace;
   writeStoredWebSpaces(spaces);
+  renameStoredCardSpaces(input.id, name);
+  renameStoredReviewLogSpaces(input.id, name);
 
   return toSpaceSummary(nextSpace, readStoredWebCards(), Date.now());
 }
@@ -236,6 +246,45 @@ function writeStoredWebCards(cards: StoredWebCard[]): void {
   window.localStorage.setItem(WEB_CARD_STORAGE_KEY, JSON.stringify(cards));
 }
 
+function renameStoredCardSpaces(spaceId: string, spaceName: string): void {
+  const cards = readStoredWebCards();
+  const nextCards = cards.map((card) => (card.spaceId === spaceId ? { ...card, spaceName } : card));
+
+  writeStoredWebCards(nextCards);
+}
+
+function renameStoredReviewLogSpaces(spaceId: string, spaceName: string): void {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return;
+  }
+
+  const raw = window.localStorage.getItem(WEB_REVIEW_LOG_STORAGE_KEY);
+
+  if (!raw) {
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+
+    if (!Array.isArray(parsed)) {
+      return;
+    }
+
+    const nextLogs = parsed.map((value) => {
+      if (!isStoredWebReviewLog(value) || value.spaceId !== spaceId) {
+        return value;
+      }
+
+      return { ...value, spaceName };
+    });
+
+    window.localStorage.setItem(WEB_REVIEW_LOG_STORAGE_KEY, JSON.stringify(nextLogs));
+  } catch {
+    return;
+  }
+}
+
 function createWebId(prefix: string): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -257,6 +306,16 @@ function isStoredWebSpace(value: unknown): value is StoredWebSpace {
     typeof space.createdAt === "number" &&
     typeof space.updatedAt === "number"
   );
+}
+
+function isStoredWebReviewLog(value: unknown): value is StoredWebReviewLog {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const log = value as Partial<StoredWebReviewLog>;
+
+  return typeof log.spaceId === "string" && typeof log.reviewTime === "number";
 }
 
 function isStoredWebCard(value: unknown): value is StoredWebCard {

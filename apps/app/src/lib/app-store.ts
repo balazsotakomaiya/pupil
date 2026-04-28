@@ -16,6 +16,7 @@ import {
   createSpace as createSpaceRecord,
   deleteSpace as deleteSpaceRecord,
   listSpaces,
+  renameSpace as renameSpaceRecord,
   type SpaceSummary,
 } from "./spaces";
 import { type DashboardStats, getDashboardStats, listSpaceStats, type SpaceStats } from "./stats";
@@ -86,6 +87,7 @@ type AppStoreActions = {
   initialize: () => Promise<void>;
   refreshAll: () => Promise<void>;
   refreshStudySettings: () => Promise<void>;
+  renameSpace: (spaceId: string, name: string) => Promise<SpaceSummary>;
   resetAllData: () => Promise<void>;
   reviewCard: (input: ReviewCardInput) => Promise<CardRecord>;
   saveApprovedAiCards: (input: SaveApprovedAiCardsInput) => Promise<void>;
@@ -339,6 +341,24 @@ export const useAppStore = create<AppStore>((set) => ({
     const snapshot = await loadReviewSnapshot();
     set(snapshot);
     syncTrayStatus();
+  },
+
+  async renameSpace(spaceId, name) {
+    const renamedSpace = await renameSpaceRecord({ id: spaceId, name });
+
+    set((state) => ({
+      cards: state.cards.map((card) =>
+        card.spaceId === spaceId ? { ...card, spaceName: renamedSpace.name } : card,
+      ),
+      recentActivity: state.recentActivity.map((entry) =>
+        entry.spaceId === spaceId ? { ...entry, spaceName: renamedSpace.name } : entry,
+      ),
+      spaces: sortSpaces(
+        state.spaces.map((space) => (space.id === renamedSpace.id ? renamedSpace : space)),
+      ),
+    }));
+
+    return renamedSpace;
   },
 
   async saveApprovedAiCards(input) {

@@ -13,7 +13,7 @@ import {
   invalidateAfterCardMutation,
   invalidateAllAppData,
 } from "../../lib/query";
-import { deleteSpace } from "../../lib/spaces";
+import { deleteSpace, renameSpace } from "../../lib/spaces";
 
 export function SpaceDetailsPage() {
   const queryClient = useQueryClient();
@@ -67,6 +67,20 @@ export function SpaceDetailsPage() {
       notifyError(toAppError(error, "Failed to suspend the card."), "Card update failed");
     },
   });
+  const renameSpaceMutation = useMutation({
+    mutationFn: async (name: string) => renameSpace({ id: spaceId, name }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: appQueryKeys.spaces }),
+        queryClient.invalidateQueries({ queryKey: appQueryKeys.cards }),
+        queryClient.invalidateQueries({ queryKey: appQueryKeys.recentActivity }),
+      ]);
+      notifySuccess("Space renamed");
+    },
+    onError(error) {
+      notifyError(toAppError(error, "Failed to rename the space."), "Space rename failed");
+    },
+  });
   const deleteSpaceMutation = useMutation({
     mutationFn: async () => deleteSpace({ id: spaceId }),
     onSuccess: async () => {
@@ -95,7 +109,8 @@ export function SpaceDetailsPage() {
           createCardMutation.isPending ||
           updateCardMutation.isPending ||
           deleteCardMutation.isPending ||
-          suspendCardMutation.isPending
+          suspendCardMutation.isPending ||
+          renameSpaceMutation.isPending
         }
         onBack={() => void navigate({ to: "/" })}
         onCreateCard={async (input) => {
@@ -109,6 +124,9 @@ export function SpaceDetailsPage() {
           void navigate({ to: "/spaces/$spaceId/generate", params: { spaceId } })
         }
         onOpenImport={() => void navigate({ to: "/spaces/$spaceId/import", params: { spaceId } })}
+        onRenameSpace={async (input) => {
+          await renameSpaceMutation.mutateAsync(input.name);
+        }}
         onStartStudy={() => void navigate({ to: "/spaces/$spaceId/study", params: { spaceId } })}
         onSuspendCard={(input) => suspendCardMutation.mutateAsync(input)}
         onUpdateCard={async (input) => {

@@ -59,7 +59,7 @@ fn app_error_maps_known_sqlite_cases() {
 
     assert_eq!(
         AppError::from_space_storage(duplicate).to_string(),
-        "space already exists"
+        "Space already exists"
     );
     assert_eq!(
         AppError::from_space_storage(constraint).to_string(),
@@ -67,11 +67,11 @@ fn app_error_maps_known_sqlite_cases() {
     );
     assert_eq!(
         AppError::from_space_storage(rusqlite::Error::QueryReturnedNoRows).to_string(),
-        "space not found"
+        "Space not found"
     );
     assert_eq!(
         AppError::from_card_storage(rusqlite::Error::QueryReturnedNoRows).to_string(),
-        "card not found"
+        "Card not found"
     );
     assert_eq!(
         AppError::from_card_storage(rusqlite::Error::SqliteFailure(

@@ -116,13 +116,13 @@ impl AppError {
     /// Maps SQLite space-related failures into a structured domain/storage
     /// error for the IPC boundary.
     pub(crate) fn from_space_storage(error: rusqlite::Error) -> Self {
-        Self::from_entity_storage(error, "space", true)
+        Self::from_entity_storage(error, "Space", true)
     }
 
     /// Maps card and cross-table card failures into the structured error set
     /// used by the renderer.
     pub(crate) fn from_card_storage(error: rusqlite::Error) -> Self {
-        Self::from_entity_storage(error, "card", false)
+        Self::from_entity_storage(error, "Card", false)
     }
 }
 

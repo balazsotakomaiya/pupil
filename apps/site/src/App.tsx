@@ -1,5 +1,14 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import appPackage from "../../app/package.json";
+import aiGenerateScreenshot from "./assets/screenshots/ai-generate.png";
+import aiReviewScreenshot from "./assets/screenshots/ai-review.png";
+import commandPaletteScreenshot from "./assets/screenshots/command-palette.png";
+import dashboardScreenshot from "./assets/screenshots/dashboard.png";
+import importScreenshot from "./assets/screenshots/import.png";
+import spaceStatsScreenshot from "./assets/screenshots/space-stats.png";
+import studyFrontScreenshot from "./assets/screenshots/study-front.png";
+import studyReviewScreenshot from "./assets/screenshots/study-review.png";
 import Nav from "./Nav";
 
 const REPO_URL = "https://github.com/balazsotakomaiya/pupil";
@@ -51,6 +60,10 @@ function DownloadCTA() {
 }
 
 export default function App() {
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
+  const openLightbox = (src: string, alt: string) => setLightbox({ src, alt });
+  const closeLightbox = () => setLightbox(null);
+
   return (
     <>
       {/* Ruler overlay */}
@@ -80,9 +93,49 @@ export default function App() {
         </p>
         <DownloadCTA />
 
-        {/* App screenshot slot */}
         <div className="hero-mockup">
-          <AppMockup />
+          <ScreenshotFrame
+            src={dashboardScreenshot}
+            alt="Pupil dashboard showing due cards, study stats, and learning spaces"
+            priority
+          />
+        </div>
+      </section>
+
+      <div className="ruler-divider" />
+
+      {/* Product tour */}
+      <section className="section product-tour" id="screenshots">
+        <p className="section-label">Inside the app</p>
+        <h2 className="section-title">A closer look at Pupil</h2>
+        <p className="section-desc">
+          Generate a deck, approve the cards, study with FSRS, and see which spaces need attention.
+        </p>
+        <div className="screenshot-feature">
+          <div className="screenshot-copy">
+            <p className="screenshot-kicker">AI generation</p>
+            <h3>Turn a topic into a reviewed deck</h3>
+            <p>
+              Pupil drafts cards from your prompt, then keeps you in the loop before anything is
+              saved.
+            </p>
+          </div>
+          <ScreenshotFrame
+            src={aiGenerateScreenshot}
+            alt="AI Generate screen with prompt, space, difficulty, style, and count controls"
+            onOpen={openLightbox}
+          />
+        </div>
+        <div className="screenshot-grid">
+          {SCREENSHOTS.map((screenshot) => (
+            <article className="screenshot-card" key={screenshot.title}>
+              <ScreenshotFrame src={screenshot.src} alt={screenshot.alt} onOpen={openLightbox} />
+              <div className="screenshot-card-copy">
+                <p>{screenshot.title}</p>
+                <span>{screenshot.caption}</span>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
 
@@ -171,69 +224,115 @@ export default function App() {
           Balazs Otakomaiya
         </a>
       </footer>
+
+      {lightbox && <Lightbox src={lightbox.src} alt={lightbox.alt} onClose={closeLightbox} />}
     </>
   );
 }
 
-/* ─── App mockup (screenshot placeholder) ───────────────────────────────── */
-function AppMockup() {
+type ScreenshotFrameProps = {
+  src: string;
+  alt: string;
+  priority?: boolean;
+  onOpen?: (src: string, alt: string) => void;
+};
+
+function ScreenshotFrame({ src, alt, priority = false, onOpen }: ScreenshotFrameProps) {
+  const img = (
+    <img
+      src={src}
+      alt={alt}
+      loading={priority ? "eager" : "lazy"}
+      decoding={priority ? "sync" : "async"}
+    />
+  );
+
+  if (!onOpen) {
+    return <figure className="screenshot-frame screenshot-frame-static">{img}</figure>;
+  }
+
   return (
-    <div className="mockup-window">
-      <div className="mockup-titlebar">
-        <div className="mockup-dots">
-          <span className="dot dot-red" />
-          <span className="dot dot-yellow" />
-          <span className="dot dot-green" />
-        </div>
-        <span className="mockup-app-title">pupil</span>
-      </div>
-      <div className="mockup-body">
-        <aside className="mockup-sidebar">
-          <div className="mockup-tab mockup-tab-active">Dashboard</div>
-          <div className="mockup-tab">Cards</div>
-          <div className="mockup-tab">Study</div>
-          <div className="mockup-tab">AI Generate</div>
-          <div className="mockup-tab">Import</div>
-          <div className="mockup-sidebar-spacer" />
-          <div className="mockup-tab">Settings</div>
-        </aside>
-        <main className="mockup-main">
-          <div className="mockup-main-header">
-            <span className="mockup-greeting">Good morning</span>
-            <div className="mockup-btn">Study all</div>
-          </div>
-          <div className="mockup-stats-row">
-            {[
-              { value: "142", label: "Total cards" },
-              { value: "14", label: "Due today" },
-              { value: "91%", label: "Retention" },
-              { value: "7d", label: "Streak" },
-            ].map((s) => (
-              <div className="mockup-stat" key={s.label}>
-                <span className="mockup-stat-value">{s.value}</span>
-                <span className="mockup-stat-label">{s.label}</span>
-              </div>
-            ))}
-          </div>
-          <p className="mockup-section-label">Spaces</p>
-          <div className="mockup-spaces">
-            {[
-              { name: "Systems Design", cards: 43, due: 3 },
-              { name: "Biology", cards: 28, due: 8 },
-              { name: "Spanish vocab", cards: 71, due: 1 },
-            ].map((sp) => (
-              <div className="mockup-space-row" key={sp.name}>
-                <div className="mockup-space-icon" />
-                <span className="mockup-space-name">{sp.name}</span>
-                <span className="mockup-space-meta">{sp.cards} cards</span>
-                <span className="mockup-space-due">{sp.due} due</span>
-                <div className="mockup-study-btn">Study</div>
-              </div>
-            ))}
-          </div>
-        </main>
-      </div>
+    <button
+      type="button"
+      className="screenshot-frame"
+      onClick={() => onOpen(src, alt)}
+      aria-label={`Open screenshot: ${alt}`}
+    >
+      {img}
+      <span className="screenshot-open-indicator" aria-hidden="true">
+        <ArrowUpRightIcon />
+      </span>
+    </button>
+  );
+}
+
+function Lightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
+
+  return (
+    <div className="lightbox" role="dialog" aria-modal="true" aria-label={alt} onClick={onClose}>
+      <button
+        type="button"
+        className="lightbox-close"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        aria-label="Close"
+      >
+        <CloseIcon />
+      </button>
+      <img className="lightbox-img" src={src} alt={alt} onClick={(e) => e.stopPropagation()} />
     </div>
+  );
+}
+
+function ArrowUpRightIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="7" y1="17" x2="17" y2="7" />
+      <polyline points="8 7 17 7 17 16" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
   );
 }
 
@@ -250,6 +349,45 @@ const STEPS = [
   {
     title: "Retain",
     desc: "FSRS-5 schedules each card at exactly the right moment. Study less time, remember far more.",
+  },
+];
+
+const SCREENSHOTS = [
+  {
+    title: "Approve every card",
+    caption: "Pupil drafts the cards. You decide which ones make it into your deck.",
+    src: aiReviewScreenshot,
+    alt: "Reviewing AI-generated flashcards with discard and approve controls",
+  },
+  {
+    title: "Answer reveal",
+    caption: "Start with one clear prompt, then reveal only when you are ready.",
+    src: studyFrontScreenshot,
+    alt: "Study screen showing the front of a flashcard before revealing the answer",
+  },
+  {
+    title: "Focused review",
+    caption: "A quiet study view with answer reveal and FSRS rating choices.",
+    src: studyReviewScreenshot,
+    alt: "Study screen showing a revealed flashcard answer and FSRS rating buttons",
+  },
+  {
+    title: "Space stats",
+    caption: "Inspect card states, recent activity, and the cards inside each space.",
+    src: spaceStatsScreenshot,
+    alt: "Space detail screen showing review activity, card states, and recent cards",
+  },
+  {
+    title: "Keyboard control",
+    caption: "Open the command palette to study, generate, import, or jump around.",
+    src: commandPaletteScreenshot,
+    alt: "Command palette overlay listing actions and spaces",
+  },
+  {
+    title: "Anki import",
+    caption: "Bring existing .apkg decks into local spaces.",
+    src: importScreenshot,
+    alt: "Import screen for adding Anki .apkg files",
   },
 ];
 

@@ -1,6 +1,25 @@
+.cardBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
 .cardDialog {
   width: min(100%, 860px);
   max-height: min(calc(100vh - 48px), 980px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(32, 32, 34, 0.96), rgba(17, 17, 18, 0.98)), rgba(17, 17, 17, 0.96);
+  box-shadow:
+    0 30px 90px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
   overflow-x: clip;
   overflow-y: auto;
 }
@@ -44,6 +63,36 @@
   margin: 0;
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+.newCardCloseButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.newCardCloseButton:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.newCardCloseButton svg {
+  width: 14px;
+  height: 14px;
 }
 
 .newCardActionsBar {
@@ -152,6 +201,14 @@
 .newCardDiscardBtn:hover:not(:disabled) {
   border-color: var(--border-hover);
   color: var(--text-secondary);
+}
+
+.newCardDiscardBtn.danger {
+  color: #fca5a5;
+}
+
+.newCardDiscardBtn.danger:hover:not(:disabled) {
+  color: #fecaca;
 }
 
 .newCardSaveBtn {
@@ -461,6 +518,8 @@
 
 .newCardError {
   margin: 16px 24px 0;
+  color: #fca5a5;
+  font-size: 13px;
 }
 
 .newCardDivider {
@@ -735,6 +794,16 @@
 }
 
 @media (max-width: 640px) {
+  .cardBackdrop {
+    padding: 12px;
+  }
+
+  .cardDialog {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+    border-radius: 16px;
+  }
+
   .newCardHead {
     padding-top: 20px;
   }

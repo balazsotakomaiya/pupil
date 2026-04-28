@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import type { CardRecord } from "../../lib/cards";
 import type { SpaceSummary } from "../../lib/spaces";
 import type { SpaceStats } from "../../lib/stats";
+import { buildDueQueue } from "../../lib/study-queue";
 import { SpaceDetailsTitlebar } from "../app-shell";
 import { CardFormPanel } from "../cards/CardFormPanel";
 import { CardList } from "../cards/CardList";
 import { Pagination } from "../Pagination";
 import { DeleteSpaceDialog } from "./DeleteSpaceDialog";
+import { RenameSpaceDialog } from "./RenameSpaceDialog";
 import styles from "./SpaceDetails.module.css";
 
 const PAGE_SIZE = 50;
@@ -32,6 +34,7 @@ type SpaceDetailsScreenProps = {
   onDeleteSpace: () => Promise<void>;
   onOpenAiGenerate: () => void;
   onOpenImport: () => void;
+  onRenameSpace: (input: { name: string }) => Promise<void>;
   onStartStudy: () => void;
   onSuspendCard: (input: { id: string; suspended: boolean }) => Promise<CardRecord>;
   stats: SpaceStats | null;
@@ -56,6 +59,7 @@ export function SpaceDetailsScreen({
   onDeleteSpace,
   onOpenAiGenerate,
   onOpenImport,
+  onRenameSpace,
   onStartStudy,
   onSuspendCard,
   stats,
@@ -68,13 +72,18 @@ export function SpaceDetailsScreen({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
   const [editorSuccessPulseTick, setEditorSuccessPulseTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [renameName, setRenameName] = useState(space.name);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const now = Date.now();
 
   const spaceCards = cards.filter((card) => card.spaceId === space.id);
+  const studyCards = spaceCards.filter((card) => !card.suspended);
   const filteredCards = [...spaceCards]
     .filter((card) => {
       const query = searchQuery.trim().toLowerCase();
@@ -96,13 +105,11 @@ export function SpaceDetailsScreen({
     setExpandedCardId(null);
   }, [searchQuery]);
 
-  const readyCards = spaceCards.filter((card) => card.due <= now);
+  const readyCards = buildDueQueue(studyCards, now);
   const startOfToday = new Date(now);
   startOfToday.setHours(0, 0, 0, 0);
-  const startOfTomorrow = startOfToday.getTime() + DAY_IN_MS;
-  const dueTodayCount = spaceCards.filter((card) => card.due < startOfTomorrow).length;
-  const overdueCount = spaceCards.filter((card) => card.due < startOfToday.getTime()).length;
-  const dueLaterTodayCount = spaceCards.filter((card) => isDueLaterToday(card.due, now)).length;
+  const overdueCount = studyCards.filter((card) => card.due < startOfToday.getTime()).length;
+  const dueLaterTodayCount = studyCards.filter((card) => isDueLaterToday(card.due, now)).length;
   const cardsAddedThisWeek = spaceCards.filter(
     (card) => now - card.createdAt < 7 * DAY_IN_MS,
   ).length;
@@ -116,6 +123,12 @@ export function SpaceDetailsScreen({
   useEffect(() => {
     setDraft((currentDraft) => ({ ...currentDraft, spaceId: space.id }));
   }, [space.id]);
+
+  useEffect(() => {
+    if (!isRenameDialogOpen) {
+      setRenameName(space.name);
+    }
+  }, [isRenameDialogOpen, space.name]);
 
   useEffect(() => {
     if (!editingCardId) {
@@ -190,6 +203,33 @@ export function SpaceDetailsScreen({
     }
   }
 
+  function handleOpenRenameDialog() {
+    setRenameName(space.name);
+    setRenameError(null);
+    setIsRenameDialogOpen(true);
+  }
+
+  async function handleRenameSpaceSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setRenameError(null);
+
+    if (renameName.trim() === space.name) {
+      setIsRenameDialogOpen(false);
+      return;
+    }
+
+    setIsRenaming(true);
+
+    try {
+      await onRenameSpace({ name: renameName });
+      setIsRenameDialogOpen(false);
+    } catch (nextError: unknown) {
+      setRenameError(nextError instanceof Error ? nextError.message : "Failed to rename space.");
+    } finally {
+      setIsRenaming(false);
+    }
+  }
+
   function handleOpenNewCard() {
     resetDraft(space.id, setDraft, setEditingCardId, setError);
     setIsEditorOpen(true);
@@ -242,6 +282,7 @@ export function SpaceDetailsScreen({
         onOpenAiGenerate={onOpenAiGenerate}
         onOpenImport={onOpenImport}
         onOpenNewCard={handleOpenNewCard}
+        onOpenRenameDialog={handleOpenRenameDialog}
         spaceName={space.name}
       />
 
@@ -251,6 +292,18 @@ export function SpaceDetailsScreen({
           onClose={() => setIsDeleteDialogOpen(false)}
           onConfirm={() => void handleDeleteSpace()}
           spaceName={space.name}
+        />
+      )}
+
+      {isRenameDialogOpen && (
+        <RenameSpaceDialog
+          error={renameError}
+          isSubmitting={isRenaming}
+          onChange={setRenameName}
+          onClose={() => setIsRenameDialogOpen(false)}
+          onSubmit={(event) => void handleRenameSpaceSubmit(event)}
+          originalName={space.name}
+          value={renameName}
         />
       )}
 
@@ -284,7 +337,7 @@ export function SpaceDetailsScreen({
                 {buildStudyHeadline(readyCards.length, space.cardCount)}
               </div>
               <div className="study-sub">
-                {buildStudySubline(readyCards.length, dueLaterTodayCount, spaceCards, now)}
+                {buildStudySubline(readyCards.length, dueLaterTodayCount, studyCards, now)}
               </div>
             </div>
 
@@ -318,14 +371,18 @@ export function SpaceDetailsScreen({
             </div>
 
             <div className="stat-card">
-              <div className="stat-eyebrow">Due today</div>
-              <div className="stat-value">{formatNumber(dueTodayCount)}</div>
+              <div className="stat-eyebrow">Due now</div>
+              <div className="stat-value">{formatNumber(readyCards.length)}</div>
               <div className="stat-sub">
                 {overdueCount > 0
-                  ? `${formatNumber(overdueCount)} overdue`
-                  : dueTodayCount > 0
-                    ? "Nothing overdue"
-                    : "Nothing scheduled today"}
+                  ? dueLaterTodayCount > 0
+                    ? `${formatNumber(overdueCount)} overdue · ${formatNumber(dueLaterTodayCount)} later today`
+                    : `${formatNumber(overdueCount)} overdue`
+                  : dueLaterTodayCount > 0
+                    ? `${formatNumber(dueLaterTodayCount)} more later today`
+                    : readyCards.length > 0
+                      ? "Nothing overdue"
+                      : "Nothing scheduled right now"}
               </div>
             </div>
 
