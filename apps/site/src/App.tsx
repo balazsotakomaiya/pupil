@@ -79,14 +79,12 @@ export default function App() {
       <Nav />
 
       {/* Hero */}
-      <section className="hero">
+      <section className="hero hero-anim">
         <div className="hero-badge">
           <span className="hero-badge-chip">v{DESKTOP_APP_VERSION}</span>
           Open source · Local-first · FSRS-5
         </div>
-        <h1 className="hero-title">
-          Flashcards that <em>actually</em> work with your brain
-        </h1>
+        <AnimatedHeroTitle />
         <p className="hero-desc">
           Pupil generates, organizes, and adapts cards to your knowledge gaps using AI and
           science-backed spaced repetition. No account needed.
@@ -227,6 +225,20 @@ export default function App() {
 
       {lightbox && <Lightbox src={lightbox.src} alt={lightbox.alt} onClose={closeLightbox} />}
     </>
+  );
+}
+
+function AnimatedHeroTitle() {
+  return (
+    <h1 className="hero-title">
+      <span className="hero-title-line" style={{ animationDelay: "0ms" }}>
+        Flashcards that <em>actually</em> work
+      </span>
+      <br />
+      <span className="hero-title-line" style={{ animationDelay: "130ms" }}>
+        with your brain
+      </span>
+    </h1>
   );
 }
 

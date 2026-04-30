@@ -335,6 +335,83 @@ body {
   color: var(--text-secondary);
 }
 
+/* ─── Hero entrance animation (Linear-style blur-up, per line) ──────────── */
+.hero-anim .hero-badge {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: heroFadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) 60ms forwards;
+}
+
+.hero-title-line {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(10px);
+  transform: translateY(20%);
+  will-change: opacity, filter, transform;
+  animation: heroBlurUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.hero-anim .hero-desc,
+.hero-anim .hero-ctas-group {
+  opacity: 0;
+  filter: blur(10px);
+  transform: translateY(20%);
+  will-change: opacity, filter, transform;
+}
+
+.hero-anim .hero-desc {
+  animation: heroBlurUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 320ms forwards;
+}
+
+.hero-anim .hero-ctas-group {
+  animation: heroBlurUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 480ms forwards;
+}
+
+.hero-anim .hero-mockup {
+  opacity: 0;
+  filter: blur(12px);
+  transform-origin: 50% 100%;
+  transform: perspective(1600px) rotateX(16deg) translateY(64px) scale(0.97);
+  will-change: opacity, filter, transform;
+  animation: heroMockupRise 1.3s cubic-bezier(0.16, 1, 0.3, 1) 650ms forwards;
+}
+
+@keyframes heroBlurUp {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroFadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroMockupRise {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: perspective(1600px) rotateX(0deg) translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-anim .hero-badge,
+  .hero-title-line,
+  .hero-anim .hero-desc,
+  .hero-anim .hero-ctas-group,
+  .hero-anim .hero-mockup {
+    animation: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
 /* ─── Section label (eyebrow) ────────────────────────────────────────────── */
 .section-label {
   font-family: var(--font-mono);
