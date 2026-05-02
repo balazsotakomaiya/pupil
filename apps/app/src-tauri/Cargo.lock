@@ -3872,7 +3872,7 @@ dependencies = [
 
 [[package]]
 name = "pupil-app"
-version = "1.0.0-alpha.5"
+version = "1.0.0-alpha.6"
 dependencies = [
  "keyring",
  "nanoid",
