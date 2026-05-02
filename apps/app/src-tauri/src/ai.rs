@@ -247,6 +247,7 @@ pub(crate) async fn execute_ai_completion(
 
 pub(crate) fn parse_generated_cards_response(
     response_text: &str,
+    requested_count: Option<i64>,
 ) -> AppResult<Vec<GeneratedCardPayload>> {
     let candidate = extract_json_array_candidate(response_text);
     let payload: Value = serde_json::from_str(&candidate).map_err(|error| {
@@ -283,7 +284,24 @@ pub(crate) fn parse_generated_cards_response(
         ));
     }
 
-    Ok(cards)
+    if let Some(count) = requested_count {
+        let parsed_total = cards.len() as i64;
+
+        if parsed_total > count {
+            tracing::warn!(
+                requested = count,
+                returned = parsed_total,
+                "AI provider returned more cards than requested; truncating"
+            );
+        }
+    }
+
+    Ok(match requested_count {
+        Some(count) if cards.len() > count as usize => {
+            cards.into_iter().take(count as usize).collect()
+        }
+        _ => cards,
+    })
 }
 
 pub(crate) fn clear_ai_api_key(app: &AppHandle) -> AppResult<()> {

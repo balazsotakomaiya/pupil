@@ -289,7 +289,7 @@ pub(crate) async fn generate_cards(
     );
     let response_text = execute_ai_completion(&settings, &prompt, Some(AI_SYSTEM_PROMPT)).await?;
 
-    parse_generated_cards_response(&response_text)
+    parse_generated_cards_response(&response_text, normalized.count)
 }
 
 #[tauri::command]
