@@ -12,10 +12,6 @@ import {
   getSettingsDataSummary,
 } from "../../lib/data-actions";
 import type { StudySettings } from "../../lib/study-settings";
-import styles from "./Settings.module.css";
-import { SettingsAboutCard } from "./SettingsAboutCard";
-import { SettingsConnectionStatus } from "./SettingsConnectionStatus";
-import { SettingsDataCard } from "./SettingsDataCard";
 import {
   ArrowRightIcon,
   ChevronRightIcon,
@@ -24,7 +20,11 @@ import {
   EyeClosedIcon,
   EyeOpenIcon,
   TrashIcon,
-} from "./SettingsIcons";
+} from "../icons/SettingsIcons";
+import styles from "./Settings.module.css";
+import { SettingsAboutCard } from "./SettingsAboutCard";
+import { SettingsConnectionStatus } from "./SettingsConnectionStatus";
+import { SettingsDataCard } from "./SettingsDataCard";
 import { SettingsNav, type SettingsSectionId } from "./SettingsNav";
 import { SettingsShortcutsGrid } from "./SettingsShortcutsGrid";
 import { StudySettingsCard } from "./StudySettingsCard";

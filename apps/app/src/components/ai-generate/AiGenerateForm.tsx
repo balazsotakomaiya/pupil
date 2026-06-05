@@ -1,5 +1,4 @@
 import type { SpaceSummary } from "../../lib/spaces";
-import styles from "./AiGenerate.module.css";
 import {
   ChevronDownIcon,
   InfoIcon,
@@ -7,7 +6,8 @@ import {
   MoreIcon,
   PlusIcon,
   SparklesIcon,
-} from "./AiGenerateIcons";
+} from "../icons/AiGenerateIcons";
+import styles from "./AiGenerate.module.css";
 import type { AiDifficulty, AiGenerateDraft, AiStyle } from "./types";
 
 const DIFFICULTIES: AiDifficulty[] = ["Beginner", "Intermediate", "Advanced"];

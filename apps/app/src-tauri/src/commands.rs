@@ -14,14 +14,14 @@ use crate::app::{
 };
 use crate::cards::{
     create_card_row, delete_card_row, list_card_summaries, review_card_row, suspend_card_row,
-    update_card_row,
+    undo_review_card_row, update_card_row,
 };
 use crate::constants::AI_SYSTEM_PROMPT;
 use crate::error::{AppError, AppResult};
 use crate::imports::import_anki_cards_row;
 use crate::normalize::{
     normalize_card_input, normalize_card_update_input, normalize_import_anki_input,
-    normalize_review_card_input, normalize_space_name,
+    normalize_review_card_input, normalize_space_name, normalize_undo_review_card_input,
 };
 use crate::settings::{
     export_dir, load_new_cards_limit, load_recent_activity, load_settings_data_summary,
@@ -35,7 +35,7 @@ use crate::types::{
     DashboardStats, ExportDataResult, GenerateCardsInput, GeneratedCardPayload, ImportAnkiInput,
     ImportAnkiResult, RecentActivityEntry, ReviewCardInput, SaveAiSettingsInput,
     SettingsDataSummary, SpaceStats, SpaceSummary, StudyQueueSnapshot, StudySettingsState,
-    SuspendCardInput, UpdateCardInput,
+    SuspendCardInput, UndoReviewCardInput, UpdateCardInput,
 };
 use crate::util::now_ms;
 
@@ -169,6 +169,18 @@ pub(crate) fn review_card(app: AppHandle, input: ReviewCardInput) -> Result<Card
     let normalized = normalize_review_card_input(&input).map_err(AppError::validation)?;
 
     review_card_row(&mut connection, normalized).map_err(AppError::from_card_storage)
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(app, input), fields(id = %input.id))]
+pub(crate) fn undo_review_card(
+    app: AppHandle,
+    input: UndoReviewCardInput,
+) -> Result<CardSummary, AppError> {
+    let mut connection = open_app_connection(&app)?;
+    let normalized = normalize_undo_review_card_input(&input).map_err(AppError::validation)?;
+
+    undo_review_card_row(&mut connection, normalized).map_err(AppError::from_card_storage)
 }
 
 #[tauri::command]

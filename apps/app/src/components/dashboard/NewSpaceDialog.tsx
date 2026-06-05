@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { CloseIcon } from "./CloseIcon";
+import { CloseIcon } from "../icons/CloseIcon";
 
 type NewSpaceDialogProps = {
   error: string | null;

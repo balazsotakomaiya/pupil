@@ -50,6 +50,42 @@
   height: 14px;
 }
 
+.sessionUndoBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  opacity: 0.7;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
+  -webkit-app-region: no-drag;
+}
+
+.sessionUndoBtn:hover:not(:disabled) {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  opacity: 1;
+}
+
+.sessionUndoBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.sessionUndoBtn svg {
+  width: 13px;
+  height: 13px;
+}
+
 .sessionScope {
   padding: 3px 12px;
   border: 1px solid var(--border);

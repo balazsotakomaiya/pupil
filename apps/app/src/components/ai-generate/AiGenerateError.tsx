@@ -1,5 +1,5 @@
+import { AlertIcon } from "../icons/AiGenerateIcons";
 import styles from "./AiGenerate.module.css";
-import { AlertIcon } from "./AiGenerateIcons";
 
 type AiGenerateErrorProps = {
   detail: string;

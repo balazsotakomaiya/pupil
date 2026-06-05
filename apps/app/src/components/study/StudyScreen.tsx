@@ -10,6 +10,8 @@ import { StudyReviewCard } from "./StudyReviewCard";
 import { StudySummary } from "./StudySummary";
 import type { StudyCardRecord, StudyGrade, StudyScope } from "./types";
 
+type UndoEntry = { snapshot: StudyCardRecord; grade: StudyGrade };
+
 type StudyScreenProps = {
   cards: StudyCardRecord[];
   newCardsBudget: number | null;
@@ -17,6 +19,7 @@ type StudyScreenProps = {
   onDeleteCard: (input: { id: string }) => Promise<void>;
   onReviewCard: (input: { card: CardRecord; grade: StudyGrade }) => Promise<CardRecord>;
   onSuspendCard: (input: { id: string; suspended: boolean }) => Promise<CardRecord>;
+  onUndoReview: (input: { snapshot: CardRecord }) => Promise<CardRecord>;
   sessionKey: number;
   scope: StudyScope;
   scopeLabel: string;
@@ -30,6 +33,7 @@ export function StudyScreen({
   onDeleteCard,
   onReviewCard,
   onSuspendCard,
+  onUndoReview,
   sessionKey,
   scope,
   scopeLabel,
@@ -56,11 +60,21 @@ export function StudyScreen({
   // When a card is suspended mid-session we keep it visible so the user can
   // choose to skip or immediately unsuspend — rather than advancing silently.
   const [suspendedCardId, setSuspendedCardId] = useState<string | null>(null);
+  const [undoStack, setUndoStack] = useState<UndoEntry[]>([]);
+  const [priorityCardId, setPriorityCardId] = useState<string | null>(null);
+  const [isUndoing, setIsUndoing] = useState(false);
 
-  const queue = useMemo(
-    () => buildDueQueue(sessionCards, now).filter((card) => sessionCardIds.has(card.id)),
-    [sessionCards, now, sessionCardIds],
-  );
+  const queue = useMemo(() => {
+    const base = buildDueQueue(sessionCards, now).filter((card) => sessionCardIds.has(card.id));
+    if (!priorityCardId) {
+      return base;
+    }
+    const idx = base.findIndex((card) => card.id === priorityCardId);
+    if (idx <= 0) {
+      return base;
+    }
+    return [base[idx], ...base.slice(0, idx), ...base.slice(idx + 1)];
+  }, [sessionCards, now, sessionCardIds, priorityCardId]);
   const currentCard = queue[0] ?? null;
   const isSuspendedView = !!suspendedCardId;
   // While showing a just-suspended card, keep it in the display even though
@@ -120,6 +134,9 @@ export function StudyScreen({
     setError(null);
     setNow(Date.now());
     setSuspendedCardId(null);
+    setUndoStack([]);
+    setPriorityCardId(null);
+    setIsUndoing(false);
   }, [scope, scopeLabel, sessionKey]);
 
   useEffect(() => {
@@ -129,6 +146,18 @@ export function StudyScreen({
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
+      const isUndoShortcut =
+        (event.metaKey || event.ctrlKey) &&
+        !event.shiftKey &&
+        !event.altKey &&
+        (event.key === "z" || event.key === "Z");
+
+      if (isUndoShortcut) {
+        event.preventDefault();
+        void handleUndo();
+        return;
+      }
+
       if (isSummaryVisible) {
         if (event.code === "Escape") {
           event.preventDefault();
@@ -180,15 +209,18 @@ export function StudyScreen({
     isSubmittingReview,
     isSummaryVisible,
     isSuspendedView,
+    isUndoing,
     onBack,
     pressedGrade,
+    undoStack.length,
   ]);
 
   async function handleRate(grade: StudyGrade) {
-    if (!currentCard || pressedGrade !== null || isSubmittingReview) {
+    if (!currentCard || pressedGrade !== null || isSubmittingReview || isUndoing) {
       return;
     }
 
+    const snapshot = currentCard;
     setPressedGrade(grade);
     setIsSubmittingReview(true);
     setError(null);
@@ -204,6 +236,10 @@ export function StudyScreen({
       setSessionCards(nextCards);
       setIsAnswerVisible(false);
       setNow(nextNow);
+      setUndoStack((stack) => [...stack, { snapshot, grade }]);
+      if (priorityCardId === snapshot.id) {
+        setPriorityCardId(null);
+      }
 
       if (
         buildDueQueue(nextCards, nextNow).filter((card) => sessionCardIds.has(card.id)).length === 0
@@ -215,6 +251,39 @@ export function StudyScreen({
     } finally {
       setPressedGrade(null);
       setIsSubmittingReview(false);
+    }
+  }
+
+  async function handleUndo() {
+    if (
+      undoStack.length === 0 ||
+      isSubmittingReview ||
+      isUndoing ||
+      isSuspendedView ||
+      pressedGrade !== null
+    ) {
+      return;
+    }
+
+    const last = undoStack[undoStack.length - 1];
+    setIsUndoing(true);
+    setError(null);
+
+    try {
+      const restored = await onUndoReview({ snapshot: last.snapshot });
+      setSessionCards((existing) =>
+        existing.map((card) => (card.id === restored.id ? restored : card)),
+      );
+      setSessionGrades((grades) => grades.slice(0, -1));
+      setUndoStack((stack) => stack.slice(0, -1));
+      setIsSummaryVisible(false);
+      setIsAnswerVisible(true);
+      setPriorityCardId(restored.id);
+      setNow(Date.now());
+    } catch (nextError: unknown) {
+      setError(nextError instanceof Error ? nextError.message : "Failed to undo review.");
+    } finally {
+      setIsUndoing(false);
     }
   }
 
@@ -311,17 +380,23 @@ export function StudyScreen({
     setIsSubmittingReview(false);
     setError(null);
     setNow(Date.now());
+    setUndoStack([]);
+    setPriorityCardId(null);
+    setIsUndoing(false);
   }
 
   return (
     <div className={styles.sessionShell}>
       <StudyBar
+        canUndo={undoStack.length > 0 && !isSubmittingReview && !isSuspendedView}
         current={currentCounter}
         currentCard={currentCard}
         isSuspended={isSuspendedView}
+        isUndoing={isUndoing}
         onDeleteCard={() => void handleQuickDelete()}
         onEnd={() => setIsSummaryVisible(true)}
         onSuspendCard={() => void handleQuickSuspend()}
+        onUndo={() => void handleUndo()}
         scopeLabel={scopeLabel}
         total={totalCards}
       />

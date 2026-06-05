@@ -266,6 +266,64 @@ export async function reviewCard(input: {
   return nextCard;
 }
 
+export async function undoReviewCard(input: { snapshot: CardRecord }): Promise<CardRecord> {
+  const { snapshot } = input;
+
+  if (isTauriRuntime()) {
+    return invokeCommand<CardRecord>("undo_review_card", {
+      input: {
+        difficulty: snapshot.difficulty,
+        due: snapshot.due,
+        elapsedDays: snapshot.elapsedDays,
+        id: snapshot.id,
+        lapses: snapshot.lapses,
+        lastReview: snapshot.lastReview,
+        learningSteps: snapshot.learningSteps,
+        reps: snapshot.reps,
+        scheduledDays: snapshot.scheduledDays,
+        stability: snapshot.stability,
+        state: snapshot.state,
+      },
+    });
+  }
+
+  const timestamp = Date.now();
+  const cards = readWebCards();
+  const cardIndex = cards.findIndex((card) => card.id === snapshot.id);
+
+  if (cardIndex === -1) {
+    throw new Error("Card not found.");
+  }
+
+  const restored: CardRecord = {
+    ...cards[cardIndex],
+    difficulty: snapshot.difficulty,
+    due: snapshot.due,
+    elapsedDays: snapshot.elapsedDays,
+    lapses: snapshot.lapses,
+    lastReview: snapshot.lastReview,
+    learningSteps: snapshot.learningSteps,
+    reps: snapshot.reps,
+    scheduledDays: snapshot.scheduledDays,
+    stability: snapshot.stability,
+    state: snapshot.state,
+    updatedAt: timestamp,
+  };
+
+  cards[cardIndex] = restored;
+  writeWebCards(cards);
+
+  const logs = readWebReviewLogs();
+  const latestLogIndex = logs.findIndex((log) => log.cardId === snapshot.id);
+  if (latestLogIndex !== -1) {
+    writeWebReviewLogs([...logs.slice(0, latestLogIndex), ...logs.slice(latestLogIndex + 1)]);
+  }
+
+  touchWebSpace(restored.spaceId, readStoredWebSpaces(), timestamp);
+
+  return restored;
+}
+
 function normalizeCardInput(input: {
   spaceId: string;
   front: string;

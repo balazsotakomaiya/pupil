@@ -1,25 +1,36 @@
 import { useEffect, useRef, useState } from "react";
+import { BackIcon } from "../icons/BackIcon";
+import { DeleteIcon } from "../icons/DeleteIcon";
+import { MoreHorizontalIcon } from "../icons/MoreHorizontalIcon";
+import { SuspendIcon } from "../icons/SuspendIcon";
+import { UndoIcon } from "../icons/UndoIcon";
 import styles from "./Study.module.css";
 import type { StudyCardRecord } from "./types";
 
 type StudyBarProps = {
+  canUndo: boolean;
   current: number;
   currentCard: StudyCardRecord | null;
   isSuspended: boolean;
+  isUndoing: boolean;
   onDeleteCard: () => void;
   onEnd: () => void;
   onSuspendCard: () => void;
+  onUndo: () => void;
   scopeLabel: string;
   total: number;
 };
 
 export function StudyBar({
+  canUndo,
   current,
   currentCard,
   isSuspended,
+  isUndoing,
   onDeleteCard,
   onEnd,
   onSuspendCard,
+  onUndo,
   scopeLabel,
   total,
 }: StudyBarProps) {
@@ -77,6 +88,17 @@ export function StudyBar({
           <strong>{current}</strong> / <span>{total}</span>
         </span>
 
+        <button
+          aria-label="Undo last review"
+          className={styles.sessionUndoBtn}
+          disabled={!canUndo || isUndoing}
+          onClick={onUndo}
+          title={`Undo last review (${UNDO_SHORTCUT_HINT})`}
+          type="button"
+        >
+          <UndoIcon />
+        </button>
+
         {currentCard && !isSuspended ? (
           <div className={styles.sessionQuickActions} ref={menuRef}>
             <button
@@ -85,7 +107,7 @@ export function StudyBar({
               onClick={() => setIsMenuOpen((open) => !open)}
               type="button"
             >
-              <OverflowIcon />
+              <MoreHorizontalIcon />
             </button>
 
             {isMenuOpen ? (
@@ -117,37 +139,7 @@ export function StudyBar({
   );
 }
 
-function BackIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M10 3L5 8l5 5" />
-    </svg>
-  );
-}
-
-function OverflowIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="currentColor">
-      <circle cx="4" cy="8" r="1.3" />
-      <circle cx="8" cy="8" r="1.3" />
-      <circle cx="12" cy="8" r="1.3" />
-    </svg>
-  );
-}
-
-function SuspendIcon() {
-  return (
-    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <rect x="2" y="2" width="3" height="8" rx="0.5" />
-      <rect x="7" y="2" width="3" height="8" rx="0.5" />
-    </svg>
-  );
-}
-
-function DeleteIcon() {
-  return (
-    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4">
-      <path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3" />
-    </svg>
-  );
-}
+const UNDO_SHORTCUT_HINT =
+  typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform)
+    ? "⌘Z"
+    : "Ctrl+Z";

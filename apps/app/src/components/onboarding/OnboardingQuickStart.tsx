@@ -1,5 +1,5 @@
+import { ChevronRightIcon, ExploreAppIcon } from "../icons/OnboardingIcons";
 import styles from "./Onboarding.module.css";
-import { ChevronRightIcon, ExploreAppIcon } from "./OnboardingIcons";
 
 type OnboardingQuickStartProps = {
   onClick: () => void;

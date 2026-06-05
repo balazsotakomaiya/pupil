@@ -1,3 +1,4 @@
+import { SummaryCheckIcon } from "../icons/SummaryCheckIcon";
 import styles from "./Study.module.css";
 
 type StudySummaryProps = {
@@ -74,20 +75,5 @@ export function StudySummary({
 
       <div className={styles.sessionSummaryNextDue}>{nextDueLabel}</div>
     </div>
-  );
-}
-
-function SummaryCheckIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2.5"
-    >
-      <path d="M5 12l5 5L20 7" />
-    </svg>
   );
 }

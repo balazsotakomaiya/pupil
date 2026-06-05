@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import type { CardRecord } from "../../lib/cards";
 import type { SpaceSummary } from "../../lib/spaces";
+import { GridIcon } from "../icons/GridIcon";
+import { PlusIcon } from "../icons/PlusIcon";
+import { SearchIcon } from "../icons/SearchIcon";
+import { SortIcon } from "../icons/SortIcon";
 import { Pagination } from "../Pagination";
 import { CardFormPanel } from "./CardFormPanel";
 import { CardList } from "./CardList";
@@ -426,40 +430,4 @@ function resetDraft(
     ...EMPTY_DRAFT,
     spaceId: spaces[0]?.id ?? "",
   });
-}
-
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M7 2v10M2 7h10" />
-    </svg>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <circle cx="7" cy="7" r="5" />
-      <path d="M10.5 10.5L14 14" />
-    </svg>
-  );
-}
-
-function SortIcon() {
-  return (
-    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M2 3h8M2 6h5M2 9h3" />
-    </svg>
-  );
-}
-
-function GridIcon() {
-  return (
-    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4">
-      <rect x="1" y="1" width="4" height="4" rx="0.5" />
-      <rect x="7" y="1" width="4" height="4" rx="0.5" />
-      <rect x="1" y="7" width="4" height="4" rx="0.5" />
-      <rect x="7" y="7" width="4" height="4" rx="0.5" />
-    </svg>
-  );
 }

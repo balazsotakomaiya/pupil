@@ -123,6 +123,22 @@ pub(crate) struct ReviewCardLogInput {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub(crate) struct UndoReviewCardInput {
+    pub(crate) id: String,
+    pub(crate) state: i64,
+    pub(crate) due: i64,
+    pub(crate) stability: f64,
+    pub(crate) difficulty: f64,
+    pub(crate) elapsed_days: i64,
+    pub(crate) scheduled_days: i64,
+    pub(crate) learning_steps: i64,
+    pub(crate) reps: i64,
+    pub(crate) lapses: i64,
+    pub(crate) last_review: Option<i64>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ImportAnkiInput {
     pub(crate) source_file_name: String,
     pub(crate) target_space_id: Option<String>,
@@ -330,6 +346,20 @@ pub(crate) struct NormalizedReviewCardLogInput {
     pub(crate) elapsed_days: Option<i64>,
     pub(crate) scheduled_days: i64,
     pub(crate) review_time: i64,
+}
+
+pub(crate) struct NormalizedUndoReviewCardInput {
+    pub(crate) id: String,
+    pub(crate) state: i64,
+    pub(crate) due: i64,
+    pub(crate) stability: f64,
+    pub(crate) difficulty: f64,
+    pub(crate) elapsed_days: i64,
+    pub(crate) scheduled_days: i64,
+    pub(crate) learning_steps: i64,
+    pub(crate) reps: i64,
+    pub(crate) lapses: i64,
+    pub(crate) last_review: Option<i64>,
 }
 
 pub(crate) struct NormalizedImportAnkiCardInput {

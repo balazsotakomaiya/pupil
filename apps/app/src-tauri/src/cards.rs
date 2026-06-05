@@ -4,7 +4,7 @@ use rusqlite::{params, Connection};
 use crate::spaces::{fetch_space_identity, touch_space};
 use crate::types::{
     CardIdentity, CardSummary, NormalizedCardInput, NormalizedCardUpdateInput,
-    NormalizedReviewCardInput,
+    NormalizedReviewCardInput, NormalizedUndoReviewCardInput,
 };
 use crate::util::{decode_tags, encode_tags, now_ms};
 
@@ -255,6 +255,69 @@ pub(crate) fn review_card_row(
         &existing.space_id,
         input.review_log.review_time,
     )?;
+    transaction.commit()?;
+
+    fetch_card_summary(connection, &input.id)
+}
+
+pub(crate) fn undo_review_card_row(
+    connection: &mut Connection,
+    input: NormalizedUndoReviewCardInput,
+) -> rusqlite::Result<CardSummary> {
+    let existing = fetch_card_identity(connection, &input.id)?;
+    let timestamp = now_ms();
+    let transaction = connection.transaction()?;
+
+    transaction.execute(
+        "
+        DELETE FROM review_logs
+        WHERE id = (
+          SELECT id FROM review_logs
+          WHERE card_id = ?1
+          ORDER BY review_time DESC, id DESC
+          LIMIT 1
+        )
+        ",
+        params![input.id],
+    )?;
+
+    let updated_rows = transaction.execute(
+        "
+        UPDATE cards
+        SET state = ?1,
+            due = ?2,
+            stability = ?3,
+            difficulty = ?4,
+            elapsed_days = ?5,
+            scheduled_days = ?6,
+            learning_steps = ?7,
+            reps = ?8,
+            lapses = ?9,
+            last_review = ?10,
+            updated_at = ?11
+        WHERE id = ?12
+        ",
+        params![
+            input.state,
+            input.due,
+            input.stability,
+            input.difficulty,
+            input.elapsed_days,
+            input.scheduled_days,
+            input.learning_steps,
+            input.reps,
+            input.lapses,
+            input.last_review,
+            timestamp,
+            input.id
+        ],
+    )?;
+
+    if updated_rows == 0 {
+        return Err(rusqlite::Error::QueryReturnedNoRows);
+    }
+
+    touch_space(&transaction, &existing.space_id, timestamp)?;
     transaction.commit()?;
 
     fetch_card_summary(connection, &input.id)

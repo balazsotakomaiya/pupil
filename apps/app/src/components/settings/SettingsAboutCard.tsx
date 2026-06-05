@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { APP_VERSION_FALLBACK, formatAppVersion, getAppVersion } from "../../lib/app-version";
 import { EyeLogo } from "../dashboard/EyeLogo";
+import { ExternalLinkIcon } from "../icons/SettingsIcons";
 import styles from "./Settings.module.css";
-import { ExternalLinkIcon } from "./SettingsIcons";
 
 type SettingsAboutCardProps = {
   onOpenDocs: () => void;

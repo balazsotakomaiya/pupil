@@ -1,10 +1,10 @@
 import { type ChangeEvent, type DragEvent, useMemo, useRef, useState } from "react";
 import { type ImportExecutionResult, importApkgFile, readImportHistory } from "../../lib/imports";
 import type { SpaceSummary } from "../../lib/spaces";
+import { ChevronDownIcon } from "../icons/ImportIcons";
 import styles from "./Import.module.css";
 import { ImportDropZone } from "./ImportDropZone";
 import { ImportHistoryTable } from "./ImportHistoryTable";
-import { ChevronDownIcon } from "./ImportIcons";
 import { ImportNotesCard } from "./ImportNotesCard";
 import { ImportProgressCard } from "./ImportProgressCard";
 import { ImportSummaryCard } from "./ImportSummaryCard";

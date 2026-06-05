@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { EyeLogo } from "../dashboard/EyeLogo";
+import { BackIcon } from "../icons/BackIcon";
+import { DeleteIcon } from "../icons/DeleteIcon";
+import { EditIcon } from "../icons/EditIcon";
+import { ImportIcon } from "../icons/ImportIcon";
+import { MoreVerticalIcon } from "../icons/MoreVerticalIcon";
+import { PlusIcon } from "../icons/PlusIcon";
+import { SparklesIcon } from "../icons/SparklesIcon";
 import styles from "./AppTitlebar.module.css";
 
 type SpaceDetailsTitlebarProps = {
@@ -63,7 +70,7 @@ export function SpaceDetailsTitlebar({
           New Card
         </button>
         <button className={styles.titlebarBtnLabel} onClick={onOpenAiGenerate} type="button">
-          <GenerateIcon />
+          <SparklesIcon />
           AI Generate
         </button>
         <button className={styles.titlebarBtnLabel} onClick={onOpenImport} type="button">
@@ -78,7 +85,7 @@ export function SpaceDetailsTitlebar({
             onClick={() => setIsMenuOpen((open) => !open)}
             type="button"
           >
-            <MoreIcon />
+            <MoreVerticalIcon />
           </button>
           {isMenuOpen && (
             <div className="more-menu">
@@ -101,7 +108,7 @@ export function SpaceDetailsTitlebar({
                 }}
                 type="button"
               >
-                <TrashIcon />
+                <DeleteIcon />
                 Delete space
               </button>
             </div>
@@ -109,80 +116,5 @@ export function SpaceDetailsTitlebar({
         </div>
       </div>
     </div>
-  );
-}
-
-function BackIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M10 3L5 8l5 5" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M7 2v10M2 7h10" />
-    </svg>
-  );
-}
-
-function GenerateIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeWidth="1.4"
-    >
-      <path d="M8 1.75l.8 2.6a1 1 0 00.67.67l2.6.8-2.6.8a1 1 0 00-.67.67L8 10.9l-.8-2.61a1 1 0 00-.67-.67l-2.6-.8 2.6-.8a1 1 0 00.67-.67L8 1.75z" />
-      <path d="M12.75 9.75l.39 1.29a.7.7 0 00.47.47l1.29.39-1.29.39a.7.7 0 00-.47.47l-.39 1.29-.39-1.29a.7.7 0 00-.47-.47l-1.29-.39 1.29-.39a.7.7 0 00.47-.47l.39-1.29z" />
-      <path d="M3 10.75l.3.99a.6.6 0 00.4.4l.99.3-.99.3a.6.6 0 00-.4.4L3 14.13l-.3-.99a.6.6 0 00-.4-.4l-.99-.3.99-.3a.6.6 0 00.4-.4l.3-.99z" />
-    </svg>
-  );
-}
-
-function ImportIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeWidth="1.5"
-    >
-      <path d="M8 2.25v7" />
-      <path d="M5.25 6.75L8 9.5l2.75-2.75" />
-      <path d="M3 10.75v1A1.25 1.25 0 004.25 13h7.5A1.25 1.25 0 0013 11.75v-1" />
-    </svg>
-  );
-}
-
-function MoreIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <circle cx="8" cy="3.5" r="1.5" />
-      <circle cx="8" cy="8" r="1.5" />
-      <circle cx="8" cy="12.5" r="1.5" />
-    </svg>
-  );
-}
-
-function EditIcon() {
-  return (
-    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.35">
-      <path d="M6.75 2.25l3 3L4.25 10.75H1.5v-2.5L6.75 2.25z" />
-      <path d="M5.75 3.25l3 3" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4">
-      <path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3" />
-    </svg>
   );
 }

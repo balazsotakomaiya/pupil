@@ -1,5 +1,5 @@
+import { KeyIcon, PlusIcon } from "../icons/AiGenerateIcons";
 import styles from "./AiGenerate.module.css";
-import { KeyIcon, PlusIcon } from "./AiGenerateIcons";
 
 type AiGenerateNoKeyProps = {
   onOpenSettings: () => void;

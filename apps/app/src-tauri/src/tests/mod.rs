@@ -1,3 +1,4 @@
+mod cards;
 mod normalize;
 mod study_queue;
 mod tray;

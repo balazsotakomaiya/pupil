@@ -1,5 +1,5 @@
+import { FileIcon } from "../icons/ImportIcons";
 import styles from "./Import.module.css";
-import { FileIcon } from "./ImportIcons";
 import type { ImportProgressModel } from "./types";
 
 type ImportProgressCardProps = {

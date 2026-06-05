@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { SpaceSummary } from "../../lib/spaces";
-import { CloseIcon } from "../dashboard/CloseIcon";
+import { BoldIcon } from "../icons/BoldIcon";
+import { ChevronDownIcon } from "../icons/ChevronDownIcon";
+import { CloseIcon } from "../icons/CloseIcon";
+import { ClozeIcon } from "../icons/ClozeIcon";
+import { CodeIcon } from "../icons/CodeIcon";
+import { ItalicIcon } from "../icons/ItalicIcon";
+import { PreviewFlipIcon } from "../icons/PreviewFlipIcon";
+import { SaveIcon } from "../icons/SaveIcon";
+import { TagRemoveIcon } from "../icons/TagRemoveIcon";
 import styles from "./CardFormPanel.module.css";
 
 type CardDraft = {
@@ -392,7 +400,7 @@ export function CardFormPanel({
                 ))}
               </select>
               <span className={styles.newCardSelectChevron}>
-                <ChevronIcon />
+                <ChevronDownIcon />
               </span>
             </div>
           </div>
@@ -639,88 +647,4 @@ function escapeHtml(value: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
-}
-
-function SaveIcon() {
-  return (
-    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M2.5 7l3 3 6-6.5" />
-    </svg>
-  );
-}
-
-function BoldIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="currentColor">
-      <path d="M4 2.5h4.5a3 3 0 011.93 5.3A3.25 3.25 0 019.25 14H4V2.5zm2 2V7h2.5a1 1 0 000-2H6zm0 4.5v3h3.25a1.25 1.25 0 000-2.5H6z" />
-    </svg>
-  );
-}
-
-function ItalicIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="currentColor">
-      <path
-        d="M6 2.5h6M4 13.5h6M9.5 2.5L6.5 13.5"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.6"
-      />
-    </svg>
-  );
-}
-
-function CodeIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeWidth="1.5"
-    >
-      <path d="M5.5 4L2.5 8l3 4M10.5 4l3 4-3 4" />
-    </svg>
-  );
-}
-
-function ClozeIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeWidth="1.5"
-    >
-      <path d="M2 12h3M6.5 12h3M11.5 12h2.5" />
-      <path d="M4.5 8H11.5" strokeWidth="1.8" />
-    </svg>
-  );
-}
-
-function ChevronIcon() {
-  return (
-    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M4 5.5l3 3 3-3" />
-    </svg>
-  );
-}
-
-function TagRemoveIcon() {
-  return (
-    <svg viewBox="0 0 9 9" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M1.5 1.5l6 6M7.5 1.5l-6 6" />
-    </svg>
-  );
-}
-
-function PreviewFlipIcon() {
-  return (
-    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
-      <path d="M2 5l3-3 3 3" />
-      <path d="M5 2v8a3 3 0 003 3h1" />
-    </svg>
-  );
 }

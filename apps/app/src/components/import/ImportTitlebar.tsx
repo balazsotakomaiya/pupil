@@ -1,5 +1,5 @@
-import { BackIcon } from "../ai-generate/AiGenerateIcons";
 import { EyeLogo } from "../dashboard/EyeLogo";
+import { BackIcon } from "../icons/AiGenerateIcons";
 import styles from "./ImportTitlebar.module.css";
 
 type ImportTitlebarProps = {

@@ -2,7 +2,8 @@ use crate::constants::SPACE_NAME_MAX_LENGTH;
 use crate::types::{
     ImportAnkiCardInput, ImportAnkiInput, NormalizedCardInput, NormalizedCardUpdateInput,
     NormalizedImportAnkiCardInput, NormalizedImportAnkiInput, NormalizedReviewCardInput,
-    NormalizedReviewCardLogInput, ReviewCardInput, UpdateCardInput,
+    NormalizedReviewCardLogInput, NormalizedUndoReviewCardInput, ReviewCardInput,
+    UndoReviewCardInput, UpdateCardInput,
 };
 
 pub(crate) fn normalize_space_name(name: &str) -> Result<String, String> {
@@ -83,6 +84,27 @@ pub(crate) fn normalize_review_card_input(
                 "Review scheduled days",
             )?,
             review_time: normalize_timestamp(input.review_log.review_time, "Review time")?,
+        },
+    })
+}
+
+pub(crate) fn normalize_undo_review_card_input(
+    input: &UndoReviewCardInput,
+) -> Result<NormalizedUndoReviewCardInput, String> {
+    Ok(NormalizedUndoReviewCardInput {
+        id: normalize_required_identifier(&input.id, "Card")?,
+        state: normalize_card_state(input.state)?,
+        due: normalize_timestamp(input.due, "Due")?,
+        stability: normalize_non_negative_number(input.stability, "Stability")?,
+        difficulty: normalize_non_negative_number(input.difficulty, "Difficulty")?,
+        elapsed_days: normalize_non_negative_integer(input.elapsed_days, "Elapsed days")?,
+        scheduled_days: normalize_non_negative_integer(input.scheduled_days, "Scheduled days")?,
+        learning_steps: normalize_non_negative_integer(input.learning_steps, "Learning steps")?,
+        reps: normalize_non_negative_integer(input.reps, "Reps")?,
+        lapses: normalize_non_negative_integer(input.lapses, "Lapses")?,
+        last_review: match input.last_review {
+            Some(value) => Some(normalize_timestamp(value, "Last review")?),
+            None => None,
         },
     })
 }

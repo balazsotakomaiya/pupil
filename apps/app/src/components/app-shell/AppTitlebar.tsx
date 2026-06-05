@@ -1,6 +1,6 @@
 import { EyeLogo } from "../dashboard/EyeLogo";
-import { PlusIcon } from "../dashboard/PlusIcon";
-import { SearchIcon } from "../dashboard/SearchIcon";
+import { PlusIcon } from "../icons/PlusIcon";
+import { SearchIcon } from "../icons/SearchIcon";
 import styles from "./AppTitlebar.module.css";
 
 export type AppTabId = "dashboard" | "cards" | "import" | "settings";

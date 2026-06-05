@@ -1,6 +1,6 @@
 import { useEffect } from "react";
+import { CloseIcon } from "../icons/AiGenerateIcons";
 import styles from "./AiGenerate.module.css";
-import { CloseIcon } from "./AiGenerateIcons";
 
 type AiGenerateStyleModalProps = {
   isOpen: boolean;

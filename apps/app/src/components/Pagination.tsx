@@ -1,3 +1,5 @@
+import { ChevronLeftIcon } from "./icons/ChevronLeftIcon";
+import { ChevronRightIcon } from "./icons/ChevronRightIcon";
 import styles from "./Pagination.module.css";
 
 type PaginationProps = {
@@ -35,21 +37,5 @@ export function Pagination({ currentPage, onPageChange, totalPages }: Pagination
         <ChevronRightIcon />
       </button>
     </div>
-  );
-}
-
-function ChevronLeftIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M10 4L6 8l4 4" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M6 4l4 4-4 4" />
-    </svg>
   );
 }

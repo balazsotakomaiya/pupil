@@ -1,4 +1,4 @@
-import { CloseIcon } from "../dashboard/CloseIcon";
+import { CloseIcon } from "../icons/CloseIcon";
 
 type DeleteSpaceDialogProps = {
   isDeleting: boolean;

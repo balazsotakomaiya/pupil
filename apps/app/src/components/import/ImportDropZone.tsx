@@ -1,6 +1,6 @@
 import type { ChangeEventHandler, DragEventHandler, RefObject } from "react";
+import { BrowseIcon, UploadIcon } from "../icons/ImportIcons";
 import styles from "./Import.module.css";
-import { BrowseIcon, UploadIcon } from "./ImportIcons";
 
 type ImportDropZoneProps = {
   fileInputRef: RefObject<HTMLInputElement | null>;

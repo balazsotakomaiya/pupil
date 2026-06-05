@@ -1,6 +1,6 @@
 import { EyeLogo } from "../dashboard/EyeLogo";
+import { AiGenerateIcon, CreateSpaceIcon, ImportDeckIcon } from "../icons/OnboardingIcons";
 import styles from "./Onboarding.module.css";
-import { AiGenerateIcon, CreateSpaceIcon, ImportDeckIcon } from "./OnboardingIcons";
 import { OnboardingPathCard } from "./OnboardingPathCard";
 import { OnboardingQuickStart } from "./OnboardingQuickStart";
 

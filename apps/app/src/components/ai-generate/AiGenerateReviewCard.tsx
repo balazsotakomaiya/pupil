@@ -1,5 +1,5 @@
+import { CheckIcon, CloseIcon, RotateIcon } from "../icons/AiGenerateIcons";
 import styles from "./AiGenerate.module.css";
-import { CheckIcon, CloseIcon, RotateIcon } from "./AiGenerateIcons";
 import type { GeneratedCardCandidate } from "./types";
 
 type AiGenerateReviewCardProps = {

@@ -1,5 +1,5 @@
+import { PlusIcon } from "../icons/PlusIcon";
 import styles from "./Dashboard.module.css";
-import { PlusIcon } from "./PlusIcon";
 import { SpaceCard } from "./SpaceCard";
 import type { SpaceCardData } from "./types";
 

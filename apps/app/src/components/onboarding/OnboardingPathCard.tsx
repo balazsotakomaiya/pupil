@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
+import { ChevronRightIcon } from "../icons/OnboardingIcons";
 import styles from "./Onboarding.module.css";
-import { ChevronRightIcon } from "./OnboardingIcons";
 
 type OnboardingPathCardProps = {
   badge?: string;

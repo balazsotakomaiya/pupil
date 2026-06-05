@@ -1,6 +1,6 @@
 import styles from "../app-shell/AppTitlebar.module.css";
 import { EyeLogo } from "../dashboard/EyeLogo";
-import { BackIcon } from "./AiGenerateIcons";
+import { BackIcon } from "../icons/AiGenerateIcons";
 
 type AiGenerateTitlebarProps = {
   backLabel: string;

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ScreenErrorBoundary } from "../../components/ErrorBoundary";
 import { StudyScreen } from "../../components/study";
 import { useCardsQuery, useSpacesQuery, useStudySettingsQuery } from "../../lib/app-queries";
-import { deleteCard, reviewCard, suspendCard } from "../../lib/cards";
+import { deleteCard, reviewCard, suspendCard, undoReviewCard } from "../../lib/cards";
 import { toAppError } from "../../lib/errors";
 import { notifyError } from "../../lib/notifications";
 import {
@@ -34,6 +34,15 @@ function StudyPage({ targetSpaceId }: { targetSpaceId?: string }) {
     },
     onError(error) {
       notifyError(toAppError(error, "Failed to save the review."), "Review failed");
+    },
+  });
+  const undoReviewMutation = useMutation({
+    mutationFn: undoReviewCard,
+    onSuccess: async () => {
+      await invalidateAfterReview(queryClient);
+    },
+    onError(error) {
+      notifyError(toAppError(error, "Failed to undo the review."), "Undo failed");
     },
   });
   const deleteMutation = useMutation({
@@ -80,6 +89,7 @@ function StudyPage({ targetSpaceId }: { targetSpaceId?: string }) {
         onDeleteCard={(input) => deleteMutation.mutateAsync(input)}
         onReviewCard={(input) => reviewMutation.mutateAsync(input)}
         onSuspendCard={(input) => suspendMutation.mutateAsync(input)}
+        onUndoReview={(input) => undoReviewMutation.mutateAsync(input)}
         scope={targetSpaceId ? "space" : "global"}
         scopeLabel={targetSpace?.name ?? "All spaces"}
         sessionKey={sessionKey}

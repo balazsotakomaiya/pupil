@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { SPACE_NAME_MAX_LENGTH } from "../../lib/spaces";
-import { CloseIcon } from "../dashboard/CloseIcon";
+import { CloseIcon } from "../icons/CloseIcon";
 
 type RenameSpaceDialogProps = {
   error: string | null;

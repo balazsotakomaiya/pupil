@@ -1,5 +1,5 @@
+import { FileSuccessIcon, ViewIcon } from "../icons/ImportIcons";
 import styles from "./Import.module.css";
-import { FileSuccessIcon, ViewIcon } from "./ImportIcons";
 import type { ImportSummaryModel } from "./types";
 
 type ImportSummaryCardProps = {

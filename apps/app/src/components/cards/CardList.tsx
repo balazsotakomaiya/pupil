@@ -1,4 +1,8 @@
 import type { CardRecord } from "../../lib/cards";
+import { ChevronRightIcon } from "../icons/ChevronRightIcon";
+import { DeleteIcon } from "../icons/DeleteIcon";
+import { EditIcon } from "../icons/EditIcon";
+import { SuspendIcon } from "../icons/SuspendIcon";
 import styles from "./Cards.module.css";
 
 type CardListProps = {
@@ -68,7 +72,7 @@ export function CardList({
               </span>
               {mode === "all" ? <span className={styles.cardSpace}>{card.spaceName}</span> : null}
               <span className={styles.cardChevron}>
-                <ChevronIcon />
+                <ChevronRightIcon />
               </span>
             </button>
 
@@ -227,37 +231,4 @@ function formatAbsoluteTime(timestamp: number): string {
     minute: "2-digit",
     month: "short",
   }).format(timestamp);
-}
-
-function ChevronIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M6 4l4 4-4 4" />
-    </svg>
-  );
-}
-
-function EditIcon() {
-  return (
-    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4">
-      <path d="M7.5 2L10 4.5M2.5 9.5L9 3l-2 5-4.5 1.5z" />
-    </svg>
-  );
-}
-
-function SuspendIcon() {
-  return (
-    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <rect x="2" y="2" width="3" height="8" rx="0.5" />
-      <rect x="7" y="2" width="3" height="8" rx="0.5" />
-    </svg>
-  );
-}
-
-function DeleteIcon() {
-  return (
-    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4">
-      <path d="M2 3h8M4.5 3V2h3v1M3 3v7.5a.5.5 0 00.5.5h5a.5.5 0 00.5-.5V3" />
-    </svg>
-  );
 }
