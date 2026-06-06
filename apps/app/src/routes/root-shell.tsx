@@ -103,12 +103,17 @@ export function RootShell() {
       return;
     }
 
-    if (!isOnboardingDismissed && spaces.length === 0 && location.pathname === "/") {
+    const hasDismissed = hasDismissedOnboarding();
+    if (hasDismissed !== isOnboardingDismissed) {
+      setIsOnboardingDismissed(hasDismissed);
+    }
+
+    if (!hasDismissed && spaces.length === 0 && location.pathname === "/") {
       void navigate({ to: "/onboarding" });
       return;
     }
 
-    if ((isOnboardingDismissed || spaces.length > 0) && location.pathname === "/onboarding") {
+    if (hasDismissed && location.pathname === "/onboarding") {
       void navigate({ to: "/" });
     }
   }, [

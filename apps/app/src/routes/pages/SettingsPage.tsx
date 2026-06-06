@@ -7,6 +7,7 @@ import { useCardsQuery, useSpacesQuery, useStudySettingsQuery } from "../../lib/
 import { resetAllData } from "../../lib/data-actions";
 import { toAppError } from "../../lib/errors";
 import { notifyError, notifySuccess } from "../../lib/notifications";
+import { resetOnboarding } from "../../lib/onboarding";
 import { appQueryKeys, invalidateAllAppData } from "../../lib/query";
 import { saveStudySettings } from "../../lib/study-settings";
 
@@ -38,6 +39,7 @@ export function SettingsPage({
   const resetMutation = useMutation({
     mutationFn: resetAllData,
     onSuccess: async () => {
+      resetOnboarding();
       await invalidateAllAppData(queryClient);
       notifySuccess("All local data was reset");
       void navigate({ to: "/onboarding" });
