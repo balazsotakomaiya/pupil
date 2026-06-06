@@ -81,7 +81,7 @@
   border-color: var(--border-hover);
 }
 
-.sortBtn,
+.sortSelectWrap,
 .spaceFilterChip {
   display: inline-flex;
   align-items: center;
@@ -104,17 +104,31 @@
     background 0.15s ease;
 }
 
-.sortBtn:hover,
+.sortSelectWrap:hover,
 .spaceFilterChip:hover {
   border-color: var(--border-hover);
   color: var(--text-secondary);
 }
 
-.sortBtn svg,
+.sortSelectWrap svg,
 .spaceFilterChip svg {
   width: 12px;
   height: 12px;
   opacity: 0.5;
+}
+
+.sortSelectLabel {
+  color: var(--text-tertiary);
+}
+
+.sortSelect {
+  min-width: 126px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
 }
 
 .filterRow {
@@ -185,6 +199,7 @@
 
 .cardListSection {
   padding: 24px 0 40px;
+  scroll-margin-top: 64px;
 }
 
 .cardList,

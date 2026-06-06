@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CardRecord } from "../../lib/cards";
 import type { SpaceSummary } from "../../lib/spaces";
 import { GridIcon } from "../icons/GridIcon";
@@ -9,6 +9,7 @@ import { Pagination } from "../Pagination";
 import { CardFormPanel } from "./CardFormPanel";
 import { CardList } from "./CardList";
 import styles from "./Cards.module.css";
+import { CARD_SORT_OPTIONS, type CardSortMode, sortCardsForList } from "./cardSort";
 
 const PAGE_SIZE = 50;
 
@@ -69,8 +70,9 @@ export function CardsScreen({
   const [stateFilter, setStateFilter] = useState<"all" | number>("all");
   const [sourceFilter, setSourceFilter] = useState<"all" | CardRecord["source"]>("all");
   const [spaceFilter, setSpaceFilter] = useState<string>("all");
-  const [sortMode, setSortMode] = useState<"due" | "recent">("due");
+  const [sortMode, setSortMode] = useState<CardSortMode>("due");
   const [currentPage, setCurrentPage] = useState(1);
+  const cardListSectionRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (spaces.length === 0) {
@@ -103,8 +105,8 @@ export function CardsScreen({
     }
   }, [cards, editingCardId, spaces]);
 
-  const filteredCards = cards
-    .filter((card) => {
+  const filteredCards = sortCardsForList(
+    cards.filter((card) => {
       const query = searchQuery.trim().toLowerCase();
 
       if (
@@ -127,14 +129,9 @@ export function CardsScreen({
       }
 
       return true;
-    })
-    .sort((left, right) => {
-      if (sortMode === "due") {
-        return left.due - right.due || right.updatedAt - left.updatedAt;
-      }
-
-      return right.updatedAt - left.updatedAt || left.due - right.due;
-    });
+    }),
+    sortMode,
+  );
 
   const totalPages = Math.max(1, Math.ceil(filteredCards.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
@@ -251,6 +248,13 @@ export function CardsScreen({
     setExpandedCardId((currentCardId) => (currentCardId === cardId ? null : cardId));
   }
 
+  function handlePageChange(page: number) {
+    setCurrentPage(page);
+    window.requestAnimationFrame(() => {
+      cardListSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   return (
     <div className={`page ${styles.cardsPage}`}>
       <section className={styles.toolbarSection}>
@@ -280,14 +284,21 @@ export function CardsScreen({
               value={searchQuery}
             />
           </div>
-          <button
-            className={styles.sortBtn}
-            onClick={() => setSortMode((currentMode) => (currentMode === "due" ? "recent" : "due"))}
-            type="button"
-          >
+          <label className={styles.sortSelectWrap}>
             <SortIcon />
-            {sortMode === "due" ? "Due date" : "Updated"}
-          </button>
+            <span className={styles.sortSelectLabel}>Sort</span>
+            <select
+              className={styles.sortSelect}
+              onChange={(event) => setSortMode(event.target.value as CardSortMode)}
+              value={sortMode}
+            >
+              {CARD_SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <div className={styles.filterRow}>
@@ -341,7 +352,7 @@ export function CardsScreen({
 
       <div className="ruler-divider" />
 
-      <section className={styles.cardListSection}>
+      <section className={styles.cardListSection} ref={cardListSectionRef}>
         <CardList
           cards={paginatedCards}
           expandedCardId={expandedCardId}
@@ -350,7 +361,11 @@ export function CardsScreen({
           onSuspendCard={(cardId, suspended) => void onSuspendCard({ id: cardId, suspended })}
           onToggleExpand={handleToggleExpand}
         />
-        <Pagination currentPage={safePage} onPageChange={setCurrentPage} totalPages={totalPages} />
+        <Pagination
+          currentPage={safePage}
+          onPageChange={handlePageChange}
+          totalPages={totalPages}
+        />
       </section>
 
       <div className="page-end" />

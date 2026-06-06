@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import type { CardRecord } from "../../lib/cards";
 import type { SpaceSummary } from "../../lib/spaces";
 import type { SpaceStats } from "../../lib/stats";
@@ -6,9 +6,11 @@ import { buildDueQueue } from "../../lib/study-queue";
 import { SpaceDetailsTitlebar } from "../app-shell";
 import { CardFormPanel } from "../cards/CardFormPanel";
 import { CardList } from "../cards/CardList";
+import { CARD_SORT_OPTIONS, type CardSortMode, sortCardsForList } from "../cards/cardSort";
 import { ImportIcon } from "../icons/ImportIcon";
 import { PlusIcon } from "../icons/PlusIcon";
 import { SearchIcon } from "../icons/SearchIcon";
+import { SortIcon } from "../icons/SortIcon";
 import { SparklesIcon } from "../icons/SparklesIcon";
 import { Pagination } from "../Pagination";
 import { DeleteSpaceDialog } from "./DeleteSpaceDialog";
@@ -83,13 +85,15 @@ export function SpaceDetailsScreen({
   const [renameError, setRenameError] = useState<string | null>(null);
   const [renameName, setRenameName] = useState(space.name);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortMode, setSortMode] = useState<CardSortMode>("due");
   const [currentPage, setCurrentPage] = useState(1);
+  const cardListSectionRef = useRef<HTMLElement | null>(null);
   const now = Date.now();
 
   const spaceCards = cards.filter((card) => card.spaceId === space.id);
   const studyCards = spaceCards.filter((card) => !card.suspended);
-  const filteredCards = [...spaceCards]
-    .filter((card) => {
+  const filteredCards = sortCardsForList(
+    spaceCards.filter((card) => {
       const query = searchQuery.trim().toLowerCase();
 
       if (!query) {
@@ -97,8 +101,9 @@ export function SpaceDetailsScreen({
       }
 
       return `${card.front} ${card.back} ${card.tags.join(" ")}`.toLowerCase().includes(query);
-    })
-    .sort((left, right) => left.due - right.due || right.updatedAt - left.updatedAt);
+    }),
+    sortMode,
+  );
 
   const totalPages = Math.max(1, Math.ceil(filteredCards.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
@@ -107,7 +112,7 @@ export function SpaceDetailsScreen({
   useEffect(() => {
     setCurrentPage(1);
     setExpandedCardId(null);
-  }, [searchQuery]);
+  }, [searchQuery, sortMode]);
 
   const readyCards = buildDueQueue(studyCards, now);
   const startOfToday = new Date(now);
@@ -271,6 +276,13 @@ export function SpaceDetailsScreen({
     setExpandedCardId((currentCardId) => (currentCardId === cardId ? null : cardId));
   }
 
+  function handlePageChange(page: number) {
+    setCurrentPage(page);
+    window.requestAnimationFrame(() => {
+      cardListSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   const colorClass: Record<string, string> = {
     learning: styles.clrLearning,
     new: styles.clrNew,
@@ -358,7 +370,7 @@ export function SpaceDetailsScreen({
 
         <div className="ruler-divider" />
 
-        <section className="section">
+        <section className={`section ${styles.cardListSection}`} ref={cardListSectionRef}>
           <div className="stats-grid">
             <div className="stat-card">
               <div className="stat-eyebrow">Cards</div>
@@ -547,13 +559,31 @@ export function SpaceDetailsScreen({
             </div>
           </div>
 
-          <div className={styles.searchCompact}>
-            <SearchIcon />
-            <input
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search this space by front, back, or tags..."
-              value={searchQuery}
-            />
+          <div className={styles.listControls}>
+            <div className={styles.searchCompact}>
+              <SearchIcon />
+              <input
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search this space by front, back, or tags..."
+                value={searchQuery}
+              />
+            </div>
+
+            <label className={styles.sortSelectWrap}>
+              <SortIcon />
+              <span className={styles.sortSelectLabel}>Sort</span>
+              <select
+                className={styles.sortSelect}
+                onChange={(event) => setSortMode(event.target.value as CardSortMode)}
+                value={sortMode}
+              >
+                {CARD_SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           <CardList
@@ -567,7 +597,7 @@ export function SpaceDetailsScreen({
           />
           <Pagination
             currentPage={safePage}
-            onPageChange={setCurrentPage}
+            onPageChange={handlePageChange}
             totalPages={totalPages}
           />
         </section>

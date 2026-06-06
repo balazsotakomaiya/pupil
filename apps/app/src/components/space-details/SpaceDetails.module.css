@@ -348,9 +348,21 @@
 
 /* ── Search compact ── */
 
+.cardListSection {
+  scroll-margin-top: 64px;
+}
+
+.listControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
 .searchCompact {
   position: relative;
-  margin-bottom: 16px;
+  flex: 1;
+  min-width: 0;
 }
 
 .searchCompact svg {
@@ -385,6 +397,53 @@
   border-color: var(--border-hover);
 }
 
+.sortSelectWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.sortSelectWrap:hover {
+  border-color: var(--border-hover);
+  color: var(--text-secondary);
+}
+
+.sortSelectWrap svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0.5;
+}
+
+.sortSelectLabel {
+  color: var(--text-tertiary);
+}
+
+.sortSelect {
+  min-width: 126px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
 /* ── Detail empty ── */
 
 .detailEmpty {
@@ -406,6 +465,19 @@
 }
 
 @media (max-width: 640px) {
+  .listControls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sortSelectWrap {
+    width: 100%;
+  }
+
+  .sortSelect {
+    flex: 1;
+  }
+
   .reviewsHeader,
   .reviewRow {
     grid-template-columns: 1fr 70px 80px;
