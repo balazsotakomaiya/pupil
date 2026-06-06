@@ -36,7 +36,6 @@
   font-size: 13px;
   font-family: inherit;
   appearance: none;
-  cursor: pointer;
   outline: none;
   transition: border-color 0.15s ease;
 }
@@ -81,7 +80,6 @@
   border: 1px dashed var(--border-hover);
   border-radius: var(--radius-lg);
   text-align: center;
-  cursor: pointer;
   transition:
     border-color 0.2s ease,
     background 0.2s ease;
@@ -168,7 +166,6 @@
   border-radius: var(--radius);
   background: transparent;
   color: var(--text-secondary);
-  cursor: pointer;
   font-size: 13px;
   font-weight: 500;
   transition:
@@ -383,7 +380,6 @@
   border-radius: 5px;
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   font-size: 12px;
   font-weight: 500;
   transition:

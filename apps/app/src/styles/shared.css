@@ -95,7 +95,6 @@
   border-radius: 6px;
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   transition:
     color 0.15s ease,
     border-color 0.15s ease,
@@ -140,7 +139,6 @@
   border-radius: var(--radius);
   background: var(--text-primary);
   color: var(--bg);
-  cursor: pointer;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.2px;
@@ -485,7 +483,6 @@
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
-  cursor: pointer;
   transition:
     background 0.12s ease,
     color 0.12s ease;

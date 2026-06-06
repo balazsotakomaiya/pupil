@@ -53,7 +53,6 @@
   border-radius: var(--radius);
   background: var(--text-primary);
   color: var(--bg);
-  cursor: pointer;
   font-size: 13px;
   font-weight: 600;
   transition: opacity 0.15s ease;
@@ -182,7 +181,6 @@
   appearance: none;
   background: var(--bg-subtle);
   color: var(--text-primary);
-  cursor: pointer;
   font-size: 13px;
   outline: none;
   transition: border-color 0.15s ease;
@@ -220,7 +218,6 @@
   border-radius: 999px;
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   font-size: 12.5px;
   font-weight: 500;
   transition:
@@ -252,7 +249,6 @@
   border-radius: 50%;
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   transition:
     color 0.15s ease,
     border-color 0.15s ease,
@@ -302,7 +298,6 @@
   border: 0;
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   transition:
     color 0.15s ease,
     background 0.15s ease;
@@ -338,7 +333,6 @@
   padding: 0;
   border: 0;
   background: transparent;
-  cursor: pointer;
 }
 
 .aiGenAutoToggleLabel {
@@ -411,7 +405,6 @@
   border-radius: var(--radius);
   background: var(--text-primary);
   color: var(--bg);
-  cursor: pointer;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.2px;
@@ -459,7 +452,6 @@
   border-bottom: 1px dashed #10b98160;
   background: transparent;
   color: var(--success);
-  cursor: pointer;
   transition:
     color 0.15s ease,
     border-color 0.15s ease;
@@ -492,7 +484,6 @@
   border-radius: 5px;
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   transition:
     color 0.15s ease,
     border-color 0.15s ease;
@@ -609,7 +600,6 @@
   border-radius: var(--radius);
   background: transparent;
   color: var(--text-secondary);
-  cursor: pointer;
   font-size: 13px;
   font-weight: 500;
   transition:
@@ -682,7 +672,6 @@
   border-radius: 6px;
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   font-size: 12px;
   font-weight: 500;
   transition:
@@ -776,7 +765,6 @@
   border-radius: 5px;
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   font-size: 11px;
   font-weight: 500;
   transition:
@@ -917,7 +905,6 @@
   border-radius: 6px;
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   transition:
     color 0.15s ease,
     border-color 0.15s ease,

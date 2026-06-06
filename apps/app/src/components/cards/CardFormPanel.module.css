@@ -77,7 +77,6 @@
   border-radius: 6px;
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   transition:
     color 0.15s ease,
     border-color 0.15s ease,
@@ -110,7 +109,6 @@
   padding: 0;
   border: none;
   background: transparent;
-  cursor: pointer;
   user-select: none;
 }
 
@@ -313,7 +311,6 @@
   border-radius: 5px;
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   transition:
     color 0.15s ease,
     background 0.15s ease;
@@ -442,7 +439,6 @@
   border-radius: 3px;
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   transition:
     color 0.15s ease,
     background 0.15s ease;
@@ -488,7 +484,6 @@
   appearance: none;
   background: var(--bg-subtle);
   color: var(--text-primary);
-  cursor: pointer;
   outline: none;
   transition: border-color 0.15s ease;
 }
@@ -588,7 +583,6 @@
   border: none;
   background: transparent;
   text-align: inherit;
-  cursor: pointer;
   transform-style: preserve-3d;
   transition: transform 0.55s cubic-bezier(0.4, 0, 0.15, 1);
 }

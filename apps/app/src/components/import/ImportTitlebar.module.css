@@ -61,7 +61,6 @@
   border: none;
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   font-size: 13px;
   font-weight: 500;
   transition: color 0.15s ease;

@@ -34,7 +34,6 @@
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  cursor: pointer;
   text-align: left;
   transition: border-color 0.2s, background 0.2s;
 }

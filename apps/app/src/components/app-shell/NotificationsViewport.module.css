@@ -102,7 +102,6 @@
   border-radius: 4px;
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   transition:
     color 0.12s ease,
     background 0.12s ease;

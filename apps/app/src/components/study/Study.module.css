@@ -37,7 +37,6 @@
   color: var(--text-tertiary);
   font-size: 12px;
   font-weight: 500;
-  cursor: pointer;
   transition: color 0.15s ease;
 }
 
@@ -61,7 +60,6 @@
   border-radius: var(--radius);
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   opacity: 0.7;
   transition:
     background 0.15s ease,
@@ -126,7 +124,6 @@
   border-radius: var(--radius);
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   transition:
     background 0.15s ease,
     color 0.15s ease;
@@ -167,7 +164,6 @@
   border-radius: 5px;
   background: transparent;
   color: var(--text-secondary);
-  cursor: pointer;
   font-size: 13px;
   font-weight: 500;
   text-align: left;
@@ -431,7 +427,6 @@
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.2px;
-  cursor: pointer;
   transition:
     opacity 0.15s ease,
     background 0.15s ease;
@@ -479,7 +474,6 @@
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.2px;
-  cursor: pointer;
   transition: opacity 0.15s ease;
 }
 
@@ -521,7 +515,6 @@
   border-radius: 10px;
   background: var(--bg-subtle);
   text-align: center;
-  cursor: pointer;
   transition:
     border-color 0.15s ease,
     background 0.15s ease;
@@ -737,7 +730,6 @@
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
-  cursor: pointer;
   transition:
     color 0.15s ease,
     border-color 0.15s ease,
@@ -825,7 +817,6 @@
   color: var(--text-tertiary);
   font-size: 12px;
   font-weight: 500;
-  cursor: pointer;
   transition:
     color 0.15s ease,
     border-color 0.15s ease,
@@ -846,7 +837,6 @@
 
 .sessionExplainTrigger.locked {
   opacity: 0.85;
-  cursor: pointer;
 }
 
 .sessionExplainTrigger:disabled {
@@ -942,7 +932,6 @@
   border-radius: var(--radius);
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   font-size: 11px;
   font-weight: 500;
   transition:
@@ -972,7 +961,6 @@
   border-radius: var(--radius);
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   font-size: 16px;
   transition:
     color 0.15s ease,
@@ -1076,7 +1064,6 @@
   border-radius: var(--radius);
   background: transparent;
   color: #ef8b8b;
-  cursor: pointer;
   font-size: 12px;
   font-weight: 500;
   transition:

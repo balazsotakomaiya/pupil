@@ -58,7 +58,6 @@
 .titlebarTab {
   border: none;
   background: transparent;
-  cursor: pointer;
   font-family: var(--font-sans);
   padding: 5px 11px;
   border-radius: 5px;
@@ -103,7 +102,6 @@
   border: none;
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   font-size: 13px;
   font-weight: 500;
   transition: color 0.15s ease;
@@ -134,7 +132,6 @@
   border-radius: 6px;
   background: transparent;
   color: var(--text-tertiary);
-  cursor: pointer;
   transition:
     color 0.15s ease,
     border-color 0.15s ease,
