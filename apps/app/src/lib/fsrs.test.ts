@@ -22,6 +22,8 @@ function createCard(overrides: Partial<CardRecord> = {}): CardRecord {
     createdAt: now,
     updatedAt: now,
     suspended: false,
+    explanation: null,
+    explanationGeneratedAt: null,
     ...fsrsFields,
     ...overrides,
   };

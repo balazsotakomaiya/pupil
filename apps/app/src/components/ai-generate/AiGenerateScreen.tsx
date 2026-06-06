@@ -36,6 +36,7 @@ const DEFAULT_AI_SETTINGS: AiSettings = {
   model: "gpt-5.4",
   maxTokens: "4096",
   temperature: "0.7",
+  explainEnabled: true,
 };
 
 export function AiGenerateScreen({

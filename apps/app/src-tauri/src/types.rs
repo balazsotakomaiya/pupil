@@ -64,6 +64,8 @@ pub(crate) struct CardSummary {
     pub(crate) updated_at: i64,
     #[serde(rename = "suspended")]
     pub(crate) is_suspended: bool,
+    pub(crate) explanation: Option<String>,
+    pub(crate) explanation_generated_at: Option<i64>,
 }
 
 #[derive(Deserialize)]
@@ -203,6 +205,7 @@ pub(crate) struct AiSettingsState {
     pub(crate) max_tokens: String,
     pub(crate) temperature: String,
     pub(crate) has_api_key: bool,
+    pub(crate) explain_enabled: bool,
 }
 
 #[derive(Deserialize)]
@@ -213,6 +216,7 @@ pub(crate) struct SaveAiSettingsInput {
     pub(crate) model: String,
     pub(crate) max_tokens: String,
     pub(crate) temperature: String,
+    pub(crate) explain_enabled: Option<bool>,
 }
 
 #[derive(Serialize)]
@@ -236,6 +240,21 @@ pub(crate) struct GenerateCardsInput {
 pub(crate) struct GeneratedCardPayload {
     pub(crate) back: String,
     pub(crate) front: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ExplainCardInput {
+    pub(crate) card_id: String,
+    pub(crate) force: Option<bool>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ExplainCardResult {
+    pub(crate) explanation: String,
+    pub(crate) generated_at: i64,
+    pub(crate) cached: bool,
 }
 
 #[derive(Serialize)]
@@ -291,6 +310,7 @@ pub(crate) struct NormalizedAiSettingsInput {
     pub(crate) model: String,
     pub(crate) max_tokens: i64,
     pub(crate) temperature: f64,
+    pub(crate) explain_enabled: Option<bool>,
 }
 
 pub(crate) struct ResolvedAiSettings {

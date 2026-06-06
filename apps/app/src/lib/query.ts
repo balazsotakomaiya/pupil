@@ -18,6 +18,7 @@ export const queryClient = new QueryClient({
 });
 
 export const appQueryKeys = {
+  aiSettings: ["aiSettings"] as const,
   bootstrap: ["bootstrap"] as const,
   cards: ["cards"] as const,
   dashboardStats: ["dashboardStats"] as const,

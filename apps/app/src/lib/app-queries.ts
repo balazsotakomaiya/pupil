@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { listRecentActivity } from "./activity";
+import { loadAiSettings } from "./ai-settings";
 import { loadBootstrapState } from "./bootstrap";
 import { listCards } from "./cards";
 import { appQueryKeys } from "./query";
@@ -45,4 +46,8 @@ export function useSpacesQuery() {
 
 export function useStudySettingsQuery() {
   return useCoreQuery(appQueryKeys.studySettings, () => getStudySettings());
+}
+
+export function useAiSettingsQuery() {
+  return useCoreQuery(appQueryKeys.aiSettings, () => loadAiSettings());
 }

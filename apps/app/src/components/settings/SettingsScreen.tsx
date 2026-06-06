@@ -40,6 +40,7 @@ type SettingsScreenProps = {
 
 type SavedSettingsSnapshot = {
   baseUrl: string;
+  explainEnabled: boolean;
   hasApiKey: boolean;
   maxTokens: string;
   model: string;
@@ -109,8 +110,10 @@ export function SettingsScreen({
   const [model, setModel] = useState("gpt-5.4");
   const [maxTokens, setMaxTokens] = useState("4096");
   const [temperature, setTemperature] = useState("0.7");
+  const [explainEnabled, setExplainEnabled] = useState(true);
   const [savedSettings, setSavedSettings] = useState<SavedSettingsSnapshot>({
     baseUrl: "https://api.openai.com/v1",
+    explainEnabled: true,
     hasApiKey: false,
     maxTokens: "4096",
     model: "gpt-5.4",
@@ -182,6 +185,7 @@ export function SettingsScreen({
         setHasStoredApiKey(settings.hasApiKey);
         setSavedSettings({
           baseUrl: settings.baseUrl,
+          explainEnabled: settings.explainEnabled,
           hasApiKey: settings.hasApiKey,
           maxTokens: settings.maxTokens,
           model: settings.model,
@@ -195,6 +199,7 @@ export function SettingsScreen({
           setModel(settings.model);
           setMaxTokens(settings.maxTokens);
           setTemperature(settings.temperature);
+          setExplainEnabled(settings.explainEnabled);
         }
 
         if (!_connectionStatusCache) {
@@ -349,6 +354,7 @@ export function SettingsScreen({
         model,
         maxTokens,
         temperature,
+        explainEnabled,
       });
 
       setApiKey("");
@@ -357,6 +363,7 @@ export function SettingsScreen({
       setHasStoredApiKey(saved.hasApiKey);
       setSavedSettings({
         baseUrl: saved.baseUrl,
+        explainEnabled: saved.explainEnabled,
         hasApiKey: saved.hasApiKey,
         maxTokens: saved.maxTokens,
         model: saved.model,
@@ -402,6 +409,7 @@ export function SettingsScreen({
         model,
         maxTokens,
         temperature,
+        explainEnabled,
       });
       const nextStatus = {
         detail: result.detail,
@@ -489,8 +497,10 @@ export function SettingsScreen({
       setModel(nextSettings.model);
       setMaxTokens(nextSettings.maxTokens);
       setTemperature(nextSettings.temperature);
+      setExplainEnabled(nextSettings.explainEnabled);
       setSavedSettings({
         baseUrl: nextSettings.baseUrl,
+        explainEnabled: nextSettings.explainEnabled,
         hasApiKey: nextSettings.hasApiKey,
         maxTokens: nextSettings.maxTokens,
         model: nextSettings.model,
@@ -543,7 +553,8 @@ export function SettingsScreen({
     baseUrl !== savedSettings.baseUrl ||
     model !== savedSettings.model ||
     maxTokens !== savedSettings.maxTokens ||
-    temperature !== savedSettings.temperature;
+    temperature !== savedSettings.temperature ||
+    explainEnabled !== savedSettings.explainEnabled;
   const isSettingsBusy = isSavingSettings || isTestingConnection;
   const areSettingsActionsBusy = isSavingSettings || isTestingConnection;
 
@@ -653,6 +664,44 @@ export function SettingsScreen({
             kind={connectionStatus.kind}
             label={connectionStatus.label}
           />
+
+          <div className={styles.settingsToggleRow}>
+            <div className={styles.settingsToggleText}>
+              <span className={styles.settingsToggleLabel}>
+                Show "Explain in detail" during study
+              </span>
+              <span className={styles.settingsToggleHint}>
+                Adds an AI button on the back of each card so you can ask for a deeper explanation
+                when you got the card wrong.
+              </span>
+            </div>
+            <button
+              aria-label={
+                explainEnabled
+                  ? "Disable explain in detail button"
+                  : "Enable explain in detail button"
+              }
+              aria-pressed={explainEnabled}
+              className={`${styles.settingsToggleSwitch}${explainEnabled ? ` ${styles.on}` : ""}`}
+              disabled={isSettingsBusy}
+              onClick={() => {
+                hasUserEditedSettings.current = true;
+                setExplainEnabled((current) => {
+                  const next = !current;
+                  setLastSavedField(null);
+                  if (autoSaveTimerRef.current !== null) {
+                    window.clearTimeout(autoSaveTimerRef.current);
+                  }
+                  autoSaveTimerRef.current = window.setTimeout(() => {
+                    autoSaveTimerRef.current = null;
+                    handleAutoSave.current();
+                  }, 400);
+                  return next;
+                });
+              }}
+              type="button"
+            />
+          </div>
 
           <div className={styles.settingsField}>
             <label className={styles.settingsFieldLabel} htmlFor="settings-base-url">

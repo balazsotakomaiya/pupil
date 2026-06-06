@@ -13,10 +13,11 @@ use crate::app::{
     open_app_connection, open_connection, pending_migrations, BootstrapStatus,
 };
 use crate::cards::{
-    create_card_row, delete_card_row, list_card_summaries, review_card_row, suspend_card_row,
-    undo_review_card_row, update_card_row,
+    create_card_row, delete_card_row, fetch_card_explanation_source, list_card_summaries,
+    review_card_row, save_card_explanation, suspend_card_row, undo_review_card_row,
+    update_card_row,
 };
-use crate::constants::AI_SYSTEM_PROMPT;
+use crate::constants::{AI_EXPLAIN_SYSTEM_PROMPT, AI_SYSTEM_PROMPT};
 use crate::error::{AppError, AppResult};
 use crate::imports::import_anki_cards_row;
 use crate::normalize::{
@@ -32,10 +33,11 @@ use crate::study_queue::load_study_queue_snapshot;
 use crate::tray;
 use crate::types::{
     AiConnectionTestResult, AiSettingsState, BootstrapState, CardSummary, CreateCardInput,
-    DashboardStats, ExportDataResult, GenerateCardsInput, GeneratedCardPayload, ImportAnkiInput,
-    ImportAnkiResult, RecentActivityEntry, ReviewCardInput, SaveAiSettingsInput,
-    SettingsDataSummary, SpaceStats, SpaceSummary, StudyQueueSnapshot, StudySettingsState,
-    SuspendCardInput, UndoReviewCardInput, UpdateCardInput,
+    DashboardStats, ExplainCardInput, ExplainCardResult, ExportDataResult, GenerateCardsInput,
+    GeneratedCardPayload, ImportAnkiInput, ImportAnkiResult, RecentActivityEntry,
+    ResolvedAiSettings, ReviewCardInput, SaveAiSettingsInput, SettingsDataSummary, SpaceStats,
+    SpaceSummary, StudyQueueSnapshot, StudySettingsState, SuspendCardInput, UndoReviewCardInput,
+    UpdateCardInput,
 };
 use crate::util::now_ms;
 
@@ -302,6 +304,124 @@ pub(crate) async fn generate_cards(
     let response_text = execute_ai_completion(&settings, &prompt, Some(AI_SYSTEM_PROMPT)).await?;
 
     parse_generated_cards_response(&response_text, normalized.count)
+}
+
+enum ExplainPrep {
+    Cached {
+        explanation: String,
+        generated_at: i64,
+    },
+    NeedsGeneration {
+        front: String,
+        back: String,
+        settings: ResolvedAiSettings,
+    },
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(app, input), fields(card_id = %input.card_id))]
+pub(crate) async fn explain_card(
+    app: AppHandle,
+    input: ExplainCardInput,
+) -> Result<ExplainCardResult, AppError> {
+    let card_id = input.card_id.trim().to_string();
+
+    if card_id.is_empty() {
+        return Err(AppError::validation_field(
+            "Card identifier is required.",
+            "cardId",
+        ));
+    }
+
+    let force = input.force.unwrap_or(false);
+    let prep_card_id = card_id.clone();
+    let prep_app = app.clone();
+
+    let prep = run_blocking(move || {
+        let connection = open_app_connection(&prep_app)?;
+        let source = fetch_card_explanation_source(&connection, &prep_card_id)
+            .map_err(AppError::from_card_storage)?;
+
+        if !force {
+            if let (Some(text), Some(generated_at)) =
+                (source.explanation.as_ref(), source.explanation_generated_at)
+            {
+                if !text.trim().is_empty() {
+                    return Ok(ExplainPrep::Cached {
+                        explanation: text.clone(),
+                        generated_at,
+                    });
+                }
+            }
+        }
+
+        let settings = load_resolved_ai_settings(&prep_app, &connection)?;
+
+        Ok(ExplainPrep::NeedsGeneration {
+            front: source.front,
+            back: source.back,
+            settings,
+        })
+    })
+    .await?;
+
+    let (front, back, settings) = match prep {
+        ExplainPrep::Cached {
+            explanation,
+            generated_at,
+        } => {
+            return Ok(ExplainCardResult {
+                explanation,
+                generated_at,
+                cached: true,
+            });
+        }
+        ExplainPrep::NeedsGeneration {
+            front,
+            back,
+            settings,
+        } => (front, back, settings),
+    };
+
+    let user_prompt = build_explain_card_prompt(&front, &back);
+    let response_text =
+        execute_ai_completion(&settings, &user_prompt, Some(AI_EXPLAIN_SYSTEM_PROMPT)).await?;
+    let explanation = response_text.trim().to_string();
+
+    if explanation.is_empty() {
+        return Err(AppError::ai_provider(
+            "The AI provider returned an empty explanation.",
+            None::<String>,
+        ));
+    }
+
+    let generated_at = now_ms();
+    let persist_card_id = card_id.clone();
+    let persist_explanation = explanation.clone();
+
+    run_blocking(move || {
+        let connection = open_app_connection(&app)?;
+        save_card_explanation(
+            &connection,
+            &persist_card_id,
+            &persist_explanation,
+            generated_at,
+        )
+        .map_err(AppError::from_card_storage)
+    })
+    .await?;
+
+    Ok(ExplainCardResult {
+        explanation,
+        generated_at,
+        cached: false,
+    })
+}
+
+fn build_explain_card_prompt(front: &str, back: &str) -> String {
+    format!(
+        "Flashcard front (what the learner saw):\n{front}\n\nFlashcard back (the answer they got wrong):\n{back}\n\nExplain this card in detail."
+    )
 }
 
 #[tauri::command]

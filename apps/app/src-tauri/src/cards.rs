@@ -33,7 +33,9 @@ pub(crate) fn list_card_summaries(
                cards.last_review,
                cards.created_at,
                cards.updated_at,
-               cards.is_suspended
+               cards.is_suspended,
+               cards.explanation,
+               cards.explanation_generated_at
         FROM cards
         INNER JOIN spaces ON spaces.id = cards.space_id
         WHERE (?1 IS NULL OR cards.space_id = ?1)
@@ -113,7 +115,9 @@ pub(crate) fn update_card_row(
             front = ?2,
             back = ?3,
             tags = ?4,
-            updated_at = ?5
+            updated_at = ?5,
+            explanation = NULL,
+            explanation_generated_at = NULL
         WHERE id = ?6
         ",
         params![
@@ -361,7 +365,9 @@ fn fetch_card_summary(connection: &Connection, id: &str) -> rusqlite::Result<Car
                cards.last_review,
                cards.created_at,
                cards.updated_at,
-               cards.is_suspended
+               cards.is_suspended,
+               cards.explanation,
+               cards.explanation_generated_at
         FROM cards
         INNER JOIN spaces ON spaces.id = cards.space_id
         WHERE cards.id = ?1
@@ -395,6 +401,8 @@ fn map_card_summary_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<CardSummary
         created_at: row.get(17)?,
         updated_at: row.get(18)?,
         is_suspended: row.get::<_, i64>(19).unwrap_or(0) != 0,
+        explanation: row.get::<_, Option<String>>(20).unwrap_or(None),
+        explanation_generated_at: row.get::<_, Option<i64>>(21).unwrap_or(None),
     })
 }
 
@@ -410,6 +418,57 @@ fn upsert_study_day(
         ",
         params![space_id, review_time],
     )?;
+
+    Ok(())
+}
+
+pub(crate) struct CardExplanationSource {
+    pub(crate) front: String,
+    pub(crate) back: String,
+    pub(crate) explanation: Option<String>,
+    pub(crate) explanation_generated_at: Option<i64>,
+}
+
+pub(crate) fn fetch_card_explanation_source(
+    connection: &Connection,
+    id: &str,
+) -> rusqlite::Result<CardExplanationSource> {
+    connection.query_row(
+        "
+        SELECT front, back, explanation, explanation_generated_at
+        FROM cards
+        WHERE id = ?1
+        ",
+        [id],
+        |row| {
+            Ok(CardExplanationSource {
+                front: row.get(0)?,
+                back: row.get(1)?,
+                explanation: row.get(2)?,
+                explanation_generated_at: row.get(3)?,
+            })
+        },
+    )
+}
+
+pub(crate) fn save_card_explanation(
+    connection: &Connection,
+    id: &str,
+    explanation: &str,
+    generated_at: i64,
+) -> rusqlite::Result<()> {
+    let updated_rows = connection.execute(
+        "
+        UPDATE cards
+        SET explanation = ?1, explanation_generated_at = ?2
+        WHERE id = ?3
+        ",
+        params![explanation, generated_at, id],
+    )?;
+
+    if updated_rows == 0 {
+        return Err(rusqlite::Error::QueryReturnedNoRows);
+    }
 
     Ok(())
 }

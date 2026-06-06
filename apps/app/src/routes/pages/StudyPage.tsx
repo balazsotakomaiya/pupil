@@ -3,7 +3,13 @@ import { useNavigate, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { ScreenErrorBoundary } from "../../components/ErrorBoundary";
 import { StudyScreen } from "../../components/study";
-import { useCardsQuery, useSpacesQuery, useStudySettingsQuery } from "../../lib/app-queries";
+import { explainCard } from "../../lib/ai-explain";
+import {
+  useAiSettingsQuery,
+  useCardsQuery,
+  useSpacesQuery,
+  useStudySettingsQuery,
+} from "../../lib/app-queries";
 import { deleteCard, reviewCard, suspendCard, undoReviewCard } from "../../lib/cards";
 import { toAppError } from "../../lib/errors";
 import { notifyError } from "../../lib/notifications";
@@ -21,6 +27,7 @@ function StudyPage({ targetSpaceId }: { targetSpaceId?: string }) {
   const cards = useCardsQuery().data ?? [];
   const spaces = useSpacesQuery().data ?? [];
   const studySettings = useStudySettingsQuery().data ?? { newCardsLimit: null, newCardsToday: 0 };
+  const aiSettings = useAiSettingsQuery().data ?? null;
   const targetSpace = targetSpaceId
     ? (spaces.find((space) => space.id === targetSpaceId) ?? null)
     : null;
@@ -77,6 +84,8 @@ function StudyPage({ targetSpaceId }: { targetSpaceId?: string }) {
     >
       <StudyScreen
         cards={sessionCards}
+        explainButtonEnabled={aiSettings?.explainEnabled ?? true}
+        hasAiKey={aiSettings?.hasApiKey ?? false}
         newCardsBudget={computeNewCardsBudget(
           studySettings.newCardsLimit,
           studySettings.newCardsToday,
@@ -87,6 +96,14 @@ function StudyPage({ targetSpaceId }: { targetSpaceId?: string }) {
             : void navigate({ to: "/" })
         }
         onDeleteCard={(input) => deleteMutation.mutateAsync(input)}
+        onExplainCard={(input) => explainCard(input)}
+        onMissingAiKey={() => {
+          void navigate({ to: "/settings" });
+          // Defer scroll so the settings page mounts and the section ref exists.
+          window.setTimeout(() => {
+            document.getElementById("ai")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 80);
+        }}
         onReviewCard={(input) => reviewMutation.mutateAsync(input)}
         onSuspendCard={(input) => suspendMutation.mutateAsync(input)}
         onUndoReview={(input) => undoReviewMutation.mutateAsync(input)}

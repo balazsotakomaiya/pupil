@@ -27,7 +27,7 @@ use tracing_appender::non_blocking::WorkerGuard;
 use crate::ai::StrongholdState;
 use crate::app::{build_app_menu, database_path, run_migrations, BootstrapStatus};
 use crate::commands::{
-    create_card, create_space, delete_card, delete_space, export_database_copy,
+    create_card, create_space, delete_card, delete_space, explain_card, export_database_copy,
     export_review_logs_csv, generate_cards, get_ai_settings, get_bootstrap_state,
     get_dashboard_stats, get_settings_data_summary, get_study_queue_snapshot, get_study_settings,
     import_anki_cards, list_cards, list_recent_activity, list_space_stats, list_spaces,
@@ -162,6 +162,7 @@ pub fn run() {
             save_ai_settings,
             test_ai_provider_connection,
             generate_cards,
+            explain_card,
             list_recent_activity,
             get_settings_data_summary,
             export_database_copy,

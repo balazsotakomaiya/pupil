@@ -25,6 +25,8 @@ export type CardRecord = {
   createdAt: number;
   updatedAt: number;
   suspended: boolean;
+  explanation: string | null;
+  explanationGeneratedAt: number | null;
 };
 
 type StoredWebSpace = {
@@ -96,6 +98,8 @@ export async function createCard(input: {
     tags: normalized.tags,
     source: normalized.source,
     suspended: false,
+    explanation: null,
+    explanationGeneratedAt: null,
     ...fsrsFields,
     createdAt: now,
     updatedAt: now,
@@ -142,6 +146,8 @@ export async function updateCard(input: {
     front: normalized.front,
     back: normalized.back,
     tags: normalized.tags,
+    explanation: null,
+    explanationGeneratedAt: null,
     updatedAt: now,
   };
 
@@ -515,6 +521,9 @@ function parseCardRecord(value: unknown): CardRecord[] {
       suspended: card.suspended === true,
       tags: card.tags.filter((tag): tag is string => typeof tag === "string"),
       updatedAt: card.updatedAt,
+      explanation: typeof card.explanation === "string" ? card.explanation : null,
+      explanationGeneratedAt:
+        typeof card.explanationGeneratedAt === "number" ? card.explanationGeneratedAt : null,
     },
   ];
 }

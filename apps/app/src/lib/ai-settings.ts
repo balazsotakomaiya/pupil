@@ -11,6 +11,7 @@ export type AiSettings = {
   model: string;
   maxTokens: string;
   temperature: string;
+  explainEnabled: boolean;
 };
 
 export type AiConnectionTestResult = {
@@ -31,6 +32,7 @@ type SaveAiSettingsInput = {
   model: string;
   maxTokens: string;
   temperature: string;
+  explainEnabled?: boolean;
 };
 
 const AI_SETTINGS_STORAGE_KEY = "pupil.ai.settings";
@@ -42,6 +44,7 @@ const DEFAULT_AI_SETTINGS: AiSettings = {
   model: "gpt-5.4",
   maxTokens: "4096",
   temperature: "0.7",
+  explainEnabled: true,
 };
 
 let pendingTauriAiSettings: Promise<AiSettings> | null = null;
@@ -90,6 +93,7 @@ export async function saveAiSettings(input: SaveAiSettingsInput): Promise<AiSett
     model: input.model,
     maxTokens: input.maxTokens,
     temperature: input.temperature,
+    explainEnabled: input.explainEnabled ?? current.explainEnabled,
   };
 
   writeWebAiSettings(nextSettings);
@@ -221,6 +225,10 @@ function readWebAiSettings(): AiSettings {
         typeof parsed.temperature === "string"
           ? parsed.temperature
           : DEFAULT_AI_SETTINGS.temperature,
+      explainEnabled:
+        typeof parsed.explainEnabled === "boolean"
+          ? parsed.explainEnabled
+          : DEFAULT_AI_SETTINGS.explainEnabled,
     };
   } catch {
     return DEFAULT_AI_SETTINGS;

@@ -12,6 +12,7 @@ pub(crate) const AI_SETTING_MODEL_KEY: &str = "ai.model";
 pub(crate) const AI_SETTING_MAX_TOKENS_KEY: &str = "ai.max_tokens";
 pub(crate) const AI_SETTING_TEMPERATURE_KEY: &str = "ai.temperature";
 pub(crate) const AI_SETTING_HAS_API_KEY_KEY: &str = "ai.has_api_key";
+pub(crate) const AI_SETTING_EXPLAIN_ENABLED_KEY: &str = "ai.explain_enabled";
 #[cfg(target_os = "macos")]
 pub(crate) const AI_SECRET_SERVICE_NAME: &str = "com.pupil.desktop.ai";
 #[cfg(target_os = "macos")]
@@ -29,6 +30,19 @@ pub(crate) const STRONGHOLD_SNAPSHOT_FILE_NAME: &str = "pupil.hold";
 pub(crate) const STRONGHOLD_CLIENT_NAME: &[u8] = b"pupil";
 #[cfg_attr(target_os = "macos", allow(dead_code))]
 pub(crate) const STRONGHOLD_AI_API_KEY_RECORD_KEY: &[u8] = b"ai.api_key";
+
+pub(crate) const AI_EXPLAIN_SYSTEM_PROMPT: &str = r#"You are a patient tutor helping a learner who just got a flashcard wrong during spaced-repetition review.
+
+Your job:
+1. Identify the core concept on the back of the card.
+2. Surface any prerequisite knowledge the learner likely needs to understand it.
+3. Re-explain the answer clearly, in plain language, with one or two concrete examples or analogies when they help.
+
+Rules:
+- Plain prose. No markdown headings, no bullet lists, no numbered lists.
+- 3 to 7 short paragraphs. Be thorough but not exhausting.
+- Speak directly to the learner ("you"). Don't recap the card before explaining — get straight to the substance.
+- Don't apologize or hedge. Don't repeat the front question verbatim."#;
 
 pub(crate) const AI_SYSTEM_PROMPT: &str = r#"You are an expert flashcard author. Your job is to produce flashcards that maximize long-term retention using the principles of spaced repetition.
 
@@ -56,5 +70,9 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     Migration {
         id: "0003_add_suspended",
         sql: include_str!("../migrations/0003_add_suspended.sql"),
+    },
+    Migration {
+        id: "0004_add_card_explanation",
+        sql: include_str!("../migrations/0004_add_card_explanation.sql"),
     },
 ];

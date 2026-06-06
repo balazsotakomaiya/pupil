@@ -13,9 +13,10 @@ use crate::app::app_data_dir;
 #[cfg(target_os = "macos")]
 use crate::constants::{AI_SECRET_ACCOUNT_NAME, AI_SECRET_SERVICE_NAME};
 use crate::constants::{
-    AI_SETTING_BASE_URL_KEY, AI_SETTING_HAS_API_KEY_KEY, AI_SETTING_MAX_TOKENS_KEY,
-    AI_SETTING_MODEL_KEY, AI_SETTING_TEMPERATURE_KEY, DEFAULT_AI_BASE_URL, DEFAULT_AI_MAX_TOKENS,
-    DEFAULT_AI_MODEL, DEFAULT_AI_TEMPERATURE, STRONGHOLD_SNAPSHOT_FILE_NAME,
+    AI_SETTING_BASE_URL_KEY, AI_SETTING_EXPLAIN_ENABLED_KEY, AI_SETTING_HAS_API_KEY_KEY,
+    AI_SETTING_MAX_TOKENS_KEY, AI_SETTING_MODEL_KEY, AI_SETTING_TEMPERATURE_KEY,
+    DEFAULT_AI_BASE_URL, DEFAULT_AI_MAX_TOKENS, DEFAULT_AI_MODEL, DEFAULT_AI_TEMPERATURE,
+    STRONGHOLD_SNAPSHOT_FILE_NAME,
 };
 #[cfg(not(target_os = "macos"))]
 use crate::constants::{STRONGHOLD_AI_API_KEY_RECORD_KEY, STRONGHOLD_CLIENT_NAME};
@@ -49,6 +50,7 @@ pub(crate) fn load_ai_settings_state(
             DEFAULT_AI_TEMPERATURE,
         )?,
         has_api_key: load_bool_setting(connection, AI_SETTING_HAS_API_KEY_KEY, false)?,
+        explain_enabled: load_bool_setting(connection, AI_SETTING_EXPLAIN_ENABLED_KEY, true)?,
     })
 }
 
@@ -86,6 +88,13 @@ pub(crate) fn save_ai_settings_rows(
         AI_SETTING_HAS_API_KEY_KEY,
         if next_has_api_key { "1" } else { "0" },
     )?;
+    if let Some(explain_enabled) = input.explain_enabled {
+        upsert_setting(
+            &transaction,
+            AI_SETTING_EXPLAIN_ENABLED_KEY,
+            if explain_enabled { "1" } else { "0" },
+        )?;
+    }
     transaction.commit()?;
 
     load_ai_settings_state(app, connection)
@@ -181,6 +190,7 @@ pub(crate) fn normalize_ai_settings_input(
         model,
         max_tokens,
         temperature,
+        explain_enabled: input.explain_enabled,
     })
 }
 
