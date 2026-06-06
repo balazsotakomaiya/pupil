@@ -21,6 +21,7 @@ type CardDraft = {
 };
 
 type CardsScreenProps = {
+  actionableDueCount: number;
   cards: CardRecord[];
   isMutating: boolean;
   onCreateCard: (input: {
@@ -50,6 +51,7 @@ const EMPTY_DRAFT: CardDraft = {
 };
 
 export function CardsScreen({
+  actionableDueCount,
   cards,
   isMutating,
   onCreateCard,
@@ -262,8 +264,7 @@ export function CardsScreen({
           <div className={styles.toolbarTopLeft}>
             <span className="section-label">All Cards</span>
             <span className={styles.cardCount}>
-              <strong>{cards.length}</strong> cards ·{" "}
-              <strong>{cards.filter((card) => card.due <= Date.now()).length}</strong> due
+              <strong>{cards.length}</strong> cards · <strong>{actionableDueCount}</strong> due
             </span>
           </div>
           <div className={styles.toolbarTopRight}>

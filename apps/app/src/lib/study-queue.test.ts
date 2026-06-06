@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildStudyQueueSnapshot } from "./study-queue";
+import { buildStudyQueueSnapshot, resolveStudyQueueSnapshot } from "./study-queue";
 
 type QueueCard = {
   createdAt: number;
@@ -68,5 +68,44 @@ describe("buildStudyQueueSnapshot", () => {
       ["space-a", 1],
     ]);
     expect(snapshot.gatedNewCount).toBe(1);
+  });
+});
+
+describe("resolveStudyQueueSnapshot", () => {
+  it("uses shared local queue rules when no snapshot data is available", () => {
+    const snapshot = resolveStudyQueueSnapshot({
+      cards: [
+        createCard({ id: "review", state: 2 }),
+        createCard({ id: "suspended", suspended: true }),
+        createCard({ id: "new-a", state: 0 }),
+        createCard({ id: "new-b", state: 0 }),
+      ],
+      newCardsBudget: 1,
+      now: 1_000,
+    });
+
+    expect(snapshot.actionableDueCount).toBe(2);
+    expect(snapshot.gatedNewCount).toBe(1);
+    expect(snapshot.admittedCardIds).toEqual(new Set(["review", "new-a"]));
+  });
+
+  it("uses authoritative snapshot counts while preserving local admitted card ids", () => {
+    const snapshot = resolveStudyQueueSnapshot({
+      cards: [createCard({ id: "local-card", state: 2 })],
+      newCardsBudget: null,
+      now: 1_000,
+      snapshotData: {
+        actionableDueBySpace: [{ dueCount: 7, spaceId: "space-b" }],
+        actionableDueCount: 7,
+        gatedNewCount: 3,
+        overdueReviewCount: 2,
+      },
+    });
+
+    expect(snapshot.actionableDueCount).toBe(7);
+    expect(snapshot.gatedNewCount).toBe(3);
+    expect(snapshot.overdueReviewCount).toBe(2);
+    expect(snapshot.actionableDueBySpace).toEqual(new Map([["space-b", 7]]));
+    expect(snapshot.admittedCardIds).toEqual(new Set(["local-card"]));
   });
 });

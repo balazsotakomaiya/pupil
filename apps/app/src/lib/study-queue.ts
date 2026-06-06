@@ -28,6 +28,13 @@ export type StudyQueueSnapshotData = {
   overdueReviewCount: number;
 };
 
+export type ResolveStudyQueueSnapshotInput<T extends QueueCard> = {
+  cards: T[];
+  newCardsBudget: number | null;
+  now: number;
+  snapshotData?: StudyQueueSnapshotData | null;
+};
+
 export function buildDueQueue<T extends QueueCard>(cards: T[], now: number): T[] {
   return [...cards]
     .filter((card) => card.due <= now && !card.suspended)
@@ -83,6 +90,27 @@ export function buildStudyQueueCountMap(
   actionableDueBySpace: StudyQueueSpaceCount[],
 ): Map<string, number> {
   return new Map(actionableDueBySpace.map((entry) => [entry.spaceId, entry.dueCount]));
+}
+
+export function resolveStudyQueueSnapshot<T extends QueueCard>({
+  cards,
+  newCardsBudget,
+  now,
+  snapshotData,
+}: ResolveStudyQueueSnapshotInput<T>): StudyQueueSnapshot {
+  const localSnapshot = buildStudyQueueSnapshot(cards, now, newCardsBudget);
+
+  if (!snapshotData) {
+    return localSnapshot;
+  }
+
+  return {
+    ...localSnapshot,
+    actionableDueBySpace: buildStudyQueueCountMap(snapshotData.actionableDueBySpace),
+    actionableDueCount: snapshotData.actionableDueCount,
+    gatedNewCount: snapshotData.gatedNewCount,
+    overdueReviewCount: snapshotData.overdueReviewCount,
+  };
 }
 
 export async function getStudyQueueSnapshot(): Promise<StudyQueueSnapshotData> {

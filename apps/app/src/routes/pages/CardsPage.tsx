@@ -2,7 +2,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { CardsScreen } from "../../components/cards";
 import { ScreenErrorBoundary } from "../../components/ErrorBoundary";
-import { useCardsQuery, useSpacesQuery } from "../../lib/app-queries";
+import {
+  useCardsQuery,
+  useSpacesQuery,
+  useStudyQueueSnapshotQuery,
+  useStudySettingsQuery,
+} from "../../lib/app-queries";
 import { createCard, deleteCard, suspendCard, updateCard } from "../../lib/cards";
 import { toAppError } from "../../lib/errors";
 import { notifyError, notifySuccess } from "../../lib/notifications";
@@ -11,6 +16,8 @@ import {
   invalidateAfterCardDeletion,
   invalidateAfterCardMutation,
 } from "../../lib/query";
+import { resolveStudyQueueSnapshot } from "../../lib/study-queue";
+import { computeNewCardsBudget } from "../../lib/study-settings";
 import { useShellActions } from "../root-shell";
 
 export function CardsPage() {
@@ -19,6 +26,14 @@ export function CardsPage() {
   const { openCreateDialog } = useShellActions();
   const cards = useCardsQuery().data ?? [];
   const spaces = useSpacesQuery().data ?? [];
+  const studyQueueSnapshotQuery = useStudyQueueSnapshotQuery();
+  const studySettings = useStudySettingsQuery().data ?? { newCardsLimit: null, newCardsToday: 0 };
+  const queueSnapshot = resolveStudyQueueSnapshot({
+    cards,
+    newCardsBudget: computeNewCardsBudget(studySettings.newCardsLimit, studySettings.newCardsToday),
+    now: Date.now(),
+    snapshotData: studyQueueSnapshotQuery.data,
+  });
   const createCardMutation = useMutation({
     mutationFn: createCard,
     onSuccess: async () => {
@@ -70,6 +85,7 @@ export function CardsPage() {
       title="Cards unavailable"
     >
       <CardsScreen
+        actionableDueCount={queueSnapshot.actionableDueCount}
         cards={cards}
         isMutating={
           createCardMutation.isPending ||

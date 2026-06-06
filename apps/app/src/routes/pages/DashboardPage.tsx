@@ -29,7 +29,7 @@ import {
   FALLBACK_STATS,
   FALLBACK_STUDY_SUMMARY,
 } from "../../lib/seed-data";
-import { buildStudyQueueCountMap, buildStudyQueueSnapshot } from "../../lib/study-queue";
+import { resolveStudyQueueSnapshot } from "../../lib/study-queue";
 import { computeNewCardsBudget } from "../../lib/study-settings";
 import { useShellActions } from "../root-shell";
 
@@ -48,22 +48,12 @@ export function DashboardPage() {
   const todayDayKey = getTodayDayKey(now);
   const dismissedDailyCheckInDay = getDismissedDailyCheckInDay();
   const spaceStatsById = new Map(spaceStats.map((entry) => [entry.spaceId, entry]));
-  const localQueueSnapshot = buildStudyQueueSnapshot(
+  const queueSnapshot = resolveStudyQueueSnapshot({
     cards,
+    newCardsBudget: computeNewCardsBudget(studySettings.newCardsLimit, studySettings.newCardsToday),
     now,
-    computeNewCardsBudget(studySettings.newCardsLimit, studySettings.newCardsToday),
-  );
-  const queueSnapshot = studyQueueSnapshotQuery.data
-    ? {
-        actionableDueBySpace: buildStudyQueueCountMap(
-          studyQueueSnapshotQuery.data.actionableDueBySpace,
-        ),
-        actionableDueCount: studyQueueSnapshotQuery.data.actionableDueCount,
-        admittedCardIds: localQueueSnapshot.admittedCardIds,
-        gatedNewCount: studyQueueSnapshotQuery.data.gatedNewCount,
-        overdueReviewCount: studyQueueSnapshotQuery.data.overdueReviewCount,
-      }
-    : localQueueSnapshot;
+    snapshotData: studyQueueSnapshotQuery.data,
+  });
   const summarySpaces = spaces.map((space) => ({
     ...space,
     dueTodayCount: queueSnapshot.actionableDueBySpace.get(space.id) ?? 0,
