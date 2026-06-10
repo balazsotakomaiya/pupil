@@ -323,7 +323,11 @@ export function CardsScreen({
             <button
               className={`${styles.filterChip}${sourceFilter === filter.value ? ` ${styles.active}` : ""}`}
               key={filter.label}
-              onClick={() => setSourceFilter(filter.value)}
+              onClick={() =>
+                setSourceFilter((currentFilter) =>
+                  currentFilter === filter.value ? "all" : filter.value,
+                )
+              }
               type="button"
             >
               {filter.label}

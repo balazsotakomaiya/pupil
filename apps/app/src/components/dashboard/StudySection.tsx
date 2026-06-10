@@ -19,6 +19,7 @@ export function StudySection({
   summary,
 }: StudySectionProps) {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [tapped, setTapped] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -97,7 +98,15 @@ export function StudySection({
               </div>
             )}
           </div>
-          <button className="study-btn" onClick={onPrimaryAction} type="button">
+          <button
+            className={`study-btn${tapped ? " study-btn--glow" : ""}`}
+            onClick={() => setTapped(true)}
+            onAnimationEnd={() => {
+              setTapped(false);
+              onPrimaryAction?.();
+            }}
+            type="button"
+          >
             {summary.primaryActionLabel}
           </button>
         </div>
