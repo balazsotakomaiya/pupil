@@ -1,6 +1,8 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { CloseIcon } from "../icons/CloseIcon";
+import { Button } from "../ui/Button";
+import { Dialog } from "../ui/Dialog";
 
 type NewSpaceDialogProps = {
   error: string | null;
@@ -30,54 +32,50 @@ export function NewSpaceDialog({
   }
 
   return (
-    <div className="dialog-backdrop" onClick={handleBackdropClick} role="presentation">
-      <div
-        aria-describedby={error ? "new-space-error" : "new-space-description"}
-        aria-labelledby="new-space-title"
-        aria-modal="true"
-        className="dialog"
-        onClick={(event) => event.stopPropagation()}
-        role="dialog"
-      >
-        <form className="dialog-form" onSubmit={onSubmit}>
-          <div className="dialog-head">
-            <div>
-              <h2 id="new-space-title">New Space</h2>
-              <p id="new-space-description">
-                Start a topic, subject, or project space for your cards.
-              </p>
-            </div>
-            <button aria-label="Close" className="dialog-close" onClick={onClose} type="button">
-              <CloseIcon />
-            </button>
+    <Dialog
+      aria-describedby={error ? "new-space-error" : "new-space-description"}
+      aria-labelledby="new-space-title"
+      onBackdropClick={handleBackdropClick}
+      onClose={onClose}
+    >
+      <form className="dialog-form" onSubmit={onSubmit}>
+        <div className="dialog-head">
+          <div>
+            <h2 id="new-space-title">New Space</h2>
+            <p id="new-space-description">
+              Start a topic, subject, or project space for your cards.
+            </p>
           </div>
+          <button aria-label="Close" className="dialog-close" onClick={onClose} type="button">
+            <CloseIcon />
+          </button>
+        </div>
 
-          <label className="field">
-            <span className="field-label">Name</span>
-            <input
-              autoFocus
-              className="field-input"
-              onChange={(event) => onChange(event.target.value)}
-              placeholder="Machine Learning"
-              value={value}
-            />
-            {error ? (
-              <p className="field-error" id="new-space-error" role="alert">
-                {error}
-              </p>
-            ) : null}
-          </label>
+        <label className="field">
+          <span className="field-label">Name</span>
+          <input
+            autoFocus
+            className="field-input"
+            onChange={(event) => onChange(event.target.value)}
+            placeholder="Machine Learning"
+            value={value}
+          />
+          {error ? (
+            <p className="field-error" id="new-space-error" role="alert">
+              {error}
+            </p>
+          ) : null}
+        </label>
 
-          <div className={`dialog-actions${shakeKey > 0 ? " shake" : ""}`} key={shakeKey}>
-            <button className="study-btn-secondary" onClick={onClose} type="button">
-              Cancel
-            </button>
-            <button className="study-btn" disabled={isSubmitting} type="submit">
-              {isSubmitting ? "Creating..." : "Create Space"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className={`dialog-actions${shakeKey > 0 ? " shake" : ""}`} key={shakeKey}>
+          <Button onClick={onClose} type="button" variant="secondary">
+            Cancel
+          </Button>
+          <Button disabled={isSubmitting} type="submit">
+            {isSubmitting ? "Creating..." : "Create Space"}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   );
 }

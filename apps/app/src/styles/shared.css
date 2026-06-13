@@ -104,7 +104,7 @@
 .study-btn-secondary:hover,
 .btn-ghost:hover,
 .dialog-close:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-hover);
   border-color: var(--border-hover);
   color: var(--text-primary);
 }
@@ -164,7 +164,7 @@
 }
 
 .study-btn.danger-btn {
-  background: #ef4444;
+  background: var(--color-error);
   color: #fff;
 }
 
@@ -309,7 +309,7 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--overlay-dark);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -478,6 +478,7 @@
   border-radius: 8px;
   background: var(--bg-elevated);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: menuIn 0.14s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .more-menu-item {
@@ -500,17 +501,17 @@
 }
 
 .more-menu-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-hover);
   color: var(--text-primary);
 }
 
 .more-menu-item.danger {
-  color: #ef4444;
+  color: var(--color-error);
 }
 
 .more-menu-item.danger:hover {
-  background: #ef444415;
-  color: #ef4444;
+  background: var(--color-error-bg);
+  color: var(--color-error);
 }
 
 .more-menu-item svg {

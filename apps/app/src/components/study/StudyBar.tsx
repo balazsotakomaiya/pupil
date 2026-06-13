@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { BackIcon } from "../icons/BackIcon";
 import { DeleteIcon } from "../icons/DeleteIcon";
 import { MoreHorizontalIcon } from "../icons/MoreHorizontalIcon";
 import { SuspendIcon } from "../icons/SuspendIcon";
 import { UndoIcon } from "../icons/UndoIcon";
+import { Menu } from "../ui/Menu";
+import { MenuItem } from "../ui/MenuItem";
 import styles from "./Study.module.css";
 import type { StudyCardRecord } from "./types";
 
@@ -35,33 +37,6 @@ export function StudyBar({
   total,
 }: StudyBarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isMenuOpen) {
-      return;
-    }
-
-    function handleOutsideClick(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsMenuOpen(false);
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setIsMenuOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleOutsideClick);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isMenuOpen]);
 
   function handleSuspend() {
     setIsMenuOpen(false);
@@ -100,38 +75,30 @@ export function StudyBar({
         </button>
 
         {currentCard && !isSuspended ? (
-          <div className={styles.sessionQuickActions} ref={menuRef}>
-            <button
-              aria-label="Card actions"
-              className={`${styles.sessionOverflowBtn}${isMenuOpen ? ` ${styles.active}` : ""}`}
-              onClick={() => setIsMenuOpen((open) => !open)}
-              type="button"
+          <div className={styles.sessionQuickActions}>
+            <Menu
+              isOpen={isMenuOpen}
+              onOpenChange={setIsMenuOpen}
+              trigger={
+                <button
+                  aria-label="Card actions"
+                  className={`${styles.sessionOverflowBtn}${isMenuOpen ? ` ${styles.active}` : ""}`}
+                  onClick={() => setIsMenuOpen((open) => !open)}
+                  type="button"
+                >
+                  <MoreHorizontalIcon />
+                </button>
+              }
             >
-              <MoreHorizontalIcon />
-            </button>
-
-            {isMenuOpen ? (
-              <div className={styles.sessionOverflowMenu} role="menu">
-                <button
-                  className={styles.sessionOverflowItem}
-                  onClick={handleSuspend}
-                  role="menuitem"
-                  type="button"
-                >
-                  <SuspendIcon />
-                  Suspend card
-                </button>
-                <button
-                  className={`${styles.sessionOverflowItem} ${styles.danger}`}
-                  onClick={handleDelete}
-                  role="menuitem"
-                  type="button"
-                >
-                  <DeleteIcon />
-                  Delete card
-                </button>
-              </div>
-            ) : null}
+              <MenuItem onClick={handleSuspend}>
+                <SuspendIcon />
+                Suspend card
+              </MenuItem>
+              <MenuItem variant="danger" onClick={handleDelete}>
+                <DeleteIcon />
+                Delete card
+              </MenuItem>
+            </Menu>
           </div>
         ) : null}
       </div>

@@ -24,4 +24,8 @@
   --font-size-sm: 13px;
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
+  --bg-hover: rgba(255, 255, 255, 0.03);
+  --overlay-dark: rgba(0, 0, 0, 0.55);
+  --color-error: #ef4444;
+  --color-error-bg: rgba(239, 68, 68, 0.07);
 }

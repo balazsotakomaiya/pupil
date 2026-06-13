@@ -110,7 +110,7 @@
 }
 
 .sessionQuickActions {
-  position: relative;
+  /* -webkit-app-region: no-drag keeps the overflow button clickable inside a draggable titlebar */
   -webkit-app-region: no-drag;
 }
 
@@ -138,59 +138,6 @@
 .sessionOverflowBtn svg {
   width: 14px;
   height: 14px;
-}
-
-.sessionOverflowMenu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 100;
-  min-width: 156px;
-  padding: 4px;
-  border: 1px solid var(--border-hover);
-  border-radius: var(--radius);
-  background: var(--bg-elevated);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-  animation: menuIn 0.14s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.sessionOverflowItem {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 7px 10px;
-  border: none;
-  border-radius: 5px;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  text-align: left;
-  transition:
-    background 0.1s ease,
-    color 0.1s ease;
-}
-
-.sessionOverflowItem:hover {
-  background: var(--bg-subtle);
-  color: var(--text-primary);
-}
-
-.sessionOverflowItem svg {
-  width: 12px;
-  height: 12px;
-  opacity: 0.55;
-  flex-shrink: 0;
-}
-
-.sessionOverflowItem.danger:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.07);
-}
-
-.sessionOverflowItem.danger:hover svg {
-  opacity: 0.8;
 }
 
 .sessionProgressTrack {
