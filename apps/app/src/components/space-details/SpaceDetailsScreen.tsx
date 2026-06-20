@@ -14,6 +14,7 @@ import { SearchIcon } from "../icons/SearchIcon";
 import { SortIcon } from "../icons/SortIcon";
 import { SparklesIcon } from "../icons/SparklesIcon";
 import { Pagination } from "../Pagination";
+import { Button } from "../ui/Button";
 import { DeleteSpaceDialog } from "./DeleteSpaceDialog";
 import { RenameSpaceDialog } from "./RenameSpaceDialog";
 import styles from "./SpaceDetails.module.css";
@@ -359,12 +360,12 @@ export function SpaceDetailsScreen({
             </div>
 
             <div className="study-right">
-              <button className="study-btn-secondary" onClick={onBack} type="button">
+              <Button onClick={onBack} type="button" variant="secondary">
                 Dashboard
-              </button>
-              <button className="study-btn" onClick={onStartStudy} type="button">
+              </Button>
+              <Button onClick={onStartStudy} type="button">
                 Study this space →
-              </button>
+              </Button>
             </div>
           </div>
         </section>
@@ -545,18 +546,18 @@ export function SpaceDetailsScreen({
           <div className="section-head">
             <span className="section-label">Cards</span>
             <div className={styles.toolbarTopRight}>
-              <button className="btn-ghost" onClick={handleOpenNewCard} type="button">
+              <Button onClick={handleOpenNewCard} type="button" variant="ghost">
                 <PlusIcon />
                 New Card
-              </button>
-              <button className="btn-ghost" onClick={onOpenAiGenerate} type="button">
+              </Button>
+              <Button onClick={onOpenAiGenerate} type="button" variant="ghost">
                 <SparklesIcon />
                 AI Generate
-              </button>
-              <button className="btn-ghost" onClick={onOpenImport} type="button">
+              </Button>
+              <Button onClick={onOpenImport} type="button" variant="ghost">
                 <ImportIcon />
                 Import
-              </button>
+              </Button>
             </div>
           </div>
 

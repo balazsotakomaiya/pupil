@@ -7,6 +7,7 @@ import { PlusIcon } from "../icons/PlusIcon";
 import { SearchIcon } from "../icons/SearchIcon";
 import { SortIcon } from "../icons/SortIcon";
 import { Pagination } from "../Pagination";
+import { Button } from "../ui/Button";
 import { CardFormPanel } from "./CardFormPanel";
 import { CardList } from "./CardList";
 import styles from "./Cards.module.css";
@@ -156,9 +157,9 @@ export function CardsScreen({
               Cards belong to spaces. Start by creating a topic or subject space, then use the
               manual card editor to build your first deck.
             </p>
-            <button className="study-btn" onClick={onOpenCreateDialog} type="button">
+            <Button onClick={onOpenCreateDialog} type="button">
               New Space
-            </button>
+            </Button>
           </div>
         </section>
       </div>
@@ -269,10 +270,10 @@ export function CardsScreen({
             </span>
           </div>
           <div className={styles.toolbarTopRight}>
-            <button className="btn-ghost" onClick={handleOpenNewCard} type="button">
+            <Button onClick={handleOpenNewCard} type="button" variant="ghost">
               <PlusIcon />
               New Card
-            </button>
+            </Button>
           </div>
         </div>
 

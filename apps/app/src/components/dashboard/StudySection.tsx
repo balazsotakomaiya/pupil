@@ -88,8 +88,8 @@ export function StudySection({
               </button>
             ))}
           </Menu>
-          <button
-            className={`study-btn${tapped ? " study-btn--glow" : ""}`}
+          <Button
+            className={tapped ? "study-btn--glow" : undefined}
             onClick={() => setTapped(true)}
             onAnimationEnd={() => {
               setTapped(false);
@@ -98,7 +98,7 @@ export function StudySection({
             type="button"
           >
             {summary.primaryActionLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </section>
