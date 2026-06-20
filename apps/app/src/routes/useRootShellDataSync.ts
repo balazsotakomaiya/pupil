@@ -1,6 +1,7 @@
 import { type UseQueryResult, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { getTodayDayKey } from "../lib/daily-checkin";
+import { toAppError } from "../lib/errors";
 import { log } from "../lib/log";
 import { invalidateDateSensitiveAppData } from "../lib/query";
 import { isTauriRuntime } from "../lib/runtime";
@@ -83,8 +84,10 @@ export function useRootShellDataSync({
     }
 
     void refreshTrayStatus().catch((error: unknown) => {
+      const appError = toAppError(error, "Failed to refresh tray status.");
       log.warn("Failed to refresh tray status.", {
-        error: error instanceof Error ? error.message : String(error),
+        code: appError.code,
+        message: appError.message,
       });
     });
   }, [

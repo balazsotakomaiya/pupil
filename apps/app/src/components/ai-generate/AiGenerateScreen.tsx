@@ -5,6 +5,7 @@ import {
   hasConfiguredAiKey,
   loadAiSettings,
 } from "../../lib/ai-settings";
+import { toAppError } from "../../lib/errors";
 import type { SpaceSummary } from "../../lib/spaces";
 import styles from "./AiGenerate.module.css";
 import { AiGenerateError } from "./AiGenerateError";
@@ -79,7 +80,7 @@ export function AiGenerateScreen({
         setMode(hasConfiguredAiKey(settings) ? "form" : "no-key");
       } catch (error: unknown) {
         if (!cancelled) {
-          setRuntimeError(error instanceof Error ? error.message : "Failed to load AI settings.");
+          setRuntimeError(toAppError(error, "Failed to load AI settings.").message);
           setMode("error");
         }
       } finally {
@@ -158,7 +159,7 @@ export function AiGenerateScreen({
       );
       setMode("review");
     } catch (error: unknown) {
-      setRuntimeError(error instanceof Error ? error.message : "Generation failed.");
+      setRuntimeError(toAppError(error, "Generation failed.").message);
       setMode("error");
     }
   }
@@ -208,7 +209,7 @@ export function AiGenerateScreen({
         ),
       );
     } catch (error: unknown) {
-      setRuntimeError(error instanceof Error ? error.message : "Regeneration failed.");
+      setRuntimeError(toAppError(error, "Regeneration failed.").message);
       setMode("error");
     } finally {
       setRegeneratingCardId(null);
@@ -250,7 +251,7 @@ export function AiGenerateScreen({
 
       await onSaveApprovedCards({ cards: approvedCards, spaceId: targetSpaceId });
     } catch (error: unknown) {
-      setRuntimeError(error instanceof Error ? error.message : "Saving generated cards failed.");
+      setRuntimeError(toAppError(error, "Saving generated cards failed.").message);
       setMode("error");
     } finally {
       setIsSaving(false);

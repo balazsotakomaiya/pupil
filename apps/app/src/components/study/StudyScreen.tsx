@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ExplainCardResult } from "../../lib/ai-explain";
 import type { CardRecord } from "../../lib/cards";
+import { toAppError } from "../../lib/errors";
 import { previewCardScheduling } from "../../lib/fsrs";
 import type { SpaceSummary } from "../../lib/spaces";
 import { buildAdmittedSet, buildDueQueue } from "../../lib/study-queue";
@@ -283,7 +284,7 @@ export function StudyScreen({
         setIsSummaryVisible(true);
       }
     } catch (nextError: unknown) {
-      setError(nextError instanceof Error ? nextError.message : "Failed to save review.");
+      setError(toAppError(nextError, "Failed to save review.").message);
     } finally {
       setPressedGrade(null);
       setIsSubmittingReview(false);
@@ -317,7 +318,7 @@ export function StudyScreen({
       setPriorityCardId(restored.id);
       setNow(Date.now());
     } catch (nextError: unknown) {
-      setError(nextError instanceof Error ? nextError.message : "Failed to undo review.");
+      setError(toAppError(nextError, "Failed to undo review.").message);
     } finally {
       setIsUndoing(false);
     }
@@ -344,8 +345,7 @@ export function StudyScreen({
         text: result.explanation,
       });
     } catch (nextError: unknown) {
-      const message =
-        nextError instanceof Error ? nextError.message : "Failed to generate explanation.";
+      const message = toAppError(nextError, "Failed to generate explanation.").message;
       setExplain({
         cardId,
         cached: false,
@@ -410,7 +410,7 @@ export function StudyScreen({
         setIsSummaryVisible(true);
       }
     } catch (nextError: unknown) {
-      setError(nextError instanceof Error ? nextError.message : "Failed to delete card.");
+      setError(toAppError(nextError, "Failed to delete card.").message);
     }
   }
 
@@ -430,7 +430,7 @@ export function StudyScreen({
       // Keep the card visible so the user can decide to skip or unsuspend.
       setSuspendedCardId(currentCard.id);
     } catch (nextError: unknown) {
-      setError(nextError instanceof Error ? nextError.message : "Failed to suspend card.");
+      setError(toAppError(nextError, "Failed to suspend card.").message);
     }
   }
 
@@ -450,7 +450,7 @@ export function StudyScreen({
       setSuspendedCardId(null);
       setNow(Date.now());
     } catch (nextError: unknown) {
-      setError(nextError instanceof Error ? nextError.message : "Failed to unsuspend card.");
+      setError(toAppError(nextError, "Failed to unsuspend card.").message);
     }
   }
 

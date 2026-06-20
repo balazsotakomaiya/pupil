@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import type { CardRecord } from "../../lib/cards";
+import { toAppError } from "../../lib/errors";
 import type { SpaceSummary } from "../../lib/spaces";
 import type { SpaceStats } from "../../lib/stats";
 import { buildDueQueue } from "../../lib/study-queue";
@@ -177,7 +178,7 @@ export function SpaceDetailsScreen({
         setEditorSuccessPulseTick((currentTick) => currentTick + 1);
       }
     } catch (nextError: unknown) {
-      setError(nextError instanceof Error ? nextError.message : "Failed to save card.");
+      setError(toAppError(nextError, "Failed to save card.").message);
     }
   }
 
@@ -195,7 +196,7 @@ export function SpaceDetailsScreen({
       setExpandedCardId((currentCardId) => (currentCardId === targetCardId ? null : currentCardId));
       setIsEditorOpen(false);
     } catch (nextError: unknown) {
-      setError(nextError instanceof Error ? nextError.message : "Failed to delete card.");
+      setError(toAppError(nextError, "Failed to delete card.").message);
     } finally {
       setIsDeleting(false);
     }
@@ -233,7 +234,7 @@ export function SpaceDetailsScreen({
       await onRenameSpace({ name: renameName });
       setIsRenameDialogOpen(false);
     } catch (nextError: unknown) {
-      setRenameError(nextError instanceof Error ? nextError.message : "Failed to rename space.");
+      setRenameError(toAppError(nextError, "Failed to rename space.").message);
     } finally {
       setIsRenaming(false);
     }

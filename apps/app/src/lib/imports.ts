@@ -2,7 +2,9 @@ import { decompress as decompressZstd } from "fzstd";
 import JSZip from "jszip";
 import initSqlJs from "sql.js";
 import sqlWasmUrl from "sql.js/dist/sql-wasm.wasm?url";
+import { toAppError } from "./errors";
 import { invokeCommand } from "./ipc";
+import { log } from "./log";
 import { isTauriRuntime } from "./runtime";
 import { SPACE_NAME_MAX_LENGTH } from "./spaces";
 
@@ -98,7 +100,7 @@ export async function importApkgFile(
   } = {},
 ): Promise<ImportExecutionResult> {
   const { onStageChange, targetSpaceId = null } = options;
-  console.info("[import] Starting Anki import", {
+  log.info("Starting Anki import", {
     fileName: file.name,
     fileSize: file.size,
     targetSpaceId,
@@ -120,7 +122,7 @@ export async function importApkgFile(
 
     const parsed = await parseApkgFile(file);
 
-    console.info("[import] Parsed Anki package", {
+    log.info("Parsed Anki package", {
       cardCount: parsed.cards.length,
       deckCount: parsed.deckCount,
       fileName: file.name,
@@ -181,7 +183,7 @@ export async function importApkgFile(
       statusVariant: "complete",
     });
 
-    console.info("[import] Finished Anki import", {
+    log.info("Finished Anki import", {
       deckCount: result.deckCount,
       duplicateCount: result.duplicateCount,
       fileName: file.name,
@@ -192,13 +194,15 @@ export async function importApkgFile(
 
     return result;
   } catch (error: unknown) {
-    console.error("[import] Failed Anki import", {
-      error,
+    const appError = toAppError(error, "Failed to import the Anki package");
+    log.error("Failed Anki import", {
+      code: appError.code,
       fileName: file.name,
       fileSize: file.size,
+      message: appError.message,
       targetSpaceId,
     });
-    throw error;
+    throw appError;
   }
 }
 

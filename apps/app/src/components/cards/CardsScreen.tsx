@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { CardRecord } from "../../lib/cards";
+import { toAppError } from "../../lib/errors";
 import type { SpaceSummary } from "../../lib/spaces";
 import { GridIcon } from "../icons/GridIcon";
 import { PlusIcon } from "../icons/PlusIcon";
@@ -189,7 +190,7 @@ export function CardsScreen({
         setEditorSuccessPulseTick((currentTick) => currentTick + 1);
       }
     } catch (nextError: unknown) {
-      setError(nextError instanceof Error ? nextError.message : "Failed to save card.");
+      setError(toAppError(nextError, "Failed to save card.").message);
     }
   }
 
@@ -207,7 +208,7 @@ export function CardsScreen({
       setExpandedCardId((currentCardId) => (currentCardId === targetCardId ? null : currentCardId));
       setIsEditorOpen(false);
     } catch (nextError: unknown) {
-      setError(nextError instanceof Error ? nextError.message : "Failed to delete card.");
+      setError(toAppError(nextError, "Failed to delete card.").message);
     } finally {
       setIsDeleting(false);
     }

@@ -1,5 +1,7 @@
 import { type ChangeEvent, type DragEvent, useMemo, useRef, useState } from "react";
+import { toAppError } from "../../lib/errors";
 import { type ImportExecutionResult, importApkgFile, readImportHistory } from "../../lib/imports";
+import { log } from "../../lib/log";
 import type { SpaceSummary } from "../../lib/spaces";
 import { ChevronDownIcon } from "../icons/ImportIcons";
 import styles from "./Import.module.css";
@@ -88,7 +90,7 @@ export function ImportScreen({
     }
 
     if (!file.name.toLowerCase().endsWith(".apkg")) {
-      console.warn("[import] Rejected non-apkg file", {
+      log.warn("Rejected non-apkg file", {
         fileName: file.name,
         fileSize: file.size,
       });
@@ -110,16 +112,13 @@ export function ImportScreen({
       setHistoryItems(nextHistory.map(buildHistoryItem));
       await onImportComplete();
     } catch (error: unknown) {
-      console.error("[import] Import screen received failure", {
-        error,
+      const appError = toAppError(error, "Failed to import the selected package");
+      log.error("Import screen received failure", {
+        code: appError.code,
         fileName: file.name,
+        message: appError.message,
       });
-      setActiveImportModel(
-        buildUnsupportedModel(
-          file,
-          error instanceof Error ? error.message : "Failed to import the selected package",
-        ),
-      );
+      setActiveImportModel(buildUnsupportedModel(file, appError.message));
     }
   }
 
