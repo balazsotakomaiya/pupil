@@ -461,16 +461,6 @@
   height: 12px;
 }
 
-.emptyState {
-  padding: 80px 20px;
-  text-align: center;
-}
-
-.emptyState p {
-  color: var(--text-tertiary);
-  font-size: 14px;
-}
-
 @media (max-width: 640px) {
   .cardListHeader,
   .cardRowMain {

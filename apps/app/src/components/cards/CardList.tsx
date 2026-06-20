@@ -3,6 +3,7 @@ import { ChevronRightIcon } from "../icons/ChevronRightIcon";
 import { DeleteIcon } from "../icons/DeleteIcon";
 import { EditIcon } from "../icons/EditIcon";
 import { SuspendIcon } from "../icons/SuspendIcon";
+import { EmptyState } from "../ui/EmptyState";
 import styles from "./Cards.module.css";
 
 type CardListProps = {
@@ -27,9 +28,7 @@ export function CardList({
   if (cards.length === 0) {
     return (
       <div className={styles.cardList}>
-        <div className={styles.emptyState}>
-          <p>No cards match the current filters.</p>
-        </div>
+        <EmptyState description="No cards match the current filters." />
       </div>
     );
   }

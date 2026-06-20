@@ -5,11 +5,19 @@ interface MenuProps {
   children: ReactNode;
   className?: string;
   isOpen: boolean;
+  menuClassName?: string;
   onOpenChange: (open: boolean) => void;
   trigger: ReactNode;
 }
 
-export function Menu({ children, className, isOpen, onOpenChange, trigger }: MenuProps) {
+export function Menu({
+  children,
+  className,
+  isOpen,
+  menuClassName,
+  onOpenChange,
+  trigger,
+}: MenuProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,12 +44,13 @@ export function Menu({ children, className, isOpen, onOpenChange, trigger }: Men
   }, [isOpen, onOpenChange]);
 
   const wrapClass = ["more-menu-wrap", className].filter(Boolean).join(" ");
+  const innerClass = ["more-menu", menuClassName].filter(Boolean).join(" ");
 
   return (
     <div className={wrapClass} ref={wrapRef}>
       {trigger}
       {isOpen && (
-        <div className="more-menu" role="menu">
+        <div className={innerClass} role="menu">
           {children}
         </div>
       )}

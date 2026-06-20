@@ -439,6 +439,35 @@
   height: 5px;
 }
 
+.empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.empty-state svg {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 8px;
+  color: var(--text-tertiary);
+  opacity: 0.7;
+}
+
+.empty-state h3 {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.empty-state p {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: 14px;
+}
+
 .placeholder-panel {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
