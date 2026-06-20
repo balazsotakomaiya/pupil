@@ -1,5 +1,6 @@
 import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
+import { readWebCollection, WEB_STORAGE_KEYS } from "./web-store";
 
 export type RecentActivityRecord = {
   id: string;
@@ -9,7 +10,6 @@ export type RecentActivityRecord = {
   spaceName: string;
 };
 
-const WEB_REVIEW_LOG_STORAGE_KEY = "pupil.web.review_logs";
 const RECENT_ACTIVITY_SESSION_GAP_MS = 30 * 60 * 1000;
 const MAX_RECENT_ACTIVITY_ROWS = 5;
 
@@ -56,32 +56,15 @@ export async function listRecentActivity(): Promise<RecentActivityRecord[]> {
   return sessions;
 }
 
+function isStoredReviewLog(value: unknown): value is StoredReviewLog {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    typeof (value as StoredReviewLog).spaceId === "string" &&
+    typeof (value as StoredReviewLog).reviewTime === "number"
+  );
+}
+
 function readStoredReviewLogs(): StoredReviewLog[] {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(WEB_REVIEW_LOG_STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter(
-      (value): value is StoredReviewLog =>
-        !!value &&
-        typeof value === "object" &&
-        typeof (value as StoredReviewLog).spaceId === "string" &&
-        typeof (value as StoredReviewLog).reviewTime === "number",
-    );
-  } catch {
-    return [];
-  }
+  return readWebCollection(WEB_STORAGE_KEYS.reviewLogs, isStoredReviewLog);
 }

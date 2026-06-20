@@ -1,5 +1,15 @@
 import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
+import {
+  createWebId,
+  readStoredWebSpaces,
+  readWebArray,
+  readWebCollection,
+  type StoredWebSpace,
+  WEB_STORAGE_KEYS,
+  writeStoredWebSpaces,
+  writeWebCollection,
+} from "./web-store";
 
 export const SPACE_NAME_MAX_LENGTH = 80;
 
@@ -9,13 +19,6 @@ export type SpaceSummary = {
   cardCount: number;
   dueTodayCount: number;
   streak: number;
-  createdAt: number;
-  updatedAt: number;
-};
-
-type StoredWebSpace = {
-  id: string;
-  name: string;
   createdAt: number;
   updatedAt: number;
 };
@@ -39,10 +42,6 @@ type StoredWebReviewLog = {
   spaceId: string;
   spaceName?: string;
 };
-
-const WEB_SPACE_STORAGE_KEY = "pupil.web.spaces";
-const WEB_CARD_STORAGE_KEY = "pupil.web.cards";
-const WEB_REVIEW_LOG_STORAGE_KEY = "pupil.web.review_logs";
 
 export async function listSpaces(): Promise<SpaceSummary[]> {
   if (isTauriRuntime()) {
@@ -176,74 +175,12 @@ function toSpaceSummary(space: StoredWebSpace, cards: StoredWebCard[], now: numb
   };
 }
 
-function readStoredWebSpaces(): StoredWebSpace[] {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(WEB_SPACE_STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed
-      .filter(isStoredWebSpace)
-      .sort((left, right) => right.updatedAt - left.updatedAt || right.createdAt - left.createdAt);
-  } catch {
-    return [];
-  }
-}
-
-function writeStoredWebSpaces(spaces: StoredWebSpace[]): void {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return;
-  }
-
-  const nextSpaces = [...spaces].sort(
-    (left, right) => right.updatedAt - left.updatedAt || right.createdAt - left.createdAt,
-  );
-
-  window.localStorage.setItem(WEB_SPACE_STORAGE_KEY, JSON.stringify(nextSpaces));
-}
-
 function readStoredWebCards(): StoredWebCard[] {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(WEB_CARD_STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter(isStoredWebCard);
-  } catch {
-    return [];
-  }
+  return readWebCollection(WEB_STORAGE_KEYS.cards, isStoredWebCard);
 }
 
 function writeStoredWebCards(cards: StoredWebCard[]): void {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return;
-  }
-
-  window.localStorage.setItem(WEB_CARD_STORAGE_KEY, JSON.stringify(cards));
+  writeWebCollection(WEB_STORAGE_KEYS.cards, cards);
 }
 
 function renameStoredCardSpaces(spaceId: string, spaceName: string): void {
@@ -254,58 +191,21 @@ function renameStoredCardSpaces(spaceId: string, spaceName: string): void {
 }
 
 function renameStoredReviewLogSpaces(spaceId: string, spaceName: string): void {
-  if (typeof window === "undefined" || !window.localStorage) {
+  const logs = readWebArray(WEB_STORAGE_KEYS.reviewLogs);
+
+  if (logs.length === 0) {
     return;
   }
 
-  const raw = window.localStorage.getItem(WEB_REVIEW_LOG_STORAGE_KEY);
-
-  if (!raw) {
-    return;
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return;
+  const nextLogs = logs.map((value) => {
+    if (!isStoredWebReviewLog(value) || value.spaceId !== spaceId) {
+      return value;
     }
 
-    const nextLogs = parsed.map((value) => {
-      if (!isStoredWebReviewLog(value) || value.spaceId !== spaceId) {
-        return value;
-      }
+    return { ...value, spaceName };
+  });
 
-      return { ...value, spaceName };
-    });
-
-    window.localStorage.setItem(WEB_REVIEW_LOG_STORAGE_KEY, JSON.stringify(nextLogs));
-  } catch {
-    return;
-  }
-}
-
-function createWebId(prefix: string): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function isStoredWebSpace(value: unknown): value is StoredWebSpace {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const space = value as Partial<StoredWebSpace>;
-
-  return (
-    typeof space.id === "string" &&
-    typeof space.name === "string" &&
-    typeof space.createdAt === "number" &&
-    typeof space.updatedAt === "number"
-  );
+  writeWebCollection(WEB_STORAGE_KEYS.reviewLogs, nextLogs);
 }
 
 function isStoredWebReviewLog(value: unknown): value is StoredWebReviewLog {

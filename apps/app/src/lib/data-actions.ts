@@ -1,5 +1,6 @@
 import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
+import { readWebArray, readWebString, removeWebKey, WEB_STORAGE_KEYS } from "./web-store";
 
 export type SettingsDataSummary = {
   databasePath: string;
@@ -12,12 +13,12 @@ export type ExportDataResult = {
 };
 
 const WEB_KEYS = [
-  "pupil.ai.settings",
-  "pupil.web.cards",
-  "pupil.web.review_logs",
-  "pupil.web.spaces",
-  "pupil.web.study_days",
-  "pupil.web.study_settings",
+  WEB_STORAGE_KEYS.aiSettings,
+  WEB_STORAGE_KEYS.cards,
+  WEB_STORAGE_KEYS.reviewLogs,
+  WEB_STORAGE_KEYS.spaces,
+  WEB_STORAGE_KEYS.studyDays,
+  WEB_STORAGE_KEYS.studySettings,
 ];
 
 export async function getSettingsDataSummary(): Promise<SettingsDataSummary> {
@@ -27,7 +28,7 @@ export async function getSettingsDataSummary(): Promise<SettingsDataSummary> {
 
   return {
     databasePath: "Browser preview uses localStorage",
-    reviewLogCount: readStoredArray("pupil.web.review_logs").length,
+    reviewLogCount: readWebArray(WEB_STORAGE_KEYS.reviewLogs).length,
   };
 }
 
@@ -38,11 +39,7 @@ export async function exportDatabaseCopy(): Promise<ExportDataResult> {
 
   downloadBlob(
     `pupil-export-${Date.now()}.json`,
-    JSON.stringify(
-      Object.fromEntries(WEB_KEYS.map((key) => [key, window.localStorage.getItem(key)])),
-      null,
-      2,
-    ),
+    JSON.stringify(Object.fromEntries(WEB_KEYS.map((key) => [key, readWebString(key)])), null, 2),
     "application/json",
   );
 
@@ -57,7 +54,7 @@ export async function exportReviewLogsCsv(): Promise<ExportDataResult> {
     return invokeCommand<ExportDataResult>("export_review_logs_csv");
   }
 
-  const logs = readStoredArray("pupil.web.review_logs");
+  const logs = readWebArray(WEB_STORAGE_KEYS.reviewLogs) as Array<Record<string, unknown>>;
   const rows = [
     "review_time,space_id,grade,state,due,elapsed_days,scheduled_days",
     ...logs.map((log) =>
@@ -88,26 +85,7 @@ export async function resetAllData(): Promise<void> {
   }
 
   for (const key of WEB_KEYS) {
-    window.localStorage.removeItem(key);
-  }
-}
-
-function readStoredArray(key: string): Array<Record<string, unknown>> {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(key);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? (parsed as Array<Record<string, unknown>>) : [];
-  } catch {
-    return [];
+    removeWebKey(key);
   }
 }
 

@@ -7,6 +7,14 @@ import { invokeCommand } from "./ipc";
 import { log } from "./log";
 import { isTauriRuntime } from "./runtime";
 import { SPACE_NAME_MAX_LENGTH } from "./spaces";
+import {
+  createWebId,
+  readStoredWebSpaces,
+  readWebCollection,
+  WEB_STORAGE_KEYS,
+  writeStoredWebSpaces,
+  writeWebCollection,
+} from "./web-store";
 
 type ParsedAnkiCard = {
   back: string;
@@ -53,13 +61,6 @@ export type ImportExecutionResult = {
   targetSpaceName?: string | null;
 };
 
-type StoredWebSpace = {
-  createdAt: number;
-  id: string;
-  name: string;
-  updatedAt: number;
-};
-
 type StoredWebCard = {
   back: string;
   createdAt: number;
@@ -73,9 +74,6 @@ type StoredWebCard = {
   updatedAt: number;
 };
 
-const IMPORT_HISTORY_STORAGE_KEY = "pupil.web.import-history";
-const WEB_SPACE_STORAGE_KEY = "pupil.web.spaces";
-const WEB_CARD_STORAGE_KEY = "pupil.web.cards";
 const COLLECTION_FILE_NAMES = [
   "collection.anki21b",
   "collection.anki21",
@@ -207,29 +205,9 @@ export async function importApkgFile(
 }
 
 export function readImportHistory(): ImportExecutionResult[] {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(IMPORT_HISTORY_STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed
-      .filter(isImportExecutionResult)
-      .sort((left, right) => right.importedAt - left.importedAt);
-  } catch {
-    return [];
-  }
+  return readWebCollection(WEB_STORAGE_KEYS.importHistory, isImportExecutionResult).sort(
+    (left, right) => right.importedAt - left.importedAt,
+  );
 }
 
 async function parseApkgFile(file: File): Promise<ParsedAnkiPackage> {
@@ -604,72 +582,15 @@ function importAnkiCardsInWebStorage(input: ImportAnkiPayload) {
 }
 
 function writeImportHistory(history: ImportExecutionResult[]) {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return;
-  }
-
-  window.localStorage.setItem(IMPORT_HISTORY_STORAGE_KEY, JSON.stringify(history.slice(0, 12)));
-}
-
-function readStoredWebSpaces(): StoredWebSpace[] {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(WEB_SPACE_STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? parsed.filter(isStoredWebSpace) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeStoredWebSpaces(spaces: StoredWebSpace[]) {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return;
-  }
-
-  window.localStorage.setItem(
-    WEB_SPACE_STORAGE_KEY,
-    JSON.stringify(
-      [...spaces].sort(
-        (left, right) => right.updatedAt - left.updatedAt || right.createdAt - left.createdAt,
-      ),
-    ),
-  );
+  writeWebCollection(WEB_STORAGE_KEYS.importHistory, history.slice(0, 12));
 }
 
 function readStoredWebCards(): StoredWebCard[] {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(WEB_CARD_STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? parsed.filter(isStoredWebCard) : [];
-  } catch {
-    return [];
-  }
+  return readWebCollection(WEB_STORAGE_KEYS.cards, isStoredWebCard);
 }
 
 function writeStoredWebCards(cards: StoredWebCard[]) {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return;
-  }
-
-  window.localStorage.setItem(WEB_CARD_STORAGE_KEY, JSON.stringify(cards));
+  writeWebCollection(WEB_STORAGE_KEYS.cards, cards);
 }
 
 function normalizeTags(tags: string[]) {
@@ -696,14 +617,6 @@ function cardPairKey(front: string, back: string) {
   return `${front}\u001f${back}`;
 }
 
-function createWebId(prefix: string) {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
 function formatFileSize(bytes: number) {
   if (bytes < 1024 * 1024) {
     return `${(bytes / 1024).toFixed(1)} KB`;
@@ -714,20 +627,6 @@ function formatFileSize(bytes: number) {
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US").format(value);
-}
-
-function isStoredWebSpace(value: unknown): value is StoredWebSpace {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const candidate = value as Partial<StoredWebSpace>;
-  return (
-    typeof candidate.id === "string" &&
-    typeof candidate.name === "string" &&
-    typeof candidate.createdAt === "number" &&
-    typeof candidate.updatedAt === "number"
-  );
 }
 
 function isStoredWebCard(value: unknown): value is StoredWebCard {

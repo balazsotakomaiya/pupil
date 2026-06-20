@@ -1,13 +1,17 @@
 import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
+import {
+  formatDayKey,
+  readWebArray,
+  readWebString,
+  WEB_STORAGE_KEYS,
+  writeWebValue,
+} from "./web-store";
 
 export type StudySettings = {
   newCardsLimit: number | null;
   newCardsToday: number;
 };
-
-const WEB_STUDY_SETTINGS_KEY = "pupil.web.study_settings";
-const WEB_REVIEW_LOG_STORAGE_KEY = "pupil.web.review_logs";
 
 /**
  * Average number of reviews a single new card generates within 30 days at
@@ -78,11 +82,7 @@ export function estimateDailyReviewsIn30Days(newCardsPerDay: number): number {
 }
 
 function readWebNewCardsLimit(): number | null {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return DEFAULT_NEW_CARDS_LIMIT;
-  }
-
-  const raw = window.localStorage.getItem(WEB_STUDY_SETTINGS_KEY);
+  const raw = readWebString(WEB_STORAGE_KEYS.studySettings);
 
   if (!raw) {
     return DEFAULT_NEW_CARDS_LIMIT;
@@ -106,57 +106,25 @@ function readWebNewCardsLimit(): number | null {
 }
 
 function writeWebNewCardsLimit(newCardsLimit: number | null): void {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return;
-  }
-
-  window.localStorage.setItem(WEB_STUDY_SETTINGS_KEY, JSON.stringify({ newCardsLimit }));
+  writeWebValue(WEB_STORAGE_KEYS.studySettings, { newCardsLimit });
 }
 
 function countWebNewCardsToday(): number {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return 0;
-  }
+  const today = formatDayKey(Date.now());
+  const seenCardIds = new Set<string>();
 
-  const raw = window.localStorage.getItem(WEB_REVIEW_LOG_STORAGE_KEY);
-
-  if (!raw) {
-    return 0;
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return 0;
+  for (const entry of readWebArray(WEB_STORAGE_KEYS.reviewLogs)) {
+    if (
+      entry &&
+      typeof entry === "object" &&
+      typeof (entry as { reviewTime: number }).reviewTime === "number" &&
+      typeof (entry as { state: number }).state === "number" &&
+      (entry as { state: number }).state === 0 &&
+      formatDayKey((entry as { reviewTime: number }).reviewTime) === today
+    ) {
+      seenCardIds.add((entry as { cardId: string }).cardId);
     }
-
-    const today = formatDay(Date.now());
-    const seenCardIds = new Set<string>();
-
-    for (const entry of parsed) {
-      if (
-        entry &&
-        typeof entry === "object" &&
-        typeof (entry as { reviewTime: number }).reviewTime === "number" &&
-        typeof (entry as { state: number }).state === "number" &&
-        (entry as { state: number }).state === 0 &&
-        formatDay((entry as { reviewTime: number }).reviewTime) === today
-      ) {
-        seenCardIds.add((entry as { cardId: string }).cardId);
-      }
-    }
-
-    return seenCardIds.size;
-  } catch {
-    return 0;
   }
-}
 
-function formatDay(timestamp: number): string {
-  const value = new Date(timestamp);
-  const year = value.getFullYear();
-  const month = `${value.getMonth() + 1}`.padStart(2, "0");
-  const day = `${value.getDate()}`.padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return seenCardIds.size;
 }

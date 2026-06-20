@@ -1,5 +1,6 @@
 import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
+import { readWebString, WEB_STORAGE_KEYS, writeWebValue } from "./web-store";
 
 export type AiDifficulty = "Beginner" | "Intermediate" | "Advanced";
 export type AiStyle = "Concept" | "Q&A" | "Cloze";
@@ -34,8 +35,6 @@ type SaveAiSettingsInput = {
   temperature: string;
   explainEnabled?: boolean;
 };
-
-const AI_SETTINGS_STORAGE_KEY = "pupil.ai.settings";
 
 const DEFAULT_AI_SETTINGS: AiSettings = {
   apiKey: "",
@@ -200,11 +199,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 }
 
 function readWebAiSettings(): AiSettings {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return DEFAULT_AI_SETTINGS;
-  }
-
-  const raw = window.localStorage.getItem(AI_SETTINGS_STORAGE_KEY);
+  const raw = readWebString(WEB_STORAGE_KEYS.aiSettings);
 
   if (!raw) {
     return DEFAULT_AI_SETTINGS;
@@ -236,11 +231,7 @@ function readWebAiSettings(): AiSettings {
 }
 
 function writeWebAiSettings(settings: AiSettings): void {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return;
-  }
-
-  window.localStorage.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  writeWebValue(WEB_STORAGE_KEYS.aiSettings, settings);
 }
 
 function buildMockGeneratedCards(input: {

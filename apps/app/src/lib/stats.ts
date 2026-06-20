@@ -1,5 +1,6 @@
 import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
+import { formatDayKey, readWebCollection, WEB_STORAGE_KEYS } from "./web-store";
 
 export type DashboardStats = {
   dueToday: number;
@@ -14,10 +15,6 @@ export type SpaceStats = {
   reviewActivity7d: number[];
   spaceId: string;
 };
-
-const WEB_CARD_STORAGE_KEY = "pupil.web.cards";
-const WEB_REVIEW_LOG_STORAGE_KEY = "pupil.web.review_logs";
-const WEB_STUDY_DAY_STORAGE_KEY = "pupil.web.study_days";
 
 type StoredWebCard = {
   due: number;
@@ -44,7 +41,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const reviewLogs = readStoredReviewLogs();
   const studyDays = readStoredStudyDays();
   const now = Date.now();
-  const today = formatStudyDay(now);
+  const today = formatDayKey(now);
 
   return {
     dueToday: cards.filter((card) => card.due <= now).length,
@@ -52,7 +49,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       studyDays.filter((entry) => entry.spaceId === null).map((entry) => entry.day),
       today,
     ),
-    studiedToday: reviewLogs.filter((log) => formatStudyDay(log.reviewTime) === today).length,
+    studiedToday: reviewLogs.filter((log) => formatDayKey(log.reviewTime) === today).length,
     studyDays: studyDays.filter((entry) => entry.spaceId === null).map((entry) => entry.day),
     totalCards: cards.length,
   };
@@ -88,102 +85,51 @@ function buildReviewActivity7d(logs: StoredReviewLog[], now: number) {
   return Array.from({ length: 7 }, (_, index) => {
     const day = new Date(startOfToday);
     day.setDate(startOfToday.getDate() - (6 - index));
-    const currentDay = formatStudyDay(day.getTime());
+    const currentDay = formatDayKey(day.getTime());
 
-    return logs.filter((log) => formatStudyDay(log.reviewTime) === currentDay).length;
+    return logs.filter((log) => formatDayKey(log.reviewTime) === currentDay).length;
   });
 }
 
+function isStoredWebCard(value: unknown): value is StoredWebCard {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    typeof (value as StoredWebCard).spaceId === "string" &&
+    typeof (value as StoredWebCard).due === "number"
+  );
+}
+
+function isStoredReviewLog(value: unknown): value is StoredReviewLog {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    typeof (value as StoredReviewLog).spaceId === "string" &&
+    typeof (value as StoredReviewLog).grade === "number" &&
+    typeof (value as StoredReviewLog).reviewTime === "number"
+  );
+}
+
+function isStoredStudyDay(value: unknown): value is StoredStudyDay {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    typeof (value as StoredStudyDay).day === "string" &&
+    (typeof (value as StoredStudyDay).spaceId === "string" ||
+      (value as StoredStudyDay).spaceId === null)
+  );
+}
+
 function readStoredCards(): StoredWebCard[] {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(WEB_CARD_STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter(
-      (value): value is StoredWebCard =>
-        !!value &&
-        typeof value === "object" &&
-        typeof (value as StoredWebCard).spaceId === "string" &&
-        typeof (value as StoredWebCard).due === "number",
-    );
-  } catch {
-    return [];
-  }
+  return readWebCollection(WEB_STORAGE_KEYS.cards, isStoredWebCard);
 }
 
 function readStoredReviewLogs(): StoredReviewLog[] {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(WEB_REVIEW_LOG_STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter(
-      (value): value is StoredReviewLog =>
-        !!value &&
-        typeof value === "object" &&
-        typeof (value as StoredReviewLog).spaceId === "string" &&
-        typeof (value as StoredReviewLog).grade === "number" &&
-        typeof (value as StoredReviewLog).reviewTime === "number",
-    );
-  } catch {
-    return [];
-  }
+  return readWebCollection(WEB_STORAGE_KEYS.reviewLogs, isStoredReviewLog);
 }
 
 function readStoredStudyDays(): StoredStudyDay[] {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(WEB_STUDY_DAY_STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter(
-      (value): value is StoredStudyDay =>
-        !!value &&
-        typeof value === "object" &&
-        typeof (value as StoredStudyDay).day === "string" &&
-        (typeof (value as StoredStudyDay).spaceId === "string" ||
-          (value as StoredStudyDay).spaceId === null),
-    );
-  } catch {
-    return [];
-  }
+  return readWebCollection(WEB_STORAGE_KEYS.studyDays, isStoredStudyDay);
 }
 
 function computeStreak(days: string[], today: string) {
@@ -195,18 +141,10 @@ function computeStreak(days: string[], today: string) {
     cursor.setDate(cursor.getDate() - 1);
   }
 
-  while (daySet.has(formatStudyDay(cursor.getTime()))) {
+  while (daySet.has(formatDayKey(cursor.getTime()))) {
     streak += 1;
     cursor.setDate(cursor.getDate() - 1);
   }
 
   return streak;
-}
-
-function formatStudyDay(timestamp: number) {
-  const value = new Date(timestamp);
-  const year = value.getFullYear();
-  const month = `${value.getMonth() + 1}`.padStart(2, "0");
-  const day = `${value.getDate()}`.padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }

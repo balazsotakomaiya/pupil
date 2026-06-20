@@ -1,6 +1,17 @@
 import { createNewCardFsrsFields, type FsrsReviewGrade, scheduleCard } from "./fsrs";
 import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
+import {
+  createWebId,
+  formatDayKey,
+  readStoredWebSpaces,
+  readWebArray,
+  readWebCollection,
+  type StoredWebSpace,
+  WEB_STORAGE_KEYS,
+  writeStoredWebSpaces,
+  writeWebCollection,
+} from "./web-store";
 
 export type CardSource = "manual" | "ai" | "anki";
 
@@ -28,18 +39,6 @@ export type CardRecord = {
   explanation: string | null;
   explanationGeneratedAt: number | null;
 };
-
-type StoredWebSpace = {
-  id: string;
-  name: string;
-  createdAt: number;
-  updatedAt: number;
-};
-
-const WEB_SPACE_STORAGE_KEY = "pupil.web.spaces";
-const WEB_CARD_STORAGE_KEY = "pupil.web.cards";
-const WEB_REVIEW_LOG_STORAGE_KEY = "pupil.web.review_logs";
-const WEB_STUDY_DAY_STORAGE_KEY = "pupil.web.study_days";
 
 type ReviewLogRecord = {
   id: string;
@@ -390,35 +389,11 @@ function normalizeTags(tags: string[]): string[] {
 }
 
 function readWebCards(): CardRecord[] {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(WEB_CARD_STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.flatMap(parseCardRecord).sort(sortCards);
-  } catch {
-    return [];
-  }
+  return readWebArray(WEB_STORAGE_KEYS.cards).flatMap(parseCardRecord).sort(sortCards);
 }
 
 function writeWebCards(cards: CardRecord[]): void {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return;
-  }
-
-  window.localStorage.setItem(WEB_CARD_STORAGE_KEY, JSON.stringify([...cards].sort(sortCards)));
+  writeWebCollection(WEB_STORAGE_KEYS.cards, [...cards].sort(sortCards));
 }
 
 function touchWebSpace(spaceId: string, spaces: StoredWebSpace[], timestamp: number): void {
@@ -426,50 +401,7 @@ function touchWebSpace(spaceId: string, spaces: StoredWebSpace[], timestamp: num
     space.id === spaceId ? { ...space, updatedAt: timestamp } : space,
   );
 
-  if (typeof window === "undefined" || !window.localStorage) {
-    return;
-  }
-
-  window.localStorage.setItem(
-    WEB_SPACE_STORAGE_KEY,
-    JSON.stringify(
-      nextSpaces.sort(
-        (left, right) => right.updatedAt - left.updatedAt || right.createdAt - left.createdAt,
-      ),
-    ),
-  );
-}
-
-function readStoredWebSpaces(): StoredWebSpace[] {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(WEB_SPACE_STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter(isStoredWebSpace);
-  } catch {
-    return [];
-  }
-}
-
-function createWebId(prefix: string): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  writeStoredWebSpaces(nextSpaces);
 }
 
 function sortCards(left: CardRecord, right: CardRecord): number {
@@ -528,87 +460,24 @@ function parseCardRecord(value: unknown): CardRecord[] {
   ];
 }
 
-function isStoredWebSpace(value: unknown): value is StoredWebSpace {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const space = value as Partial<StoredWebSpace>;
-
-  return (
-    typeof space.id === "string" &&
-    typeof space.name === "string" &&
-    typeof space.createdAt === "number" &&
-    typeof space.updatedAt === "number"
-  );
-}
-
 function readWebReviewLogs(): ReviewLogRecord[] {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(WEB_REVIEW_LOG_STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter(isReviewLogRecord);
-  } catch {
-    return [];
-  }
+  return readWebCollection(WEB_STORAGE_KEYS.reviewLogs, isReviewLogRecord);
 }
 
 function writeWebReviewLogs(logs: ReviewLogRecord[]): void {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return;
-  }
-
-  window.localStorage.setItem(WEB_REVIEW_LOG_STORAGE_KEY, JSON.stringify(logs));
+  writeWebCollection(WEB_STORAGE_KEYS.reviewLogs, logs);
 }
 
 function readWebStudyDays(): StudyDayRecord[] {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(WEB_STUDY_DAY_STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter(isStudyDayRecord);
-  } catch {
-    return [];
-  }
+  return readWebCollection(WEB_STORAGE_KEYS.studyDays, isStudyDayRecord);
 }
 
 function writeWebStudyDays(days: StudyDayRecord[]): void {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return;
-  }
-
-  window.localStorage.setItem(WEB_STUDY_DAY_STORAGE_KEY, JSON.stringify(days));
+  writeWebCollection(WEB_STORAGE_KEYS.studyDays, days);
 }
 
 function upsertWebStudyDay(spaceId: string | null, reviewedAt: number): void {
-  const day = formatStudyDay(reviewedAt);
+  const day = formatDayKey(reviewedAt);
   const currentDays = readWebStudyDays();
   const exists = currentDays.some((entry) => entry.day === day && entry.spaceId === spaceId);
 
@@ -617,14 +486,6 @@ function upsertWebStudyDay(spaceId: string | null, reviewedAt: number): void {
   }
 
   writeWebStudyDays([{ day, spaceId }, ...currentDays]);
-}
-
-function formatStudyDay(timestamp: number): string {
-  const value = new Date(timestamp);
-  const year = value.getFullYear();
-  const month = `${value.getMonth() + 1}`.padStart(2, "0");
-  const day = `${value.getDate()}`.padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
 
 function isReviewLogRecord(value: unknown): value is ReviewLogRecord {
