@@ -4,6 +4,7 @@ import { SPACE_NAME_MAX_LENGTH } from "../../lib/spaces";
 import { CloseIcon } from "../icons/CloseIcon";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
+import { Field, Input } from "../ui/Field";
 
 type RenameSpaceDialogProps = {
   error: string | null;
@@ -58,22 +59,15 @@ export function RenameSpaceDialog({
           </button>
         </div>
 
-        <label className="field">
-          <span className="field-label">Name</span>
-          <input
+        <Field error={error} errorId="rename-space-error" label="Name">
+          <Input
             autoFocus
-            className="field-input"
             maxLength={SPACE_NAME_MAX_LENGTH}
             onChange={(event) => onChange(event.target.value)}
             placeholder="Machine Learning"
             value={value}
           />
-          {error ? (
-            <p className="field-error" id="rename-space-error" role="alert">
-              {error}
-            </p>
-          ) : null}
-        </label>
+        </Field>
 
         <div className={`dialog-actions${shakeKey > 0 ? " shake" : ""}`} key={shakeKey}>
           <Button disabled={isSubmitting} onClick={onClose} type="button" variant="secondary">

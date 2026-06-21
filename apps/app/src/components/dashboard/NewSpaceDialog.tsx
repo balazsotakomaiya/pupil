@@ -3,6 +3,7 @@ import { useState } from "react";
 import { CloseIcon } from "../icons/CloseIcon";
 import { Button } from "../ui/Button";
 import { Dialog } from "../ui/Dialog";
+import { Field, Input } from "../ui/Field";
 
 type NewSpaceDialogProps = {
   error: string | null;
@@ -51,21 +52,14 @@ export function NewSpaceDialog({
           </button>
         </div>
 
-        <label className="field">
-          <span className="field-label">Name</span>
-          <input
+        <Field error={error} errorId="new-space-error" label="Name">
+          <Input
             autoFocus
-            className="field-input"
             onChange={(event) => onChange(event.target.value)}
             placeholder="Machine Learning"
             value={value}
           />
-          {error ? (
-            <p className="field-error" id="new-space-error" role="alert">
-              {error}
-            </p>
-          ) : null}
-        </label>
+        </Field>
 
         <div className={`dialog-actions${shakeKey > 0 ? " shake" : ""}`} key={shakeKey}>
           <Button onClick={onClose} type="button" variant="secondary">
