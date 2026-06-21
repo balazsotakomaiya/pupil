@@ -1,6 +1,13 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import {
+  DEFAULT_AI_BASE_URL,
+  DEFAULT_AI_MODEL,
+  getProviderForBaseUrl,
+  getProviderForKey,
+  getRecommendedModelsForBaseUrl,
+} from "../../lib/ai-providers";
+import {
   describeAiSettingsError,
   loadAiSettings,
   saveAiSettings,
@@ -66,27 +73,12 @@ let _connectionStatusCache: {
 } | null = null;
 
 function detectProviderFromKey(key: string): { baseUrl: string; model: string } | null {
-  if (key.length < 10) return null;
-  if (key.startsWith("sk-ant-")) {
-    return { baseUrl: "https://api.anthropic.com/v1", model: "claude-sonnet-4-6" };
-  }
-  if (key.startsWith("sk-")) {
-    return { baseUrl: "https://api.openai.com/v1", model: "gpt-5.4" };
-  }
-  if (key.startsWith("AIza")) {
-    return {
-      baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
-      model: "gemini-2.5-pro",
-    };
-  }
-  return null;
+  const provider = getProviderForKey(key);
+  return provider ? { baseUrl: provider.baseUrl, model: provider.defaultModel } : null;
 }
 
 function detectModelFromUrl(url: string): string | null {
-  if (url.includes("anthropic.com")) return "claude-sonnet-4-6";
-  if (url.includes("openai.com")) return "gpt-5.4";
-  if (url.includes("generativelanguage.googleapis.com")) return "gemini-2.5-pro";
-  return null;
+  return getProviderForBaseUrl(url)?.defaultModel ?? null;
 }
 
 export function SettingsScreen({
@@ -106,17 +98,17 @@ export function SettingsScreen({
   const [apiKeyEdited, setApiKeyEdited] = useState(false);
   const [hasStoredApiKey, setHasStoredApiKey] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
-  const [baseUrl, setBaseUrl] = useState("https://api.openai.com/v1");
-  const [model, setModel] = useState("gpt-5.4");
+  const [baseUrl, setBaseUrl] = useState(DEFAULT_AI_BASE_URL);
+  const [model, setModel] = useState(DEFAULT_AI_MODEL);
   const [maxTokens, setMaxTokens] = useState("4096");
   const [temperature, setTemperature] = useState("0.7");
   const [explainEnabled, setExplainEnabled] = useState(true);
   const [savedSettings, setSavedSettings] = useState<SavedSettingsSnapshot>({
-    baseUrl: "https://api.openai.com/v1",
+    baseUrl: DEFAULT_AI_BASE_URL,
     explainEnabled: true,
     hasApiKey: false,
     maxTokens: "4096",
-    model: "gpt-5.4",
+    model: DEFAULT_AI_MODEL,
     temperature: "0.7",
   });
   const [lastSavedField, setLastSavedField] = useState<
@@ -601,6 +593,34 @@ export function SettingsScreen({
 
         <div className={styles.settingsFieldGroup}>
           <div className={styles.settingsField}>
+            <label className={styles.settingsFieldLabel} htmlFor="settings-base-url">
+              Base URL
+              {recentlySaved && lastSavedField === "baseUrl" && (
+                <span className={styles.settingsAutosaveBadge}>Saved</span>
+              )}
+            </label>
+            <input
+              className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
+              disabled={isSettingsBusy}
+              id="settings-base-url"
+              onChange={(event) => {
+                hasUserEditedSettings.current = true;
+                const value = event.target.value;
+                setBaseUrl(value);
+                const detectedModel = detectModelFromUrl(value);
+                if (detectedModel) setModel(detectedModel);
+                scheduleAutoSave("baseUrl");
+              }}
+              placeholder={DEFAULT_AI_BASE_URL}
+              type="text"
+              value={baseUrl}
+            />
+            <div className={styles.settingsFieldHint}>
+              OpenAI-compatible endpoint. Change this for Anthropic, Ollama, or a self-hosted proxy.
+            </div>
+          </div>
+
+          <div className={styles.settingsField}>
             <label className={styles.settingsFieldLabel} htmlFor="settings-api-key">
               API Key
               <span className={styles.settingsLabelBadge}>Stored safely</span>
@@ -704,34 +724,6 @@ export function SettingsScreen({
           </div>
 
           <div className={styles.settingsField}>
-            <label className={styles.settingsFieldLabel} htmlFor="settings-base-url">
-              Base URL
-              {recentlySaved && lastSavedField === "baseUrl" && (
-                <span className={styles.settingsAutosaveBadge}>Saved</span>
-              )}
-            </label>
-            <input
-              className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
-              disabled={isSettingsBusy}
-              id="settings-base-url"
-              onChange={(event) => {
-                hasUserEditedSettings.current = true;
-                const value = event.target.value;
-                setBaseUrl(value);
-                const detectedModel = detectModelFromUrl(value);
-                if (detectedModel) setModel(detectedModel);
-                scheduleAutoSave("baseUrl");
-              }}
-              placeholder="https://api.openai.com/v1"
-              type="text"
-              value={baseUrl}
-            />
-            <div className={styles.settingsFieldHint}>
-              OpenAI-compatible endpoint. Change this for Anthropic, Ollama, or a self-hosted proxy.
-            </div>
-          </div>
-
-          <div className={styles.settingsField}>
             <label className={styles.settingsFieldLabel} htmlFor="settings-model">
               Model
               {recentlySaved && lastSavedField === "model" && (
@@ -752,7 +744,7 @@ export function SettingsScreen({
               value={model}
             />
             <div className={styles.settingsModelChips}>
-              {["gpt-5.4", "claude-sonnet-4-6", "claude-opus-4-6"].map((chip) => (
+              {getRecommendedModelsForBaseUrl(baseUrl).map((chip) => (
                 <button
                   className={`${styles.settingsModelChip}${model === chip ? ` ${styles.active}` : ""}`}
                   disabled={isSettingsBusy}
