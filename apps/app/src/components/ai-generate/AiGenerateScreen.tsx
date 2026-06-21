@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { DEFAULT_AI_BASE_URL, DEFAULT_AI_MODEL } from "../../lib/ai-providers";
 import {
   type AiSettings,
   generateAiCards,
@@ -32,8 +33,8 @@ type AiGenerateScreenProps = {
 const DEFAULT_AI_SETTINGS: AiSettings = {
   apiKey: "",
   hasApiKey: false,
-  baseUrl: "https://api.openai.com/v1",
-  model: "gpt-5.4",
+  baseUrl: DEFAULT_AI_BASE_URL,
+  model: DEFAULT_AI_MODEL,
   maxTokens: "4096",
   temperature: "0.7",
   explainEnabled: true,
