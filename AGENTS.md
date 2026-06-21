@@ -73,6 +73,10 @@ If something is long-lived shell behavior rather than presentational UI, prefer 
 - FSRS scheduling stays in TypeScript. Rust persists validated results; it should not recalculate schedules.
 - Migrations are append-only and wired through `MIGRATIONS` in `apps/app/src-tauri/src/constants.rs`.
 - Query invalidation matters. If a mutation changes cards, spaces, dashboard stats, or study settings, update the matching React Query invalidation path.
+- React Query is the single source of truth for server/persisted data. Do not add a parallel client store (Zustand etc.) for it — one existed, drifted, and was removed.
+- All browser-mode `localStorage` access is centralized in `apps/app/src/lib/web-store.ts`. Domain helpers call it; they never touch `window.localStorage` directly or hardcode storage keys.
+- Caught errors flow through `toAppError()` (`src/lib/errors.ts`) for user-facing messages, and logging goes through `src/lib/log.ts` — not `console.*`.
+- Reuse the shared UI primitives in `apps/app/src/components/ui/` (Button, Dialog, Menu, Field, EmptyState) instead of re-implementing buttons/dialogs/menus/fields.
 - Tray/dashboard/study counts should share queue rules conceptually. If one count changes, check the others.
 - **CSS is fully modular in `apps/app`.** All component styles live in collocated `*.module.css` files. Do not create a new global stylesheet or add component-specific rules to `src/styles/shared.css`. See `apps/app/AGENTS.md` for the full CSS conventions.
 

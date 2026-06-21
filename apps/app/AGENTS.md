@@ -72,7 +72,34 @@ The frontend is organized in three main layers:
 
 Route pages should compose queries, mutations, and navigation. Presentation stays in components. Long-lived shell side effects should usually live in a dedicated route hook rather than expanding `root-shell.tsx` directly.
 
-TanStack Query is the default server-state layer. If a mutation changes cards, spaces, dashboard stats, or study settings, update the relevant invalidation helper in `src/lib/query.ts`.
+TanStack Query is the **single** server-state layer. Read persisted data through the `use*Query` hooks in `src/lib/app-queries.ts`; mutate with `useMutation` and invalidate via the helpers in `src/lib/query.ts`. If a mutation changes cards, spaces, dashboard stats, or study settings, update the relevant invalidation helper there. Do **not** introduce a parallel client store (Zustand etc.) for server data — a duplicate store previously existed, drifted, and was removed. Zustand is fine for purely ephemeral UI state (see `src/lib/notifications.ts`).
+
+---
+
+## Shared UI primitives
+
+Reusable presentational building blocks live in `src/components/ui/` and are the default — reach for them before hand-rolling a button, dialog, menu, field, or empty state. They wrap the global classes in `shared.css`, so using them is visually identical to the raw markup but removes duplication.
+
+| Primitive | Wraps | Notes |
+|---|---|---|
+| `Button` | `.study-btn` / `.study-btn-secondary` / `.btn-ghost` / `danger-btn` | `variant`: `primary` \| `secondary` \| `ghost` \| `danger`. Forwards all `<button>` props + `className`. |
+| `Dialog` | `.dialog-backdrop` / `.dialog` | Owns Escape-to-close + backdrop click. Pass `onBackdropClick` to override (e.g. "shake when dirty"). |
+| `Menu` + `MenuItem` | `.more-menu*` | `Menu` owns click-outside + Escape. Never re-implement a `document.addEventListener("mousedown", …)` dropdown by hand. |
+| `Field` + `Input` / `Select` / `Textarea` | `.field*` | `Field` renders label + optional error. Controls forward props + `className`. |
+| `EmptyState` | `.empty-state` | `icon` / `title` / `description` / `action`. |
+
+When adding a primitive, keep it a thin wrapper over a `shared.css` class (don't bake in bespoke styling), forward native props and `className`, and export it from `src/components/ui/index.ts`.
+
+**Bespoke vs. shared — important judgement call.** Intentionally-distinct designed surfaces are *not* duplication and should be left alone. `CardFormPanel` (rich editor: formatting toolbar, word counts, flip preview) and `AiGenerateForm` (its own `--bg-subtle` inputs, custom select chevron) deliberately diverge from the shared field/button look; do not force them onto the primitives just to reduce class count — that changes the product's appearance. Migrate to a primitive only when the result is visually identical (or the visual change is intended and signed off).
+
+## Icons
+
+One icon per component (or a grouped `SomethingIcons.tsx` exporting several) under `src/components/icons/`. Do **not** inline `<svg>` markup or an `ICONS` map inside feature components — extract it to `icons/` and import.
+
+## Errors and logging
+
+- Normalize every caught error through `toAppError(error, fallbackMessage)` from `src/lib/errors.ts`, then use `.message` for user-facing text. Backend/IPC failures arrive as structured `{ code, message }` objects (not `Error` instances), so a bare `error instanceof Error ? error.message : "…"` silently drops the real message — `toAppError` extracts it.
+- Log through `src/lib/log.ts` (`log.warn` / `log.error` with a context object), never `console.*`.
 
 ---
 
@@ -90,6 +117,23 @@ The Rust backend is split by responsibility:
 8. **`util.rs`** — small shared helpers like timestamps, tag encoding, and storage error mapping.
 
 The guiding rule is pragmatic separation: keep thin command handlers, keep SQL close to the feature it serves, and avoid layers that only forward calls.
+
+---
+
+## Web (non-Tauri) persistence
+
+`src/lib/*` domain helpers run in two runtimes: the real Tauri app (IPC + SQLite) and a browser preview (`bun run dev:web`) that falls back to `localStorage`. The standard shape is:
+
+```ts
+export async function listThings(): Promise<Thing[]> {
+  if (isTauriRuntime()) {
+    return invokeCommand<Thing[]>("list_things");
+  }
+  return readWebCollection(WEB_STORAGE_KEYS.things, isThing);
+}
+```
+
+All `localStorage` access goes through **`src/lib/web-store.ts`** — never touch `window.localStorage` directly in a domain module. It owns the availability guard, JSON (de)serialization, the day-key formatter, `createWebId`, and every storage key (`WEB_STORAGE_KEYS`). Use `readWebCollection` / `writeWebCollection` for arrays, `readWebValue` / `writeWebValue` for single objects, `readWebString` / `writeWebString` / `removeWebKey` for raw values. Add new keys to `WEB_STORAGE_KEYS`, not as inline string literals.
 
 ---
 
@@ -190,6 +234,8 @@ Rules:
 - **Compound state selectors**: `.cardState.stateLearning {}` → both classes scoped. JSX: `` `${styles.cardState} ${styles.stateLearning}` ``.
 - **`@keyframes` names**: Define in `animations.css`. Reference by name from any module (Vite resolves them globally).
 - **`dangerouslySetInnerHTML` targets**: Use `:global(.class-name)` in the module.
+- **Use design tokens, not raw values.** Reference `var(--…)` from `tokens.css` for colors/spacing/radii instead of hardcoding hex or `rgba()`. Common ones beyond the palette: `--bg-hover`, `--overlay-dark`, `--color-error`, `--color-error-bg`. If a literal recurs, promote it to a token.
+- **Prefer a UI primitive over a new button/input/dialog class.** Most new buttons, fields, dialogs, and menus should use `src/components/ui/*` (which already map to these global classes) rather than a fresh collocated class.
 - **Do not re-add a `style.css` root file.** The old monolith has been fully migrated.
 
 ---
