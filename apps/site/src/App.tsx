@@ -16,30 +16,58 @@ const RELEASES_URL = `${REPO_URL}/releases`;
 const DOCS_URL = `${REPO_URL}/wiki`;
 const ISSUES_URL = `${REPO_URL}/issues`;
 const DESKTOP_APP_VERSION = appPackage.version;
+const RELEASE_TAG = `app-v${DESKTOP_APP_VERSION}`;
+const DOWNLOAD_BASE = `${REPO_URL}/releases/download/${RELEASE_TAG}`;
 
 type OS = "mac" | "windows" | "linux" | "unknown";
 
 function detectOS(): OS {
+  // Prefer the modern User-Agent Client Hints API (Chromium-based browsers)
+  const uaData = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData;
+  if (uaData?.platform) {
+    if (uaData.platform === "macOS") return "mac";
+    if (uaData.platform === "Windows") return "windows";
+    if (uaData.platform === "Linux") return "linux";
+  }
+  // Fall back to the classic User-Agent string
   const ua = navigator.userAgent;
-  if (/Macintosh|MacIntel/.test(ua)) return "mac";
+  if (/Macintosh|MacIntel|Mac OS X/.test(ua)) return "mac";
   if (/Windows/.test(ua)) return "windows";
   if (/Linux/.test(ua) && !/Android/.test(ua)) return "linux";
   return "unknown";
 }
 
-const OS_CONFIG: Record<OS, { label: string; icon: React.ReactNode }> = {
-  mac: { label: "Download for Mac", icon: <AppleIcon /> },
-  windows: { label: "Download for Windows", icon: <WindowsIcon /> },
-  linux: { label: "Download for Linux", icon: <LinuxIcon /> },
-  unknown: { label: "Download", icon: <DownloadIcon /> },
+const OS_CONFIG: Record<OS, { label: string; icon: React.ReactNode; downloadUrl: string }> = {
+  // Default to Apple Silicon — most Macs since 2020 are arm64.
+  // Intel Mac users can use "All platforms" to get the x64 build.
+  mac: {
+    label: "Download for Mac",
+    icon: <AppleIcon />,
+    downloadUrl: `${DOWNLOAD_BASE}/Pupil_${DESKTOP_APP_VERSION}_aarch64.dmg`,
+  },
+  windows: {
+    label: "Download for Windows",
+    icon: <WindowsIcon />,
+    downloadUrl: `${DOWNLOAD_BASE}/Pupil_${DESKTOP_APP_VERSION}_x64-setup.exe`,
+  },
+  linux: {
+    label: "Download for Linux",
+    icon: <LinuxIcon />,
+    downloadUrl: `${DOWNLOAD_BASE}/Pupil_${DESKTOP_APP_VERSION}_amd64.AppImage`,
+  },
+  unknown: {
+    label: "Download",
+    icon: <DownloadIcon />,
+    downloadUrl: RELEASES_URL,
+  },
 };
 
 function DownloadCTA() {
-  const { label, icon } = OS_CONFIG[detectOS()];
+  const { label, icon, downloadUrl } = OS_CONFIG[detectOS()];
   return (
     <div className="hero-ctas-group">
       <div className="hero-ctas">
-        <a href={RELEASES_URL} className="btn-primary" target="_blank" rel="noopener noreferrer">
+        <a href={downloadUrl} className="btn-primary" target="_blank" rel="noopener noreferrer">
           {icon}
           {label}
         </a>
