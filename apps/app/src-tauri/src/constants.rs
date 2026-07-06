@@ -56,7 +56,8 @@ Rules:
 7. Order cards from foundational concepts to more advanced topics.
 8. Do not number or prefix the cards.
 9. For cloze style: front uses "___" for the blank, back gives the missing term plus a one-sentence explanation.
-10. Avoid duplicating information across cards. Each card should cover a distinct fact or concept."#;
+10. Avoid duplicating information across cards. Each card should cover a distinct fact or concept.
+11. Assume that the cards may not be presented in order, therefore each cards should not depend on eachother"#;
 
 pub(crate) const MIGRATIONS: &[Migration] = &[
     Migration {
