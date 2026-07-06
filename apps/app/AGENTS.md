@@ -126,7 +126,7 @@ Grades: `1 = Again`, `2 = Hard`, `3 = Good`, `4 = Easy`.
 
 ## Secrets and the Stronghold vault
 
-The AI API key is stored in a Tauri Stronghold encrypted snapshot at `{appDataDir}/pupil.hold`. It is never written to SQLite. The encryption password is derived deterministically from the app data path and OS username using SHA-256, so the snapshot is machine-bound.
+The AI API key is stored in a Tauri Stronghold encrypted snapshot at `{appDataDir}/pupil.hold`. It is never written to SQLite. The snapshot's encryption password is a high-entropy random key generated on first use and kept in the OS secure store via the `keyring` crate (Secret Service on Linux, Credential Manager on Windows, Keychain on macOS). It is never derived from predictable values such as the app-data path or username. Because the key lives outside the snapshot, a leaked `pupil.hold` file cannot be decrypted without also compromising the OS keystore; still treat the snapshot as sensitive and keep it out of cloud sync/backups. If a snapshot predates the random key (i.e. no matching keystore entry exists), it is discarded and recreated, which requires re-entering the API key.
 
 When adding new secrets, follow the same pattern: `open_stronghold` → get/create client → read or write via the store → call `stronghold.save()`.
 

@@ -30,6 +30,12 @@ pub(crate) const STRONGHOLD_SNAPSHOT_FILE_NAME: &str = "pupil.hold";
 pub(crate) const STRONGHOLD_CLIENT_NAME: &[u8] = b"pupil";
 #[cfg_attr(target_os = "macos", allow(dead_code))]
 pub(crate) const STRONGHOLD_AI_API_KEY_RECORD_KEY: &[u8] = b"ai.api_key";
+#[cfg_attr(target_os = "macos", allow(dead_code))]
+pub(crate) const STRONGHOLD_PASSWORD_SERVICE_NAME: &str = "com.pupil.desktop.stronghold";
+#[cfg_attr(target_os = "macos", allow(dead_code))]
+pub(crate) const STRONGHOLD_PASSWORD_ACCOUNT_NAME: &str = "snapshot_key";
+#[cfg_attr(target_os = "macos", allow(dead_code))]
+pub(crate) const STRONGHOLD_PASSWORD_BYTES: usize = 32;
 
 pub(crate) const AI_EXPLAIN_SYSTEM_PROMPT: &str = r#"You are a patient tutor helping a learner who just got a flashcard wrong during spaced-repetition review.
 
