@@ -1,0 +1,16 @@
+export { default as AppleIcon } from "./AppleIcon";
+export { default as ArrowUpRightIcon } from "./ArrowUpRightIcon";
+export { default as BrainIcon } from "./BrainIcon";
+export { default as ChartIcon } from "./ChartIcon";
+export { default as CloseIcon } from "./CloseIcon";
+export { default as CommandIcon } from "./CommandIcon";
+export { default as DownloadIcon } from "./DownloadIcon";
+export { default as FeatherIcon } from "./FeatherIcon";
+export { default as FolderIcon } from "./FolderIcon";
+export { default as ImportIcon } from "./ImportIcon";
+export { default as LinuxIcon } from "./LinuxIcon";
+export { default as LockIcon } from "./LockIcon";
+export { default as SparklesIcon } from "./SparklesIcon";
+export { default as StarIcon } from "./StarIcon";
+export { default as TuxIcon } from "./TuxIcon";
+export { default as WindowsIcon } from "./WindowsIcon";

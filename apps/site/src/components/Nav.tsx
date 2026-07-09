@@ -1,16 +1,17 @@
 import { Link, useLocation } from "react-router-dom";
+import styles from "./Nav.module.css";
 
 export default function Nav() {
   const { pathname } = useLocation();
 
   return (
-    <nav className="nav">
-      <div className="nav-inner">
-        <Link to="/" className="nav-logo">
+    <nav className={styles.nav}>
+      <div className={styles.navInner}>
+        <Link to="/" className={styles.navLogo}>
           <PupilEye />
           pupil
         </Link>
-        <ul className="nav-links">
+        <ul className={styles.navLinks}>
           <li>
             <a href="/#screenshots">App</a>
           </li>
@@ -23,7 +24,7 @@ export default function Nav() {
           <li>
             <Link
               to="/manifesto"
-              className={pathname === "/manifesto" ? "nav-link-active" : undefined}
+              className={pathname === "/manifesto" ? styles.navLinkActive : undefined}
             >
               Manifesto
             </Link>
@@ -31,7 +32,7 @@ export default function Nav() {
           <li>
             <a
               href="https://github.com/balazsotakomaiya/pupil"
-              className="nav-github"
+              className={styles.navGithub}
               target="_blank"
               rel="noopener noreferrer"
             >

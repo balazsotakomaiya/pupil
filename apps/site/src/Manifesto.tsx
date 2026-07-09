@@ -1,46 +1,38 @@
-import { Link } from "react-router-dom";
-import Nav from "./Nav";
-
-const REPO_URL = "https://github.com/balazsotakomaiya/pupil";
-const DOCS_URL = `${REPO_URL}/wiki`;
-const ISSUES_URL = `${REPO_URL}/issues`;
+import Footer from "./components/Footer";
+import footerStyles from "./components/Footer.module.css";
+import Nav from "./components/Nav";
+import Rulers from "./components/Rulers";
+import { REPO_URL } from "./lib/constants";
+import styles from "./Manifesto.module.css";
+import shared from "./styles/shared.module.css";
 
 export default function Manifesto() {
   return (
     <>
-      {/* Ruler overlay */}
-      <div className="rulers" aria-hidden="true">
-        <div className="ruler ruler-v ruler-outer-left" />
-        <div className="ruler ruler-v ruler-outer-right" />
-        <div className="ruler ruler-v ruler-content-left" />
-        <div className="ruler ruler-v ruler-content-right" />
-        <div className="ruler ruler-h ruler-top" />
-        <div className="ruler ruler-h ruler-bottom" />
-      </div>
-
+      <Rulers />
       <Nav />
 
       {/* Manifesto content */}
-      <main className="manifesto">
-        <div className="manifesto-inner">
-          <header className="manifesto-header">
-            <p className="section-label">Manifesto</p>
-            <h1 className="manifesto-title">
+      <main className={styles.manifesto}>
+        <div className={styles.manifestoInner}>
+          <header className={styles.manifestoHeader}>
+            <p className={shared.sectionLabel}>Manifesto</p>
+            <h1 className={styles.manifestoTitle}>
               Why I built
               <br />
               <em>Pupil</em>
             </h1>
-            <p className="manifesto-subtitle">
+            <p className={styles.manifestoSubtitle}>
               A personal essay on memory, learning, and building software that actually fits your
               life.
             </p>
           </header>
 
-          <div className="ruler-divider" />
+          <div className={shared.rulerDivider} />
 
-          <article className="manifesto-body">
-            <section className="manifesto-section">
-              <h2 className="manifesto-h2">I have a terrible memory.</h2>
+          <article className={styles.manifestoBody}>
+            <section className={styles.manifestoSection}>
+              <h2 className={styles.manifestoH2}>I have a terrible memory.</h2>
               <p>
                 I mean genuinely, embarrassingly bad. Names, concepts I studied last week, things I
                 read and felt certain I understood — gone. I'd revisit material I swore I knew and
@@ -54,10 +46,10 @@ export default function Manifesto() {
               </p>
             </section>
 
-            <div className="ruler-divider" />
+            <div className={shared.rulerDivider} />
 
-            <section className="manifesto-section">
-              <h2 className="manifesto-h2">The science is actually there.</h2>
+            <section className={styles.manifestoSection}>
+              <h2 className={styles.manifestoH2}>The science is actually there.</h2>
               <p>
                 Spaced repetition isn't a productivity hack. It's one of the most robust findings in
                 cognitive psychology. Ebbinghaus mapped the forgetting curve in 1885 — memory decays
@@ -77,10 +69,10 @@ export default function Manifesto() {
               </p>
             </section>
 
-            <div className="ruler-divider" />
+            <div className={shared.rulerDivider} />
 
-            <section className="manifesto-section">
-              <h2 className="manifesto-h2">I kept quitting anyway.</h2>
+            <section className={styles.manifestoSection}>
+              <h2 className={styles.manifestoH2}>I kept quitting anyway.</h2>
               <p>
                 Every flashcard app I tried had the same problem: it lived somewhere else. A
                 separate window, a different device, a workflow I had to context-switch into. The
@@ -96,10 +88,12 @@ export default function Manifesto() {
               </p>
             </section>
 
-            <div className="ruler-divider" />
+            <div className={shared.rulerDivider} />
 
-            <section className="manifesto-section">
-              <h2 className="manifesto-h2">Presence alone isn't enough. Habits need a loop.</h2>
+            <section className={styles.manifestoSection}>
+              <h2 className={styles.manifestoH2}>
+                Presence alone isn't enough. Habits need a loop.
+              </h2>
               <p>
                 Knowing something works isn't enough to make you do it every day. We are
                 dopamine-driven creatures. We need feedback, progress, small victories. The reason
@@ -113,16 +107,16 @@ export default function Manifesto() {
                 streak, my retention rate, the cards due today. That made the act of learning feel
                 like forward motion toward a goal, not just maintenance.
               </p>
-              <blockquote className="manifesto-quote">
+              <blockquote className={styles.manifestoQuote}>
                 Pupil has streaks, per-space stats, and reminders — not because they're clever
                 features, but because without them, I personally would not have kept using it.
               </blockquote>
             </section>
 
-            <div className="ruler-divider" />
+            <div className={shared.rulerDivider} />
 
-            <section className="manifesto-section">
-              <h2 className="manifesto-h2">Then AI removed the last excuse.</h2>
+            <section className={styles.manifestoSection}>
+              <h2 className={styles.manifestoH2}>Then AI removed the last excuse.</h2>
               <p>
                 Even when I was consistent, there was one thing that always felt like work: making
                 the cards in the first place. Writing flashcards is an art. Done well, it takes real
@@ -142,10 +136,10 @@ export default function Manifesto() {
               </p>
             </section>
 
-            <div className="ruler-divider" />
+            <div className={shared.rulerDivider} />
 
-            <section className="manifesto-section">
-              <h2 className="manifesto-h2">Open source can be genuinely delightful.</h2>
+            <section className={styles.manifestoSection}>
+              <h2 className={styles.manifestoH2}>Open source can be genuinely delightful.</h2>
               <p>
                 I wanted to build something for myself. But I also wanted to give it back. There's a
                 perception in some corners that open source means rough edges — something you use
@@ -159,10 +153,10 @@ export default function Manifesto() {
               </p>
             </section>
 
-            <div className="ruler-divider" />
+            <div className={shared.rulerDivider} />
 
-            <section className="manifesto-section">
-              <h2 className="manifesto-h2">It's not for everyone. That's the point.</h2>
+            <section className={styles.manifestoSection}>
+              <h2 className={styles.manifestoH2}>It's not for everyone. That's the point.</h2>
               <p>
                 Pupil is opinionated. I made deliberate choices to leave things out. There is no
                 scripting system, no custom card templates, no plugin ecosystem, no sync you can
@@ -181,9 +175,9 @@ export default function Manifesto() {
               </p>
             </section>
 
-            <div className="ruler-divider" />
+            <div className={shared.rulerDivider} />
 
-            <footer className="manifesto-sign">
+            <footer className={styles.manifestoSign}>
               <p>
                 If any of this resonates —{" "}
                 <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
@@ -193,7 +187,7 @@ export default function Manifesto() {
               </p>
               <a
                 href="https://otakomaiya.com"
-                className="footer-credit"
+                className={footerStyles.footerCredit}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -204,35 +198,9 @@ export default function Manifesto() {
         </div>
       </main>
 
-      <div className="ruler-divider" />
+      <div className={shared.rulerDivider} />
 
-      {/* Footer */}
-      <footer className="footer">
-        <Link to="/" className="footer-logo">
-          pupil
-        </Link>
-        <nav className="footer-links">
-          <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
-            GitHub
-          </a>
-          <span className="sep">·</span>
-          <a href={DOCS_URL} target="_blank" rel="noopener noreferrer">
-            Docs
-          </a>
-          <span className="sep">·</span>
-          <a href={ISSUES_URL} target="_blank" rel="noopener noreferrer">
-            Issues
-          </a>
-        </nav>
-        <a
-          href="https://otakomaiya.com"
-          className="footer-credit"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Balazs Otakomaiya
-        </a>
-      </footer>
+      <Footer />
     </>
   );
 }

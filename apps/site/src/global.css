@@ -1,0 +1,54 @@
+/* ─── Reset ─────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+
+/* ─── Design tokens (from DESIGN.md) ────────────────────────────────────── */
+:root {
+  /* Fonts */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
+
+  /* Backgrounds */
+  --bg: #0a0a0a;
+  --bg-subtle: #111;
+  --bg-elevated: #161616;
+  --code-bg: #0f0f0f;
+
+  /* Borders */
+  --border: #1e1e1e;
+  --border-hover: #333;
+  --ruler: #2a2a2a;
+
+  /* Text */
+  --text-primary: #ededed;
+  --text-secondary: #888;
+  --text-tertiary: #555;
+
+  /* Accent */
+  --accent: #ededed;
+
+  /* Radii */
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}

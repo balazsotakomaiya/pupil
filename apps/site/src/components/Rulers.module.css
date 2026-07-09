@@ -1,0 +1,66 @@
+.rulers {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.ruler {
+  position: fixed;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Vertical rulers — dashes running top-to-bottom */
+.rulerV {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--ruler) 0px,
+    var(--ruler) 1px,
+    transparent 1px,
+    transparent 5px
+  );
+}
+
+/* Horizontal rulers */
+.rulerH {
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--ruler) 0px,
+    var(--ruler) 1px,
+    transparent 1px,
+    transparent 5px
+  );
+}
+
+.rulerOuterLeft {
+  left: 0;
+}
+.rulerOuterRight {
+  right: 0;
+}
+.rulerContentLeft {
+  left: max(32px, calc((100vw - 960px) / 2));
+}
+.rulerContentRight {
+  right: max(32px, calc((100vw - 960px) / 2));
+}
+.rulerTop {
+  top: 0;
+}
+.rulerBottom {
+  bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .rulerContentLeft,
+  .rulerContentRight {
+    display: none;
+  }
+}

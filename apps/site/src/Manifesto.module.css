@@ -1,0 +1,97 @@
+.manifesto {
+  padding: 80px 32px 96px;
+}
+
+.manifestoInner {
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.manifestoHeader {
+  padding-bottom: 56px;
+}
+
+.manifestoTitle {
+  font-size: clamp(40px, 6vw, 64px);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -2px;
+  margin-bottom: 20px;
+  margin-top: 16px;
+}
+
+.manifestoTitle em {
+  font-style: italic;
+  font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
+  font-weight: 400;
+}
+
+.manifestoSubtitle {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 480px;
+}
+
+.manifestoBody {
+  padding-top: 0;
+}
+
+.manifestoSection {
+  padding: 56px 0;
+}
+
+.manifestoH2 {
+  font-size: clamp(18px, 2.5vw, 22px);
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+.manifestoSection p {
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--text-secondary);
+  margin-bottom: 18px;
+}
+
+.manifestoSection p:last-child {
+  margin-bottom: 0;
+}
+
+.manifestoQuote {
+  border-left: 1px solid var(--border-hover);
+  margin: 32px 0;
+  padding: 4px 24px;
+  font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.manifestoSign {
+  padding: 56px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.manifestoSign p {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.manifestoSign a {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--border-hover);
+  transition: text-decoration-color 0.15s;
+}
+
+.manifestoSign a:hover {
+  text-decoration-color: var(--text-secondary);
+}

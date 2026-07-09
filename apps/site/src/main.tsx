@@ -1,7 +1,7 @@
 import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
-import "./style.css";
+import "./global.css";
 import App from "./App";
 import Manifesto from "./Manifesto";
 

@@ -1,0 +1,145 @@
+.hero {
+  padding: 96px 32px 80px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.heroBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 14px;
+  margin-bottom: 24px;
+  letter-spacing: 0.2px;
+}
+
+.heroBadgeChip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  background: var(--bg-elevated);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.heroTitle {
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -1.5px;
+  max-width: 720px;
+  margin-bottom: 20px;
+}
+
+.heroTitle em {
+  font-style: italic;
+  font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
+  font-weight: 400;
+}
+
+.heroDesc {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 520px;
+  margin-bottom: 36px;
+}
+
+.heroMockup {
+  margin-top: 64px;
+  width: 100%;
+  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+/* ─── Hero entrance animation (Linear-style blur-up, per line) ──────────── */
+.heroAnim .heroBadge {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: heroFadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) 60ms forwards;
+}
+
+.heroTitleLine {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(10px);
+  transform: translateY(20%);
+  will-change: opacity, filter, transform;
+  animation: heroBlurUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.heroAnim .heroDesc,
+.heroAnim .heroCtaWrap {
+  opacity: 0;
+  filter: blur(10px);
+  transform: translateY(20%);
+  will-change: opacity, filter, transform;
+}
+
+.heroAnim .heroDesc {
+  animation: heroBlurUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 320ms forwards;
+}
+
+.heroAnim .heroCtaWrap {
+  animation: heroBlurUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 480ms forwards;
+}
+
+.heroAnim .heroMockup {
+  opacity: 0;
+  filter: blur(12px);
+  transform-origin: 50% 100%;
+  transform: perspective(1600px) rotateX(16deg) translateY(64px) scale(0.97);
+  will-change: opacity, filter, transform;
+  animation: heroMockupRise 1.3s cubic-bezier(0.16, 1, 0.3, 1) 650ms forwards;
+}
+
+@keyframes heroBlurUp {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroFadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroMockupRise {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: perspective(1600px) rotateX(0deg) translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroAnim .heroBadge,
+  .heroTitleLine,
+  .heroAnim .heroDesc,
+  .heroAnim .heroCtaWrap,
+  .heroAnim .heroMockup {
+    animation: none;
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding: 64px 20px 56px;
+  }
+
+  .heroMockup {
+    margin-top: 40px;
+  }
+}

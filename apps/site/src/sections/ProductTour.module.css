@@ -1,0 +1,123 @@
+.productTour {
+  padding-top: 96px;
+}
+
+.screenshotFeature {
+  display: grid;
+  grid-template-columns: minmax(0, 0.62fr) minmax(0, 1.38fr);
+  align-items: center;
+  gap: 56px;
+  margin-bottom: 80px;
+}
+
+.screenshotCopy {
+  padding: 4px 0;
+}
+
+.screenshotKicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-tertiary);
+  margin-bottom: 14px;
+}
+
+.screenshotCopy h3 {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.screenshotCopy p:last-child {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  max-width: 320px;
+}
+
+.screenshotGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 40px 32px;
+}
+
+.screenshotCard {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Override applied to the ScreenshotFrame rendered inside a grid card */
+.cardFrame {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 18px 42px rgba(0, 0, 0, 0.38);
+}
+
+.screenshotCardCopy {
+  padding: 0 4px;
+}
+
+.screenshotCardCopy p {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.screenshotCardCopy span {
+  display: block;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+/* The last two cards (Command Palette, Anki import) span the full grid width */
+.screenshotCardWide {
+  grid-column: 1 / -1;
+}
+
+.wideFrame {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.wideCardCopy {
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .productTour {
+    padding-top: 64px;
+  }
+
+  .screenshotFeature {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    margin-bottom: 56px;
+  }
+
+  .screenshotCopy p:last-child {
+    max-width: 520px;
+  }
+
+  .screenshotGrid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .screenshotCardWide {
+    grid-column: auto;
+  }
+
+  .wideFrame,
+  .wideCardCopy {
+    max-width: none;
+  }
+}

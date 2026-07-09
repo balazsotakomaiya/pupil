@@ -1,0 +1,85 @@
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  position: relative;
+}
+
+/* Horizontal connecting line between steps */
+.steps::before {
+  content: "";
+  position: absolute;
+  top: 20px; /* center of the number badge */
+  left: calc(100% / 6); /* starts at center of first step */
+  right: calc(100% / 6); /* ends at center of last step */
+  height: 1px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--border) 0px,
+    var(--border) 1px,
+    transparent 1px,
+    transparent 6px
+  );
+}
+
+.step {
+  padding: 0 32px 0 0;
+  position: relative;
+}
+
+.step:last-child {
+  padding-right: 0;
+}
+
+.stepNumber {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.stepNumber span {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  letter-spacing: 0.5px;
+}
+
+.stepTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  letter-spacing: -0.3px;
+}
+
+.stepDesc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  .steps {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .steps::before {
+    display: none;
+  }
+
+  .step {
+    padding-right: 0;
+    display: flex;
+    flex-direction: column;
+  }
+}
