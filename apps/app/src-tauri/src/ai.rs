@@ -1,11 +1,10 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
 use rusqlite::{params, Connection};
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_stronghold::stronghold::Stronghold;
 
@@ -16,6 +15,7 @@ use crate::constants::{
     AI_SETTING_BASE_URL_KEY, AI_SETTING_EXPLAIN_ENABLED_KEY, AI_SETTING_HAS_API_KEY_KEY,
     AI_SETTING_MAX_TOKENS_KEY, AI_SETTING_MODEL_KEY, AI_SETTING_TEMPERATURE_KEY,
     DEFAULT_AI_BASE_URL, DEFAULT_AI_MAX_TOKENS, DEFAULT_AI_MODEL, DEFAULT_AI_TEMPERATURE,
+    STRONGHOLD_PASSWORD_ACCOUNT_NAME, STRONGHOLD_PASSWORD_BYTES, STRONGHOLD_PASSWORD_SERVICE_NAME,
     STRONGHOLD_SNAPSHOT_FILE_NAME,
 };
 #[cfg(not(target_os = "macos"))]
@@ -391,22 +391,67 @@ fn stronghold_snapshot_path(app: &AppHandle) -> AppResult<PathBuf> {
 }
 
 #[cfg_attr(target_os = "macos", allow(dead_code))]
-fn stronghold_password(app: &AppHandle) -> AppResult<Vec<u8>> {
-    let mut hasher = Sha256::new();
-    hasher.update(b"pupil-stronghold-v1");
-    hasher.update(app_data_dir(app)?.display().to_string().as_bytes());
+fn stronghold_keyring_entry() -> AppResult<keyring::Entry> {
+    keyring::Entry::new(
+        STRONGHOLD_PASSWORD_SERVICE_NAME,
+        STRONGHOLD_PASSWORD_ACCOUNT_NAME,
+    )
+    .map_err(|error| AppError::storage_message(error.to_string()))
+}
 
-    if let Ok(user) = std::env::var("USER").or_else(|_| std::env::var("USERNAME")) {
-        hasher.update(user.as_bytes());
+#[cfg_attr(target_os = "macos", allow(dead_code))]
+fn random_stronghold_password() -> AppResult<Vec<u8>> {
+    let mut password = vec![0u8; STRONGHOLD_PASSWORD_BYTES];
+    getrandom::getrandom(&mut password)
+        .map_err(|error| AppError::storage_message(error.to_string()))?;
+
+    Ok(password)
+}
+
+/// Returns the Stronghold snapshot password, generating a high-entropy random
+/// key on first use and persisting it in the OS secure store. The boolean is
+/// `true` when the key was freshly generated during this call, which means any
+/// pre-existing snapshot was written under a different key and can no longer be
+/// decrypted.
+#[cfg_attr(target_os = "macos", allow(dead_code))]
+fn stronghold_password() -> AppResult<(Vec<u8>, bool)> {
+    let entry = stronghold_keyring_entry()?;
+
+    match entry.get_secret() {
+        Ok(secret) if secret.len() == STRONGHOLD_PASSWORD_BYTES => return Ok((secret, false)),
+        Ok(_) | Err(keyring::Error::NoEntry) => {}
+        Err(error) => return Err(AppError::storage_message(error.to_string())),
     }
 
-    Ok(hasher.finalize().to_vec())
+    let password = random_stronghold_password()?;
+    entry
+        .set_secret(&password)
+        .map_err(|error| AppError::storage_message(error.to_string()))?;
+
+    Ok((password, true))
+}
+
+/// Removes a snapshot that can no longer be opened because it predates the
+/// current random key. The vault only holds the re-enterable AI API key, and
+/// the stale file was encrypted with the old deterministic password, so it must
+/// not be retained.
+#[cfg_attr(target_os = "macos", allow(dead_code))]
+fn remove_stale_snapshot(path: &Path) -> AppResult<()> {
+    match fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(AppError::from(error)),
+    }
 }
 
 #[cfg_attr(target_os = "macos", allow(dead_code))]
 fn open_stronghold(app: &AppHandle) -> AppResult<Stronghold> {
     let snapshot_path = stronghold_snapshot_path(app)?;
-    let password = stronghold_password(app)?;
+    let (password, created_password) = stronghold_password()?;
+
+    if created_password && snapshot_path.exists() {
+        remove_stale_snapshot(&snapshot_path)?;
+    }
 
     Stronghold::new(snapshot_path, password)
         .map_err(|error| AppError::storage_message(error.to_string()))
