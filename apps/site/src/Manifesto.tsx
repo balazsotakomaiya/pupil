@@ -35,13 +35,12 @@ export default function Manifesto() {
               <h2 className={styles.manifestoH2}>I have a terrible memory.</h2>
               <p>
                 I mean genuinely, embarrassingly bad. Names, concepts I studied last week, things I
-                read and felt certain I understood — gone. I'd revisit material I swore I knew and
-                find nothing there. It's frustrating in a way that's hard to describe: not because
-                I'm lazy, but because the effort felt wasted. I put the work in and still came up
-                empty.
+                read and felt certain I understood — gone. I'd revisit something I knew I had read,
+                or studied before, and it would feel as though I was seeing it for the first time.
+                Like my memory is the biological equivalent of a sliding window.
               </p>
               <p>
-                I don't think I'm alone in this. Memory is slippery for most people. So I went
+                I don't think I'm alone in this. Memory is slippery for many people. So I went
                 looking for a solution.
               </p>
             </section>
@@ -58,15 +57,12 @@ export default function Manifesto() {
               </p>
               <p>
                 Modern implementations like FSRS-5 — the algorithm Pupil uses — are the result of
-                decades of refinement. Provably more accurate than the older SM-2 algorithm most
+                decades of refinement. Provably more accurate than the older SM-2 algorithm some
                 flashcard tools still rely on. When you rate a card in Pupil, FSRS-5 calculates the
                 precise moment your memory will need reinforcing. It shows you when you'll see it
                 next before you even tap the button.
               </p>
-              <p>
-                This isn't magic. It's math that most apps aren't bothering to get right. I wanted
-                to get it right. But knowing the solution existed wasn't the hard part.
-              </p>
+              <p>This isn't magic. It's math.</p>
             </section>
 
             <div className={shared.rulerDivider} />
@@ -101,15 +97,17 @@ export default function Manifesto() {
                 feel real. You can see it. You're reluctant to break it.
               </p>
               <p>
-                Anki, which I deeply respect, doesn't give you that. It's a power tool — precise,
-                extensible, and designed for people who already have the discipline to show up every
-                day. I don't always have that. I needed something that nudged me. That showed me my
-                streak, my retention rate, the cards due today. That made the act of learning feel
-                like forward motion toward a goal, not just maintenance.
+                Anki, which I deeply respect, but find awfully sluggish, doesn't give you that. It's
+                a power tool — precise, extensible, and designed for people who already have the
+                discipline to show up every day. I don't always have that. I needed something that
+                is deeply in-tune with me, and I'd hope, you. I needed something that nudged me.
+                That showed me my streak, my retention rate, the cards due today. That made the act
+                of learning feel like forward motion toward a goal, not just maintenance.
               </p>
               <blockquote className={styles.manifestoQuote}>
                 Pupil has streaks, per-space stats, and reminders — not because they're clever
-                features, but because without them, I personally would not have kept using it.
+                features, but because without them, I personally would not have kept using it... and
+                in all honesty, I'm still craving a mobile app to make this whole experience whole.
               </blockquote>
             </section>
 
@@ -119,8 +117,10 @@ export default function Manifesto() {
               <h2 className={styles.manifestoH2}>Then AI removed the last excuse.</h2>
               <p>
                 Even when I was consistent, there was one thing that always felt like work: making
-                the cards in the first place. Writing flashcards is an art. Done well, it takes real
-                thought. Done badly, you end up reviewing useless questions for months.
+                the cards in the first place. Well, making them is pretty easy these days, but
+                they've all lived in many chat sessions across different providers (Claude and
+                ChatGPT, mostly). I had to copy and paste, reformat, and then review. It was a
+                chore. And truth be told I skipped it 70% of the time.
               </p>
               <p>
                 We live in a moment where "AI-powered" has become a marketing checkbox. Every app
@@ -132,7 +132,8 @@ export default function Manifesto() {
               <p>
                 In Pupil, AI does one job: it turns a topic you care about into a full deck of
                 cards, instantly. No prompting, no fiddling. You type, it generates, you review and
-                approve. That's the entire surface area. The rest is you and the algorithm.
+                approve. That's the entire surface area. The rest is you and the algorithm. And some
+                delightfully out-of-your-way UX.
               </p>
             </section>
 
@@ -141,15 +142,17 @@ export default function Manifesto() {
             <section className={styles.manifestoSection}>
               <h2 className={styles.manifestoH2}>Open source can be genuinely delightful.</h2>
               <p>
-                I wanted to build something for myself. But I also wanted to give it back. There's a
-                perception in some corners that open source means rough edges — something you use
-                because it's free rather than because it's good. I've never believed that.
+                I wanted to build something for myself. But I also wanted to give it back. Truth be
+                told, I've always looked as OSS products as the brutalist, functional tools they
+                almost always are. They get the job done, they represent freedom & privacy. Yet
+                almost without exception, they're ugly and clunkly. Not an ounce of empathy toward
+                the end user.
               </p>
               <p>
                 Pupil is open source and I've tried to make it as tasteful and considered as I know
-                how. The type is set carefully. The interactions are smooth. The design has a point
-                of view. Free software can be the software you're proud to have open on your screen.
-                That felt worth proving.
+                how. The type is set carefully. The interactions are smooth. The design is
+                opionated, yet focused. Free software can be the software you're proud to have open
+                on your screen. That felt worth proving.
               </p>
             </section>
 
