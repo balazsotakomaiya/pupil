@@ -1,6 +1,6 @@
 [package]
 name = "pupil-app"
-version = "1.0.0-alpha.7"
+version = "1.0.0-alpha.8"
 description = "Pupil desktop app"
 authors = ["Pupil"]
 edition = "2021"
@@ -44,5 +44,3 @@ keyring = { version = "3.6.2", features = ["sync-secret-service", "crypto-rust"]
 
 [profile.dev.package.scrypt]
 opt-level = 3
-
-
