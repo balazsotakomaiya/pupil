@@ -1,18 +1,12 @@
 .cardBackdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  padding: 76px 24px 24px;
 }
 
 .cardDialog {
   width: min(100%, 860px);
-  max-height: min(calc(100vh - 48px), 980px);
+  max-height: min(calc(100vh - 100px), 980px);
+  display: flex;
+  flex-direction: column;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   background:
@@ -20,8 +14,7 @@
   box-shadow:
     0 30px 90px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  overflow-x: clip;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .cardDialog.successPulse {
@@ -29,20 +22,19 @@
 }
 
 .newCardDialogForm {
+  min-height: 0;
   padding: 0;
-  overflow-x: clip;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .newCardStickyTop {
-  position: sticky;
-  top: 0;
   z-index: 2;
+  flex-shrink: 0;
+  isolation: isolate;
   padding-bottom: 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background:
-    linear-gradient(180deg, rgba(24, 24, 26, 0.98), rgba(24, 24, 26, 0.9)), rgba(17, 17, 17, 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: linear-gradient(180deg, #202022, #18181a);
 }
 
 .newCardHead {
@@ -824,12 +816,12 @@
 
 @media (max-width: 640px) {
   .cardBackdrop {
-    padding: 12px;
+    padding: 88px 12px 12px;
   }
 
   .cardDialog {
     width: 100%;
-    max-height: calc(100vh - 24px);
+    max-height: calc(100vh - 100px);
     border-radius: 16px;
   }
 

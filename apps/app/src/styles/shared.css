@@ -300,30 +300,7 @@
   font-weight: 500;
 }
 
-/* ─────────────────────── Dialog ─────────────────────── */
-
-.dialog-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-.dialog {
-  width: min(100%, 460px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  background:
-    linear-gradient(180deg, rgba(32, 32, 34, 0.96), rgba(17, 17, 18, 0.98)), rgba(17, 17, 17, 0.96);
-  box-shadow:
-    0 30px 90px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
+/* ─────────────────── Dialog content ─────────────────── */
 
 .dialog-form {
   padding: 24px;
@@ -590,7 +567,4 @@
     padding: 20px;
   }
 
-  .dialog-backdrop {
-    padding: 12px;
-  }
 }

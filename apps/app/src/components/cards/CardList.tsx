@@ -1,9 +1,11 @@
+import { useState } from "react";
 import type { CardRecord } from "../../lib/cards";
 import { ChevronRightIcon } from "../icons/ChevronRightIcon";
 import { DeleteIcon } from "../icons/DeleteIcon";
 import { EditIcon } from "../icons/EditIcon";
 import { SuspendIcon } from "../icons/SuspendIcon";
 import styles from "./Cards.module.css";
+import { DeleteCardDialog } from "./DeleteCardDialog";
 
 type CardListProps = {
   cards: CardRecord[];
@@ -24,6 +26,8 @@ export function CardList({
   onSuspendCard,
   onToggleExpand,
 }: CardListProps) {
+  const [pendingDeleteCardId, setPendingDeleteCardId] = useState<string | null>(null);
+
   if (cards.length === 0) {
     return (
       <div className={styles.cardList}>
@@ -132,7 +136,7 @@ export function CardList({
                     ) : null}
                     <button
                       className={styles.actionBtn}
-                      onClick={() => onDeleteCard(card.id)}
+                      onClick={() => setPendingDeleteCardId(card.id)}
                       type="button"
                     >
                       <DeleteIcon />
@@ -145,6 +149,21 @@ export function CardList({
           </article>
         );
       })}
+
+      <DeleteCardDialog
+        cardFront={cards.find((card) => card.id === pendingDeleteCardId)?.front ?? ""}
+        isOpen={pendingDeleteCardId !== null}
+        onClose={() => setPendingDeleteCardId(null)}
+        onConfirm={() => {
+          if (!pendingDeleteCardId) {
+            return;
+          }
+
+          const cardId = pendingDeleteCardId;
+          setPendingDeleteCardId(null);
+          onDeleteCard(cardId);
+        }}
+      />
     </div>
   );
 }

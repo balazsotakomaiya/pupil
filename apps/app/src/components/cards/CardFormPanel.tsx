@@ -9,7 +9,9 @@ import { ItalicIcon } from "../icons/ItalicIcon";
 import { PreviewFlipIcon } from "../icons/PreviewFlipIcon";
 import { SaveIcon } from "../icons/SaveIcon";
 import { TagRemoveIcon } from "../icons/TagRemoveIcon";
+import { Modal } from "../modal";
 import styles from "./CardFormPanel.module.css";
+import { DeleteCardDialog } from "./DeleteCardDialog";
 
 type CardDraft = {
   back: string;
@@ -56,6 +58,7 @@ export function CardFormPanel({
   const lastHandledPulseTick = useRef(0);
   const [isPreviewHovered, setIsPreviewHovered] = useState(false);
   const [makeAnother, setMakeAnother] = useState(true);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isSuccessPulsing, setIsSuccessPulsing] = useState(false);
   const [tagInputValue, setTagInputValue] = useState("");
   const [shakeKey, setShakeKey] = useState(0);
@@ -70,6 +73,7 @@ export function CardFormPanel({
       setTagInputValue("");
       setIsPreviewHovered(false);
       setMakeAnother(true);
+      setIsDeleteConfirmOpen(false);
       setIsSuccessPulsing(false);
       setShakeKey(0);
     }
@@ -105,428 +109,436 @@ export function CardFormPanel({
   }
 
   return (
-    <div className={styles.cardBackdrop} onClick={handleBackdropClick} role="presentation">
-      <div
-        aria-describedby={error ? "card-form-error" : "card-form-description"}
-        aria-labelledby="card-form-title"
-        aria-modal="true"
-        className={`${styles.cardDialog}${isSuccessPulsing ? ` ${styles.successPulse}` : ""}`}
-        onClick={(event) => event.stopPropagation()}
-        ref={dialogRef}
-        role="dialog"
-      >
-        <div className={styles.newCardDialogForm}>
-          <div className={styles.newCardStickyTop}>
-            <div className={styles.newCardHead}>
-              <div>
-                <h2 className={styles.newCardTitle} id="card-form-title">
-                  {hasSelectedCard ? "Edit Card" : "New Card"}
-                </h2>
-                <p className={styles.newCardDescription} id="card-form-description">
-                  Write a focused prompt/answer pair. Keep the front atomic and the back tight.
-                </p>
-              </div>
+    <Modal
+      ariaDescribedBy={error ? "card-form-error" : "card-form-description"}
+      ariaLabelledBy="card-form-title"
+      closeOnEscape={!isSubmitting && !isDeleting}
+      isOpen={isOpen}
+      onBackdropClick={handleBackdropClick}
+      onClose={onClose}
+      overlayClassName={styles.cardBackdrop}
+      panelClassName={`${styles.cardDialog}${isSuccessPulsing ? ` ${styles.successPulse}` : ""}`}
+      size="wide"
+    >
+      <div className={styles.newCardStickyTop}>
+        <div className={styles.newCardHead}>
+          <div>
+            <h2 className={styles.newCardTitle} id="card-form-title">
+              {hasSelectedCard ? "Edit Card" : "New Card"}
+            </h2>
+            <p className={styles.newCardDescription} id="card-form-description">
+              Write a focused prompt/answer pair. Keep the front atomic and the back tight.
+            </p>
+          </div>
+          <button
+            aria-label="Close"
+            className={styles.newCardCloseButton}
+            onClick={onClose}
+            type="button"
+          >
+            <CloseIcon />
+          </button>
+        </div>
+
+        <div className={styles.newCardActionsBar}>
+          {!hasSelectedCard ? (
+            <button
+              aria-pressed={makeAnother}
+              className={`${styles.newCardMakeAnother}${makeAnother ? ` ${styles.active}` : ""}`}
+              onClick={() => setMakeAnother((current) => !current)}
+              type="button"
+            >
+              <span className={styles.newCardMakeAnotherLabel}>Make another</span>
+              <span className={styles.newCardToggleTrack}>
+                <span className={styles.newCardToggleThumb} />
+              </span>
+            </button>
+          ) : (
+            <span />
+          )}
+
+          <div
+            className={`${styles.newCardActionsRight}${shakeKey > 0 ? ` ${styles.shake}` : ""}`}
+            key={shakeKey}
+          >
+            {hasSelectedCard ? (
               <button
-                aria-label="Close"
-                className={styles.newCardCloseButton}
-                onClick={onClose}
+                className={`${styles.newCardDiscardBtn} ${styles.danger}`}
+                disabled={isDeleting || isSubmitting}
+                onClick={() => setIsDeleteConfirmOpen(true)}
                 type="button"
               >
-                <CloseIcon />
+                {isDeleting ? "Deleting..." : "Delete"}
               </button>
-            </div>
+            ) : (
+              <button className={styles.newCardDiscardBtn} onClick={onClose} type="button">
+                Discard
+              </button>
+            )}
 
-            <div className={styles.newCardActionsBar}>
-              {!hasSelectedCard ? (
-                <button
-                  aria-pressed={makeAnother}
-                  className={`${styles.newCardMakeAnother}${makeAnother ? ` ${styles.active}` : ""}`}
-                  onClick={() => setMakeAnother((current) => !current)}
-                  type="button"
-                >
-                  <span className={styles.newCardMakeAnotherLabel}>Make another</span>
-                  <span className={styles.newCardToggleTrack}>
-                    <span className={styles.newCardToggleThumb} />
-                  </span>
-                </button>
-              ) : (
-                <span />
-              )}
-
-              <div
-                className={`${styles.newCardActionsRight}${shakeKey > 0 ? ` ${styles.shake}` : ""}`}
-                key={shakeKey}
-              >
-                {hasSelectedCard ? (
-                  <button
-                    className={`${styles.newCardDiscardBtn} ${styles.danger}`}
-                    disabled={isDeleting || isSubmitting}
-                    onClick={onDelete}
-                    type="button"
-                  >
-                    {isDeleting ? "Deleting..." : "Delete"}
-                  </button>
-                ) : (
-                  <button className={styles.newCardDiscardBtn} onClick={onClose} type="button">
-                    Discard
-                  </button>
-                )}
-
-                <button
-                  className={styles.newCardSaveBtn}
-                  disabled={isSubmitting || isDeleting}
-                  onClick={() => onSubmit({ keepOpen: !hasSelectedCard && makeAnother })}
-                  type="button"
-                >
-                  <SaveIcon />
-                  {isSubmitting
-                    ? hasSelectedCard
-                      ? "Saving..."
-                      : "Creating..."
-                    : hasSelectedCard
-                      ? "Save changes"
-                      : "Save card"}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.newCardEditorSection}>
-            <div className={styles.newCardEditorPair}>
-              <div className={styles.newCardFieldBlock}>
-                <div className={styles.newCardFieldChrome}>
-                  <span className={styles.newCardFieldLabel}>Front</span>
-                  <span
-                    className={`${styles.newCardWordCount}${wordCountClassName(frontWordCount, FRONT_LIMIT, styles)}`}
-                  >
-                    {frontWordCount} / {FRONT_LIMIT} words
-                  </span>
-                </div>
-
-                <div className={`${styles.newCardToolbar} ${styles.frontToolbar}`}>
-                  <button
-                    className={styles.newCardFmtBtn}
-                    onClick={() =>
-                      insertFormat(frontRef.current, draft.front, onChange, "front", "**", "**")
-                    }
-                    title="Bold"
-                    type="button"
-                  >
-                    <BoldIcon />
-                  </button>
-                  <button
-                    className={styles.newCardFmtBtn}
-                    onClick={() =>
-                      insertFormat(frontRef.current, draft.front, onChange, "front", "*", "*")
-                    }
-                    title="Italic"
-                    type="button"
-                  >
-                    <ItalicIcon />
-                  </button>
-                  <button
-                    className={styles.newCardFmtBtn}
-                    onClick={() =>
-                      insertFormat(frontRef.current, draft.front, onChange, "front", "`", "`")
-                    }
-                    title="Code"
-                    type="button"
-                  >
-                    <CodeIcon />
-                  </button>
-                  <span className={styles.newCardFmtSep} />
-                  <button
-                    className={styles.newCardFmtBtn}
-                    onClick={() =>
-                      insertCloze(
-                        frontRef.current,
-                        backRef.current,
-                        draft.front,
-                        draft.back,
-                        onChange,
-                      )
-                    }
-                    title="Cloze"
-                    type="button"
-                  >
-                    <ClozeIcon />
-                  </button>
-                  <span className={styles.newCardFmtHint}>Markdown</span>
-                </div>
-
-                <textarea
-                  className={`${styles.newCardTextarea} ${styles.front}`}
-                  onChange={(event) => onChange({ front: event.target.value })}
-                  placeholder="A clear, single question or prompt..."
-                  ref={frontRef}
-                  rows={4}
-                  value={draft.front}
-                />
-
-                <div
-                  className={`${styles.newCardLimitGuidance}${frontWordCount > FRONT_LIMIT ? ` ${styles.over}` : ""}`}
-                >
-                  {frontWordCount > FRONT_LIMIT
-                    ? `${frontWordCount - FRONT_LIMIT} word${frontWordCount - FRONT_LIMIT === 1 ? "" : "s"} over. Can this be tighter?`
-                    : "One question. One concept. No compound prompts."}
-                </div>
-              </div>
-
-              <div className={styles.newCardFieldBlock}>
-                <div className={styles.newCardFieldChrome}>
-                  <span className={styles.newCardFieldLabel}>Back</span>
-                  <span
-                    className={`${styles.newCardWordCount}${wordCountClassName(backWordCount, BACK_LIMIT, styles)}`}
-                  >
-                    {backWordCount} / {BACK_LIMIT} words
-                  </span>
-                </div>
-
-                <div className={styles.newCardToolbar}>
-                  <button
-                    className={styles.newCardFmtBtn}
-                    onClick={() =>
-                      insertFormat(backRef.current, draft.back, onChange, "back", "**", "**")
-                    }
-                    title="Bold"
-                    type="button"
-                  >
-                    <BoldIcon />
-                  </button>
-                  <button
-                    className={styles.newCardFmtBtn}
-                    onClick={() =>
-                      insertFormat(backRef.current, draft.back, onChange, "back", "*", "*")
-                    }
-                    title="Italic"
-                    type="button"
-                  >
-                    <ItalicIcon />
-                  </button>
-                  <button
-                    className={styles.newCardFmtBtn}
-                    onClick={() =>
-                      insertFormat(backRef.current, draft.back, onChange, "back", "`", "`")
-                    }
-                    title="Code"
-                    type="button"
-                  >
-                    <CodeIcon />
-                  </button>
-                  <span className={styles.newCardFmtHint}>Markdown</span>
-                </div>
-
-                <textarea
-                  className={`${styles.newCardTextarea} ${styles.back}`}
-                  onChange={(event) => onChange({ back: event.target.value })}
-                  placeholder="A direct answer. Just enough context to be unambiguous..."
-                  ref={backRef}
-                  rows={7}
-                  value={draft.back}
-                />
-
-                <div
-                  className={`${styles.newCardLimitGuidance}${backWordCount > BACK_LIMIT ? ` ${styles.over}` : ""}`}
-                >
-                  {backWordCount > BACK_LIMIT
-                    ? `${backWordCount - BACK_LIMIT} word${backWordCount - BACK_LIMIT === 1 ? "" : "s"} over. Try splitting into two cards.`
-                    : "Answer the front, then stop. If you need a paragraph, the card is too broad."}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.newCardTagsSection}>
-            <div className={styles.newCardSectionChrome}>
-              <span className={styles.newCardFieldLabel}>Tags</span>
-              <span className={`${styles.newCardWordCount} ${styles.subdued}`}>optional</span>
-            </div>
-            <div className={styles.newCardTagsInputWrap}>
-              {tags.map((tag) => (
-                <span className={styles.newCardTagPill} key={tag}>
-                  {tag}
-                  <button
-                    className={styles.newCardTagRemove}
-                    onClick={() =>
-                      onChange({ tagsText: tags.filter((item) => item !== tag).join(", ") })
-                    }
-                    type="button"
-                  >
-                    <TagRemoveIcon />
-                  </button>
-                </span>
-              ))}
-              <input
-                className={styles.newCardTagInput}
-                onChange={(event) => setTagInputValue(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === ",") {
-                    event.preventDefault();
-                    const nextTag = normalizeTag(tagInputValue);
-
-                    if (!nextTag || tags.includes(nextTag)) {
-                      setTagInputValue("");
-                      return;
-                    }
-
-                    onChange({ tagsText: [...tags, nextTag].join(", ") });
-                    setTagInputValue("");
-                  }
-
-                  if (event.key === "Backspace" && !tagInputValue && tags.length > 0) {
-                    onChange({ tagsText: tags.slice(0, -1).join(", ") });
-                  }
-                }}
-                placeholder="Add tag..."
-                value={tagInputValue}
-              />
-            </div>
-          </div>
-
-          <div className={styles.newCardSpaceSection}>
-            <div className={styles.newCardSectionChrome}>
-              <span className={styles.newCardFieldLabel}>Space</span>
-            </div>
-            <div className={styles.newCardSelectWrap}>
-              <select
-                className={styles.newCardSelectInput}
-                onChange={(event) => onChange({ spaceId: event.target.value })}
-                value={draft.spaceId}
-              >
-                {spaces.map((space) => (
-                  <option key={space.id} value={space.id}>
-                    {space.name}
-                  </option>
-                ))}
-              </select>
-              <span className={styles.newCardSelectChevron}>
-                <ChevronDownIcon />
-              </span>
-            </div>
-          </div>
-
-          {error ? (
-            <p className={styles.newCardError} id="card-form-error" role="alert">
-              {error}
-            </p>
-          ) : null}
-
-          <div className={styles.newCardDivider} />
-
-          <div className={styles.newCardPreviewSection}>
-            <div className={styles.newCardPreviewHeader}>
-              <span className={styles.newCardPreviewLabel}>Preview</span>
-              <span className={styles.newCardPreviewHint}>
-                <PreviewFlipIcon />
-                Hover to flip
-              </span>
-            </div>
-
-            <div
-              className={`${styles.newCardScene}${isPreviewHovered ? ` ${styles.hovered}` : ""}`}
-              onMouseEnter={() => setIsPreviewHovered(true)}
-              onMouseLeave={() => setIsPreviewHovered(false)}
+            <button
+              className={styles.newCardSaveBtn}
+              disabled={isSubmitting || isDeleting}
+              onClick={() => onSubmit({ keepOpen: !hasSelectedCard && makeAnother })}
+              type="button"
             >
-              <div
-                className={`${styles.newCardBody}${isPreviewHovered ? ` ${styles.hovered}` : ""}`}
-                role="presentation"
-              >
-                <div className={`${styles.newCardFace} ${styles.newCardFaceFront}`}>
-                  <span className={`${styles.newCardCorner} ${styles.tl}`}>front</span>
-                  <div className={styles.newCardFaceInner}>
-                    <div
-                      className={styles.newCardFaceText}
-                      dangerouslySetInnerHTML={{
-                        __html: renderPreviewHtml(
-                          draft.front,
-                          "Start typing...",
-                          styles.newCardFaceEmpty,
-                          styles.newCardClozeBlank,
-                        ),
-                      }}
-                    />
-                  </div>
-                  {tags.length > 0 ? (
-                    <div className={styles.newCardFaceTags}>
-                      {tags.map((tag) => (
-                        <span className={styles.newCardFaceTag} key={`preview-${tag}`}>
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                  <span className={`${styles.newCardCorner} ${styles.br}`}>
-                    {selectedSpaceName}
-                  </span>
-                </div>
-
-                <div className={`${styles.newCardFace} ${styles.newCardFaceBack}`}>
-                  <span className={`${styles.newCardCorner} ${styles.tl}`}>back</span>
-                  <div className={styles.newCardFaceInner}>
-                    <div
-                      className={`${styles.newCardFaceText} ${styles.back}`}
-                      dangerouslySetInnerHTML={{
-                        __html: renderPreviewHtml(
-                          draft.back,
-                          "Start typing...",
-                          styles.newCardFaceEmpty,
-                          styles.newCardClozeBlank,
-                        ),
-                      }}
-                    />
-                  </div>
-                  <span className={`${styles.newCardCorner} ${styles.br}`}>
-                    {selectedSpaceName}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.newCardDots}>
-              <span
-                className={`${styles.newCardDot}${!isPreviewHovered ? ` ${styles.active}` : ""}`}
-              />
-              <span
-                className={`${styles.newCardDot}${isPreviewHovered ? ` ${styles.active}` : ""}`}
-              />
-            </div>
+              <SaveIcon />
+              {isSubmitting
+                ? hasSelectedCard
+                  ? "Saving..."
+                  : "Creating..."
+                : hasSelectedCard
+                  ? "Save changes"
+                  : "Save card"}
+            </button>
           </div>
+        </div>
+      </div>
 
-          <div className={styles.newCardOpinionBox}>
-            <div className={styles.newCardOpinionTitle}>What makes a good card</div>
-            <div className={styles.newCardOpinionList}>
-              <div className={styles.newCardOpinionItem}>
-                <span className={styles.newCardOpinionBullet} />
-                <span>
-                  <strong>Front: 30 words max.</strong> One question testing one atomic piece of
-                  knowledge.
+      <div className={styles.newCardDialogForm} ref={dialogRef}>
+        <div className={styles.newCardEditorSection}>
+          <div className={styles.newCardEditorPair}>
+            <div className={styles.newCardFieldBlock}>
+              <div className={styles.newCardFieldChrome}>
+                <span className={styles.newCardFieldLabel}>Front</span>
+                <span
+                  className={`${styles.newCardWordCount}${wordCountClassName(frontWordCount, FRONT_LIMIT, styles)}`}
+                >
+                  {frontWordCount} / {FRONT_LIMIT} words
                 </span>
               </div>
-              <div className={styles.newCardOpinionItem}>
-                <span className={styles.newCardOpinionBullet} />
-                <span>
-                  <strong>Back: 60 words max.</strong> A direct answer with just enough context.
+
+              <div className={`${styles.newCardToolbar} ${styles.frontToolbar}`}>
+                <button
+                  className={styles.newCardFmtBtn}
+                  onClick={() =>
+                    insertFormat(frontRef.current, draft.front, onChange, "front", "**", "**")
+                  }
+                  title="Bold"
+                  type="button"
+                >
+                  <BoldIcon />
+                </button>
+                <button
+                  className={styles.newCardFmtBtn}
+                  onClick={() =>
+                    insertFormat(frontRef.current, draft.front, onChange, "front", "*", "*")
+                  }
+                  title="Italic"
+                  type="button"
+                >
+                  <ItalicIcon />
+                </button>
+                <button
+                  className={styles.newCardFmtBtn}
+                  onClick={() =>
+                    insertFormat(frontRef.current, draft.front, onChange, "front", "`", "`")
+                  }
+                  title="Code"
+                  type="button"
+                >
+                  <CodeIcon />
+                </button>
+                <span className={styles.newCardFmtSep} />
+                <button
+                  className={styles.newCardFmtBtn}
+                  onClick={() =>
+                    insertCloze(
+                      frontRef.current,
+                      backRef.current,
+                      draft.front,
+                      draft.back,
+                      onChange,
+                    )
+                  }
+                  title="Cloze"
+                  type="button"
+                >
+                  <ClozeIcon />
+                </button>
+                <span className={styles.newCardFmtHint}>Markdown</span>
+              </div>
+
+              <textarea
+                className={`${styles.newCardTextarea} ${styles.front}`}
+                data-modal-autofocus
+                onChange={(event) => onChange({ front: event.target.value })}
+                placeholder="A clear, single question or prompt..."
+                ref={frontRef}
+                rows={4}
+                value={draft.front}
+              />
+
+              <div
+                className={`${styles.newCardLimitGuidance}${frontWordCount > FRONT_LIMIT ? ` ${styles.over}` : ""}`}
+              >
+                {frontWordCount > FRONT_LIMIT
+                  ? `${frontWordCount - FRONT_LIMIT} word${frontWordCount - FRONT_LIMIT === 1 ? "" : "s"} over. Can this be tighter?`
+                  : "One question. One concept. No compound prompts."}
+              </div>
+            </div>
+
+            <div className={styles.newCardFieldBlock}>
+              <div className={styles.newCardFieldChrome}>
+                <span className={styles.newCardFieldLabel}>Back</span>
+                <span
+                  className={`${styles.newCardWordCount}${wordCountClassName(backWordCount, BACK_LIMIT, styles)}`}
+                >
+                  {backWordCount} / {BACK_LIMIT} words
                 </span>
               </div>
-              <div className={styles.newCardOpinionItem}>
-                <span className={styles.newCardOpinionBullet} />
-                <span>
-                  <strong>Use formatting sparingly.</strong> Bold a key term, code-wrap a function,
-                  and keep it scannable.
-                </span>
+
+              <div className={styles.newCardToolbar}>
+                <button
+                  className={styles.newCardFmtBtn}
+                  onClick={() =>
+                    insertFormat(backRef.current, draft.back, onChange, "back", "**", "**")
+                  }
+                  title="Bold"
+                  type="button"
+                >
+                  <BoldIcon />
+                </button>
+                <button
+                  className={styles.newCardFmtBtn}
+                  onClick={() =>
+                    insertFormat(backRef.current, draft.back, onChange, "back", "*", "*")
+                  }
+                  title="Italic"
+                  type="button"
+                >
+                  <ItalicIcon />
+                </button>
+                <button
+                  className={styles.newCardFmtBtn}
+                  onClick={() =>
+                    insertFormat(backRef.current, draft.back, onChange, "back", "`", "`")
+                  }
+                  title="Code"
+                  type="button"
+                >
+                  <CodeIcon />
+                </button>
+                <span className={styles.newCardFmtHint}>Markdown</span>
               </div>
-              <div className={styles.newCardOpinionItem}>
-                <span className={styles.newCardOpinionBullet} />
-                <span>
-                  <strong>Cloze cards:</strong> use <code>_____</code> on the front and put the
-                  answer on the back.
-                </span>
+
+              <textarea
+                className={`${styles.newCardTextarea} ${styles.back}`}
+                onChange={(event) => onChange({ back: event.target.value })}
+                placeholder="A direct answer. Just enough context to be unambiguous..."
+                ref={backRef}
+                rows={7}
+                value={draft.back}
+              />
+
+              <div
+                className={`${styles.newCardLimitGuidance}${backWordCount > BACK_LIMIT ? ` ${styles.over}` : ""}`}
+              >
+                {backWordCount > BACK_LIMIT
+                  ? `${backWordCount - BACK_LIMIT} word${backWordCount - BACK_LIMIT === 1 ? "" : "s"} over. Try splitting into two cards.`
+                  : "Answer the front, then stop. If you need a paragraph, the card is too broad."}
               </div>
             </div>
           </div>
         </div>
+
+        <div className={styles.newCardTagsSection}>
+          <div className={styles.newCardSectionChrome}>
+            <span className={styles.newCardFieldLabel}>Tags</span>
+            <span className={`${styles.newCardWordCount} ${styles.subdued}`}>optional</span>
+          </div>
+          <div className={styles.newCardTagsInputWrap}>
+            {tags.map((tag) => (
+              <span className={styles.newCardTagPill} key={tag}>
+                {tag}
+                <button
+                  className={styles.newCardTagRemove}
+                  onClick={() =>
+                    onChange({ tagsText: tags.filter((item) => item !== tag).join(", ") })
+                  }
+                  type="button"
+                >
+                  <TagRemoveIcon />
+                </button>
+              </span>
+            ))}
+            <input
+              className={styles.newCardTagInput}
+              onChange={(event) => setTagInputValue(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === ",") {
+                  event.preventDefault();
+                  const nextTag = normalizeTag(tagInputValue);
+
+                  if (!nextTag || tags.includes(nextTag)) {
+                    setTagInputValue("");
+                    return;
+                  }
+
+                  onChange({ tagsText: [...tags, nextTag].join(", ") });
+                  setTagInputValue("");
+                }
+
+                if (event.key === "Backspace" && !tagInputValue && tags.length > 0) {
+                  onChange({ tagsText: tags.slice(0, -1).join(", ") });
+                }
+              }}
+              placeholder="Add tag..."
+              value={tagInputValue}
+            />
+          </div>
+        </div>
+
+        <div className={styles.newCardSpaceSection}>
+          <div className={styles.newCardSectionChrome}>
+            <span className={styles.newCardFieldLabel}>Space</span>
+          </div>
+          <div className={styles.newCardSelectWrap}>
+            <select
+              className={styles.newCardSelectInput}
+              onChange={(event) => onChange({ spaceId: event.target.value })}
+              value={draft.spaceId}
+            >
+              {spaces.map((space) => (
+                <option key={space.id} value={space.id}>
+                  {space.name}
+                </option>
+              ))}
+            </select>
+            <span className={styles.newCardSelectChevron}>
+              <ChevronDownIcon />
+            </span>
+          </div>
+        </div>
+
+        {error ? (
+          <p className={styles.newCardError} id="card-form-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        <div className={styles.newCardDivider} />
+
+        <div className={styles.newCardPreviewSection}>
+          <div className={styles.newCardPreviewHeader}>
+            <span className={styles.newCardPreviewLabel}>Preview</span>
+            <span className={styles.newCardPreviewHint}>
+              <PreviewFlipIcon />
+              Hover to flip
+            </span>
+          </div>
+
+          <div
+            className={`${styles.newCardScene}${isPreviewHovered ? ` ${styles.hovered}` : ""}`}
+            onMouseEnter={() => setIsPreviewHovered(true)}
+            onMouseLeave={() => setIsPreviewHovered(false)}
+          >
+            <div
+              className={`${styles.newCardBody}${isPreviewHovered ? ` ${styles.hovered}` : ""}`}
+              role="presentation"
+            >
+              <div className={`${styles.newCardFace} ${styles.newCardFaceFront}`}>
+                <span className={`${styles.newCardCorner} ${styles.tl}`}>front</span>
+                <div className={styles.newCardFaceInner}>
+                  <div
+                    className={styles.newCardFaceText}
+                    dangerouslySetInnerHTML={{
+                      __html: renderPreviewHtml(
+                        draft.front,
+                        "Start typing...",
+                        styles.newCardFaceEmpty,
+                        styles.newCardClozeBlank,
+                      ),
+                    }}
+                  />
+                </div>
+                {tags.length > 0 ? (
+                  <div className={styles.newCardFaceTags}>
+                    {tags.map((tag) => (
+                      <span className={styles.newCardFaceTag} key={`preview-${tag}`}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+                <span className={`${styles.newCardCorner} ${styles.br}`}>{selectedSpaceName}</span>
+              </div>
+
+              <div className={`${styles.newCardFace} ${styles.newCardFaceBack}`}>
+                <span className={`${styles.newCardCorner} ${styles.tl}`}>back</span>
+                <div className={styles.newCardFaceInner}>
+                  <div
+                    className={`${styles.newCardFaceText} ${styles.back}`}
+                    dangerouslySetInnerHTML={{
+                      __html: renderPreviewHtml(
+                        draft.back,
+                        "Start typing...",
+                        styles.newCardFaceEmpty,
+                        styles.newCardClozeBlank,
+                      ),
+                    }}
+                  />
+                </div>
+                <span className={`${styles.newCardCorner} ${styles.br}`}>{selectedSpaceName}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.newCardDots}>
+            <span
+              className={`${styles.newCardDot}${!isPreviewHovered ? ` ${styles.active}` : ""}`}
+            />
+            <span
+              className={`${styles.newCardDot}${isPreviewHovered ? ` ${styles.active}` : ""}`}
+            />
+          </div>
+        </div>
+
+        <div className={styles.newCardOpinionBox}>
+          <div className={styles.newCardOpinionTitle}>What makes a good card</div>
+          <div className={styles.newCardOpinionList}>
+            <div className={styles.newCardOpinionItem}>
+              <span className={styles.newCardOpinionBullet} />
+              <span>
+                <strong>Front: 30 words max.</strong> One question testing one atomic piece of
+                knowledge.
+              </span>
+            </div>
+            <div className={styles.newCardOpinionItem}>
+              <span className={styles.newCardOpinionBullet} />
+              <span>
+                <strong>Back: 60 words max.</strong> A direct answer with just enough context.
+              </span>
+            </div>
+            <div className={styles.newCardOpinionItem}>
+              <span className={styles.newCardOpinionBullet} />
+              <span>
+                <strong>Use formatting sparingly.</strong> Bold a key term, code-wrap a function,
+                and keep it scannable.
+              </span>
+            </div>
+            <div className={styles.newCardOpinionItem}>
+              <span className={styles.newCardOpinionBullet} />
+              <span>
+                <strong>Cloze cards:</strong> use <code>_____</code> on the front and put the answer
+                on the back.
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+
+      <DeleteCardDialog
+        cardFront={draft.front}
+        isDeleting={isDeleting}
+        isOpen={isDeleteConfirmOpen}
+        onClose={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={() => {
+          setIsDeleteConfirmOpen(false);
+          onDelete();
+        }}
+      />
+    </Modal>
   );
 }
 

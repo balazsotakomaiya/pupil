@@ -1,39 +1,50 @@
 import { CloseIcon } from "../icons/CloseIcon";
 import { Modal } from "../modal";
 
-type DeleteSpaceDialogProps = {
-  isDeleting: boolean;
+type DeleteCardDialogProps = {
+  cardFront: string;
+  isDeleting?: boolean;
+  isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  spaceName: string;
 };
 
-export function DeleteSpaceDialog({
-  isDeleting,
+export function DeleteCardDialog({
+  cardFront,
+  isDeleting = false,
+  isOpen,
   onClose,
   onConfirm,
-  spaceName,
-}: DeleteSpaceDialogProps) {
+}: DeleteCardDialogProps) {
   return (
     <Modal
-      ariaDescribedBy="delete-space-description"
-      ariaLabelledBy="delete-space-title"
+      ariaDescribedBy="card-delete-confirm-description"
+      ariaLabelledBy="card-delete-confirm-title"
       closeOnEscape={!isDeleting}
-      isOpen
-      onBackdropClick={onClose}
+      isOpen={isOpen}
       onClose={onClose}
+      onBackdropClick={() => {
+        if (!isDeleting) {
+          onClose();
+        }
+      }}
     >
       <div className="dialog-form">
         <div className="dialog-head">
           <div>
-            <h2 id="delete-space-title">Delete space</h2>
-            <p id="delete-space-description">
-              Permanently delete <strong>{spaceName}</strong> and all its cards? This cannot be
-              undone.
+            <h2 id="card-delete-confirm-title">Delete card?</h2>
+            <p id="card-delete-confirm-description">
+              {cardFront ? (
+                <>
+                  Delete <strong>“{cardFront}”</strong>? This action cannot be undone.
+                </>
+              ) : (
+                "This will permanently remove this card. This action cannot be undone."
+              )}
             </p>
           </div>
           <button
-            aria-label="Close"
+            aria-label="Close delete confirmation"
             className="dialog-close"
             disabled={isDeleting}
             onClick={onClose}
@@ -58,7 +69,7 @@ export function DeleteSpaceDialog({
             onClick={onConfirm}
             type="button"
           >
-            {isDeleting ? "Deleting…" : "Delete space"}
+            {isDeleting ? "Deleting…" : "Delete card"}
           </button>
         </div>
       </div>
