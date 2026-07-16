@@ -9,7 +9,7 @@ export function ImportHistoryTable({ items }: ImportHistoryTableProps) {
   return (
     <div className={styles.historyTable}>
       {items.map((item) => (
-        <div className={styles.historyRow} key={`${item.fileName}-${item.dateLabel}`}>
+        <div className={styles.historyRow} key={`${item.fileName}-${item.importedAt}`}>
           <span className={styles.historyFile}>{item.fileName}</span>
           <span className={styles.historyDate}>{item.dateLabel}</span>
           <span className={styles.historyCards}>{item.cardsImported}</span>

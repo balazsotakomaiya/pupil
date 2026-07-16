@@ -1,5 +1,5 @@
 .cardBackdrop {
-  padding: 76px 24px 24px;
+  padding: var(--space-19) var(--space-6) var(--space-6);
 }
 
 .cardDialog {
@@ -32,7 +32,7 @@
   z-index: 2;
   flex-shrink: 0;
   isolation: isolate;
-  padding-bottom: 14px;
+  padding-bottom: var(--space-3-5);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   background: linear-gradient(180deg, #202022, #18181a);
 }
@@ -41,12 +41,12 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  padding: 24px 24px 0;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-6) 0;
 }
 
 .newCardTitle {
-  margin: 0 0 6px;
+  margin: 0 0 var(--space-1-5);
   font-size: 20px;
   letter-spacing: -0.4px;
 }
@@ -64,7 +64,7 @@
   width: 32px;
   height: 32px;
   flex-shrink: 0;
-  gap: 6px;
+  gap: var(--space-1-5);
   border: 1px solid var(--border);
   border-radius: 6px;
   background: transparent;
@@ -90,8 +90,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 18px 24px 0;
+  gap: var(--space-4);
+  padding: var(--space-4-5) var(--space-6) 0;
 }
 
 .newCardMakeAnother {
@@ -132,8 +132,8 @@
 
 .newCardToggleThumb {
   position: absolute;
-  top: 2px;
-  left: 2px;
+  top: var(--space-0-5);
+  left: var(--space-0-5);
   width: 10px;
   height: 10px;
   border-radius: 999px;
@@ -156,7 +156,7 @@
 .newCardActionsRight {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-2-5);
   margin-left: auto;
 }
 
@@ -182,7 +182,7 @@
 }
 
 .newCardDiscardBtn {
-  padding: 0 14px;
+  padding: 0 var(--space-3-5);
   border: 1px solid var(--border);
   background: transparent;
   color: var(--text-tertiary);
@@ -202,8 +202,8 @@
 }
 
 .newCardSaveBtn {
-  gap: 6px;
-  padding: 0 16px;
+  gap: var(--space-1-5);
+  padding: 0 var(--space-4);
   border: none;
   background: var(--text-primary);
   color: var(--bg);
@@ -227,7 +227,7 @@
 }
 
 .newCardEditorSection {
-  padding: 24px 24px 0;
+  padding: var(--space-6) var(--space-6) 0;
 }
 
 .newCardEditorPair {
@@ -236,7 +236,7 @@
 }
 
 .newCardFieldBlock + .newCardFieldBlock {
-  margin-top: 24px;
+  margin-top: var(--space-6);
 }
 
 .newCardFieldChrome,
@@ -244,8 +244,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
 }
 
 .newCardFieldLabel {
@@ -281,7 +281,7 @@
   display: flex;
   align-items: center;
   gap: 1px;
-  padding: 6px 10px;
+  padding: var(--space-1-5) var(--space-2-5);
   border: 1px solid var(--border);
   border-bottom: none;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
@@ -289,7 +289,7 @@
 }
 
 .newCardToolbar.frontToolbar {
-  margin-top: 8px;
+  margin-top: var(--space-2);
 }
 
 .newCardFmtBtn {
@@ -322,7 +322,7 @@
   width: 1px;
   height: 18px;
   flex-shrink: 0;
-  margin: 0 4px;
+  margin: 0 var(--space-1);
   background: var(--border);
 }
 
@@ -337,7 +337,7 @@
 
 .newCardTextarea {
   width: 100%;
-  padding: 16px 18px;
+  padding: var(--space-4) var(--space-4-5);
   border: 1px solid var(--border);
   border-top: none;
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
@@ -370,7 +370,7 @@
 }
 
 .newCardLimitGuidance {
-  margin-top: 6px;
+  margin-top: var(--space-1-5);
   color: var(--text-tertiary);
   font-size: 11px;
   line-height: 1.4;
@@ -384,16 +384,16 @@
 
 .newCardTagsSection,
 .newCardSpaceSection {
-  padding: 28px 24px 0;
+  padding: var(--space-7) var(--space-6) 0;
 }
 
 .newCardTagsInputWrap {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--space-1-5);
   min-height: 40px;
-  padding: 8px 12px;
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-subtle);
@@ -408,8 +408,8 @@
 .newCardTagPill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
+  gap: var(--space-1);
+  padding: var(--space-0-5) var(--space-2);
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--bg-elevated);
@@ -470,7 +470,7 @@
 .newCardSelectInput {
   width: 100%;
   height: 38px;
-  padding: 0 36px 0 14px;
+  padding: 0 var(--space-9) 0 var(--space-3-5);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   appearance: none;
@@ -492,7 +492,7 @@
 .newCardSelectChevron {
   position: absolute;
   top: 50%;
-  right: 12px;
+  right: var(--space-3);
   transform: translateY(-50%);
   color: var(--text-tertiary);
   pointer-events: none;
@@ -504,14 +504,14 @@
 }
 
 .newCardError {
-  margin: 16px 24px 0;
+  margin: var(--space-4) var(--space-6) 0;
   color: #fca5a5;
   font-size: 13px;
 }
 
 .newCardDivider {
   height: 1px;
-  margin: 28px 24px 0;
+  margin: var(--space-7) var(--space-6) 0;
   background-image: repeating-linear-gradient(
     to right,
     var(--ruler) 0px,
@@ -522,15 +522,15 @@
 }
 
 .newCardPreviewSection {
-  padding: 32px 24px 0;
+  padding: var(--space-8) var(--space-6) 0;
 }
 
 .newCardPreviewHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
 }
 
 .newCardPreviewLabel {
@@ -545,7 +545,7 @@
 .newCardPreviewHint {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   padding: 0;
   border: none;
   background: transparent;
@@ -603,9 +603,9 @@
 
 .newCardFaceFront::after {
   position: absolute;
-  right: 24px;
+  right: var(--space-6);
   bottom: 0;
-  left: 24px;
+  left: var(--space-6);
   height: 1px;
   background: var(--border);
   content: "";
@@ -620,8 +620,8 @@
 .newCardFaceBack::after {
   position: absolute;
   top: 0;
-  right: 24px;
-  left: 24px;
+  right: var(--space-6);
+  left: var(--space-6);
   height: 1px;
   background: var(--border);
   content: "";
@@ -632,7 +632,7 @@
   flex: 1;
   align-items: center;
   justify-content: center;
-  padding: 32px 40px;
+  padding: var(--space-8) var(--space-10);
   text-align: center;
 }
 
@@ -679,11 +679,11 @@
   justify-content: center;
   flex-wrap: wrap;
   gap: 5px;
-  padding: 0 40px 18px;
+  padding: 0 var(--space-10) var(--space-4-5);
 }
 
 .newCardFaceTag {
-  padding: 1px 6px;
+  padding: 1px var(--space-1-5);
   border: 1px solid var(--border);
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.04);
@@ -705,20 +705,20 @@
 }
 
 .newCardCorner.tl {
-  top: 14px;
-  left: 18px;
+  top: var(--space-3-5);
+  left: var(--space-4-5);
 }
 
 .newCardCorner.br {
-  right: 18px;
-  bottom: 14px;
+  right: var(--space-4-5);
+  bottom: var(--space-3-5);
 }
 
 .newCardDots {
   display: flex;
   justify-content: center;
   gap: 5px;
-  margin-top: 16px;
+  margin-top: var(--space-4);
 }
 
 .newCardDot {
@@ -734,15 +734,15 @@
 }
 
 .newCardOpinionBox {
-  margin: 24px;
-  padding: 20px 24px;
+  margin: var(--space-6);
+  padding: var(--space-5) var(--space-6);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--bg-subtle);
 }
 
 .newCardOpinionTitle {
-  margin-bottom: 10px;
+  margin-bottom: var(--space-2-5);
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 600;
@@ -751,13 +751,13 @@
 .newCardOpinionList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .newCardOpinionItem {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: var(--space-2);
   color: var(--text-tertiary);
   font-size: 12px;
   line-height: 1.5;
@@ -767,7 +767,7 @@
   width: 4px;
   height: 4px;
   flex-shrink: 0;
-  margin-top: 6px;
+  margin-top: var(--space-1-5);
   border-radius: 999px;
   background: var(--text-tertiary);
 }
@@ -816,7 +816,7 @@
 
 @media (max-width: 640px) {
   .cardBackdrop {
-    padding: 88px 12px 12px;
+    padding: var(--space-22) var(--space-3) var(--space-3);
   }
 
   .cardDialog {
@@ -826,11 +826,11 @@
   }
 
   .newCardHead {
-    padding-top: 20px;
+    padding-top: var(--space-5);
   }
 
   .newCardStickyTop {
-    padding-bottom: 12px;
+    padding-bottom: var(--space-3);
   }
 
   .newCardActionsBar,
@@ -863,11 +863,11 @@
   }
 
   .newCardFaceInner {
-    padding: 24px 20px;
+    padding: var(--space-6) var(--space-5);
   }
 
   .newCardFaceTags {
-    padding-right: 20px;
-    padding-left: 20px;
+    padding-right: var(--space-5);
+    padding-left: var(--space-5);
   }
 }

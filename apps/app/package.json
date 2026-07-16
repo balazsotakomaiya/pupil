@@ -19,6 +19,7 @@
     "@tanstack/react-router": "^1.168.23",
     "@tauri-apps/api": "^2.4.0",
     "@tauri-apps/plugin-opener": "^2.5.3",
+    "@xyflow/react": "^12.11.2",
     "fzstd": "^0.1.1",
     "jszip": "^3.10.1",
     "react": "^19.1.0",

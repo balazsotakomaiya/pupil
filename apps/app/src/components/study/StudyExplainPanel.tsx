@@ -1,10 +1,12 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import type { ExplainCardPayload } from "../../lib/ai-explanation";
 import styles from "./Study.module.css";
+import { StudyExplainContent } from "./StudyExplainContent";
 
 type StudyExplainPanelProps = {
   cardFront: string;
   error: string | null;
-  explanation: string | null;
+  payload: ExplainCardPayload | null;
   generatedAt: number | null;
   isCached: boolean;
   isLoading: boolean;
@@ -16,7 +18,7 @@ type StudyExplainPanelProps = {
 export function StudyExplainPanel({
   cardFront,
   error,
-  explanation,
+  payload,
   generatedAt,
   isCached,
   isLoading,
@@ -24,6 +26,8 @@ export function StudyExplainPanel({
   onRegenerate,
   onRetry,
 }: StudyExplainPanelProps) {
+  const [isVisualExpanded, setIsVisualExpanded] = useState(false);
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -42,14 +46,17 @@ export function StudyExplainPanel({
   return (
     <>
       <div className={styles.sessionExplainBackdrop} onClick={onClose} role="presentation" />
-      <aside aria-label="AI explanation" className={styles.sessionExplainPanel}>
+      <aside
+        aria-label="AI explanation"
+        className={`${styles.sessionExplainPanel}${isVisualExpanded ? ` ${styles.sessionExplainPanelExpanded}` : ""}`}
+      >
         <header className={styles.sessionExplainHeader}>
           <div className={styles.sessionExplainHeaderLeft}>
             <h2 className={styles.sessionExplainTitle}>Explanation</h2>
             <span className={styles.sessionExplainSub}>{promptPreview}</span>
           </div>
           <div className={styles.sessionExplainHeaderActions}>
-            {explanation && !isLoading && !error ? (
+            {payload && !isLoading && !error ? (
               <button
                 className={styles.sessionExplainHeaderBtn}
                 disabled={isLoading}
@@ -86,21 +93,17 @@ export function StudyExplainPanel({
                 Try again
               </button>
             </div>
-          ) : explanation ? (
-            <div className={styles.sessionExplainText}>
-              {explanation
-                .split(/\n\s*\n/)
-                .map((paragraph) => paragraph.trim())
-                .filter((paragraph) => paragraph.length > 0)
-                .map((paragraph, index) => (
-                  <p key={`para-${index}-${paragraph.slice(0, 12)}`}>{paragraph}</p>
-                ))}
-            </div>
+          ) : payload ? (
+            <StudyExplainContent
+              isVisualExpanded={isVisualExpanded}
+              onToggleVisualExpanded={() => setIsVisualExpanded((expanded) => !expanded)}
+              payload={payload}
+            />
           ) : null}
         </div>
 
         <footer className={styles.sessionExplainFooter}>
-          <span>{isCached ? "From cache" : explanation ? "Just generated" : ""}</span>
+          <span>{isCached ? "From cache" : payload ? "Just generated" : ""}</span>
           <span>{generatedAt ? formatRelativeTime(generatedAt) : ""}</span>
         </footer>
       </aside>

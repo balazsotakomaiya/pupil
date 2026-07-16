@@ -3,21 +3,21 @@
 }
 
 .toolbarSection {
-  padding: 40px 0 0;
+  padding: var(--space-10) 0 0;
 }
 
 .toolbarTop {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .toolbarTopLeft {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-2-5);
 }
 
 .cardCount {
@@ -34,14 +34,14 @@
 .toolbarTopRight {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1-5);
 }
 
 .searchRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .searchInputWrap {
@@ -52,7 +52,7 @@
 .searchInputWrap svg {
   position: absolute;
   top: 50%;
-  left: 12px;
+  left: var(--space-3);
   transform: translateY(-50%);
   width: 14px;
   height: 14px;
@@ -63,7 +63,7 @@
 .searchInput {
   width: 100%;
   height: 38px;
-  padding: 0 14px 0 36px;
+  padding: 0 var(--space-3-5) 0 var(--space-9);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-subtle);
@@ -87,7 +87,7 @@
   align-items: center;
   gap: 5px;
   height: 38px;
-  padding: 0 14px;
+  padding: 0 var(--space-3-5);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-subtle);
@@ -133,16 +133,16 @@
 
 .filterRow {
   display: flex;
-  gap: 6px;
+  gap: var(--space-1-5);
   flex-wrap: wrap;
-  margin-bottom: 24px;
+  margin-bottom: var(--space-6);
 }
 
 .filterChip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 12px;
+  padding: var(--space-1) var(--space-3);
   border: 1px solid var(--border);
   border-radius: 999px;
   background: transparent;
@@ -176,7 +176,7 @@
 .filterSep {
   width: 1px;
   height: 22px;
-  margin: 0 4px;
+  margin: 0 var(--space-1);
   align-self: center;
   background: var(--border);
 }
@@ -198,8 +198,8 @@
 }
 
 .cardListSection {
-  padding: 24px 0 40px;
-  scroll-margin-top: 64px;
+  padding: var(--space-6) 0 var(--space-10);
+  scroll-margin-top: var(--space-16);
 }
 
 .cardList,
@@ -217,7 +217,7 @@
 .cardRowMain {
   display: grid;
   grid-template-columns: 1fr 130px 80px 72px 90px 32px;
-  gap: 12px;
+  gap: var(--space-3);
   align-items: center;
 }
 
@@ -227,7 +227,7 @@
 }
 
 .cardListHeader {
-  padding: 10px 20px;
+  padding: var(--space-2-5) var(--space-5);
   border-bottom: 1px solid var(--border);
   background: var(--bg-elevated);
   color: var(--text-tertiary);
@@ -270,7 +270,7 @@
 
 .cardRowMain {
   width: 100%;
-  padding: 12px 20px;
+  padding: var(--space-3) var(--space-5);
   border: none;
   background: transparent;
   color: inherit;
@@ -358,7 +358,7 @@
 
 .cardExpanded {
   display: none;
-  padding: 0 20px 16px;
+  padding: 0 var(--space-5) var(--space-4);
 }
 
 .cardRow.expanded .cardExpanded {
@@ -366,7 +366,7 @@
 }
 
 .cardExpandedInner {
-  padding: 20px;
+  padding: var(--space-5);
   border-radius: var(--radius);
   background: var(--bg-elevated);
 }
@@ -374,12 +374,12 @@
 .cardQa {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin-bottom: 16px;
+  gap: var(--space-5);
+  margin-bottom: var(--space-4);
 }
 
 .cardQaLabel {
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
   color: var(--text-tertiary);
   font-family: var(--font-mono);
   font-size: 10px;
@@ -402,8 +402,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
-  padding-top: 14px;
+  gap: var(--space-4);
+  padding-top: var(--space-3-5);
   border-top: 1px solid var(--border);
 }
 
@@ -418,7 +418,7 @@
 }
 
 .tag {
-  padding: 2px 7px;
+  padding: var(--space-0-5) 7px;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--bg-subtle);
@@ -431,15 +431,15 @@
 
 .cardExpandedActions {
   display: flex;
-  gap: 6px;
+  gap: var(--space-1-5);
   margin-left: auto;
 }
 
 .actionBtn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2-5);
   border: 1px solid var(--border);
   border-radius: 5px;
   background: transparent;
@@ -462,7 +462,7 @@
 }
 
 .emptyState {
-  padding: 80px 20px;
+  padding: var(--space-20) var(--space-5);
   text-align: center;
 }
 

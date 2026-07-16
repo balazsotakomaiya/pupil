@@ -4,7 +4,7 @@
   z-index: 200;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: var(--space-6);
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -37,6 +37,6 @@
 
 @media (max-width: 640px) {
   .modalOverlay {
-    padding: 12px;
+    padding: var(--space-3);
   }
 }

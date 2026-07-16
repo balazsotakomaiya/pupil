@@ -1,7 +1,7 @@
 .panel {
   max-width: 560px;
-  margin: 120px auto 0;
-  padding: 32px;
+  margin: var(--space-30) auto 0;
+  padding: var(--space-8);
   border: 1px solid var(--border);
   border-radius: 20px;
   background: var(--bg-subtle);
@@ -10,7 +10,7 @@
 
 .eyebrow {
   display: inline-block;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 600;
@@ -19,23 +19,23 @@
 }
 
 .title {
-  margin: 0 0 8px;
+  margin: 0 0 var(--space-2);
   font-size: 24px;
 }
 
 .message {
-  margin: 0 0 20px;
+  margin: 0 0 var(--space-5);
   color: var(--text-secondary);
   line-height: 1.6;
 }
 
 .actions {
   display: flex;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .button {
-  padding: 10px 16px;
+  padding: var(--space-2-5) var(--space-4);
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--bg-elevated);

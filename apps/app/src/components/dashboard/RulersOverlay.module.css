@@ -31,11 +31,11 @@
 }
 
 .rulerV.contentLeft {
-  left: max(32px, calc((100vw - 960px) / 2));
+  left: max(var(--space-8), calc((100vw - 960px) / 2));
 }
 
 .rulerV.contentRight {
-  right: max(32px, calc((100vw - 960px) / 2));
+  right: max(var(--space-8), calc((100vw - 960px) / 2));
 }
 
 .rulerH {

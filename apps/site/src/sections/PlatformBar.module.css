@@ -2,9 +2,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 28px;
+  gap: var(--space-7);
   flex-wrap: wrap;
-  padding: 20px 32px;
+  padding: var(--space-5) var(--space-8);
   color: var(--text-secondary);
   font-size: 13px;
 }
@@ -20,6 +20,6 @@
 .platformBarItem {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   color: var(--text-primary);
 }

@@ -10,6 +10,7 @@ export type ImportHistoryItem = {
   dateLabel: string;
   duplicateCount: number;
   fileName: string;
+  importedAt: number;
   status: "complete" | "partial";
   statusLabel: string;
 };

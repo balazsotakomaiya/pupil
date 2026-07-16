@@ -3,11 +3,11 @@
 }
 
 .settingsHeader {
-  padding: 48px 0 8px;
+  padding: var(--space-12) 0 var(--space-2);
 }
 
 .settingsTitle {
-  margin: 0 0 6px;
+  margin: 0 0 var(--space-1-5);
   font-size: clamp(24px, 3vw, 32px);
   font-weight: 700;
   letter-spacing: -1px;
@@ -22,15 +22,15 @@
 
 .settingsNav {
   display: flex;
-  gap: 2px;
-  padding: 24px 0 0;
+  gap: var(--space-0-5);
+  padding: var(--space-6) 0 0;
   margin-bottom: 0;
   border-bottom: 1px solid var(--border);
 }
 
 .settingsNavItem {
   margin-bottom: -1px;
-  padding: 8px 16px 12px;
+  padding: var(--space-2) var(--space-4) var(--space-3);
   border: none;
   border-bottom: 2px solid transparent;
   background: transparent;
@@ -50,15 +50,15 @@
 }
 
 .settingsSection {
-  padding: 40px 0;
+  padding: var(--space-10) 0;
 }
 
 .settingsSectionHead {
-  margin-bottom: 24px;
+  margin-bottom: var(--space-6);
 }
 
 .settingsSectionTitle {
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.2px;
@@ -75,46 +75,46 @@
   display: flex;
   flex-direction: column;
   max-width: 560px;
-  gap: 20px;
+  gap: var(--space-5);
 }
 
 .settingsAdvancedFields.open {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--space-5);
 }
 
 .settingsDataCards {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .settingsAboutMeta {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding-top: 16px;
+  gap: var(--space-2-5);
+  padding-top: var(--space-4);
   border-top: 1px solid var(--border);
 }
 
 .settingsField {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-1-5);
 }
 
 .settingsFieldLabel {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 600;
 }
 
 .settingsLabelBadge {
-  padding: 1px 6px;
+  padding: 1px var(--space-1-5);
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--bg-elevated);
@@ -136,7 +136,7 @@
 .settingsSelectInput {
   width: 100%;
   height: 38px;
-  padding: 0 14px;
+  padding: 0 var(--space-3-5);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-subtle);
@@ -163,7 +163,7 @@
 
 .settingsKeyInputWrap {
   display: flex;
-  gap: 6px;
+  gap: var(--space-1-5);
 }
 
 .settingsKeyFieldWrap {
@@ -173,13 +173,13 @@
 
 .settingsKeyFieldWrap .settingsTextInput {
   flex: 1;
-  padding-right: 40px;
+  padding-right: var(--space-10);
 }
 
 .settingsKeyReveal {
   position: absolute;
   top: 50%;
-  right: 6px;
+  right: var(--space-1-5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -213,7 +213,7 @@
 
 .settingsKeyActions {
   display: flex;
-  gap: 6px;
+  gap: var(--space-1-5);
   flex-shrink: 0;
 }
 
@@ -234,7 +234,7 @@
 .settingsKeySaveBtn,
 .settingsKeyTestBtn {
   height: 38px;
-  padding: 0 16px;
+  padding: 0 var(--space-4);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text-secondary);
@@ -287,8 +287,8 @@
 .settingsConnectionStatus {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
+  gap: var(--space-2);
+  padding: var(--space-2-5) var(--space-3-5);
   border-radius: var(--radius);
   font-size: 12px;
   font-weight: 500;
@@ -332,7 +332,7 @@
 }
 
 .settingsConnectionStatus .statusDetail {
-  margin-left: 4px;
+  margin-left: var(--space-1);
   opacity: 0.7;
   font-family: var(--font-mono);
   font-size: 11px;
@@ -345,14 +345,14 @@
 
 .settingsFieldRow {
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .settingsAdvancedToggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 0;
+  gap: var(--space-1-5);
+  padding: var(--space-2) 0;
   border: none;
   background: transparent;
   color: var(--text-tertiary);
@@ -378,22 +378,22 @@
 
 .settingsAdvancedFields {
   display: none;
-  padding-top: 12px;
+  padding-top: var(--space-3);
 }
 
 .settingsModelChips,
 .settingsAboutLinks {
   display: flex;
-  gap: 6px;
+  gap: var(--space-1-5);
   flex-wrap: wrap;
 }
 
 .settingsModelChips {
-  margin-top: 4px;
+  margin-top: var(--space-1);
 }
 
 .settingsModelChip {
-  padding: 3px 12px;
+  padding: 3px var(--space-3);
   border: 1px solid var(--border);
   border-radius: 999px;
   background: transparent;
@@ -421,7 +421,7 @@
 .settingsDataSectionBody {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
   max-width: 560px;
 }
 
@@ -437,8 +437,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 20px 24px;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
 }
 
 .settingsDataCard:hover,
@@ -459,11 +459,11 @@
 .settingsDataCardLeft {
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: var(--space-0-5);
 }
 
 .settingsDataCardRight {
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .settingsDataCardTitle {
@@ -498,7 +498,7 @@
 }
 
 .settingsDataBtn {
-  padding: 6px 14px;
+  padding: var(--space-1-5) var(--space-3-5);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-tertiary);
@@ -535,7 +535,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 20px;
+  padding: var(--space-2-5) var(--space-5);
   border-bottom: 1px solid var(--border);
   color: var(--text-secondary);
   font-size: 13px;
@@ -551,12 +551,12 @@
 
 .settingsShortcutKeys {
   display: flex;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .settingsKbd {
   min-width: 22px;
-  padding: 2px 7px;
+  padding: var(--space-0-5) 7px;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--bg-elevated);
@@ -570,14 +570,14 @@
 
 .settingsAboutCard {
   max-width: 560px;
-  padding: 28px;
+  padding: var(--space-7);
 }
 
 .settingsAboutTop {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 20px;
+  gap: var(--space-3-5);
+  margin-bottom: var(--space-5);
 }
 
 .settingsAboutLogoBox {
@@ -627,11 +627,11 @@
 }
 
 .settingsAboutLinks {
-  margin-top: 16px;
+  margin-top: var(--space-4);
 }
 
 .settingsAboutLink {
-  padding: 5px 12px;
+  padding: 5px var(--space-3);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-tertiary);
@@ -647,7 +647,7 @@
 .settingsSelectChevron {
   position: absolute;
   top: 50%;
-  right: 10px;
+  right: var(--space-2-5);
   pointer-events: none;
   transform: translateY(-50%);
 }
@@ -660,8 +660,8 @@
 .studySettingsLimitGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .studySettingsLimitBtn {
@@ -670,8 +670,8 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: 2px;
-  padding: 14px 12px;
+  gap: var(--space-0-5);
+  padding: var(--space-3-5) var(--space-3);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--bg-subtle);
@@ -711,8 +711,8 @@
 
 .studySettingsCustomRow {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .studySettingsCustomInput {
@@ -722,7 +722,7 @@
 
 .studySettingsCustomSave {
   height: 38px;
-  padding: 0 18px;
+  padding: 0 var(--space-4-5);
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg-elevated);
@@ -747,12 +747,12 @@
 .studySettingsWarning {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 10px 14px;
+  gap: var(--space-2);
+  padding: var(--space-2-5) var(--space-3-5);
   border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
   border-radius: var(--radius-lg);
   background: color-mix(in srgb, var(--accent) 6%, transparent);
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .studySettingsWarningIcon {
@@ -770,8 +770,8 @@
 .studySettingsStatus {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 2px;
+  gap: var(--space-1-5);
+  padding: var(--space-1) var(--space-0-5);
 }
 
 .studySettingsStatusDot {
@@ -834,7 +834,7 @@
   .settingsAboutRow {
     align-items: flex-start;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--space-0-5);
   }
 }
 
@@ -842,8 +842,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  padding: 14px 16px;
+  gap: var(--space-4);
+  padding: var(--space-3-5) var(--space-4);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-subtle);
@@ -852,7 +852,7 @@
 .settingsToggleText {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-0-5);
 }
 
 .settingsToggleLabel {
@@ -881,8 +881,8 @@
 .settingsToggleSwitch::after {
   content: "";
   position: absolute;
-  top: 2px;
-  left: 2px;
+  top: var(--space-0-5);
+  left: var(--space-0-5);
   width: 16px;
   height: 16px;
   border-radius: 50%;

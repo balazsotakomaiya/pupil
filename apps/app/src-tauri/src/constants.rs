@@ -24,6 +24,12 @@ pub(crate) const DEFAULT_AI_BASE_URL: &str = "https://api.openai.com/v1";
 pub(crate) const DEFAULT_AI_MODEL: &str = "gpt-5.4";
 pub(crate) const DEFAULT_AI_MAX_TOKENS: &str = "4096";
 pub(crate) const DEFAULT_AI_TEMPERATURE: &str = "0.7";
+pub(crate) const EXPLAIN_SCHEMA_VERSION: i64 = 1;
+pub(crate) const EXPLAIN_MAX_PAYLOAD_BYTES: usize = 32_000;
+pub(crate) const EXPLAIN_MAX_PARAGRAPHS: usize = 7;
+pub(crate) const EXPLAIN_MAX_NODES: usize = 8;
+pub(crate) const EXPLAIN_MAX_EDGES: usize = 10;
+pub(crate) const EXPLAIN_MAX_LABEL_LENGTH: usize = 80;
 #[cfg_attr(target_os = "macos", allow(dead_code))]
 pub(crate) const STRONGHOLD_SNAPSHOT_FILE_NAME: &str = "pupil.hold";
 #[cfg_attr(target_os = "macos", allow(dead_code))]
@@ -45,8 +51,48 @@ Your job:
 3. Re-explain the answer clearly, in plain language, with one or two concrete examples or analogies when they help.
 
 Rules:
-- Plain prose. No markdown headings, no bullet lists, no numbered lists.
-- 3 to 7 short paragraphs. Be thorough but not exhausting.
+- Return ONLY one valid JSON object. Do not wrap it in Markdown fences or add commentary.
+- The top-level object MUST have exactly these fields:
+  {
+    "schemaVersion": 1,
+    "paragraphs": ["plain-text paragraph", "..."],
+    "visual": null
+  }
+- When a visual would materially improve the explanation, replace visual: null with exactly this shape. Omit optional fields rather than writing placeholder values:
+  {
+    "kind": "graph | tree | sequence | state | timeline | comparison",
+    "title": "short visible title",
+    "description": "short plain-text description",
+    "direction": "TB | LR",
+    "nodes": [
+      {
+        "id": "unique_ascii_id",
+        "role": "concept | process | decision | state | actor | value | annotation",
+        "label": "visible label",
+        "detail": "optional plain-text detail",
+        "groupId": "optional_group_id",
+        "order": 1
+      }
+    ],
+    "edges": [
+      {
+        "id": "unique_edge_id",
+        "source": "source_node_id",
+        "target": "target_node_id",
+        "relation": "optional visible relationship",
+        "style": "solid | dashed | bidirectional"
+      }
+    ],
+    "groups": [{ "id": "optional_group_id", "label": "Group", "nodeIds": ["node_id"] }],
+    "lanes": [{ "id": "optional_lane_id", "label": "Lane", "order": 1 }],
+    "altText": "A concise text alternative that describes the visual's teaching point."
+  }
+- Every node ID and edge ID must be unique. Each edge source/target and each group nodeId must refer to an existing node. For sequence and timeline visuals, give every node a strictly increasing order. Tree visuals must not contain a cycle.
+- paragraphs must contain 3 to 7 short plain-text paragraphs. No markdown headings, bullet lists, numbered lists, HTML, URLs, or code fences.
+- Generate a visual only when the concept contains a relationship, ordered process, state transition, hierarchy, system interaction, or meaningful side-by-side comparison that is materially clearer visually than in prose.
+- Do not generate a visual for a simple definition, isolated fact, short vocabulary answer, cloze answer, or an explanation where a diagram would merely decorate the text. visual may be null.
+- A visual has at most 8 nodes, 10 relationships, and 80 characters per visible label. Use semantic nodes and relationships only; never return JSX, React Flow fields, coordinates, arbitrary HTML, raw Mermaid, URLs, or event handlers.
+- Use kind graph, tree, sequence, state, timeline, or comparison; direction must be TB or LR. Include a concise altText.
 - Speak directly to the learner ("you"). Don't recap the card before explaining — get straight to the substance.
 - Don't apologize or hedge. Don't repeat the front question verbatim."#;
 
@@ -81,5 +127,9 @@ pub(crate) const MIGRATIONS: &[Migration] = &[
     Migration {
         id: "0004_add_card_explanation",
         sql: include_str!("../migrations/0004_add_card_explanation.sql"),
+    },
+    Migration {
+        id: "0005_add_card_explanation_payload",
+        sql: include_str!("../migrations/0005_add_card_explanation_payload.sql"),
     },
 ];

@@ -1,12 +1,12 @@
 .footer {
-  padding: 48px 32px;
+  padding: var(--space-12) var(--space-8);
   max-width: 960px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .footerLogo {
@@ -21,7 +21,7 @@
 .footerLinks {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   font-size: 13px;
   color: var(--text-tertiary);
 }
@@ -30,7 +30,7 @@
   color: var(--text-tertiary);
   text-decoration: none;
   transition: color 0.15s;
-  padding: 0 8px;
+  padding: 0 var(--space-2);
 }
 
 .footerLinks a:hover {

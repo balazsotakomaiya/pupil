@@ -117,7 +117,8 @@ pub(crate) fn update_card_row(
             tags = ?4,
             updated_at = ?5,
             explanation = NULL,
-            explanation_generated_at = NULL
+            explanation_generated_at = NULL,
+            explanation_payload = NULL
         WHERE id = ?6
         ",
         params![
@@ -425,8 +426,8 @@ fn upsert_study_day(
 pub(crate) struct CardExplanationSource {
     pub(crate) front: String,
     pub(crate) back: String,
-    pub(crate) explanation: Option<String>,
     pub(crate) explanation_generated_at: Option<i64>,
+    pub(crate) explanation_payload: Option<String>,
 }
 
 pub(crate) fn fetch_card_explanation_source(
@@ -435,7 +436,7 @@ pub(crate) fn fetch_card_explanation_source(
 ) -> rusqlite::Result<CardExplanationSource> {
     connection.query_row(
         "
-        SELECT front, back, explanation, explanation_generated_at
+        SELECT front, back, explanation_generated_at, explanation_payload
         FROM cards
         WHERE id = ?1
         ",
@@ -444,8 +445,8 @@ pub(crate) fn fetch_card_explanation_source(
             Ok(CardExplanationSource {
                 front: row.get(0)?,
                 back: row.get(1)?,
-                explanation: row.get(2)?,
-                explanation_generated_at: row.get(3)?,
+                explanation_generated_at: row.get(2)?,
+                explanation_payload: row.get(3)?,
             })
         },
     )
@@ -454,16 +455,16 @@ pub(crate) fn fetch_card_explanation_source(
 pub(crate) fn save_card_explanation(
     connection: &Connection,
     id: &str,
-    explanation: &str,
+    payload: &str,
     generated_at: i64,
 ) -> rusqlite::Result<()> {
     let updated_rows = connection.execute(
         "
         UPDATE cards
-        SET explanation = ?1, explanation_generated_at = ?2
-        WHERE id = ?3
+            SET explanation = NULL, explanation_generated_at = ?1, explanation_payload = ?2
+            WHERE id = ?3
         ",
-        params![explanation, generated_at, id],
+        params![generated_at, payload, id],
     )?;
 
     if updated_rows == 0 {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ExplainCardResult } from "../../lib/ai-explain";
+import type { ExplainCardPayload } from "../../lib/ai-explanation";
 import type { CardRecord } from "../../lib/cards";
 import { previewCardScheduling } from "../../lib/fsrs";
 import type { SpaceSummary } from "../../lib/spaces";
@@ -39,7 +40,7 @@ type ExplainState = {
   error: string | null;
   generatedAt: number | null;
   isLoading: boolean;
-  text: string | null;
+  payload: ExplainCardPayload | null;
 };
 
 export function StudyScreen({
@@ -330,7 +331,7 @@ export function StudyScreen({
       error: null,
       generatedAt: null,
       isLoading: true,
-      text: null,
+      payload: null,
     });
 
     try {
@@ -341,7 +342,7 @@ export function StudyScreen({
         error: null,
         generatedAt: result.generatedAt,
         isLoading: false,
-        text: result.explanation,
+        payload: result.payload,
       });
     } catch (nextError: unknown) {
       const message =
@@ -352,7 +353,7 @@ export function StudyScreen({
         error: message,
         generatedAt: null,
         isLoading: false,
-        text: null,
+        payload: null,
       });
     }
   }
@@ -579,7 +580,7 @@ export function StudyScreen({
         <StudyExplainPanel
           cardFront={displayCard.front}
           error={explain.error}
-          explanation={explain.text}
+          payload={explain.payload}
           generatedAt={explain.generatedAt}
           isCached={explain.cached}
           isLoading={explain.isLoading}

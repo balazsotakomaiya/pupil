@@ -1,0 +1,219 @@
+.visualSection {
+  margin-top: var(--space-5-5);
+  padding-top: var(--space-4-5);
+  border-top: 1px solid var(--border);
+}
+
+.visualHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2-5);
+}
+
+.visualHeading h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.visualHeading p {
+  margin: 5px 0 0;
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.visualHeadingActions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: var(--space-2);
+}
+
+.visualHeadingActions > span,
+.nodeRole {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.visualExpandButton {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.visualExpandButton svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+.visualExpandButton:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.visualAlt {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.flowCanvas {
+  height: 300px;
+  margin-top: var(--space-3-5);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  transition: height 0.2s ease;
+}
+
+.flowCanvas.expanded {
+  height: min(54vh, 520px);
+}
+
+.flowCanvas :global(.react-flow__renderer) {
+  cursor: default;
+}
+
+.flowCanvas :global(.react-flow__pane) {
+  cursor: grab;
+}
+
+.flowCanvas :global(.react-flow__pane:active) {
+  cursor: grabbing;
+}
+
+.flowCanvas :global(.react-flow__edge-path) {
+  stroke: var(--text-tertiary);
+  stroke-width: 1.5;
+}
+
+.flowCanvas :global(.react-flow__edge-text) {
+  fill: var(--text-tertiary);
+  font-size: 9px;
+}
+
+.flowCanvas :global(.react-flow__controls) {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+
+.flowCanvas :global(.react-flow__controls-button) {
+  width: 26px;
+  height: 26px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  fill: currentColor;
+}
+
+.flowCanvas :global(.react-flow__controls-button:last-child) {
+  border-bottom: none;
+}
+
+.flowCanvas :global(.react-flow__controls-button:hover) {
+  background: var(--bg);
+  color: var(--text-primary);
+}
+
+.flowCanvas :global(.react-flow__controls-button svg) {
+  max-width: 14px;
+  max-height: 14px;
+}
+
+.visualNode {
+  position: relative;
+  display: flex;
+  width: 138px;
+  min-height: 58px;
+  box-sizing: border-box;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 9px var(--space-2-5);
+  border: 1px solid var(--border-hover);
+  border-radius: 7px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: left;
+  white-space: normal;
+  cursor: zoom-in;
+  overflow-wrap: anywhere;
+}
+
+.visualNode strong {
+  font-weight: 600;
+}
+
+.visualNode small {
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.visualNode.process,
+.visualNode.state {
+  border-color: #10b98180;
+}
+
+.visualNode.decision {
+  border-style: dashed;
+}
+
+.visualNode.actor {
+  border-radius: 999px;
+}
+
+.handle {
+  width: 5px;
+  height: 5px;
+  min-width: 0;
+  min-height: 0;
+  border: none;
+  background: var(--text-tertiary);
+}
+
+.visualFallback {
+  margin-top: var(--space-4);
+  padding: var(--space-2-5) var(--space-3);
+  border: 1px dashed var(--border-hover);
+  border-radius: var(--radius);
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.4;
+}

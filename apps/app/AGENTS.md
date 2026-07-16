@@ -43,7 +43,7 @@ apps/app/
 │   │   ├── lib.rs          # Crate root and Tauri wiring
 │   │   ├── app.rs          # App bootstrap, paths, connections, migrations, menu
 │   │   ├── commands.rs     # Tauri command handlers
-│   │   ├── ai.rs           # AI settings, Stronghold, prompt building, provider calls
+│   │   ├── ai/             # AI settings, Stronghold, prompts, provider calls, validation
 │   │   ├── spaces.rs       # Space queries and mutations
 │   │   ├── cards.rs        # Card queries, mutations, and review persistence
 │   │   ├── analytics.rs    # Dashboard and per-space reporting queries
@@ -85,7 +85,7 @@ The Rust backend is split by responsibility:
 3. **`commands.rs`** — the public Tauri IPC surface. These functions stay thin: open a connection, normalize input, call feature/storage code, map errors.
 4. **`types.rs`** — shared structs for command inputs/outputs plus internal normalized shapes.
 5. **`constants.rs`** — app-wide constants, Stronghold identifiers, AI defaults, migration registry.
-6. **Feature/storage modules** — `spaces.rs`, `cards.rs`, `analytics.rs`, `imports.rs`, `settings.rs`, `ai.rs`.
+6. **Feature/storage modules** — `spaces.rs`, `cards.rs`, `analytics.rs`, `imports.rs`, `settings.rs`, `ai/`.
 7. **`normalize.rs`** — validation and coercion at the backend boundary.
 8. **`util.rs`** — small shared helpers like timestamps, tag encoding, and storage error mapping.
 
@@ -186,6 +186,7 @@ Global CSS lives in `src/styles/`:
 
 Rules:
 - **New component styles → collocated `.module.css` file.** Never add to `shared.css` unless the class is genuinely used in multiple unrelated components.
+- **Use spacing tokens for layout.** For `gap`, `margin`, `padding`, offsets, and scroll margins, use the `--space-*` scale from `tokens.css` instead of new raw pixel values. The scale is based on 4px steps with named 2px half-steps for compact controls; retain raw values only for deliberate optical adjustments (for example, 1px borders or a 3px icon gap).
 - **Class names in modules use camelCase** (`.cardState`, not `.card-state`). Access via `styles.cardState` in JSX.
 - **Compound state selectors**: `.cardState.stateLearning {}` → both classes scoped. JSX: `` `${styles.cardState} ${styles.stateLearning}` ``.
 - **`@keyframes` names**: Define in `animations.css`. Reference by name from any module (Vite resolves them globally).
@@ -197,7 +198,7 @@ Rules:
 ## What to be careful about
 
 - **Never put the API key in SQLite.** It goes in Stronghold only.
-- **Normalize all frontend input** before it reaches a storage function. The `normalize_*` helpers in `src-tauri/src/normalize.rs` and `src-tauri/src/ai.rs` are the pattern.
+- **Normalize all frontend input** before it reaches a storage function. The `normalize_*` helpers in `src-tauri/src/normalize.rs` and `src-tauri/src/ai/validation.rs` are the pattern.
 - **Use transactions** for any write that touches more than one table (e.g., inserting a card and bumping the space's `updated_at`).
 - **Don't add scheduler logic to Rust.** Scheduling is the frontend's job; the backend is a dumb persistence layer for FSRS state.
 - **The `study_days` table has a NULL/non-NULL duality** — `space_id IS NULL` means the global streak row, `space_id = x` means a per-space row. The streak query handles this with `(?1 IS NULL AND space_id IS NULL) OR space_id = ?1`.

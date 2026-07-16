@@ -13,7 +13,7 @@
   align-items: center;
   justify-content: space-between;
   height: 48px;
-  padding: 0 20px;
+  padding: 0 var(--space-5);
   background: transparent;
   user-select: none;
   -webkit-app-region: drag;
@@ -23,7 +23,7 @@
 .sessionBarRight {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   -webkit-app-region: no-drag;
 }
 
@@ -31,7 +31,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 0;
+  padding: var(--space-1) 0;
   border: none;
   background: transparent;
   color: var(--text-tertiary);
@@ -85,7 +85,7 @@
 }
 
 .sessionScope {
-  padding: 3px 12px;
+  padding: 3px var(--space-3);
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--bg-subtle);
@@ -142,11 +142,11 @@
 
 .sessionOverflowMenu {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + var(--space-1-5));
   right: 0;
   z-index: 100;
   min-width: 156px;
-  padding: 4px;
+  padding: var(--space-1);
   border: 1px solid var(--border-hover);
   border-radius: var(--radius);
   background: var(--bg-elevated);
@@ -157,9 +157,9 @@
 .sessionOverflowItem {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   width: 100%;
-  padding: 7px 10px;
+  padding: 7px var(--space-2-5);
   border: none;
   border-radius: 5px;
   background: transparent;
@@ -195,7 +195,7 @@
 
 .sessionProgressTrack {
   position: absolute;
-  top: 48px;
+  top: var(--space-12);
   right: 0;
   left: 0;
   z-index: 10;
@@ -220,7 +220,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 32px 32px;
+  padding: var(--space-6) var(--space-8) var(--space-8);
 }
 
 .sessionCardWrap {
@@ -260,7 +260,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 52px;
+  padding: var(--space-12) var(--space-13);
   border: 1px solid var(--border);
   border-radius: 20px;
   background: var(--bg-subtle);
@@ -282,7 +282,7 @@
 .sessionCardLabel,
 .sessionCardSpace {
   position: absolute;
-  top: 18px;
+  top: var(--space-4-5);
   color: var(--text-tertiary);
   font-family: var(--font-mono);
   font-size: 8px;
@@ -292,12 +292,12 @@
 }
 
 .sessionCardLabel {
-  left: 24px;
+  left: var(--space-6);
   letter-spacing: 1.2px;
 }
 
 .sessionCardSpace {
-  right: 24px;
+  right: var(--space-6);
   opacity: 0.4;
   letter-spacing: 0.8px;
 }
@@ -326,7 +326,7 @@
 }
 
 .sessionCardText code {
-  padding: 2px 7px;
+  padding: var(--space-0-5) 7px;
   border: 1px solid var(--border);
   border-radius: 5px;
   background: var(--bg-elevated);
@@ -348,8 +348,8 @@
 
 .sessionCardFrontEcho {
   width: 100%;
-  margin-bottom: 20px;
-  padding-bottom: 20px;
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-5);
   border-bottom: 1px solid var(--border);
   color: var(--text-tertiary);
   font-size: 13px;
@@ -364,11 +364,11 @@
   justify-content: center;
   flex-wrap: wrap;
   gap: 5px;
-  margin-top: 24px;
+  margin-top: var(--space-6);
 }
 
 .sessionCardTag {
-  padding: 1px 6px;
+  padding: 1px var(--space-1-5);
   border: 1px solid var(--border);
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.03);
@@ -385,8 +385,8 @@
   max-width: 560px;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  margin-top: 32px;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
 }
 
 .sessionSuspendedActions {
@@ -395,8 +395,8 @@
   max-width: 560px;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  margin-top: 28px;
+  gap: var(--space-4);
+  margin-top: var(--space-7);
 }
 
 .sessionSuspendedLabel {
@@ -410,7 +410,7 @@
 
 .sessionSuspendedBtns {
   display: flex;
-  gap: 10px;
+  gap: var(--space-2-5);
 }
 
 .sessionUnsuspendBtn,
@@ -420,8 +420,8 @@
   min-width: 110px;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 0 20px;
+  gap: var(--space-1-5);
+  padding: 0 var(--space-5);
   border: 1.5px solid transparent;
   border-radius: 10px;
   font-size: 14px;
@@ -466,7 +466,7 @@
   max-width: 320px;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--space-2);
   border: none;
   border-radius: 10px;
   background: var(--text-primary);
@@ -488,8 +488,8 @@
 }
 
 .sessionRevealKbd {
-  margin-left: 4px;
-  padding: 2px 7px;
+  margin-left: var(--space-1);
+  padding: var(--space-0-5) 7px;
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.15);
   opacity: 0.6;
@@ -502,15 +502,15 @@
   display: grid;
   width: 100%;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .sessionRatingBtn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 14px 8px 12px;
+  gap: var(--space-1);
+  padding: var(--space-3-5) var(--space-2) var(--space-3);
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--bg-subtle);
@@ -540,7 +540,7 @@
 }
 
 .sessionRatingKey {
-  margin-top: 2px;
+  margin-top: var(--space-0-5);
   padding: 1px 5px;
   border: 1px solid var(--border);
   border-radius: 3px;
@@ -596,7 +596,7 @@
 }
 
 .sessionSummaryNextDue {
-  margin-top: 20px;
+  margin-top: var(--space-5);
   font-size: 11px;
   opacity: 1;
 }
@@ -609,7 +609,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 32px;
+  padding: var(--space-8);
   background: var(--bg);
 }
 
@@ -619,7 +619,7 @@
   height: 56px;
   align-items: center;
   justify-content: center;
-  margin-bottom: 28px;
+  margin-bottom: var(--space-7);
   border: 2px solid #10b98130;
   border-radius: 999px;
   background: var(--success-dim);
@@ -632,7 +632,7 @@
 }
 
 .sessionSummaryTitle {
-  margin-bottom: 6px;
+  margin-bottom: var(--space-1-5);
   font-size: clamp(22px, 3vw, 30px);
   font-weight: 700;
   line-height: 1.2;
@@ -642,7 +642,7 @@
 
 .sessionSummarySub {
   max-width: 360px;
-  margin-bottom: 36px;
+  margin-bottom: var(--space-9);
   color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.5;
@@ -655,20 +655,20 @@
   max-width: 420px;
   grid-template-columns: repeat(3, 1fr);
   gap: 1px;
-  margin-bottom: 36px;
+  margin-bottom: var(--space-9);
   border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--border);
 }
 
 .sessionSummaryStat {
-  padding: 20px 24px;
+  padding: var(--space-5) var(--space-6);
   background: var(--bg-subtle);
   text-align: center;
 }
 
 .sessionSummaryStatValue {
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
   font-size: 28px;
   font-weight: 700;
   line-height: 1;
@@ -693,9 +693,9 @@
 .sessionSummaryStreak {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 36px;
-  padding: 10px 18px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-9);
+  padding: var(--space-2-5) var(--space-4-5);
   border: 1px solid #10b98130;
   border-radius: 999px;
   background: var(--success-dim);
@@ -716,14 +716,14 @@
 
 .sessionSummaryActions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .sessionSummaryBtn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
+  gap: var(--space-1-5);
+  padding: var(--space-2-5) var(--space-5);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: transparent;
@@ -763,7 +763,7 @@
 @media (max-width: 640px) {
   .sessionCardFace {
     min-height: 220px;
-    padding: 36px 28px;
+    padding: var(--space-9) var(--space-7);
     border-radius: 16px;
   }
 
@@ -780,7 +780,7 @@
   }
 
   .sessionArea {
-    padding: 16px 16px 24px;
+    padding: var(--space-4) var(--space-4) var(--space-6);
   }
 
   .sessionSummaryActions {
@@ -799,7 +799,7 @@
   display: inline-block;
   width: 48px;
   height: 1.1em;
-  margin: 0 2px;
+  margin: 0 var(--space-0-5);
   border-bottom: 2px solid var(--text-tertiary);
   vertical-align: bottom;
 }
@@ -807,10 +807,10 @@
 .sessionExplainTrigger {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 16px;
+  gap: var(--space-1-5);
+  margin-top: var(--space-4);
   margin-bottom: 0;
-  padding: 6px 12px;
+  padding: var(--space-1-5) var(--space-3);
   border: 1px solid var(--border);
   border-radius: 999px;
   background: transparent;
@@ -845,7 +845,7 @@
 }
 
 .sessionExplainTrigger + .sessionActions {
-  margin-top: 16px;
+  margin-top: var(--space-4);
 }
 
 .sessionExplainBackdrop {
@@ -869,6 +869,11 @@
   background: var(--bg);
   box-shadow: -16px 0 48px rgba(0, 0, 0, 0.4);
   animation: sessionExplainSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 0.2s ease;
+}
+
+.sessionExplainPanelExpanded {
+  width: min(960px, 100vw);
 }
 
 @keyframes sessionExplainFadeIn {
@@ -893,15 +898,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 16px 20px 12px;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5) var(--space-3);
   border-bottom: 1px solid var(--border);
 }
 
 .sessionExplainHeaderLeft {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-0-5);
 }
 
 .sessionExplainTitle {
@@ -923,7 +928,7 @@
 .sessionExplainHeaderActions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .sessionExplainHeaderBtn {
@@ -931,7 +936,7 @@
   align-items: center;
   justify-content: center;
   height: 28px;
-  padding: 0 10px;
+  padding: 0 var(--space-2-5);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: transparent;
@@ -979,7 +984,7 @@
 .sessionExplainBody {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: var(--space-5);
 }
 
 .sessionExplainText {
@@ -992,17 +997,26 @@
 }
 
 .sessionExplainText p {
-  margin: 0 0 14px;
+  margin: 0 0 var(--space-3-5);
 }
 
 .sessionExplainText p:last-child {
   margin-bottom: 0;
 }
 
+.sessionExplainVisualLoading {
+  margin-top: var(--space-4-5);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
 .sessionExplainLoading {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .sessionExplainSkeleton {
@@ -1031,7 +1045,7 @@
 }
 
 .sessionExplainLoadingNote {
-  margin-top: 8px;
+  margin-top: var(--space-2);
   color: var(--text-tertiary);
   font-family: var(--font-mono);
   font-size: 10px;
@@ -1052,8 +1066,8 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: var(--space-3);
+  padding: var(--space-3-5) var(--space-4);
   border: 1px solid #ef444430;
   border-radius: var(--radius);
   background: #ef444412;
@@ -1063,7 +1077,7 @@
 }
 
 .sessionExplainRetryBtn {
-  padding: 6px 12px;
+  padding: var(--space-1-5) var(--space-3);
   border: 1px solid #ef444450;
   border-radius: var(--radius);
   background: transparent;
@@ -1084,8 +1098,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 20px;
+  gap: var(--space-3);
+  padding: var(--space-2-5) var(--space-5);
   border-top: 1px solid var(--border);
   color: var(--text-tertiary);
   font-family: var(--font-mono);

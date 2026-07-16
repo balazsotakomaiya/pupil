@@ -3,14 +3,14 @@
 }
 
 .importHero {
-  padding: 56px 0 48px;
+  padding: var(--space-14) 0 var(--space-12);
 }
 
 .importTarget {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 32px;
+  gap: var(--space-1-5);
+  margin-bottom: var(--space-8);
 }
 
 .importTargetLabel {
@@ -28,7 +28,7 @@
 .importTargetSelect {
   width: 100%;
   height: 38px;
-  padding: 0 36px 0 14px;
+  padding: 0 var(--space-9) 0 var(--space-3-5);
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -51,7 +51,7 @@
 .importTargetChevron {
   position: absolute;
   top: 50%;
-  right: 12px;
+  right: var(--space-3);
   transform: translateY(-50%);
   pointer-events: none;
   color: var(--text-tertiary);
@@ -75,8 +75,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 72px 40px;
+  gap: var(--space-4);
+  padding: var(--space-18) var(--space-10);
   border: 1px dashed var(--border-hover);
   border-radius: var(--radius-lg);
   text-align: center;
@@ -118,7 +118,7 @@
 .dropZoneIcon {
   width: 56px;
   height: 56px;
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
   border-radius: 14px;
   background: var(--bg-subtle);
 }
@@ -144,8 +144,8 @@
 }
 
 .dropZoneHint {
-  margin-top: 4px;
-  padding: 4px 14px;
+  margin-top: var(--space-1);
+  padding: var(--space-1) var(--space-3-5);
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--bg-subtle);
@@ -159,9 +159,9 @@
 .dropZoneBrowse {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  padding: 8px 18px;
+  gap: var(--space-1-5);
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-4-5);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: transparent;
@@ -194,14 +194,14 @@
 }
 
 .importSectionTight {
-  padding-bottom: 24px;
+  padding-bottom: var(--space-6);
 }
 
 .importStates {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding-bottom: 8px;
+  gap: var(--space-4);
+  padding-bottom: var(--space-2);
 }
 
 .importProgressCard,
@@ -221,7 +221,7 @@
 }
 
 .importProgressCard {
-  padding: 28px;
+  padding: var(--space-7);
 }
 
 .importProgressTop,
@@ -232,7 +232,7 @@
 }
 
 .importProgressTop {
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .importFileInfo,
@@ -244,7 +244,7 @@
 
 .importFileInfo,
 .importSummaryLeft {
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .importFileIcon {
@@ -285,7 +285,7 @@
 }
 
 .importStatusBadge {
-  padding: 4px 12px;
+  padding: var(--space-1) var(--space-3);
   border-radius: 999px;
 }
 
@@ -317,7 +317,7 @@
 .progressBarWrap {
   overflow: hidden;
   height: 3px;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-4);
   border-radius: 2px;
   background: var(--bg-elevated);
 }
@@ -336,7 +336,7 @@
 .importProgressDetails {
   display: flex;
   flex-wrap: wrap;
-  gap: 24px;
+  gap: var(--space-6);
 }
 
 .importDetail {
@@ -358,24 +358,24 @@
 }
 
 .importSummaryTop {
-  padding: 24px 28px;
+  padding: var(--space-6) var(--space-7);
 }
 
 .importSummaryMeta {
-  margin-top: 2px;
+  margin-top: var(--space-0-5);
   color: var(--text-tertiary);
   font-size: 12px;
 }
 
 .importSummaryActions {
-  gap: 6px;
+  gap: var(--space-1-5);
 }
 
 .importSummaryBtn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 12px;
+  padding: 5px var(--space-3);
   border: 1px solid var(--border);
   border-radius: 5px;
   background: transparent;
@@ -417,11 +417,11 @@
 .deckRow {
   display: grid;
   grid-template-columns: 1fr 80px 80px 80px;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .deckBreakdownHeader {
-  padding: 8px 28px;
+  padding: var(--space-2) var(--space-7);
   border-bottom: 1px solid var(--border);
   background: var(--bg-elevated);
   color: var(--text-tertiary);
@@ -437,7 +437,7 @@
 }
 
 .deckRow {
-  padding: 10px 28px;
+  padding: var(--space-2-5) var(--space-7);
   border-bottom: 1px solid var(--border);
   font-size: 13px;
   transition: background 0.15s ease;
@@ -482,9 +482,9 @@
 .historyRow {
   display: grid;
   grid-template-columns: 1fr 120px 80px 80px 100px;
-  gap: 12px;
+  gap: var(--space-3);
   align-items: center;
-  padding: 11px 20px;
+  padding: 11px var(--space-5);
   border-bottom: 1px solid var(--border);
   font-size: 13px;
   transition: background 0.15s ease;
@@ -512,15 +512,15 @@
 }
 
 .notesSection {
-  padding: 32px 0 0;
+  padding: var(--space-8) 0 0;
 }
 
 .notesCard {
-  padding: 24px;
+  padding: var(--space-6);
 }
 
 .notesTitle {
-  margin-bottom: 14px;
+  margin-bottom: var(--space-3-5);
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 600;
@@ -529,13 +529,13 @@
 .notesList {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-2-5);
 }
 
 .noteItem {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--space-2-5);
   color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.5;
@@ -562,7 +562,7 @@
 
 @media (max-width: 640px) {
   .dropZone {
-    padding: 48px 24px;
+    padding: var(--space-12) var(--space-6);
   }
 
   .historyRow {

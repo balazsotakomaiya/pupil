@@ -64,7 +64,7 @@ If something is long-lived shell behavior rather than presentational UI, prefer 
 - `commands.rs`: Tauri IPC surface
 - `normalize.rs`: backend-side validation and normalization
 - `types.rs`: shared DTOs and normalized payload shapes
-- feature modules: `cards.rs`, `spaces.rs`, `analytics.rs`, `imports.rs`, `settings.rs`, `ai.rs`, `tray.rs`
+- feature modules: `cards.rs`, `spaces.rs`, `analytics.rs`, `imports.rs`, `settings.rs`, `ai/`, `tray.rs`
 
 ## High-value invariants
 

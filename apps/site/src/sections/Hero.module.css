@@ -1,5 +1,5 @@
 .hero {
-  padding: 96px 32px 80px;
+  padding: var(--space-24) var(--space-8) var(--space-20);
   max-width: 960px;
   margin: 0 auto;
 }
@@ -7,14 +7,14 @@
 .heroBadge {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-2-5);
   font-size: 12px;
   font-weight: 500;
   color: var(--text-secondary);
   border: 1px solid var(--border);
   border-radius: 999px;
-  padding: 5px 14px;
-  margin-bottom: 24px;
+  padding: 5px var(--space-3-5);
+  margin-bottom: var(--space-6);
   letter-spacing: 0.2px;
 }
 
@@ -23,7 +23,7 @@
   font-size: 11px;
   color: var(--text-tertiary);
   background: var(--bg-elevated);
-  padding: 2px 8px;
+  padding: var(--space-0-5) var(--space-2);
   border-radius: 999px;
 }
 
@@ -33,7 +33,7 @@
   line-height: 1.1;
   letter-spacing: -1.5px;
   max-width: 720px;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
 }
 
 .heroTitle em {
@@ -47,11 +47,11 @@
   line-height: 1.6;
   color: var(--text-secondary);
   max-width: 520px;
-  margin-bottom: 36px;
+  margin-bottom: var(--space-9);
 }
 
 .heroMockup {
-  margin-top: 64px;
+  margin-top: var(--space-16);
   width: 100%;
   mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
@@ -136,10 +136,10 @@
 
 @media (max-width: 640px) {
   .hero {
-    padding: 64px 20px 56px;
+    padding: var(--space-16) var(--space-5) var(--space-14);
   }
 
   .heroMockup {
-    margin-top: 40px;
+    margin-top: var(--space-10);
   }
 }

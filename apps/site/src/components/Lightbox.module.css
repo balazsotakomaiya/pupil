@@ -27,8 +27,8 @@
 
 .lightboxClose {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: var(--space-5);
+  right: var(--space-5);
   width: 40px;
   height: 40px;
   display: inline-flex;

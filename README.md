@@ -33,9 +33,8 @@ Create focused study spaces. Import Anki decks. Generate cards from any topic wi
 
 Most flashcard tools force a tradeoff.
 
-- Anki is powerful but rough around the edges.
-- Lighter apps feel better but their scheduling is weak.
-- AI can generate content fast but usually drops off before the study loop begins.
+- Anki is powerful, yet deeply outdated visually, clunky, and complex
+- AI can generate content fast but usually lives and stays in your chat history on ChatGPT, Claude, or Gemini.
 - Modern study tools hide the good stuff behind subscriptions and lock you in.
 
 Pupil is built to close that gap: fast card creation, a clean study flow, serious scheduling, and no account required. It is free and open source.
@@ -136,15 +135,6 @@ Run Rust linting and formatting checks:
 ```bash
 bun run lint:rust
 bun run format:check
-```
-
-## Project layout
-
-```
-apps/
-  app/      Desktop app (Tauri + React)
-  site/     Marketing site
-docs/       Specs and design notes
 ```
 
 ## License

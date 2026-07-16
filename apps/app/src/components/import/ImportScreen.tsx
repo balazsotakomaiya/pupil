@@ -284,6 +284,7 @@ function buildHistoryItem(result: ImportExecutionResult): ImportHistoryItem {
     dateLabel: formatHistoryDate(result.importedAt),
     duplicateCount: result.duplicateCount,
     fileName: result.sourceFileName,
+    importedAt: result.importedAt,
     status: result.status,
     statusLabel: result.statusLabel,
   };

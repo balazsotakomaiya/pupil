@@ -45,6 +45,36 @@ body {
   /* Radii */
   --radius: 8px;
   --radius-lg: 12px;
+
+  /* Spacing: a 4px base scale with 2px half-steps for compact controls. */
+  --space-0: 0;
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-1-5: 6px;
+  --space-2: 8px;
+  --space-2-5: 10px;
+  --space-3: 12px;
+  --space-3-5: 14px;
+  --space-4: 16px;
+  --space-4-5: 18px;
+  --space-5: 20px;
+  --space-5-5: 22px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-9: 36px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-13: 52px;
+  --space-14: 56px;
+  --space-16: 64px;
+  --space-18: 72px;
+  --space-19: 76px;
+  --space-20: 80px;
+  --space-22: 88px;
+  --space-24: 96px;
+  --space-30: 120px;
+  --space-40: 160px;
 }
 
 body {

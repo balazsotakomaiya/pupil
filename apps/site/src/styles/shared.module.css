@@ -13,7 +13,7 @@
 
 /* ─── Section layout primitives ──────────────────────────────────────────── */
 .section {
-  padding: 80px 32px;
+  padding: var(--space-20) var(--space-8);
   max-width: 960px;
   margin: 0 auto;
 }
@@ -25,14 +25,14 @@
   text-transform: uppercase;
   letter-spacing: 1.5px;
   color: var(--text-tertiary);
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .sectionTitle {
   font-size: clamp(24px, 3vw, 36px);
   font-weight: 600;
   letter-spacing: -0.8px;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .sectionDesc {
@@ -40,11 +40,11 @@
   line-height: 1.6;
   color: var(--text-secondary);
   max-width: 480px;
-  margin-bottom: 48px;
+  margin-bottom: var(--space-12);
 }
 
 @media (max-width: 640px) {
   .section {
-    padding: 56px 20px;
+    padding: var(--space-14) var(--space-5);
   }
 }

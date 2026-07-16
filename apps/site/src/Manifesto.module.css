@@ -1,5 +1,5 @@
 .manifesto {
-  padding: 80px 32px 96px;
+  padding: var(--space-20) var(--space-8) var(--space-24);
 }
 
 .manifestoInner {
@@ -8,7 +8,7 @@
 }
 
 .manifestoHeader {
-  padding-bottom: 56px;
+  padding-bottom: var(--space-14);
 }
 
 .manifestoTitle {
@@ -16,8 +16,8 @@
   font-weight: 600;
   line-height: 1.05;
   letter-spacing: -2px;
-  margin-bottom: 20px;
-  margin-top: 16px;
+  margin-bottom: var(--space-5);
+  margin-top: var(--space-4);
 }
 
 .manifestoTitle em {
@@ -38,14 +38,14 @@
 }
 
 .manifestoSection {
-  padding: 56px 0;
+  padding: var(--space-14) 0;
 }
 
 .manifestoH2 {
   font-size: clamp(18px, 2.5vw, 22px);
   font-weight: 600;
   letter-spacing: -0.4px;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
   color: var(--text-primary);
 }
 
@@ -53,7 +53,7 @@
   font-size: 16px;
   line-height: 1.75;
   color: var(--text-secondary);
-  margin-bottom: 18px;
+  margin-bottom: var(--space-4-5);
 }
 
 .manifestoSection p:last-child {
@@ -62,8 +62,8 @@
 
 .manifestoQuote {
   border-left: 1px solid var(--border-hover);
-  margin: 32px 0;
-  padding: 4px 24px;
+  margin: var(--space-8) 0;
+  padding: var(--space-1) var(--space-6);
   font-family: "Instrument Serif", Georgia, "Times New Roman", serif;
   font-style: italic;
   font-size: 19px;
@@ -72,10 +72,10 @@
 }
 
 .manifestoSign {
-  padding: 56px 0 0;
+  padding: var(--space-14) 0 0;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--space-6);
 }
 
 .manifestoSign p {

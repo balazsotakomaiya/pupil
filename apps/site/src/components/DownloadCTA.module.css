@@ -2,27 +2,27 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--space-2-5);
 }
 
 .heroCtas {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
   flex-wrap: wrap;
 }
 
 .btnPrimary {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   font-size: 14px;
   font-weight: 500;
   color: var(--bg);
   background: var(--text-primary);
   border: none;
   border-radius: 8px;
-  padding: 10px 20px;
+  padding: var(--space-2-5) var(--space-5);
   cursor: pointer;
   text-decoration: none;
   transition: opacity 0.15s;
@@ -35,14 +35,14 @@
 .btnSecondary {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
   background: transparent;
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 10px 20px;
+  padding: var(--space-2-5) var(--space-5);
   cursor: pointer;
   text-decoration: none;
   transition:

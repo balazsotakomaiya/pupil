@@ -3,9 +3,11 @@ use std::fs;
 use tauri::{AppHandle, Manager};
 
 use crate::ai::{
-    build_generate_cards_prompt, execute_ai_completion, load_ai_settings_state,
-    load_resolved_ai_settings, normalize_ai_settings_input, normalize_generate_cards_input,
-    parse_generated_cards_response, resolve_ai_settings_for_test, save_ai_settings_rows,
+    build_explain_prose_fallback_prompt, build_explain_repair_prompt, build_generate_cards_prompt,
+    execute_ai_completion, execute_explain_completion_with_retries, explanation_plain_text,
+    load_ai_settings_state, load_resolved_ai_settings, normalize_ai_settings_input,
+    normalize_generate_cards_input, parse_explain_card_response, parse_generated_cards_response,
+    resolve_ai_settings_for_test, save_ai_settings_rows,
 };
 use crate::analytics::{list_space_stats_rows, load_dashboard_stats};
 use crate::app::{
@@ -17,7 +19,7 @@ use crate::cards::{
     review_card_row, save_card_explanation, suspend_card_row, undo_review_card_row,
     update_card_row,
 };
-use crate::constants::{AI_EXPLAIN_SYSTEM_PROMPT, AI_SYSTEM_PROMPT};
+use crate::constants::AI_SYSTEM_PROMPT;
 use crate::error::{AppError, AppResult};
 use crate::imports::import_anki_cards_row;
 use crate::normalize::{
@@ -33,11 +35,11 @@ use crate::study_queue::load_study_queue_snapshot;
 use crate::tray;
 use crate::types::{
     AiConnectionTestResult, AiSettingsState, BootstrapState, CardSummary, CreateCardInput,
-    DashboardStats, ExplainCardInput, ExplainCardResult, ExportDataResult, GenerateCardsInput,
-    GeneratedCardPayload, ImportAnkiInput, ImportAnkiResult, RecentActivityEntry,
-    ResolvedAiSettings, ReviewCardInput, SaveAiSettingsInput, SettingsDataSummary, SpaceStats,
-    SpaceSummary, StudyQueueSnapshot, StudySettingsState, SuspendCardInput, UndoReviewCardInput,
-    UpdateCardInput,
+    DashboardStats, ExplainCardInput, ExplainCardPayload, ExplainCardResult, ExportDataResult,
+    GenerateCardsInput, GeneratedCardPayload, ImportAnkiInput, ImportAnkiResult,
+    RecentActivityEntry, ResolvedAiSettings, ReviewCardInput, SaveAiSettingsInput,
+    SettingsDataSummary, SpaceStats, SpaceSummary, StudyQueueSnapshot, StudySettingsState,
+    SuspendCardInput, UndoReviewCardInput, UpdateCardInput,
 };
 use crate::util::now_ms;
 
@@ -308,6 +310,7 @@ pub(crate) async fn generate_cards(
 
 enum ExplainPrep {
     Cached {
+        payload: ExplainCardPayload,
         explanation: String,
         generated_at: i64,
     },
@@ -343,12 +346,14 @@ pub(crate) async fn explain_card(
             .map_err(AppError::from_card_storage)?;
 
         if !force {
-            if let (Some(text), Some(generated_at)) =
-                (source.explanation.as_ref(), source.explanation_generated_at)
-            {
-                if !text.trim().is_empty() {
+            if let (Some(serialized), Some(generated_at)) = (
+                source.explanation_payload.as_ref(),
+                source.explanation_generated_at,
+            ) {
+                if let Ok(payload) = parse_explain_card_response(serialized) {
                     return Ok(ExplainPrep::Cached {
-                        explanation: text.clone(),
+                        explanation: explanation_plain_text(&payload),
+                        payload,
                         generated_at,
                     });
                 }
@@ -367,10 +372,12 @@ pub(crate) async fn explain_card(
 
     let (front, back, settings) = match prep {
         ExplainPrep::Cached {
+            payload,
             explanation,
             generated_at,
         } => {
             return Ok(ExplainCardResult {
+                payload,
                 explanation,
                 generated_at,
                 cached: true,
@@ -384,27 +391,52 @@ pub(crate) async fn explain_card(
     };
 
     let user_prompt = build_explain_card_prompt(&front, &back);
-    let response_text =
-        execute_ai_completion(&settings, &user_prompt, Some(AI_EXPLAIN_SYSTEM_PROMPT)).await?;
-    let explanation = response_text.trim().to_string();
-
-    if explanation.is_empty() {
-        return Err(AppError::ai_provider(
-            "The AI provider returned an empty explanation.",
-            None::<String>,
-        ));
-    }
+    let response_text = execute_explain_completion_with_retries(&settings, &user_prompt).await?;
+    let payload = match parse_explain_card_response(&response_text) {
+        Ok(payload) => payload,
+        Err(first_error) => {
+            let repair_prompt = build_explain_repair_prompt(&response_text, &first_error);
+            match execute_explain_completion_with_retries(&settings, &repair_prompt).await {
+                Ok(repaired) => match parse_explain_card_response(&repaired) {
+                    Ok(payload) => payload,
+                    Err(_) => {
+                        let fallback = execute_explain_completion_with_retries(
+                            &settings,
+                            build_explain_prose_fallback_prompt(),
+                        )
+                        .await?;
+                        let mut payload = parse_explain_card_response(&fallback)?;
+                        payload.visual = None;
+                        payload
+                    }
+                },
+                Err(_) => {
+                    let fallback = execute_explain_completion_with_retries(
+                        &settings,
+                        build_explain_prose_fallback_prompt(),
+                    )
+                    .await?;
+                    let mut payload = parse_explain_card_response(&fallback)?;
+                    payload.visual = None;
+                    payload
+                }
+            }
+        }
+    };
+    let explanation = explanation_plain_text(&payload);
+    let serialized_payload = serde_json::to_string(&payload)
+        .map_err(|error| AppError::internal_message(error.to_string()))?;
 
     let generated_at = now_ms();
     let persist_card_id = card_id.clone();
-    let persist_explanation = explanation.clone();
+    let persist_payload = serialized_payload;
 
     run_blocking(move || {
         let connection = open_app_connection(&app)?;
         save_card_explanation(
             &connection,
             &persist_card_id,
-            &persist_explanation,
+            &persist_payload,
             generated_at,
         )
         .map_err(AppError::from_card_storage)
@@ -412,6 +444,7 @@ pub(crate) async fn explain_card(
     .await?;
 
     Ok(ExplainCardResult {
+        payload,
         explanation,
         generated_at,
         cached: false,

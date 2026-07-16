@@ -1,4 +1,11 @@
+use std::collections::HashSet;
+
 use serde::{Deserialize, Serialize};
+
+use crate::constants::{
+    EXPLAIN_MAX_EDGES, EXPLAIN_MAX_LABEL_LENGTH, EXPLAIN_MAX_NODES, EXPLAIN_MAX_PARAGRAPHS,
+    EXPLAIN_MAX_PAYLOAD_BYTES, EXPLAIN_SCHEMA_VERSION,
+};
 
 #[derive(Clone)]
 pub(crate) struct Migration {
@@ -252,9 +259,310 @@ pub(crate) struct ExplainCardInput {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ExplainCardResult {
+    pub(crate) payload: ExplainCardPayload,
     pub(crate) explanation: String,
     pub(crate) generated_at: i64,
     pub(crate) cached: bool,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub(crate) struct ExplainCardPayload {
+    pub(crate) schema_version: i64,
+    pub(crate) paragraphs: Vec<String>,
+    pub(crate) visual: Option<VisualSpec>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub(crate) struct VisualSpec {
+    pub(crate) kind: VisualKind,
+    pub(crate) title: String,
+    pub(crate) description: String,
+    pub(crate) direction: VisualDirection,
+    pub(crate) nodes: Vec<VisualNode>,
+    pub(crate) edges: Vec<VisualEdge>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) groups: Option<Vec<VisualGroup>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) lanes: Option<Vec<VisualLane>>,
+    pub(crate) alt_text: String,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub(crate) enum VisualKind {
+    Graph,
+    Tree,
+    Sequence,
+    State,
+    Timeline,
+    Comparison,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub(crate) enum VisualDirection {
+    #[serde(rename = "TB")]
+    TopToBottom,
+    #[serde(rename = "LR")]
+    LeftToRight,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub(crate) struct VisualNode {
+    pub(crate) id: String,
+    pub(crate) role: VisualNodeRole,
+    pub(crate) label: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) detail: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) group_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) order: Option<i64>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub(crate) struct VisualEdge {
+    pub(crate) id: String,
+    pub(crate) source: String,
+    pub(crate) target: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) relation: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) style: Option<VisualEdgeStyle>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub(crate) enum VisualNodeRole {
+    Concept,
+    Process,
+    Decision,
+    State,
+    Actor,
+    Value,
+    Annotation,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub(crate) enum VisualEdgeStyle {
+    Solid,
+    Dashed,
+    Bidirectional,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub(crate) struct VisualGroup {
+    pub(crate) id: String,
+    pub(crate) label: String,
+    pub(crate) node_ids: Vec<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub(crate) struct VisualLane {
+    pub(crate) id: String,
+    pub(crate) label: String,
+    pub(crate) order: i64,
+}
+
+impl ExplainCardPayload {
+    pub(crate) fn validate(&self, serialized_len: usize) -> Result<(), String> {
+        if serialized_len > EXPLAIN_MAX_PAYLOAD_BYTES {
+            return Err("payload exceeds the maximum size".to_string());
+        }
+        if self.schema_version != EXPLAIN_SCHEMA_VERSION {
+            return Err("unsupported explanation schema version".to_string());
+        }
+        if self.paragraphs.len() < 3 || self.paragraphs.len() > EXPLAIN_MAX_PARAGRAPHS {
+            return Err("explanation must contain 3 to 7 paragraphs".to_string());
+        }
+        if self
+            .paragraphs
+            .iter()
+            .any(|paragraph| !safe_text(paragraph))
+        {
+            return Err("paragraphs must be non-empty plain text".to_string());
+        }
+        if let Some(visual) = &self.visual {
+            visual.validate()?;
+        }
+        Ok(())
+    }
+}
+
+impl VisualSpec {
+    fn validate(&self) -> Result<(), String> {
+        if !safe_text(&self.title) || !safe_text(&self.description) || !safe_text(&self.alt_text) {
+            return Err("visual text must be non-empty plain text".to_string());
+        }
+        if self.nodes.is_empty() || self.nodes.len() > EXPLAIN_MAX_NODES {
+            return Err("visual must contain 1 to 8 nodes".to_string());
+        }
+        if self.edges.len() > EXPLAIN_MAX_EDGES {
+            return Err("visual must contain at most 10 edges".to_string());
+        }
+        let ids = self
+            .nodes
+            .iter()
+            .map(|node| node.id.as_str())
+            .collect::<Vec<_>>();
+        if ids.iter().any(|id| {
+            id.is_empty()
+                || !id.chars().all(|character| {
+                    character.is_ascii_alphanumeric() || character == '-' || character == '_'
+                })
+        }) {
+            return Err("visual node IDs must be simple non-empty identifiers".to_string());
+        }
+        if ids.iter().collect::<HashSet<_>>().len() != ids.len() {
+            return Err("visual node IDs must be unique".to_string());
+        }
+        for node in &self.nodes {
+            if !safe_limited_text(&node.label, EXPLAIN_MAX_LABEL_LENGTH) {
+                return Err("visual labels must be 80 characters or fewer".to_string());
+            }
+            if let Some(detail) = &node.detail {
+                if !safe_text(detail) {
+                    return Err("visual details must be plain text".to_string());
+                }
+            }
+        }
+        let mut edge_ids = Vec::new();
+        for edge in &self.edges {
+            if edge.id.is_empty()
+                || !ids.contains(&edge.source.as_str())
+                || !ids.contains(&edge.target.as_str())
+                || edge.source == edge.target
+            {
+                return Err("visual edges must reference distinct existing nodes".to_string());
+            }
+            if edge_ids.iter().any(|id| id == &edge.id) {
+                return Err("visual edge IDs must be unique".to_string());
+            }
+            edge_ids.push(edge.id.clone());
+            if let Some(relation) = &edge.relation {
+                if !safe_limited_text(relation, EXPLAIN_MAX_LABEL_LENGTH) {
+                    return Err("visual relationships must be 80 characters or fewer".to_string());
+                }
+            }
+        }
+        if let Some(groups) = &self.groups {
+            let group_ids = groups
+                .iter()
+                .map(|group| group.id.as_str())
+                .collect::<Vec<_>>();
+            if group_ids.iter().any(|id| {
+                id.is_empty()
+                    || !id.chars().all(|character| {
+                        character.is_ascii_alphanumeric() || character == '-' || character == '_'
+                    })
+            }) || group_ids.iter().collect::<HashSet<_>>().len() != group_ids.len()
+            {
+                return Err("visual group IDs must be unique non-empty identifiers".to_string());
+            }
+            for group in groups {
+                if !safe_limited_text(&group.label, EXPLAIN_MAX_LABEL_LENGTH)
+                    || group.node_ids.iter().any(|id| !ids.contains(&id.as_str()))
+                {
+                    return Err("visual groups must reference existing nodes".to_string());
+                }
+            }
+        }
+        if let Some(lanes) = &self.lanes {
+            let lane_ids = lanes
+                .iter()
+                .map(|lane| lane.id.as_str())
+                .collect::<Vec<_>>();
+            if lane_ids.iter().any(|id| {
+                id.is_empty()
+                    || !id.chars().all(|character| {
+                        character.is_ascii_alphanumeric() || character == '-' || character == '_'
+                    })
+            }) || lane_ids.iter().collect::<HashSet<_>>().len() != lane_ids.len()
+            {
+                return Err("visual lane IDs must be unique non-empty identifiers".to_string());
+            }
+            if lanes.windows(2).any(|pair| pair[0].order >= pair[1].order) {
+                return Err("visual lane orders must be increasing".to_string());
+            }
+            if lanes
+                .iter()
+                .any(|lane| !safe_limited_text(&lane.label, EXPLAIN_MAX_LABEL_LENGTH))
+            {
+                return Err("visual lane labels must be 80 characters or fewer".to_string());
+            }
+        }
+        match self.kind {
+            VisualKind::Sequence | VisualKind::Timeline => {
+                let mut orders = self
+                    .nodes
+                    .iter()
+                    .map(|node| node.order)
+                    .collect::<Option<Vec<_>>>()
+                    .ok_or_else(|| "sequence and timeline nodes need orders".to_string())?;
+                if orders.windows(2).any(|pair| pair[0] >= pair[1]) {
+                    return Err("sequence and timeline orders must be increasing".to_string());
+                }
+                orders.dedup();
+            }
+            VisualKind::Tree => {
+                if has_cycle(&ids, &self.edges) {
+                    return Err("tree visuals must be acyclic".to_string());
+                }
+            }
+            VisualKind::Graph | VisualKind::State | VisualKind::Comparison => {}
+        }
+        Ok(())
+    }
+}
+
+fn safe_text(value: &str) -> bool {
+    !value.trim().is_empty()
+        && !value.contains("```")
+        && !value.contains('<')
+        && !value.contains('>')
+        && !value.contains("http://")
+        && !value.contains("https://")
+}
+
+fn safe_limited_text(value: &str, max_length: usize) -> bool {
+    safe_text(value) && value.chars().count() <= max_length
+}
+
+fn has_cycle(ids: &[&str], edges: &[VisualEdge]) -> bool {
+    fn visit(
+        node: &str,
+        ids: &[&str],
+        edges: &[VisualEdge],
+        visiting: &mut Vec<String>,
+        visited: &mut Vec<String>,
+    ) -> bool {
+        if visiting.iter().any(|item| item == node) {
+            return true;
+        }
+        if visited.iter().any(|item| item == node) {
+            return false;
+        }
+        visiting.push(node.to_string());
+        for edge in edges.iter().filter(|edge| edge.source == node) {
+            if visit(&edge.target, ids, edges, visiting, visited) {
+                return true;
+            }
+        }
+        visiting.retain(|item| item != node);
+        visited.push(node.to_string());
+        let _ = ids;
+        false
+    }
+    let mut visiting = Vec::new();
+    let mut visited = Vec::new();
+    ids.iter()
+        .any(|id| visit(id, ids, edges, &mut visiting, &mut visited))
 }
 
 #[derive(Serialize)]

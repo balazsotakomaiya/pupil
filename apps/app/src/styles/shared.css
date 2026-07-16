@@ -21,7 +21,7 @@
   z-index: 2;
   max-width: 960px;
   margin: 0 auto;
-  padding: 0 32px;
+  padding: 0 var(--space-8);
 }
 
 .page-end {
@@ -30,19 +30,19 @@
 
 .stats-section,
 .section {
-  padding: 40px 0;
+  padding: var(--space-10) 0;
 }
 
 .study-section {
-  padding: 56px 0 48px;
+  padding: var(--space-14) 0 var(--space-12);
 }
 
 .section-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
 .section-label {
@@ -62,7 +62,7 @@
   justify-items: start;
   gap: 0.5rem;
   min-height: 100vh;
-  padding: 32px;
+  padding: var(--space-8);
 }
 
 .status-panel strong {
@@ -90,7 +90,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--space-1-5);
   border: 1px solid var(--border);
   border-radius: 6px;
   background: transparent;
@@ -110,7 +110,7 @@
 }
 
 .btn-ghost {
-  padding: 6px 14px;
+  padding: var(--space-1-5) var(--space-3-5);
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
@@ -123,7 +123,7 @@
 }
 
 .study-btn-secondary {
-  padding: 10px 18px;
+  padding: var(--space-2-5) var(--space-4-5);
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
@@ -133,8 +133,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 28px;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-7);
   border: none;
   border-radius: var(--radius);
   background: var(--text-primary);
@@ -193,8 +193,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 32px;
-  padding: 36px 40px;
+  gap: var(--space-8);
+  padding: var(--space-9) var(--space-10);
 }
 
 .study-card.daily-checkin-active {
@@ -206,7 +206,7 @@
 .study-left {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-1-5);
 }
 
 .study-eyebrow,
@@ -218,7 +218,7 @@
 .study-eyebrow {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 1.5px;
@@ -249,7 +249,7 @@
 .study-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-4);
   flex-shrink: 0;
 }
 
@@ -258,15 +258,15 @@
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .stat-card {
-  padding: 20px 22px;
+  padding: var(--space-5) var(--space-5-5);
 }
 
 .stat-eyebrow {
-  margin-bottom: 10px;
+  margin-bottom: var(--space-2-5);
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 1px;
@@ -274,7 +274,7 @@
 }
 
 .stat-value {
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
   font-size: 32px;
   font-weight: 700;
   letter-spacing: -1px;
@@ -282,7 +282,7 @@
 }
 
 .stat-value .unit {
-  margin-left: 2px;
+  margin-left: var(--space-0-5);
   color: var(--text-tertiary);
   font-size: 14px;
   font-weight: 500;
@@ -303,19 +303,19 @@
 /* ─────────────────── Dialog content ─────────────────── */
 
 .dialog-form {
-  padding: 24px;
+  padding: var(--space-6);
 }
 
 .dialog-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
 .dialog-head h2 {
-  margin: 0 0 6px;
+  margin: 0 0 var(--space-1-5);
   font-size: 20px;
   letter-spacing: -0.4px;
 }
@@ -340,8 +340,8 @@
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 20px;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
 }
 
 .dialog-actions.shake {
@@ -352,7 +352,7 @@
 
 .field {
   display: grid;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .field-label {
@@ -372,7 +372,7 @@
 
 .field-input {
   width: 100%;
-  padding: 13px 14px;
+  padding: 13px var(--space-3-5);
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--bg);
@@ -421,8 +421,8 @@
   border-radius: var(--radius-lg);
   background: var(--bg-subtle);
   display: grid;
-  gap: 12px;
-  padding: 32px;
+  gap: var(--space-3);
+  padding: var(--space-8);
 }
 
 .placeholder-panel h2 {
@@ -446,11 +446,11 @@
 
 .more-menu {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + var(--space-1-5));
   right: 0;
   z-index: 20;
   min-width: 148px;
-  padding: 4px;
+  padding: var(--space-1);
   border: 1px solid var(--border-hover);
   border-radius: 8px;
   background: var(--bg-elevated);
@@ -462,7 +462,7 @@
   align-items: center;
   gap: 7px;
   width: 100%;
-  padding: 7px 10px;
+  padding: 7px var(--space-2-5);
   border: none;
   border-radius: 5px;
   background: transparent;
@@ -520,13 +520,13 @@
 
 @media (max-width: 768px) {
   .page {
-    padding: 0 20px;
+    padding: 0 var(--space-5);
   }
 
   .study-card {
     flex-direction: column;
     align-items: flex-start;
-    padding: 28px;
+    padding: var(--space-7);
   }
 
   .study-right,
@@ -564,7 +564,7 @@
   }
 
   .placeholder-panel {
-    padding: 20px;
+    padding: var(--space-5);
   }
 
 }

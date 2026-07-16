@@ -79,10 +79,7 @@ Hover highlight backgrounds currently use `rgba(255, 255, 255, 0.03)` or `0.04` 
 
 ## Spacing & Layout
 
-```css
---radius:    8px;   /* buttons, inputs, small elements */
---radius-lg: 12px;  /* cards, panels, stat blocks */
-```
+The full scale in `src/styles/tokens.css` continues through the larger page-level values. Use a `--space-*` variable for layout spacing rather than introducing a raw pixel value. One-pixel borders and occasional optical adjustments (such as 3px icon gaps) remain literal.
 
 Current values from the dashboard:
 

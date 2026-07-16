@@ -76,10 +76,7 @@ Syntax highlighting (Shiki theme `one-dark-pro`, also manual `.hl-*` classes):
 
 ## Spacing & Layout
 
-```css
---radius:    8px;   /* standard border-radius */
---radius-lg: 12px;  /* large cards */
-```
+The complete scale is defined in `src/global.css`. Use these variables for layout spacing rather than introducing a raw pixel value. One-pixel borders and occasional optical adjustments remain literal.
 
 | Token | Value |
 |---|---|
@@ -98,6 +95,7 @@ Syntax highlighting (Shiki theme `one-dark-pro`, also manual `.hl-*` classes):
 ## Typography Scale
 
 ### Hero title
+
 ```css
 font-size: clamp(36px, 5vw, 56px);
 font-weight: 600;
@@ -106,6 +104,7 @@ letter-spacing: -1.5px;
 ```
 
 ### Section title
+
 ```css
 font-size: clamp(24px, 3vw, 36px);
 font-weight: 600;
@@ -113,6 +112,7 @@ letter-spacing: -0.8px;
 ```
 
 ### Section label (eyebrow)
+
 ```css
 font-family: var(--font-mono);
 font-size: 12px;
@@ -123,6 +123,7 @@ color: var(--text-tertiary);
 ```
 
 ### Body / description
+
 ```css
 font-size: 15–16px;
 line-height: 1.6;
@@ -130,6 +131,7 @@ color: var(--text-secondary);
 ```
 
 ### Nav logo
+
 ```css
 font-family: "Syne", var(--font-sans);
 font-size: 26px;
@@ -138,12 +140,14 @@ letter-spacing: -0.5px;
 ```
 
 ### Small card / feature text
+
 ```css
 /* title */ font-size: 15px; font-weight: 600;
 /* desc  */ font-size: 13px; line-height: 1.5; color: var(--text-secondary);
 ```
 
 ### Code in prose
+
 ```css
 font-family: var(--font-mono);
 font-size: 13px;
@@ -183,6 +187,7 @@ background-image: repeating-linear-gradient(
 ```
 
 Ruler positions:
+
 - **Outer left** — `left: 0`, 1px wide
 - **Outer right** — `right: 0`, 1px wide
 - **Content left** — `left: max(32px, calc((100vw - 960px) / 2))` — aligns with content column edge
@@ -259,6 +264,7 @@ All borders are `1px solid`:
 ## Buttons & Interactive Elements
 
 ### Tab buttons (pkg manager, usage, state scenario)
+
 ```css
 font-family: var(--font-mono);  /* or font-sans for scenario tabs */
 font-size: 12–13px;
@@ -273,6 +279,7 @@ background: var(--bg-elevated);
 ```
 
 ### Pattern nav buttons (sidebar)
+
 ```css
 background: var(--bg-subtle);
 border: 1px solid var(--border);
@@ -286,6 +293,7 @@ background: var(--bg-elevated);
 ```
 
 ### Copy button (code blocks)
+
 ```css
 position: absolute;
 top: 12px; right: 12px;
@@ -336,6 +344,7 @@ letter-spacing: 0.2px;
 ```
 
 Version chip inside badge:
+
 ```css
 font-family: var(--font-mono);
 font-size: 11px;
@@ -385,6 +394,7 @@ top: 8px; left: 50%; transform: translateX(-50%);
 ```
 
 Screen inside:
+
 ```css
 background: var(--bg-elevated);
 border-radius: 12px;
@@ -392,6 +402,7 @@ padding: 24px 12px 12px;
 ```
 
 Spinner:
+
 ```css
 width: 20px; height: 20px;
 border: 2px solid var(--border);

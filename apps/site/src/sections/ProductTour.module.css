@@ -1,17 +1,17 @@
 .productTour {
-  padding-top: 96px;
+  padding-top: var(--space-24);
 }
 
 .screenshotFeature {
   display: grid;
   grid-template-columns: minmax(0, 0.62fr) minmax(0, 1.38fr);
   align-items: center;
-  gap: 56px;
-  margin-bottom: 80px;
+  gap: var(--space-14);
+  margin-bottom: var(--space-20);
 }
 
 .screenshotCopy {
-  padding: 4px 0;
+  padding: var(--space-1) 0;
 }
 
 .screenshotKicker {
@@ -21,14 +21,14 @@
   text-transform: uppercase;
   letter-spacing: 1.2px;
   color: var(--text-tertiary);
-  margin-bottom: 14px;
+  margin-bottom: var(--space-3-5);
 }
 
 .screenshotCopy h3 {
   font-size: 24px;
   font-weight: 600;
   line-height: 1.2;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
   color: var(--text-primary);
 }
 
@@ -42,13 +42,13 @@
 .screenshotGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 40px 32px;
+  gap: var(--space-10) var(--space-8);
 }
 
 .screenshotCard {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--space-4-5);
 }
 
 /* Override applied to the ScreenshotFrame rendered inside a grid card */
@@ -59,14 +59,14 @@
 }
 
 .screenshotCardCopy {
-  padding: 0 4px;
+  padding: 0 var(--space-1);
 }
 
 .screenshotCardCopy p {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: var(--space-1);
 }
 
 .screenshotCardCopy span {
@@ -94,13 +94,13 @@
 
 @media (max-width: 768px) {
   .productTour {
-    padding-top: 64px;
+    padding-top: var(--space-16);
   }
 
   .screenshotFeature {
     grid-template-columns: 1fr;
-    gap: 28px;
-    margin-bottom: 56px;
+    gap: var(--space-7);
+    margin-bottom: var(--space-14);
   }
 
   .screenshotCopy p:last-child {
@@ -109,7 +109,7 @@
 
   .screenshotGrid {
     grid-template-columns: 1fr;
-    gap: 40px;
+    gap: var(--space-10);
   }
 
   .screenshotCardWide {

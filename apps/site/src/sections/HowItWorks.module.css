@@ -9,7 +9,7 @@
 .steps::before {
   content: "";
   position: absolute;
-  top: 20px; /* center of the number badge */
+  top: var(--space-5); /* center of the number badge */
   left: calc(100% / 6); /* starts at center of first step */
   right: calc(100% / 6); /* ends at center of last step */
   height: 1px;
@@ -23,7 +23,7 @@
 }
 
 .step {
-  padding: 0 32px 0 0;
+  padding: 0 var(--space-8) 0 0;
   position: relative;
 }
 
@@ -40,7 +40,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
   position: relative;
   z-index: 1;
 }
@@ -57,7 +57,7 @@
   font-size: 17px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
   letter-spacing: -0.3px;
 }
 
@@ -70,7 +70,7 @@
 @media (max-width: 768px) {
   .steps {
     grid-template-columns: 1fr;
-    gap: 40px;
+    gap: var(--space-10);
   }
 
   .steps::before {
