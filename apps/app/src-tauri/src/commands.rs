@@ -4,15 +4,14 @@ use tauri::{AppHandle, Manager};
 
 use crate::ai::{
     build_explain_prose_fallback_prompt, build_explain_repair_prompt, build_generate_cards_prompt,
-    execute_ai_completion, execute_explain_completion_with_retries, explanation_plain_text,
-    load_ai_settings_state, load_resolved_ai_settings, normalize_ai_settings_input,
-    normalize_generate_cards_input, parse_explain_card_response, parse_generated_cards_response,
-    resolve_ai_settings_for_test, save_ai_settings_rows,
+    execute_ai_completion, execute_explain_completion_with_retries, load_ai_settings_state,
+    load_resolved_ai_settings, normalize_ai_settings_input, normalize_generate_cards_input,
+    parse_explain_card_response, parse_generated_cards_response, resolve_ai_settings_for_test,
+    save_ai_settings_rows,
 };
 use crate::analytics::{list_space_stats_rows, load_dashboard_stats};
 use crate::app::{
-    app_data_dir, database_path, ensure_schema_migrations_table, load_applied_migrations,
-    open_app_connection, open_connection, pending_migrations, BootstrapStatus,
+    app_data_dir, database_path, open_app_connection, open_connection, BootstrapStatus,
 };
 use crate::cards::{
     create_card_row, delete_card_row, fetch_card_explanation_source, list_card_summaries,
@@ -22,6 +21,10 @@ use crate::cards::{
 use crate::constants::AI_SYSTEM_PROMPT;
 use crate::error::{AppError, AppResult};
 use crate::imports::import_anki_cards_row;
+use crate::migration_runner::{
+    ensure_schema_migrations_table, load_applied_migrations, pending_migration_ids,
+};
+use crate::migrations::MIGRATIONS;
 use crate::normalize::{
     normalize_card_input, normalize_card_update_input, normalize_import_anki_input,
     normalize_review_card_input, normalize_space_name, normalize_undo_review_card_input,
@@ -61,7 +64,7 @@ pub(crate) fn get_bootstrap_state(app: AppHandle) -> Result<BootstrapState, AppE
     let connection = open_connection(&database_path)?;
     ensure_schema_migrations_table(&connection)?;
     let applied_migrations = load_applied_migrations(&connection)?;
-    let pending_migrations = pending_migrations(&applied_migrations);
+    let pending_migrations = pending_migration_ids(MIGRATIONS, &applied_migrations);
 
     Ok(BootstrapState {
         app_data_dir: app_data_dir.display().to_string(),
@@ -311,7 +314,6 @@ pub(crate) async fn generate_cards(
 enum ExplainPrep {
     Cached {
         payload: ExplainCardPayload,
-        explanation: String,
         generated_at: i64,
     },
     NeedsGeneration {
@@ -350,9 +352,9 @@ pub(crate) async fn explain_card(
                 source.explanation_payload.as_ref(),
                 source.explanation_generated_at,
             ) {
-                if let Ok(payload) = parse_explain_card_response(serialized) {
+                if let Ok(payload) = crate::types::parse_persisted_explain_card_payload(serialized)
+                {
                     return Ok(ExplainPrep::Cached {
-                        explanation: explanation_plain_text(&payload),
                         payload,
                         generated_at,
                     });
@@ -373,12 +375,10 @@ pub(crate) async fn explain_card(
     let (front, back, settings) = match prep {
         ExplainPrep::Cached {
             payload,
-            explanation,
             generated_at,
         } => {
             return Ok(ExplainCardResult {
                 payload,
-                explanation,
                 generated_at,
                 cached: true,
             });
@@ -423,7 +423,6 @@ pub(crate) async fn explain_card(
             }
         }
     };
-    let explanation = explanation_plain_text(&payload);
     let serialized_payload = serde_json::to_string(&payload)
         .map_err(|error| AppError::internal_message(error.to_string()))?;
 
@@ -445,7 +444,6 @@ pub(crate) async fn explain_card(
 
     Ok(ExplainCardResult {
         payload,
-        explanation,
         generated_at,
         cached: false,
     })

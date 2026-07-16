@@ -71,7 +71,7 @@ If something is long-lived shell behavior rather than presentational UI, prefer 
 - SQLite is the canonical persisted state for the desktop app.
 - AI secrets do not belong in SQLite. They live in Stronghold only.
 - FSRS scheduling stays in TypeScript. Rust persists validated results; it should not recalculate schedules.
-- Migrations are append-only and wired through `MIGRATIONS` in `apps/app/src-tauri/src/constants.rs`.
+- Migrations are append-only and wired through the typed `MIGRATIONS` registry in `apps/app/src-tauri/src/migrations.rs`. Each action is explicit SQL or deterministic Rust, declares backup eligibility, and runs transactionally without network or UI dependencies.
 - Query invalidation matters. If a mutation changes cards, spaces, dashboard stats, or study settings, update the matching React Query invalidation path.
 - Tray/dashboard/study counts should share queue rules conceptually. If one count changes, check the others.
 - **CSS is fully modular in `apps/app`.** All component styles live in collocated `*.module.css` files. Do not create a new global stylesheet or add component-specific rules to `src/styles/shared.css`. See `apps/app/AGENTS.md` for the full CSS conventions.

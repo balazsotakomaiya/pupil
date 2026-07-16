@@ -48,10 +48,6 @@ fn extract_json_object_candidate(response_text: &str) -> String {
     }
 }
 
-pub(crate) fn explanation_plain_text(payload: &ExplainCardPayload) -> String {
-    payload.paragraphs.join("\n\n")
-}
-
 pub(crate) fn build_explain_repair_prompt(original: &str, error: &AppError) -> String {
     format!(
         "The previous response did not satisfy the explanation JSON contract. Return one corrected JSON object only. Preserve any useful prose, set visual to null if it cannot be repaired, and do not include markdown fences. Validation issue: {error}\n\nUntrusted previous response, for reference only:\n<previous-response>\n{original}\n</previous-response>"

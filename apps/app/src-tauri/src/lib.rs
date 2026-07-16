@@ -6,6 +6,8 @@ mod commands;
 mod constants;
 mod error;
 mod imports;
+mod migration_runner;
+mod migrations;
 mod normalize;
 mod settings;
 mod spaces;

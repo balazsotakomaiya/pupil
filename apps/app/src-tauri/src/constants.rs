@@ -1,5 +1,3 @@
-use crate::types::Migration;
-
 pub(crate) const SPACE_NAME_MAX_LENGTH: usize = 80;
 #[cfg(debug_assertions)]
 pub(crate) const DEVELOPER_OPEN_DEVTOOLS_MENU_ID: &str = "developer.open_devtools";
@@ -110,26 +108,3 @@ Rules:
 9. For cloze style: front uses "___" for the blank, back gives the missing term plus a one-sentence explanation.
 10. Avoid duplicating information across cards. Each card should cover a distinct fact or concept.
 11. Assume that the cards may not be presented in order, therefore each cards should not depend on eachother"#;
-
-pub(crate) const MIGRATIONS: &[Migration] = &[
-    Migration {
-        id: "0001_init",
-        sql: include_str!("../migrations/0001_init.sql"),
-    },
-    Migration {
-        id: "0002_add_learning_steps",
-        sql: include_str!("../migrations/0002_add_learning_steps.sql"),
-    },
-    Migration {
-        id: "0003_add_suspended",
-        sql: include_str!("../migrations/0003_add_suspended.sql"),
-    },
-    Migration {
-        id: "0004_add_card_explanation",
-        sql: include_str!("../migrations/0004_add_card_explanation.sql"),
-    },
-    Migration {
-        id: "0005_add_card_explanation_payload",
-        sql: include_str!("../migrations/0005_add_card_explanation_payload.sql"),
-    },
-];

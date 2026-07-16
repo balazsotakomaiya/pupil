@@ -8,12 +8,6 @@ use crate::constants::{
 };
 
 #[derive(Clone)]
-pub(crate) struct Migration {
-    pub(crate) id: &'static str,
-    pub(crate) sql: &'static str,
-}
-
-#[derive(Clone)]
 pub(crate) struct SpaceIdentity {
     pub(crate) id: String,
     pub(crate) name: String,
@@ -71,8 +65,6 @@ pub(crate) struct CardSummary {
     pub(crate) updated_at: i64,
     #[serde(rename = "suspended")]
     pub(crate) is_suspended: bool,
-    pub(crate) explanation: Option<String>,
-    pub(crate) explanation_generated_at: Option<i64>,
 }
 
 #[derive(Deserialize)]
@@ -260,7 +252,6 @@ pub(crate) struct ExplainCardInput {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ExplainCardResult {
     pub(crate) payload: ExplainCardPayload,
-    pub(crate) explanation: String,
     pub(crate) generated_at: i64,
     pub(crate) cached: bool,
 }
@@ -393,6 +384,18 @@ impl ExplainCardPayload {
         }
         Ok(())
     }
+}
+
+/// Parses a payload read from SQLite. Unlike provider-response parsing, stored
+/// data must be a complete JSON payload with no surrounding text or fences.
+pub(crate) fn parse_persisted_explain_card_payload(
+    serialized: &str,
+) -> Result<ExplainCardPayload, String> {
+    let payload = serde_json::from_str::<ExplainCardPayload>(serialized)
+        .map_err(|error| error.to_string())?;
+    payload.validate(serialized.len())?;
+
+    Ok(payload)
 }
 
 impl VisualSpec {

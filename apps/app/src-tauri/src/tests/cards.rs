@@ -1,7 +1,8 @@
 use rusqlite::Connection;
 
 use crate::cards::{review_card_row, undo_review_card_row};
-use crate::constants::MIGRATIONS;
+use crate::migration_runner::apply_migrations;
+use crate::migrations::MIGRATIONS;
 use crate::types::{
     NormalizedReviewCardInput, NormalizedReviewCardLogInput, NormalizedUndoReviewCardInput,
 };
@@ -9,17 +10,7 @@ use crate::types::{
 fn open_seeded_connection() -> Connection {
     let mut connection = Connection::open_in_memory().expect("open in-memory db");
 
-    {
-        let transaction = connection
-            .transaction()
-            .expect("begin migration transaction");
-        for migration in MIGRATIONS {
-            transaction
-                .execute_batch(migration.sql)
-                .unwrap_or_else(|error| panic!("apply migration {}: {error}", migration.id));
-        }
-        transaction.commit().expect("commit migration transaction");
-    }
+    apply_migrations(&mut connection, MIGRATIONS).expect("apply migrations");
 
     connection
         .execute(

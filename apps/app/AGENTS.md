@@ -50,8 +50,10 @@ apps/app/
 │   │   ├── imports.rs      # Anki import transaction logic
 │   │   ├── normalize.rs    # Backend input normalization
 │   │   ├── settings.rs     # Export/reset helpers and settings queries
+│   │   ├── migrations.rs   # Ordered migration registry
+│   │   ├── migration_runner.rs # Transactional migration mechanics
 │   │   ├── types.rs        # Shared DTOs and internal data shapes
-│   │   ├── constants.rs    # Shared constants and migration registry
+│   │   ├── constants.rs    # Shared constants
 │   │   └── util.rs         # Small cross-cutting helpers
 │   ├── migrations/         # SQL schema files (applied in order at startup)
 │   ├── capabilities/       # Tauri capability definitions (IPC permissions)
@@ -84,10 +86,12 @@ The Rust backend is split by responsibility:
 2. **`app.rs`** — app bootstrap and infrastructure: menu, app-data paths, SQLite connections, migrations, backup creation.
 3. **`commands.rs`** — the public Tauri IPC surface. These functions stay thin: open a connection, normalize input, call feature/storage code, map errors.
 4. **`types.rs`** — shared structs for command inputs/outputs plus internal normalized shapes.
-5. **`constants.rs`** — app-wide constants, Stronghold identifiers, AI defaults, migration registry.
-6. **Feature/storage modules** — `spaces.rs`, `cards.rs`, `analytics.rs`, `imports.rs`, `settings.rs`, `ai/`.
-7. **`normalize.rs`** — validation and coercion at the backend boundary.
-8. **`util.rs`** — small shared helpers like timestamps, tag encoding, and storage error mapping.
+5. **`migrations.rs`** — append-only migration registry; each deterministic Rust data migration lives in `migrations/`.
+6. **`migration_runner.rs`** — migration model, ledger access, and transactional runner.
+7. **`constants.rs`** — app-wide constants, Stronghold identifiers, and AI defaults.
+8. **Feature/storage modules** — `spaces.rs`, `cards.rs`, `analytics.rs`, `imports.rs`, `settings.rs`, `ai/`.
+9. **`normalize.rs`** — validation and coercion at the backend boundary.
+10. **`util.rs`** — small shared helpers like timestamps, tag encoding, and storage error mapping.
 
 The guiding rule is pragmatic separation: keep thin command handlers, keep SQL close to the feature it serves, and avoid layers that only forward calls.
 
@@ -109,8 +113,9 @@ The guiding rule is pragmatic separation: keep thin command handlers, keep SQL c
 - All IDs are `nanoid!(12)` — 12-character random strings.
 - All timestamps are Unix milliseconds stored as `INTEGER`. Use `now_ms()` to get the current time.
 - Tags are stored as a JSON array string in a nullable `TEXT` column. Use `encode_tags` / `decode_tags`.
-- Schema changes go in a new file under `migrations/` named `NNNN_description.sql`. Add the new `Migration` entry to the `MIGRATIONS` slice in `src-tauri/src/constants.rs`.
-- Migrations that contain `DROP TABLE`, `ALTER TABLE`, `DELETE FROM`, or `UPDATE` automatically trigger a pre-migration database backup.
+- Migrations are append-only entries in `src-tauri/src/migrations.rs`, with an ID, explicit `requires_backup` flag, and either a SQL action or a deterministic Rust action. The model and transactional runner live in `src-tauri/src/migration_runner.rs`. SQL schema changes continue to use a new `migrations/NNNN_description.sql` file; each Rust data action lives in its own versioned file under `src-tauri/src/migrations/`.
+- Rust migrations must use the supplied transaction, be safe to retry after interrupted startup, have no network or UI dependencies, and include dedicated migration-runner coverage.
+- Migrations with `requires_backup: true` trigger a pre-migration database backup.
 - Foreign keys are enforced (`PRAGMA foreign_keys = ON`). On delete cascade is used for cards and review logs when their parent space is deleted.
 
 ---

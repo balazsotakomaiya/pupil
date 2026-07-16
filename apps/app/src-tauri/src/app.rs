@@ -10,10 +10,13 @@ use tauri::{AppHandle, Manager};
 #[cfg(debug_assertions)]
 use tauri::menu::MenuItemBuilder;
 
-use crate::constants::MIGRATIONS;
 #[cfg(debug_assertions)]
 use crate::constants::{DEVELOPER_OPEN_DEVTOOLS_MENU_ID, DEVELOPER_RESET_ONBOARDING_MENU_ID};
-use crate::error::{AppError, AppResult};
+use crate::error::AppResult;
+use crate::migration_runner::{
+    apply_migrations, ensure_schema_migrations_table, load_applied_migrations, pending_migrations,
+};
+use crate::migrations::MIGRATIONS;
 use crate::util::now_ms;
 
 pub(crate) struct BootstrapStatus {
@@ -55,38 +58,6 @@ pub(crate) fn open_connection(path: &Path) -> AppResult<Connection> {
     connection.execute_batch("PRAGMA foreign_keys = ON;")?;
 
     Ok(connection)
-}
-
-/// Ensures the schema migration bookkeeping table exists before reads or
-/// writes inspect applied migration state.
-pub(crate) fn ensure_schema_migrations_table(connection: &Connection) -> rusqlite::Result<()> {
-    connection.execute_batch(
-        "
-        CREATE TABLE IF NOT EXISTS schema_migrations (
-          id TEXT PRIMARY KEY,
-          applied_at INTEGER NOT NULL
-        );
-        ",
-    )
-}
-
-/// Loads the applied migration identifiers in execution order so startup can
-/// compute what still needs to run.
-pub(crate) fn load_applied_migrations(connection: &Connection) -> rusqlite::Result<Vec<String>> {
-    let mut statement = connection.prepare("SELECT id FROM schema_migrations ORDER BY id ASC")?;
-    let rows = statement.query_map([], |row| row.get::<_, String>(0))?;
-
-    rows.collect()
-}
-
-/// Filters the static migration list down to the IDs that have not yet been
-/// recorded in the database.
-pub(crate) fn pending_migrations(applied_migrations: &[String]) -> Vec<String> {
-    MIGRATIONS
-        .iter()
-        .filter(|migration| !applied_migrations.iter().any(|id| id == migration.id))
-        .map(|migration| migration.id.to_string())
-        .collect()
 }
 
 /// Builds the native application menu, including developer-only actions in
@@ -167,55 +138,22 @@ pub(crate) fn run_migrations(app: &AppHandle, path: &Path) -> AppResult<bool> {
     let mut connection = open_connection(path)?;
     ensure_schema_migrations_table(&connection)?;
     let applied_migrations = load_applied_migrations(&connection)?;
-    let pending = MIGRATIONS
-        .iter()
-        .filter(|migration| !applied_migrations.iter().any(|id| id == migration.id))
-        .collect::<Vec<_>>();
+    let pending = pending_migrations(MIGRATIONS, &applied_migrations);
 
     if pending.is_empty() {
         return Ok(false);
     }
 
-    let should_backup = pending
-        .iter()
-        .any(|migration| migration_needs_backup(migration.sql));
+    let should_backup = pending.iter().any(|migration| migration.requires_backup);
     let backup_created = if should_backup {
         create_backup_if_database_exists(app, path)?
     } else {
         false
     };
 
-    let transaction = connection.transaction()?;
-
-    for migration in pending {
-        tracing::info!(migration_id = migration.id, "applying migration");
-        transaction
-            .execute_batch(migration.sql)
-            .map_err(|error| AppError::migration_failed(format!("{}: {error}", migration.id)))?;
-        transaction
-            .execute(
-                "INSERT INTO schema_migrations (id, applied_at) VALUES (?1, ?2)",
-                (migration.id, now_ms()),
-            )
-            .map_err(|error| AppError::migration_failed(format!("{}: {error}", migration.id)))?;
-    }
-
-    transaction
-        .commit()
-        .map_err(|error| AppError::migration_failed(error.to_string()))?;
+    apply_migrations(&mut connection, MIGRATIONS)?;
 
     Ok(backup_created)
-}
-
-/// Checks whether a migration contains SQL that should trigger a backup before
-/// it runs on a user database.
-fn migration_needs_backup(sql: &str) -> bool {
-    let normalized = sql.to_ascii_uppercase();
-
-    normalized.contains("DROP TABLE")
-        || normalized.contains("ALTER TABLE")
-        || normalized.contains("DELETE FROM")
-        || normalized.contains("UPDATE ")
 }
 
 /// Copies the current database into the backups directory before destructive

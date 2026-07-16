@@ -2,7 +2,8 @@ use rusqlite::Connection;
 
 use crate::ai::parse_explain_card_response;
 use crate::cards::{fetch_card_explanation_source, save_card_explanation, update_card_row};
-use crate::constants::MIGRATIONS;
+use crate::migration_runner::apply_migrations;
+use crate::migrations::MIGRATIONS;
 use crate::types::NormalizedCardUpdateInput;
 
 fn valid_payload() -> String {
@@ -105,11 +106,7 @@ fn explanation_contract_accepts_fenced_json_objects() {
 
 fn seeded_connection() -> Connection {
     let mut connection = Connection::open_in_memory().expect("open db");
-    let transaction = connection.transaction().expect("transaction");
-    for migration in MIGRATIONS {
-        transaction.execute_batch(migration.sql).expect("migration");
-    }
-    transaction.commit().expect("commit");
+    apply_migrations(&mut connection, MIGRATIONS).expect("apply migrations");
     connection.execute("INSERT INTO spaces (id, name, created_at, updated_at) VALUES ('space-a', 'Space A', 1, 1)", []).expect("space");
     connection.execute("INSERT INTO cards (id, space_id, front, back, tags, source, state, due, stability, difficulty, elapsed_days, scheduled_days, learning_steps, reps, lapses, last_review, created_at, updated_at, is_suspended) VALUES ('card-a', 'space-a', 'Front', 'Back', NULL, 'manual', 0, 1, 0, 0, 0, 0, 0, 0, 0, NULL, 1, 1, 0)", []).expect("card");
     connection
