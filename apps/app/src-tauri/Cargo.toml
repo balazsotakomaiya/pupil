@@ -1,6 +1,6 @@
 [package]
 name = "pupil-app"
-version = "1.0.0-alpha.8"
+version = "1.0.0-alpha.9"
 description = "Pupil desktop app"
 authors = ["Pupil"]
 edition = "2021"
