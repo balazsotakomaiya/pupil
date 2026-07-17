@@ -1,7 +1,13 @@
+mod ai;
+mod analytics;
 mod cards;
 mod explain;
+mod imports;
 mod migrations;
 mod normalize;
+mod settings;
+mod spaces;
 mod study_queue;
+mod support;
 mod tray;
 mod util;

@@ -1,5 +1,4 @@
-use rusqlite::Connection;
-
+use crate::tests::support::{open_test_connection, seed_card, seed_space};
 use crate::tray::{
     build_tray_queue_counts, load_tray_queue_counts, tray_status, TrayQueueCounts, TrayStatus,
 };
@@ -56,29 +55,31 @@ fn tray_queue_counts_catch_up_for_today_when_new_budget_is_exhausted() {
 
 #[test]
 fn load_tray_queue_counts_ignores_suspended_cards() {
-    let connection = Connection::open_in_memory().expect("open in-memory db");
-    connection
-        .execute_batch(
-            "
-            CREATE TABLE cards (
-              state INTEGER NOT NULL,
-              due INTEGER NOT NULL,
-              is_suspended INTEGER NOT NULL DEFAULT 0
-            );
-
-            INSERT INTO cards (state, due, is_suspended) VALUES
-              (0, 100, 0),
-              (0, 100, 0),
-              (0, 100, 0),
-              (0, 100, 1),
-              (1, 100, 0),
-              (1, 100, 0),
-              (1, 100, 1),
-              (1, -300000000, 0),
-              (1, -300000000, 1);
-            ",
-        )
-        .expect("seed tray cards");
+    let connection = open_test_connection();
+    seed_space(&connection, "space-a", "Space A", 1);
+    for (id, state, due, suspended) in [
+        ("new-a", 0, 100, false),
+        ("new-b", 0, 100, false),
+        ("new-c", 0, 100, false),
+        ("new-suspended", 0, 100, true),
+        ("review-a", 1, 100, false),
+        ("review-b", 1, 100, false),
+        ("review-suspended", 1, 100, true),
+        ("overdue", 1, -300_000_000, false),
+        ("overdue-suspended", 1, -300_000_000, true),
+    ] {
+        seed_card(
+            &connection,
+            id,
+            "space-a",
+            "Front",
+            "Back",
+            state,
+            due,
+            suspended,
+            1,
+        );
+    }
 
     assert_eq!(
         load_tray_queue_counts(&connection, 1_000, Some(2), 0).expect("load tray counts"),

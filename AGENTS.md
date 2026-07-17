@@ -109,6 +109,17 @@ Test placement conventions:
 - Rust tests live in dedicated files under `apps/app/src-tauri/src/tests/`.
 - Do not embed new tests inside production modules unless there is a strong reason.
 
+Test quality rules:
+
+- Assert observable contracts, not internal implementation. Prefer behavior the user/application will notice (counts, persisted rows, returned fields, error kinds) over row indexes, SQL column order, or private helper shapes.
+- One test, one behavior. Do not chain unrelated operations (create + update + suspend + delete + cleanup) inside a single `#[test]`; if the flow itself is the contract, name the test for the flow. Split otherwise.
+- The test name must cover everything the test asserts. If you tack on an unrelated `trim_trailing_zeroes` check, or a whitespace-parsing check, into a prompts test, split or rename.
+- Keep tests isolated and deterministic. Use the shared `tests/support.rs` seed helpers (`open_test_connection`, `seed_space`, `seed_card`, `seed_review_log`, `TEST_NOW`) instead of inlining raw SQL. Avoid `util::now_ms()` for assertions that bucket by day — use `TEST_NOW` so the suite is not midnight-boundary flaky.
+- Assert grouping/dated series with predicates ("the bucket for today has N, all earlier buckets are 0"), not positional slices like `array[5..]`. Array layout is not the public contract.
+- Clean up any files you create during a test (`fs::remove_file` for temp CSVs, etc.).
+- To expose internals to tests, prefer the established `#[cfg(test)] pub(crate) use …` re-export pattern in the module root; widen `pub(super)` to `pub(crate)` rather than `pub` or `pub(super)` plus non-test re-export. Never widen beyond `pub(crate)`.
+- New Rust tests must compile and pass under `bun run test:rust` alongside the staged `tests/mod.rs` entry that declares their module — stage the module file and the `mod …;` line together.
+
 ## Release and build docs
 
 - Desktop release flow: [`docs/RELEASING.md`](./docs/RELEASING.md)

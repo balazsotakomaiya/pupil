@@ -1,9 +1,12 @@
 use crate::constants::SPACE_NAME_MAX_LENGTH;
 use crate::normalize::{
-    normalize_card_input, normalize_import_anki_input, normalize_review_card_input,
-    normalize_space_name,
+    normalize_card_input, normalize_card_update_input, normalize_import_anki_input,
+    normalize_review_card_input, normalize_space_name, normalize_undo_review_card_input,
 };
-use crate::types::{ImportAnkiCardInput, ImportAnkiInput, ReviewCardInput, ReviewCardLogInput};
+use crate::types::{
+    ImportAnkiCardInput, ImportAnkiInput, ReviewCardInput, ReviewCardLogInput, UndoReviewCardInput,
+    UpdateCardInput,
+};
 
 #[test]
 fn normalize_space_name_trims_and_rejects_empty_values() {
@@ -164,4 +167,118 @@ fn normalize_review_card_input_rejects_invalid_review_time() {
         .expect("expected invalid review time error");
 
     assert_eq!(error, "Review time must be a positive timestamp.");
+}
+
+#[test]
+fn normalize_card_update_trims_required_fields_and_tags() {
+    let update = normalize_card_update_input(&UpdateCardInput {
+        id: " card ".to_string(),
+        space_id: " space ".to_string(),
+        front: " Front ".to_string(),
+        back: " Back ".to_string(),
+        tags: vec![" tag ".to_string(), "tag".to_string()],
+    })
+    .expect("normalize update");
+    assert_eq!(update.id, "card");
+    assert_eq!(update.space_id, "space");
+    assert_eq!(update.tags, ["tag"]);
+
+    assert!(normalize_card_update_input(&UpdateCardInput {
+        id: "".to_string(),
+        space_id: "space".to_string(),
+        front: "Front".to_string(),
+        back: "Back".to_string(),
+        tags: vec![]
+    })
+    .is_err());
+}
+
+#[test]
+fn normalize_undo_review_trims_the_card_identifier() {
+    let undo = normalize_undo_review_card_input(&UndoReviewCardInput {
+        id: " card ".to_string(),
+        state: 2,
+        due: 1,
+        stability: 1.0,
+        difficulty: 1.0,
+        elapsed_days: 0,
+        scheduled_days: 0,
+        learning_steps: 0,
+        reps: 0,
+        lapses: 0,
+        last_review: None,
+    })
+    .expect("normalize undo");
+    assert_eq!(undo.id, "card");
+    assert_eq!(undo.last_review, None);
+}
+
+#[test]
+fn normalize_review_rejects_invalid_state_numbers_and_timestamps() {
+    fn valid_input() -> ReviewCardInput {
+        ReviewCardInput {
+            id: "card".to_string(),
+            grade: 3,
+            state: 2,
+            due: 1,
+            stability: 1.0,
+            difficulty: 1.0,
+            elapsed_days: 0,
+            scheduled_days: 0,
+            learning_steps: 0,
+            reps: 0,
+            lapses: 0,
+            last_review: 1,
+            review_log: ReviewCardLogInput {
+                state: 2,
+                due: 1,
+                elapsed_days: None,
+                scheduled_days: 0,
+                review_time: 1,
+            },
+        }
+    }
+
+    assert!(normalize_review_card_input(&valid_input()).is_ok());
+    let mut invalid = valid_input();
+    invalid.state = 4;
+    assert!(normalize_review_card_input(&invalid).is_err());
+    let mut invalid = valid_input();
+    invalid.stability = f64::NAN;
+    assert!(normalize_review_card_input(&invalid).is_err());
+    let mut invalid = valid_input();
+    invalid.elapsed_days = -1;
+    assert!(normalize_review_card_input(&invalid).is_err());
+    let mut invalid = valid_input();
+    invalid.due = 0;
+    assert!(normalize_review_card_input(&invalid).is_err());
+    let mut invalid = valid_input();
+    invalid.review_log.state = 4;
+    assert!(normalize_review_card_input(&invalid).is_err());
+}
+
+#[test]
+fn normalize_import_rejects_invalid_nested_card_and_blank_target() {
+    let input = ImportAnkiInput {
+        source_file_name: "deck.apkg".to_string(),
+        target_space_id: Some(" ".to_string()),
+        cards: vec![ImportAnkiCardInput {
+            deck_name: "Deck".to_string(),
+            front: "Front".to_string(),
+            back: "Back".to_string(),
+            tags: vec![],
+        }],
+    };
+    assert!(normalize_import_anki_input(&input).is_err());
+    assert!(normalize_import_anki_input(&ImportAnkiInput {
+        target_space_id: None,
+        cards: vec![ImportAnkiCardInput {
+            deck_name: "Deck".to_string(),
+            front: " ".to_string(),
+            back: "Back".to_string(),
+            tags: vec![]
+        }],
+        ..input
+    })
+    .is_err());
 }

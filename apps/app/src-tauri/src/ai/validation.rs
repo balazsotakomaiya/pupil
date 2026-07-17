@@ -74,7 +74,7 @@ pub(super) fn normalize_ai_style(value: &str) -> Result<String, String> {
     }
 }
 
-pub(super) fn trim_trailing_zeroes(value: f64) -> String {
+pub(crate) fn trim_trailing_zeroes(value: f64) -> String {
     let mut text = format!("{value:.2}");
 
     while text.contains('.') && text.ends_with('0') {
@@ -92,7 +92,7 @@ pub(super) fn is_anthropic_base_url(base_url: &str) -> bool {
     base_url.contains("anthropic.com")
 }
 
-pub(super) fn validate_provider_model_selection(settings: &ResolvedAiSettings) -> AppResult<()> {
+pub(crate) fn validate_provider_model_selection(settings: &ResolvedAiSettings) -> AppResult<()> {
     let model = settings.model.trim().to_ascii_lowercase();
 
     if is_anthropic_base_url(&settings.base_url) && model.starts_with("gpt-") {

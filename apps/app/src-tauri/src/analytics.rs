@@ -2,7 +2,6 @@ use rusqlite::{params, Connection};
 
 use crate::spaces::load_all_space_identities;
 use crate::types::{DashboardStats, SpaceStats};
-use crate::util::now_ms;
 
 pub(crate) fn load_space_counts(
     connection: &Connection,
@@ -69,7 +68,7 @@ pub(crate) fn list_space_stats_rows(
         .into_iter()
         .map(|space| {
             Ok(SpaceStats {
-                retention_30d: load_retention_30d(connection, &space.id)?,
+                retention_30d: load_retention_30d(connection, &space.id, now)?,
                 review_activity_7d: load_review_activity_7d(connection, &space.id, now)?,
                 space_id: space.id,
             })
@@ -115,8 +114,12 @@ fn load_streak(connection: &Connection, space_id: Option<&str>) -> rusqlite::Res
     )
 }
 
-fn load_retention_30d(connection: &Connection, space_id: &str) -> rusqlite::Result<Option<f64>> {
-    let since = now_ms() - (30 * 24 * 60 * 60 * 1000);
+fn load_retention_30d(
+    connection: &Connection,
+    space_id: &str,
+    now: i64,
+) -> rusqlite::Result<Option<f64>> {
+    let since = now - (30 * 24 * 60 * 60 * 1000);
 
     connection.query_row(
         "

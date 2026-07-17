@@ -97,6 +97,29 @@ fn app_error_falls_back_to_the_original_message() {
 }
 
 #[test]
+fn app_error_serializes_every_renderer_facing_variant() {
+    let cases = [
+        AppError::validation("bad input"),
+        AppError::validation_field("bad field", "name"),
+        AppError::storage_message("disk issue"),
+        AppError::internal_message("unexpected"),
+        AppError::ai_provider("bad response", Some("detail")),
+        AppError::migration_failed("failed migration"),
+        AppError::NotFound {
+            entity: "Card".to_string(),
+        },
+        AppError::Duplicate {
+            entity: "Space".to_string(),
+        },
+    ];
+
+    for error in cases {
+        let value = serde_json::to_value(error).expect("serialize app error");
+        assert!(value.get("code").is_some());
+    }
+}
+
+#[test]
 fn now_ms_returns_a_current_timestamp() {
     let before = SystemTime::now()
         .duration_since(UNIX_EPOCH)

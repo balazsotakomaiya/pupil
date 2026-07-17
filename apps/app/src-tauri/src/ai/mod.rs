@@ -18,3 +18,5 @@ pub(crate) use settings::{
     load_ai_settings_state, load_resolved_ai_settings, normalize_ai_settings_input,
     resolve_ai_settings_for_test, save_ai_settings_rows,
 };
+#[cfg(test)]
+pub(crate) use validation::{trim_trailing_zeroes, validate_provider_model_selection};

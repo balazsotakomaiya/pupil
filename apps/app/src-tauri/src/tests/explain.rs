@@ -1,9 +1,11 @@
 use rusqlite::Connection;
 
-use crate::ai::parse_explain_card_response;
+use crate::ai::{
+    build_explain_prose_fallback_prompt, build_explain_repair_prompt, parse_explain_card_response,
+};
 use crate::cards::{fetch_card_explanation_source, save_card_explanation, update_card_row};
-use crate::migration_runner::apply_migrations;
-use crate::migrations::MIGRATIONS;
+use crate::error::AppError;
+use crate::tests::support::{open_test_connection, seed_card, seed_space};
 use crate::types::NormalizedCardUpdateInput;
 
 fn valid_payload() -> String {
@@ -70,6 +72,7 @@ fn explanation_serialization_omits_absent_visual_fields() {
 #[test]
 fn explanation_contract_rejects_malformed_unsupported_oversized_and_dangling_data() {
     assert!(parse_explain_card_response("not json").is_err());
+    assert!(parse_explain_card_response("   ").is_err());
     assert!(parse_explain_card_response(
         r#"{"schemaVersion":1,"paragraphs":["x"],"visual":{"kind":"mindmap"}}"#
     )
@@ -98,17 +101,72 @@ fn explanation_contract_rejects_tree_cycles_and_bad_sequence_order() {
 }
 
 #[test]
+fn explanation_contract_rejects_invalid_visual_identifiers_text_and_references() {
+    for invalid in [
+        valid_payload().replacen("\"id\":\"first\"", "\"id\":\"bad id\"", 1),
+        valid_payload().replacen("\"id\":\"last\"", "\"id\":\"first\"", 1),
+        valid_payload().replacen("\"label\":\"First\"", "\"label\":\"\"", 1),
+        valid_payload().replacen("\"relation\":\"then\"", "\"relation\":\"https://bad\"", 1),
+        valid_payload().replacen("\"target\":\"last\"", "\"target\":\"first\"", 1),
+        valid_payload().replacen("\"id\":\"next\"", "\"id\":\"\"", 1),
+        valid_payload().replacen("\"title\":\"A process\"", "\"title\":\"<unsafe>\"", 1),
+    ] {
+        assert!(parse_explain_card_response(&invalid).is_err());
+    }
+}
+
+#[test]
+fn explanation_contract_validates_groups_lanes_and_visual_kinds() {
+    let grouped = valid_payload().replace(
+        "\"altText\":\"First leads to last.\"",
+        "\"groups\":[{\"id\":\"group-a\",\"label\":\"Group\",\"nodeIds\":[\"first\"]}],\"lanes\":[{\"id\":\"lane-a\",\"label\":\"Lane\",\"order\":1},{\"id\":\"lane-b\",\"label\":\"Next\",\"order\":2}],\"altText\":\"First leads to last.\"",
+    );
+    assert!(parse_explain_card_response(&grouped).is_ok());
+    assert!(parse_explain_card_response(
+        &grouped.replace("\"nodeIds\":[\"first\"]", "\"nodeIds\":[\"missing\"]")
+    )
+    .is_err());
+    assert!(parse_explain_card_response(&grouped.replace("\"order\":2", "\"order\":1")).is_err());
+    assert!(parse_explain_card_response(
+        &valid_payload().replace("\"kind\":\"sequence\"", "\"kind\":\"timeline\"")
+    )
+    .is_ok());
+    assert!(parse_explain_card_response(
+        &valid_payload().replace("\"kind\":\"sequence\"", "\"kind\":\"comparison\"")
+    )
+    .is_ok());
+}
+
+#[test]
 fn explanation_contract_accepts_fenced_json_objects() {
     let fenced = format!("```json\n{}\n```", valid_payload());
 
     assert!(parse_explain_card_response(&fenced).is_ok());
 }
 
+#[test]
+fn explanation_prompts_keep_contract_and_previous_response_context() {
+    assert!(build_explain_prose_fallback_prompt().contains("schemaVersion 1"));
+    let repair =
+        build_explain_repair_prompt("bad response", &AppError::validation("missing field"));
+    assert!(repair.contains("bad response"));
+    assert!(repair.contains("missing field"));
+}
+
 fn seeded_connection() -> Connection {
-    let mut connection = Connection::open_in_memory().expect("open db");
-    apply_migrations(&mut connection, MIGRATIONS).expect("apply migrations");
-    connection.execute("INSERT INTO spaces (id, name, created_at, updated_at) VALUES ('space-a', 'Space A', 1, 1)", []).expect("space");
-    connection.execute("INSERT INTO cards (id, space_id, front, back, tags, source, state, due, stability, difficulty, elapsed_days, scheduled_days, learning_steps, reps, lapses, last_review, created_at, updated_at, is_suspended) VALUES ('card-a', 'space-a', 'Front', 'Back', NULL, 'manual', 0, 1, 0, 0, 0, 0, 0, 0, 0, NULL, 1, 1, 0)", []).expect("card");
+    let connection = open_test_connection();
+    seed_space(&connection, "space-a", "Space A", 1);
+    seed_card(
+        &connection,
+        "card-a",
+        "space-a",
+        "Front",
+        "Back",
+        0,
+        1,
+        false,
+        1,
+    );
     connection
 }
 

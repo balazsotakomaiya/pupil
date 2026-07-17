@@ -2,7 +2,8 @@ use rusqlite::Connection;
 
 use crate::error::{AppError, AppResult};
 use crate::migration_runner::{
-    apply_migrations, load_applied_migrations, Migration, MigrationAction,
+    apply_migrations, ensure_schema_migrations_table, load_applied_migrations,
+    pending_migration_ids, pending_migrations, Migration, MigrationAction,
 };
 use crate::migrations::MIGRATIONS;
 use crate::types::parse_persisted_explain_card_payload;
@@ -80,6 +81,37 @@ fn failed_migration_rolls_back_its_writes_and_the_ledger() {
     assert!(load_applied_migrations(&connection)
         .expect("load ledger")
         .is_empty());
+}
+
+#[test]
+fn migration_registry_helpers_only_return_unapplied_entries() {
+    let connection = Connection::open_in_memory().expect("open in-memory database");
+    ensure_schema_migrations_table(&connection).expect("create migration ledger");
+    let migrations = [
+        Migration {
+            id: "test_001",
+            requires_backup: false,
+            action: MigrationAction::Sql("SELECT 1;"),
+        },
+        Migration {
+            id: "test_002",
+            requires_backup: false,
+            action: MigrationAction::Sql("SELECT 2;"),
+        },
+    ];
+    assert_eq!(
+        pending_migration_ids(&migrations, &[]),
+        ["test_001", "test_002"]
+    );
+    connection
+        .execute(
+            "INSERT INTO schema_migrations (id, applied_at) VALUES ('test_001', 1)",
+            [],
+        )
+        .expect("mark migration applied");
+    let applied = load_applied_migrations(&connection).expect("read ledger");
+    assert_eq!(pending_migrations(&migrations, &applied).len(), 1);
+    assert_eq!(pending_migration_ids(&migrations, &applied), ["test_002"]);
 }
 
 fn valid_payload() -> String {
