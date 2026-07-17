@@ -17,14 +17,27 @@
   max-height: min(calc(100vh - 48px), 980px);
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-hover);
   border-radius: 20px;
   outline: none;
-  background:
-    linear-gradient(180deg, rgba(32, 32, 34, 0.96), rgba(17, 17, 18, 0.98)), rgba(17, 17, 17, 0.96);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-elevated) 72%, var(--bg-subtle)),
+    var(--bg-subtle)
+  );
   box-shadow:
     0 30px 90px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    inset 0 1px 0 color-mix(in srgb, var(--text-primary) 5%, transparent);
+}
+
+:global(:root[data-theme="light"]) .modalOverlay {
+  background: rgba(24, 24, 23, 0.3);
+}
+
+:global(:root[data-theme="light"]) .modalPanel {
+  box-shadow:
+    0 24px 64px rgba(24, 24, 23, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .modalPanelMedium {

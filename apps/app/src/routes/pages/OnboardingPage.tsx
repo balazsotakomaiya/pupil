@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { OnboardingScreen } from "../../components/onboarding";
 import { dismissOnboarding } from "../../lib/onboarding";
-import { useShellActions } from "../root-shell";
+import { useShellActions } from "../shell-actions";
 
 export function OnboardingPage() {
   const navigate = useNavigate();

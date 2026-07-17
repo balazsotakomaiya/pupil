@@ -31,7 +31,7 @@ import {
 } from "../../lib/seed-data";
 import { resolveStudyQueueSnapshot } from "../../lib/study-queue";
 import { computeNewCardsBudget } from "../../lib/study-settings";
-import { useShellActions } from "../root-shell";
+import { useShellActions } from "../shell-actions";
 
 export function DashboardPage() {
   const navigate = useNavigate();

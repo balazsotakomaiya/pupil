@@ -18,7 +18,7 @@ import {
 } from "../../lib/query";
 import { resolveStudyQueueSnapshot } from "../../lib/study-queue";
 import { computeNewCardsBudget } from "../../lib/study-settings";
-import { useShellActions } from "../root-shell";
+import { useShellActions } from "../shell-actions";
 
 export function CardsPage() {
   const queryClient = useQueryClient();

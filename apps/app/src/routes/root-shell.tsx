@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
-import { createContext, type FormEvent, useContext, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { AppTitlebar, CommandPalette, NotificationsViewport } from "../components/app-shell";
 import { NewSpaceDialog, RulersOverlay } from "../components/dashboard";
 import { StatusPanel } from "../components/StatusPanel";
@@ -21,6 +21,7 @@ import { isTauriRuntime } from "../lib/runtime";
 import { createSpace } from "../lib/spaces";
 import { buildStudyQueueCountMap } from "../lib/study-queue";
 import shellStyles from "./AppShell.module.css";
+import { ShellActionsContext } from "./shell-actions";
 import { useRootShellDataSync } from "./useRootShellDataSync";
 
 const APP_TABS = [
@@ -29,22 +30,6 @@ const APP_TABS = [
   { id: "import", label: "Import" },
   { id: "settings", label: "Settings" },
 ] as const;
-
-type ShellActions = {
-  openCreateDialog: () => void;
-};
-
-const ShellActionsContext = createContext<ShellActions | null>(null);
-
-export function useShellActions() {
-  const context = useContext(ShellActionsContext);
-
-  if (!context) {
-    throw new Error("Shell actions are unavailable outside the router shell.");
-  }
-
-  return context;
-}
 
 function resolveMainTab(pathname: string) {
   switch (pathname) {
@@ -197,7 +182,7 @@ export function RootShell() {
       setNewSpaceError(appError.message);
       notifyError(appError, "Space creation failed");
     },
-    async onSuccess() {
+    async onSuccess(createdSpace) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: appQueryKeys.spaces }),
         queryClient.invalidateQueries({ queryKey: appQueryKeys.dashboardStats }),
@@ -205,6 +190,7 @@ export function RootShell() {
       notifySuccess("Space created");
       setIsCreateDialogOpen(false);
       setNewSpaceName("");
+      await navigate({ to: "/spaces/$spaceId", params: { spaceId: createdSpace.id } });
     },
     onSettled() {
       setIsCreatingSpace(false);
