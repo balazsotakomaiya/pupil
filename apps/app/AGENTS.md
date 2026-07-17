@@ -191,6 +191,7 @@ Global CSS lives in `src/styles/`:
 
 Rules:
 - **New component styles → collocated `.module.css` file.** Never add to `shared.css` unless the class is genuinely used in multiple unrelated components.
+- **Design docs describe intent, not implementation values.** Do not duplicate CSS snippets, token inventories, pixel scales, or animation definitions in `DESIGN.md`; reference the canonical source files in `src/styles/` or the relevant component module instead.
 - **Use spacing tokens for layout.** For `gap`, `margin`, `padding`, offsets, and scroll margins, use the `--space-*` scale from `tokens.css` instead of new raw pixel values. The scale is based on 4px steps with named 2px half-steps for compact controls; retain raw values only for deliberate optical adjustments (for example, 1px borders or a 3px icon gap).
 - **Class names in modules use camelCase** (`.cardState`, not `.card-state`). Access via `styles.cardState` in JSX.
 - **Compound state selectors**: `.cardState.stateLearning {}` → both classes scoped. JSX: `` `${styles.cardState} ${styles.stateLearning}` ``.

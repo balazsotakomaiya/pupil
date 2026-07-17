@@ -865,11 +865,16 @@
   display: flex;
   width: min(440px, 90vw);
   flex-direction: column;
+  border-top: 1px solid var(--border);
   border-left: 1px solid var(--border);
   background: var(--bg);
   box-shadow: -16px 0 48px rgba(0, 0, 0, 0.4);
   animation: sessionExplainSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1);
   transition: width 0.2s ease;
+}
+
+:global(:root[data-theme="light"]) .sessionExplainPanel {
+  box-shadow: -10px 0 28px rgba(24, 24, 23, 0.16);
 }
 
 .sessionExplainPanelExpanded {

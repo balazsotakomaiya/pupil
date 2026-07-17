@@ -58,7 +58,7 @@
   letter-spacing: -0.2px;
 }
 
-.spaceSource,
+.spaceUpdated,
 .spaceStreak,
 .activityType {
   color: var(--text-tertiary);
@@ -90,7 +90,7 @@
 
 .spaceMeta {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: var(--space-5);
   padding-top: var(--space-4);
   border-top: 1px solid var(--border);
@@ -102,9 +102,12 @@
   gap: var(--space-0-5);
 }
 
-.spaceMetaItem:last-child {
+.spaceUpdated {
+  min-width: 0;
   margin-left: auto;
-  align-items: flex-end;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
 }
 
 .spaceMetaVal {
@@ -119,12 +122,6 @@
   color: var(--text-tertiary);
   font-size: 11px;
   white-space: nowrap;
-}
-
-.dueIndicator {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
 }
 
 /* ── Bottom grid ── */

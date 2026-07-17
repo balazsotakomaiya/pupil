@@ -23,7 +23,6 @@ export type StatCardData = {
 export type SpaceCardMeta = {
   label: string;
   value: string;
-  variant?: "default" | "due" | "aux";
 };
 
 export type SpaceCardData = {
@@ -32,6 +31,7 @@ export type SpaceCardData = {
   description: string;
   streakLabel?: string;
   meta: SpaceCardMeta[];
+  updatedLabel: string;
 };
 
 export type ActivityItem = {

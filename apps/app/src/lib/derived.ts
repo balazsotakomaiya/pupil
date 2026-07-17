@@ -151,12 +151,14 @@ export function buildSpaceCards(
         name: space.name,
         description: buildSpaceDescription(space),
         streakLabel: space.streak > 0 ? `${space.streak}d` : undefined,
+        updatedLabel: latestCard
+          ? formatCompactAge(latestCard.updatedAt, now)
+          : formatCompactAge(space.updatedAt, now),
         meta: [
           { label: "cards", value: formatNumber(space.cardCount) },
           {
             label: "due",
             value: formatNumber(space.dueTodayCount),
-            variant: space.dueTodayCount > 0 ? "due" : "default",
           },
           {
             label: "retention",
@@ -164,13 +166,6 @@ export function buildSpaceCards(
               stats?.retention30d !== null && stats?.retention30d !== undefined
                 ? `${Math.round(stats.retention30d)}%`
                 : "—",
-          },
-          {
-            label: "source",
-            value: latestCard
-              ? `${formatSourceLabel(latestCard.source)} · ${formatCompactAge(latestCard.updatedAt, now)}`
-              : `local · ${formatCompactAge(space.updatedAt, now)}`,
-            variant: "aux",
           },
         ],
       };
@@ -325,17 +320,6 @@ function formatDayOffset(offset: number, now = Date.now()) {
   const month = `${day.getMonth() + 1}`.padStart(2, "0");
   const date = `${day.getDate()}`.padStart(2, "0");
   return `${year}-${month}-${date}`;
-}
-
-function formatSourceLabel(source: CardRecord["source"]) {
-  switch (source) {
-    case "ai":
-      return "ai";
-    case "anki":
-      return "anki";
-    default:
-      return "manual";
-  }
 }
 
 function joinLabels(labels: string[]): string {

@@ -3,6 +3,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { queryClient } from "./lib/query";
+import { applySavedTheme } from "./lib/theme";
 import "./styles/animations.css";
 import "./styles/tokens.css";
 import "./styles/reset.css";
@@ -14,6 +15,8 @@ const rootElement = document.getElementById("root");
 if (!rootElement) {
   throw new Error("Root element #root was not found.");
 }
+
+applySavedTheme();
 
 createRoot(rootElement).render(
   <StrictMode>

@@ -24,21 +24,13 @@ export function SpaceCard({ onOpen, space }: SpaceCardProps) {
       <div className={styles.spaceMeta}>
         {space.meta.map((item) => (
           <div className={styles.spaceMetaItem} key={`${space.id}-${item.label}`}>
-            {item.variant === "aux" ? (
-              <span className={styles.spaceSource}>{item.value}</span>
-            ) : item.variant === "due" ? (
-              <span className={styles.spaceMetaVal}>
-                <span className={styles.dueIndicator}>
-                  <span className="due-dot" />
-                  {item.value}
-                </span>
-              </span>
-            ) : (
-              <span className={styles.spaceMetaVal}>{item.value}</span>
-            )}
+            <span className={styles.spaceMetaVal}>{item.value}</span>
             <span className={styles.spaceMetaLabel}>{item.label}</span>
           </div>
         ))}
+        <span className={styles.spaceUpdated} title={space.updatedLabel}>
+          {space.updatedLabel}
+        </span>
       </div>
     </button>
   );

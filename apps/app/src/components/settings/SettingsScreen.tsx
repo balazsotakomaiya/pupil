@@ -28,6 +28,7 @@ import {
   EyeOpenIcon,
   TrashIcon,
 } from "../icons/SettingsIcons";
+import { AppearanceSettingsCard } from "./AppearanceSettingsCard";
 import styles from "./Settings.module.css";
 import { SettingsAboutCard } from "./SettingsAboutCard";
 import { SettingsConnectionStatus } from "./SettingsConnectionStatus";
@@ -93,7 +94,7 @@ export function SettingsScreen({
   const autoSaveTimerRef = useRef<number | null>(null);
   // Updated on every render so the timeout callback always uses latest state.
   const handleAutoSave = useRef<() => void>(() => {});
-  const [activeSection, setActiveSection] = useState<SettingsSectionId>("study");
+  const [activeSection, setActiveSection] = useState<SettingsSectionId>("appearance");
   const [apiKey, setApiKey] = useState("");
   const [apiKeyEdited, setApiKeyEdited] = useState(false);
   const [hasStoredApiKey, setHasStoredApiKey] = useState(false);
@@ -146,6 +147,7 @@ export function SettingsScreen({
     label: "Ready",
   });
 
+  const appearanceRef = useRef<HTMLElement | null>(null);
   const studyRef = useRef<HTMLElement | null>(null);
   const aiRef = useRef<HTMLElement | null>(null);
   const dataRef = useRef<HTMLElement | null>(null);
@@ -154,6 +156,7 @@ export function SettingsScreen({
 
   const sectionRefs = useMemo(
     () => ({
+      appearance: appearanceRef,
       about: aboutRef,
       ai: aiRef,
       data: dataRef,
@@ -560,6 +563,19 @@ export function SettingsScreen({
       </section>
 
       <SettingsNav activeSection={activeSection} onSelect={handleSelectSection} />
+
+      <div className="ruler-divider" />
+
+      <section className={styles.settingsSection} id="appearance" ref={appearanceRef}>
+        <div className={styles.settingsSectionHead}>
+          <div className={styles.settingsSectionTitle}>Appearance</div>
+          <div className={styles.settingsSectionDesc}>
+            Choose the surface that feels most comfortable for your study session.
+          </div>
+        </div>
+
+        <AppearanceSettingsCard />
+      </section>
 
       <div className="ruler-divider" />
 

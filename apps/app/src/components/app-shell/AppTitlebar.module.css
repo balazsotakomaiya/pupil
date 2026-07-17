@@ -9,7 +9,7 @@
   height: 52px;
   padding: 0 var(--space-5);
   border-bottom: 1px solid var(--border);
-  background: rgba(10, 10, 10, 0.85);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
   backdrop-filter: blur(12px);
   -webkit-app-region: drag;
   -webkit-backdrop-filter: blur(12px);

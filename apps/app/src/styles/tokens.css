@@ -48,3 +48,17 @@
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
 }
+
+:root[data-theme="light"] {
+  --bg: #fbfbfa;
+  --bg-subtle: #f5f5f3;
+  --bg-elevated: #ebebe8;
+  --border: #deded9;
+  --border-hover: #bdbdb5;
+  --ruler: #d3d3cd;
+  --text-primary: #181817;
+  --text-secondary: #5f5f59;
+  --text-tertiary: #898983;
+  --success: #047857;
+  --success-dim: #04785715;
+}

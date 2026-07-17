@@ -1,0 +1,148 @@
+.appearanceCard {
+  display: flex;
+  flex-direction: column;
+  max-width: 560px;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+}
+
+.appearanceIntro {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3-5);
+}
+
+.logoPreview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1-5);
+  width: 82px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-family: "Syne", var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.appearanceLabel,
+.themeOptionLabel {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.appearanceHint {
+  margin: var(--space-0-5) 0 0;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.themeOptions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.themeOption {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-secondary);
+  text-align: left;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.themeOption:hover {
+  border-color: var(--border-hover);
+  background: color-mix(in srgb, var(--text-primary) 3%, transparent);
+}
+
+.themeOption.selected {
+  border-color: var(--text-primary);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+}
+
+.themeSwatch {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 42px;
+  height: 34px;
+  padding: var(--space-1-5);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+
+.themeSwatch.dark {
+  border-color: #333333;
+  background: #0a0a0a;
+}
+
+.themeSwatch.light {
+  border-color: #deded9;
+  background: #fbfbfa;
+}
+
+.swatchLine,
+.swatchBlock {
+  display: block;
+  border-radius: 999px;
+}
+
+.dark .swatchLine,
+.dark .swatchBlock {
+  background: #ededed;
+}
+
+.light .swatchLine,
+.light .swatchBlock {
+  background: #181817;
+}
+
+.swatchLine {
+  width: 60%;
+  height: 3px;
+}
+
+.swatchBlock {
+  width: 100%;
+  height: 12px;
+  opacity: 0.16;
+}
+
+.themeOptionCopy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: var(--space-0-5);
+}
+
+.themeOptionDescription {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+@media (max-width: 520px) {
+  .themeOptions {
+    grid-template-columns: 1fr;
+  }
+}

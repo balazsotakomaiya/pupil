@@ -34,11 +34,11 @@ export const FALLBACK_SPACES: SpaceCardData[] = [
     description:
       "Neural networks, gradient descent, transformers, attention mechanisms, loss functions.",
     streakLabel: "12d",
+    updatedLabel: "3d ago",
     meta: [
       { label: "cards", value: "234" },
-      { label: "due", value: "18", variant: "due" },
+      { label: "due", value: "18" },
       { label: "retention", value: "91%" },
-      { label: "source", value: "ai · 3d ago", variant: "aux" },
     ],
   },
   {
@@ -46,11 +46,11 @@ export const FALLBACK_SPACES: SpaceCardData[] = [
     name: "Rust Ownership",
     description: "Borrow checker, lifetimes, move semantics, smart pointers, interior mutability.",
     streakLabel: "14d",
+    updatedLabel: "2w ago",
     meta: [
       { label: "cards", value: "89" },
-      { label: "due", value: "7", variant: "due" },
+      { label: "due", value: "7" },
       { label: "retention", value: "84%" },
-      { label: "source", value: "manual · 2w", variant: "aux" },
     ],
   },
   {
@@ -58,22 +58,22 @@ export const FALLBACK_SPACES: SpaceCardData[] = [
     name: "World History",
     description: "Ancient civilizations, revolutions, world wars, Cold War, colonialism, treaties.",
     streakLabel: "8d",
+    updatedLabel: "1mo ago",
     meta: [
       { label: "cards", value: "312" },
-      { label: "due", value: "11", variant: "due" },
+      { label: "due", value: "11" },
       { label: "retention", value: "79%" },
-      { label: "source", value: "anki · 1mo", variant: "aux" },
     ],
   },
   {
     id: "music-theory",
     name: "Music Theory",
     description: "Intervals, chord voicings, modes, harmonic analysis, voice leading.",
+    updatedLabel: "5d ago",
     meta: [
       { label: "cards", value: "67" },
-      { label: "due", value: "4", variant: "due" },
+      { label: "due", value: "4" },
       { label: "retention", value: "92%" },
-      { label: "source", value: "ai · 5d ago", variant: "aux" },
     ],
   },
   {
@@ -82,11 +82,11 @@ export const FALLBACK_SPACES: SpaceCardData[] = [
     description:
       "Amino acids, enzyme kinetics, metabolic pathways, protein folding, DNA replication.",
     streakLabel: "3d",
+    updatedLabel: "2w ago",
     meta: [
       { label: "cards", value: "145" },
-      { label: "due", value: "2", variant: "due" },
+      { label: "due", value: "2" },
       { label: "retention", value: "88%" },
-      { label: "source", value: "anki · 2w", variant: "aux" },
     ],
   },
 ];

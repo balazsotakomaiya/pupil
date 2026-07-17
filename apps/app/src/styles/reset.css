@@ -16,7 +16,12 @@ html {
 
 body {
   margin: 0;
-  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 28%), var(--bg);
+  background: radial-gradient(
+      circle at top,
+      color-mix(in srgb, var(--text-primary) 5%, transparent),
+      transparent 28%
+    ),
+    var(--bg);
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 15px;

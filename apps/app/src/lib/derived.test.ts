@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildActivity, buildStats, buildStreakCells, buildStudySummary } from "./derived";
+import {
+  buildActivity,
+  buildSpaceCards,
+  buildStats,
+  buildStreakCells,
+  buildStudySummary,
+} from "./derived";
 import type { SpaceSummary } from "./spaces";
 import type { DashboardStats } from "./stats";
 
@@ -190,6 +196,28 @@ describe("buildActivity", () => {
         typeLabel: "study",
       },
     ]);
+  });
+});
+
+describe("buildSpaceCards", () => {
+  it("shows a relative update time without source metadata", () => {
+    const now = Date.UTC(2026, 3, 19, 10, 0, 0);
+    const spaces: SpaceSummary[] = [
+      {
+        id: "space-1",
+        name: "Rust",
+        cardCount: 42,
+        dueTodayCount: 3,
+        streak: 0,
+        createdAt: now - 7_200_000,
+        updatedAt: now - 3_600_000,
+      },
+    ];
+
+    const [spaceCard] = buildSpaceCards(spaces, [], new Map(), now);
+
+    expect(spaceCard.updatedLabel).toBe("1h ago");
+    expect(spaceCard.meta.map((item) => item.label)).toEqual(["cards", "due", "retention"]);
   });
 });
 
