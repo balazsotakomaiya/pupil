@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import type { SyntheticEvent } from "react";
 import { useState } from "react";
 import { CloseIcon } from "../icons/CloseIcon";
 import { Modal } from "../modal";
@@ -8,7 +8,7 @@ type NewSpaceDialogProps = {
   isSubmitting: boolean;
   onChange: (value: string) => void;
   onClose: () => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: SyntheticEvent<HTMLFormElement>) => void;
   value: string;
 };
 

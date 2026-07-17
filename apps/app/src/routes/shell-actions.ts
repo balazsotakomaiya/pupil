@@ -1,7 +1,11 @@
 import { createContext, useContext } from "react";
 
 export type ShellActions = {
+  closeCreateDialog: () => void;
+  closeShellOverlays: () => void;
+  openCommandPalette: () => void;
   openCreateDialog: () => void;
+  toggleCommandPalette: () => void;
 };
 
 export const ShellActionsContext = createContext<ShellActions | null>(null);

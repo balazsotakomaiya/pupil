@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type SyntheticEvent, useEffect, useRef, useState } from "react";
 import type { CardRecord } from "../../lib/cards";
 import type { SpaceSummary } from "../../lib/spaces";
 import type { SpaceStats } from "../../lib/stats";
@@ -218,7 +218,7 @@ export function SpaceDetailsScreen({
     setIsRenameDialogOpen(true);
   }
 
-  async function handleRenameSpaceSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleRenameSpaceSubmit(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
     setRenameError(null);
 

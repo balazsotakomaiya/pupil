@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import type { SyntheticEvent } from "react";
 import { useState } from "react";
 import { SPACE_NAME_MAX_LENGTH } from "../../lib/spaces";
 import { CloseIcon } from "../icons/CloseIcon";
@@ -9,7 +9,7 @@ type RenameSpaceDialogProps = {
   isSubmitting: boolean;
   onChange: (value: string) => void;
   onClose: () => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: SyntheticEvent<HTMLFormElement>) => void;
   originalName: string;
   value: string;
 };

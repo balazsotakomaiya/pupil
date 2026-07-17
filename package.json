@@ -18,6 +18,9 @@
     "test:ts": "bun run --workspaces --if-present test",
     "test:rust": "cargo test --manifest-path apps/app/src-tauri/Cargo.toml",
     "test": "bun run test:ts && bun run test:rust",
+    "test:coverage:ts": "bun run --cwd apps/app test -- --coverage",
+    "test:coverage:rust": "bash scripts/test-rust-coverage.sh",
+    "test:coverage": "bun run test:coverage:ts && bun run test:coverage:rust",
     "prepare": "lefthook install",
     "release:check": "bun ./scripts/desktop-release.mjs check",
     "release:version": "bun ./scripts/desktop-release.mjs version"

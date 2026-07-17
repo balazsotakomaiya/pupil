@@ -162,9 +162,12 @@ The Rust backend compiles with `cargo` under the hood. First build takes a while
 
 ## Testing layout
 
-- Frontend tests live in dedicated `*.test.ts` files, mainly under `src/lib/`.
-- Rust tests live in dedicated files under `src-tauri/src/tests/`.
+- Frontend tests live in dedicated `*.test.ts` or `*.test.tsx` files collocated with the code under test.
+- Component tests use Vitest, jsdom, and Testing Library to exercise accessible behavior and callbacks, not implementation snapshots.
+- Rust integration tests live in dedicated files under `src-tauri/src/tests/` and use in-memory SQLite plus migrations for storage behavior.
 - Keep tests out of production modules unless there is a compelling reason they must be co-located.
+- Before merging a production app change, maintain at least 80% line coverage independently in the TypeScript and Rust production-test scopes; run `bun run test:coverage` when touching either scope.
+- The coverage exclusions are limited to test/type/barrel files and native Tauri, OS-secret, or network glue outside this initiative. Rust coverage excludes only `main.rs`, `lib.rs`, `app.rs`, `commands.rs`, `ai/secrets.rs`, and `ai/provider.rs`; any new exclusion requires a written reason and maintainer approval.
 
 ## Git hooks
 
