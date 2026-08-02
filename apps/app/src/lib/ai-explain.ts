@@ -1,8 +1,13 @@
 import { type ExplainCardPayload, isExplainCardPayload } from "./ai-explanation";
 import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
+import { withTimeout } from "./timeout";
 
 export type { ExplainCardPayload } from "./ai-explanation";
+
+// The backend may retry a transient provider failure, so this allows for more
+// than a single request while still bounding the spinner.
+const EXPLAIN_TIMEOUT_MS = 120000;
 
 export type ExplainCardResult = {
   cached: boolean;
@@ -15,9 +20,13 @@ export async function explainCard(input: {
   force?: boolean;
 }): Promise<ExplainCardResult> {
   if (isTauriRuntime()) {
-    const result = await invokeCommand<unknown>("explain_card", {
-      input: { cardId: input.cardId, force: input.force ?? false },
-    });
+    const result = await withTimeout(
+      invokeCommand<unknown>("explain_card", {
+        input: { cardId: input.cardId, force: input.force ?? false },
+      }),
+      EXPLAIN_TIMEOUT_MS,
+      "Explaining this card",
+    );
     return normalizeExplainCardResult(result);
   }
 

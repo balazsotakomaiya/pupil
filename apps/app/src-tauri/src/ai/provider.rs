@@ -1,9 +1,50 @@
+use std::sync::OnceLock;
+use std::time::Duration;
+
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION, CONTENT_TYPE};
 use serde_json::Value;
 
 use super::validation::is_anthropic_base_url;
+use crate::constants::{AI_CONNECT_TIMEOUT_SECS, AI_REQUEST_TIMEOUT_SECS};
 use crate::error::{AppError, AppResult};
 use crate::types::ResolvedAiSettings;
+
+/// One shared client for every provider call. Building it per request threw
+/// away connection pooling, and more importantly meant no request carried a
+/// timeout, so an unresponsive provider hung the command forever.
+fn http_client() -> AppResult<&'static reqwest::Client> {
+    static CLIENT: OnceLock<Result<reqwest::Client, String>> = OnceLock::new();
+
+    CLIENT
+        .get_or_init(|| {
+            reqwest::Client::builder()
+                .connect_timeout(Duration::from_secs(AI_CONNECT_TIMEOUT_SECS))
+                .timeout(Duration::from_secs(AI_REQUEST_TIMEOUT_SECS))
+                .build()
+                .map_err(|error| error.to_string())
+        })
+        .as_ref()
+        .map_err(|error| AppError::internal_message(error.clone()))
+}
+
+/// Maps a transport failure to a user-facing error. Timeouts get their own
+/// message so the retry classifier does not treat them as transient — retrying
+/// a call that already burned the full timeout just multiplies the wait.
+fn map_transport_error(error: reqwest::Error, endpoint: &str, model: &str) -> AppError {
+    if error.is_timeout() {
+        return AppError::ai_provider(
+            format!(
+                "The AI provider at {endpoint} did not respond within {AI_REQUEST_TIMEOUT_SECS}s."
+            ),
+            Some(error.to_string()),
+        );
+    }
+
+    AppError::ai_provider(
+        format!("Failed to reach the AI provider at {endpoint} with model {model}."),
+        Some(error.to_string()),
+    )
+}
 
 pub(crate) async fn execute_ai_completion(
     settings: &ResolvedAiSettings,
@@ -48,7 +89,7 @@ async fn execute_openai_compatible_completion(
     }
     messages.push(serde_json::json!({ "role": "user", "content": user_prompt }));
 
-    let response = reqwest::Client::new()
+    let response = http_client()?
         .post(&endpoint)
         .headers(headers)
         .json(&serde_json::json!({
@@ -59,15 +100,7 @@ async fn execute_openai_compatible_completion(
         }))
         .send()
         .await
-        .map_err(|error| {
-            AppError::ai_provider(
-                format!(
-                    "Failed to reach the AI provider at {endpoint} with model {}.",
-                    settings.model
-                ),
-                Some(error.to_string()),
-            )
-        })?;
+        .map_err(|error| map_transport_error(error, &endpoint, &settings.model))?;
     let status = response.status();
     let body = response.text().await.map_err(|error| {
         AppError::ai_provider(
@@ -114,7 +147,7 @@ async fn execute_anthropic_completion(
     );
     headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
 
-    let response = reqwest::Client::new()
+    let response = http_client()?
         .post(&endpoint)
         .headers(headers)
         .json(&serde_json::json!({
@@ -126,15 +159,7 @@ async fn execute_anthropic_completion(
         }))
         .send()
         .await
-        .map_err(|error| {
-            AppError::ai_provider(
-                format!(
-                    "Failed to reach the AI provider at {endpoint} with model {}.",
-                    settings.model
-                ),
-                Some(error.to_string()),
-            )
-        })?;
+        .map_err(|error| map_transport_error(error, &endpoint, &settings.model))?;
     let status = response.status();
     let body = response.text().await.map_err(|error| {
         AppError::ai_provider(

@@ -1,6 +1,7 @@
 import { DEFAULT_AI_BASE_URL, DEFAULT_AI_MODEL } from "./ai-providers";
 import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
+import { withTimeout } from "./timeout";
 
 export type AiDifficulty = "Beginner" | "Intermediate" | "Advanced";
 export type AiStyle = "Concept" | "Q&A" | "Cloze";
@@ -51,6 +52,9 @@ const DEFAULT_AI_SETTINGS: AiSettings = {
 let pendingTauriAiSettings: Promise<AiSettings> | null = null;
 const SETTINGS_COMMAND_TIMEOUT_MS = 5000;
 const CONNECTION_TEST_TIMEOUT_MS = 15000;
+// Sits above the backend's own per-request timeout so the clearer backend
+// error normally wins the race; this only guarantees the UI cannot hang.
+const GENERATE_TIMEOUT_MS = 120000;
 
 export async function loadAiSettings(): Promise<AiSettings> {
   if (isTauriRuntime()) {
@@ -59,6 +63,7 @@ export async function loadAiSettings(): Promise<AiSettings> {
         invokeCommand<PersistedAiSettings>("get_ai_settings"),
         SETTINGS_COMMAND_TIMEOUT_MS,
         "Loading local AI settings",
+        "Please restart the app and try again.",
       )
         .then((state) => ({ ...state, apiKey: "" }))
         .finally(() => {
@@ -78,6 +83,7 @@ export async function saveAiSettings(input: SaveAiSettingsInput): Promise<AiSett
       invokeCommand<PersistedAiSettings>("save_ai_settings", { input }),
       SETTINGS_COMMAND_TIMEOUT_MS,
       "Saving local AI settings",
+      "Please restart the app and try again.",
     );
     return {
       ...state,
@@ -129,7 +135,11 @@ export async function generateAiCards(input: {
   topic: string;
 }): Promise<GeneratedAiCard[]> {
   if (isTauriRuntime()) {
-    return invokeCommand<GeneratedAiCard[]>("generate_cards", { input });
+    return withTimeout(
+      invokeCommand<GeneratedAiCard[]>("generate_cards", { input }),
+      GENERATE_TIMEOUT_MS,
+      "Generating cards",
+    );
   }
 
   return buildMockGeneratedCards(input);
@@ -179,25 +189,6 @@ export function describeAiSettingsError(error: unknown, fallback: string): strin
   }
 
   return fallback;
-}
-
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timeoutId = window.setTimeout(() => {
-      reject(new Error(`${label} timed out. Please restart the app and try again.`));
-    }, ms);
-
-    promise.then(
-      (value) => {
-        window.clearTimeout(timeoutId);
-        resolve(value);
-      },
-      (error) => {
-        window.clearTimeout(timeoutId);
-        reject(error);
-      },
-    );
-  });
 }
 
 function readWebAiSettings(): AiSettings {

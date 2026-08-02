@@ -1,0 +1,6 @@
+{
+  "identifier": "mcp-bridge-dev",
+  "description": "Development-only grant for the MCP bridge plugin. This capability lives outside `capabilities/` so the Tauri build never bundles it automatically; it is registered at runtime only when the crate is compiled with the `mcp-bridge` feature.",
+  "windows": ["main"],
+  "permissions": ["mcp-bridge:default"]
+}

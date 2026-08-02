@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use crate::util::{decode_tags, encode_tags, now_ms};
+use crate::util::{decode_tags, encode_tags, now_ms, truncate_chars};
 use rusqlite::ffi::{Error, ErrorCode};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -133,4 +133,25 @@ fn now_ms_returns_a_current_timestamp() {
 
     assert!(current >= before);
     assert!(current <= after);
+}
+
+#[test]
+fn truncate_chars_leaves_input_within_the_limit_unchanged() {
+    assert_eq!(truncate_chars("mitochondria", 32), "mitochondria");
+}
+
+#[test]
+fn truncate_chars_appends_an_ellipsis_when_it_cuts() {
+    assert_eq!(truncate_chars("abcdef", 3), "abc…");
+}
+
+#[test]
+fn truncate_chars_counts_characters_rather_than_bytes() {
+    // A byte-based cut would split one of these multi-byte characters and panic.
+    assert_eq!(truncate_chars("ααααα", 3), "ααα…");
+}
+
+#[test]
+fn truncate_chars_keeps_input_of_exactly_the_limit_intact() {
+    assert_eq!(truncate_chars("abc", 3), "abc");
 }
