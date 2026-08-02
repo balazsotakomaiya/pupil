@@ -1,3 +1,4 @@
+import type { DashboardStats, SpaceSummary } from "@pupil/core";
 import { describe, expect, it } from "vitest";
 import {
   buildActivity,
@@ -6,8 +7,6 @@ import {
   buildStreakCells,
   buildStudySummary,
 } from "./derived";
-import type { SpaceSummary } from "./spaces";
-import type { DashboardStats } from "./stats";
 
 describe("buildStudySummary", () => {
   it("describes a cleared queue when nothing is due", () => {

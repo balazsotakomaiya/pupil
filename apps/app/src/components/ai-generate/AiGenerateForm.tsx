@@ -1,4 +1,4 @@
-import type { SpaceSummary } from "../../lib/spaces";
+import type { SpaceSummary } from "@pupil/core";
 import {
   ChevronDownIcon,
   InfoIcon,

@@ -1,9 +1,10 @@
-import { type CardRecord, listCards } from "./cards";
-import { invokeCommand } from "./ipc";
-import { isTauriRuntime } from "./runtime";
-import { computeNewCardsBudget, getStudySettings } from "./study-settings";
+import type { CardRecord } from "./types";
 
-type QueueCard = Pick<
+/**
+ * The minimum card shape the queue rules need. Kept structural so every storage
+ * backend — and the tray/dashboard/study counts — can share one set of rules.
+ */
+export type QueueCard = Pick<
   CardRecord,
   "createdAt" | "due" | "id" | "spaceId" | "state" | "suspended" | "updatedAt"
 >;
@@ -35,6 +36,8 @@ export type ResolveStudyQueueSnapshotInput<T extends QueueCard> = {
   snapshotData?: StudyQueueSnapshotData | null;
 };
 
+const OVERDUE_SLACK_MS = 3 * 24 * 60 * 60 * 1000;
+
 export function buildDueQueue<T extends QueueCard>(cards: T[], now: number): T[] {
   return [...cards]
     .filter((card) => card.due <= now && !card.suspended)
@@ -65,7 +68,7 @@ export function buildStudyQueueSnapshot<T extends QueueCard>(
   now: number,
   newCardsBudget: number | null,
 ): StudyQueueSnapshot {
-  const slackThreshold = now - 3 * 24 * 60 * 60 * 1000;
+  const slackThreshold = now - OVERDUE_SLACK_MS;
   const dueCards = buildDueQueue(cards, now);
   const reviewCards = dueCards.filter((card) => card.state > 0);
   const newCards = dueCards.filter((card) => card.state === 0);
@@ -92,6 +95,11 @@ export function buildStudyQueueCountMap(
   return new Map(actionableDueBySpace.map((entry) => [entry.spaceId, entry.dueCount]));
 }
 
+/**
+ * Prefers authoritative counts from a storage backend when it can compute them
+ * itself, while keeping the locally derived admitted-card ids that drive the
+ * in-session study order.
+ */
 export function resolveStudyQueueSnapshot<T extends QueueCard>({
   cards,
   newCardsBudget,
@@ -113,18 +121,7 @@ export function resolveStudyQueueSnapshot<T extends QueueCard>({
   };
 }
 
-export async function getStudyQueueSnapshot(): Promise<StudyQueueSnapshotData> {
-  if (isTauriRuntime()) {
-    return invokeCommand<StudyQueueSnapshotData>("get_study_queue_snapshot");
-  }
-
-  const [cards, studySettings] = await Promise.all([listCards(), getStudySettings()]);
-  const snapshot = buildStudyQueueSnapshot(
-    cards,
-    Date.now(),
-    computeNewCardsBudget(studySettings.newCardsLimit, studySettings.newCardsToday),
-  );
-
+export function toStudyQueueSnapshotData(snapshot: StudyQueueSnapshot): StudyQueueSnapshotData {
   return {
     actionableDueBySpace: Array.from(snapshot.actionableDueBySpace, ([spaceId, dueCount]) => ({
       dueCount,

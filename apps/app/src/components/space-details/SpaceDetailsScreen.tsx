@@ -1,8 +1,6 @@
+import type { CardRecord, SpaceStats, SpaceSummary } from "@pupil/core";
+import { buildDueQueue } from "@pupil/core";
 import { type SyntheticEvent, useEffect, useRef, useState } from "react";
-import type { CardRecord } from "../../lib/cards";
-import type { SpaceSummary } from "../../lib/spaces";
-import type { SpaceStats } from "../../lib/stats";
-import { buildDueQueue } from "../../lib/study-queue";
 import { SpaceDetailsTitlebar } from "../app-shell";
 import { CardFormPanel } from "../cards/CardFormPanel";
 import { CardList } from "../cards/CardList";

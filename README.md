@@ -68,6 +68,7 @@ Pupil is designed around one idea: studying should feel sharp, calm, and immedia
 - **Tauri v2** — native desktop shell
 - **React + Vite** — frontend
 - **Rust** — backend, database access, AI integration
+- **`@pupil/core`** — shared, platform-agnostic domain layer
 - **SQLite** (bundled via `rusqlite`) — local data store
 - **Tauri Stronghold** — encrypted storage for the AI API key
 - **ts-fsrs** — spaced repetition scheduling (runs in the frontend)

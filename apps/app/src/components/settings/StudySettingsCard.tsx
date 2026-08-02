@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
 import {
   estimateDailyReviewsIn30Days,
   NEW_CARDS_PRESETS,
   type NewCardsPreset,
   type StudySettings,
-} from "../../lib/study-settings";
+} from "@pupil/core";
+import { useEffect, useState } from "react";
 import styles from "./Settings.module.css";
 
 type StudySettingsCardProps = {

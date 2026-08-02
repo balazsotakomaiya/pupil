@@ -1,5 +1,7 @@
 import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
+import { clearWebStorage } from "./storage";
+import { ALL_WEB_STORAGE_KEYS, WEB_STORAGE_KEYS } from "./storage/web-store";
 
 export type SettingsDataSummary = {
   databasePath: string;
@@ -11,15 +13,6 @@ export type ExportDataResult = {
   recordCount: number;
 };
 
-const WEB_KEYS = [
-  "pupil.ai.settings",
-  "pupil.web.cards",
-  "pupil.web.review_logs",
-  "pupil.web.spaces",
-  "pupil.web.study_days",
-  "pupil.web.study_settings",
-];
-
 export async function getSettingsDataSummary(): Promise<SettingsDataSummary> {
   if (isTauriRuntime()) {
     return invokeCommand<SettingsDataSummary>("get_settings_data_summary");
@@ -27,7 +20,7 @@ export async function getSettingsDataSummary(): Promise<SettingsDataSummary> {
 
   return {
     databasePath: "Browser preview uses localStorage",
-    reviewLogCount: readStoredArray("pupil.web.review_logs").length,
+    reviewLogCount: readStoredArray(WEB_STORAGE_KEYS.reviewLogs).length,
   };
 }
 
@@ -39,7 +32,9 @@ export async function exportDatabaseCopy(): Promise<ExportDataResult> {
   downloadBlob(
     `pupil-export-${Date.now()}.json`,
     JSON.stringify(
-      Object.fromEntries(WEB_KEYS.map((key) => [key, window.localStorage.getItem(key)])),
+      Object.fromEntries(
+        ALL_WEB_STORAGE_KEYS.map((key) => [key, window.localStorage.getItem(key)]),
+      ),
       null,
       2,
     ),
@@ -57,7 +52,7 @@ export async function exportReviewLogsCsv(): Promise<ExportDataResult> {
     return invokeCommand<ExportDataResult>("export_review_logs_csv");
   }
 
-  const logs = readStoredArray("pupil.web.review_logs");
+  const logs = readStoredArray(WEB_STORAGE_KEYS.reviewLogs);
   const rows = [
     "review_time,space_id,grade,state,due,elapsed_days,scheduled_days",
     ...logs.map((log) =>
@@ -87,9 +82,7 @@ export async function resetAllData(): Promise<void> {
     return;
   }
 
-  for (const key of WEB_KEYS) {
-    window.localStorage.removeItem(key);
-  }
+  clearWebStorage();
 }
 
 function readStoredArray(key: string): Array<Record<string, unknown>> {

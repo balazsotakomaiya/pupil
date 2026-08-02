@@ -1,6 +1,5 @@
+import type { CardRecord, SpaceSummary } from "@pupil/core";
 import { useEffect, useRef, useState } from "react";
-import type { CardRecord } from "../../lib/cards";
-import type { SpaceSummary } from "../../lib/spaces";
 import { GridIcon } from "../icons/GridIcon";
 import { PlusIcon } from "../icons/PlusIcon";
 import { SearchIcon } from "../icons/SearchIcon";

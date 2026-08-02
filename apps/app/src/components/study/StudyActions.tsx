@@ -1,4 +1,4 @@
-import type { FsrsPreview } from "../../lib/fsrs";
+import type { FsrsPreview } from "@pupil/core";
 import styles from "./Study.module.css";
 import type { StudyGrade } from "./types";
 

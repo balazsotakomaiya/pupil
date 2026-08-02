@@ -14,6 +14,7 @@
       "name": "@pupil/app",
       "version": "1.0.0-alpha.9",
       "dependencies": {
+        "@pupil/core": "workspace:*",
         "@tanstack/react-query": "^5.99.2",
         "@tanstack/react-router": "^1.168.23",
         "@tauri-apps/api": "^2.4.0",
@@ -56,6 +57,17 @@
         "@vitejs/plugin-react": "^4.4.1",
         "typescript": "^5.8.0",
         "vite": "^6.3.0",
+      },
+    },
+    "packages/core": {
+      "name": "@pupil/core",
+      "version": "0.1.0",
+      "dependencies": {
+        "ts-fsrs": "^5.3.1",
+      },
+      "devDependencies": {
+        "typescript": "^5.8.0",
+        "vitest": "^4.1.4",
       },
     },
   },
@@ -213,6 +225,8 @@
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
     "@pupil/app": ["@pupil/app@workspace:apps/app"],
+
+    "@pupil/core": ["@pupil/core@workspace:packages/core"],
 
     "@pupil/site": ["@pupil/site@workspace:apps/site"],
 

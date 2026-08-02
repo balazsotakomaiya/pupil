@@ -1,10 +1,15 @@
+import type {
+  CreateCardInput,
+  DeleteCardInput,
+  SuspendCardInput,
+  UpdateCardInput,
+} from "@pupil/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { ScreenErrorBoundary } from "../../components/ErrorBoundary";
 import { StatusPanel } from "../../components/StatusPanel";
 import { SpaceDetailsScreen } from "../../components/space-details";
 import { useCardsQuery, useSpaceStatsQuery, useSpacesQuery } from "../../lib/app-queries";
-import { createCard, deleteCard, suspendCard, updateCard } from "../../lib/cards";
 import { toAppError } from "../../lib/errors";
 import { notifyError, notifySuccess } from "../../lib/notifications";
 import {
@@ -13,7 +18,7 @@ import {
   invalidateAfterCardMutation,
   invalidateAllAppData,
 } from "../../lib/query";
-import { deleteSpace, renameSpace } from "../../lib/spaces";
+import { getStorage } from "../../lib/storage";
 
 export function SpaceDetailsPage() {
   const queryClient = useQueryClient();
@@ -25,7 +30,7 @@ export function SpaceDetailsPage() {
   const space = spaces.find((entry) => entry.id === spaceId) ?? null;
   const stats = spaceStats.find((entry) => entry.spaceId === spaceId) ?? null;
   const createCardMutation = useMutation({
-    mutationFn: createCard,
+    mutationFn: (input: CreateCardInput) => getStorage().createCard(input),
     onSuccess: async () => {
       await invalidateAfterCardMutation(queryClient);
       notifySuccess("Card saved");
@@ -35,7 +40,7 @@ export function SpaceDetailsPage() {
     },
   });
   const updateCardMutation = useMutation({
-    mutationFn: updateCard,
+    mutationFn: (input: UpdateCardInput) => getStorage().updateCard(input),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: appQueryKeys.cards }),
@@ -49,7 +54,7 @@ export function SpaceDetailsPage() {
     },
   });
   const deleteCardMutation = useMutation({
-    mutationFn: deleteCard,
+    mutationFn: (input: DeleteCardInput) => getStorage().deleteCard(input),
     onSuccess: async () => {
       await invalidateAfterCardDeletion(queryClient);
       notifySuccess("Card deleted");
@@ -59,7 +64,7 @@ export function SpaceDetailsPage() {
     },
   });
   const suspendCardMutation = useMutation({
-    mutationFn: suspendCard,
+    mutationFn: (input: SuspendCardInput) => getStorage().suspendCard(input),
     onSuccess: async () => {
       await invalidateAfterCardMutation(queryClient);
     },
@@ -68,7 +73,7 @@ export function SpaceDetailsPage() {
     },
   });
   const renameSpaceMutation = useMutation({
-    mutationFn: async (name: string) => renameSpace({ id: spaceId, name }),
+    mutationFn: async (name: string) => getStorage().renameSpace({ id: spaceId, name }),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: appQueryKeys.spaces }),
@@ -82,7 +87,7 @@ export function SpaceDetailsPage() {
     },
   });
   const deleteSpaceMutation = useMutation({
-    mutationFn: async () => deleteSpace({ id: spaceId }),
+    mutationFn: async () => getStorage().deleteSpace({ id: spaceId }),
     onSuccess: async () => {
       await invalidateAllAppData(queryClient);
       notifySuccess("Space deleted");

@@ -1,31 +1,17 @@
-import { create } from "zustand";
-import { listRecentActivity, type RecentActivityRecord } from "./activity";
-import { loadBootstrapState } from "./bootstrap";
 import {
   type CardRecord,
-  createCard as createCardRecord,
-  deleteCard as deleteCardRecord,
-  listCards,
-  reviewCard as reviewCardRecord,
-  suspendCard as suspendCardRecord,
-  updateCard as updateCardRecord,
-} from "./cards";
+  type DashboardStats,
+  DEFAULT_NEW_CARDS_LIMIT,
+  type RecentActivityRecord,
+  type SpaceStats,
+  type SpaceSummary,
+  type StudySettings,
+} from "@pupil/core";
+import { create } from "zustand";
+import { loadBootstrapState } from "./bootstrap";
 import { resetAllData as resetAllAppData } from "./data-actions";
 import { sortCardRecords, sortSpaces } from "./derived";
-import {
-  createSpace as createSpaceRecord,
-  deleteSpace as deleteSpaceRecord,
-  listSpaces,
-  renameSpace as renameSpaceRecord,
-  type SpaceSummary,
-} from "./spaces";
-import { type DashboardStats, getDashboardStats, listSpaceStats, type SpaceStats } from "./stats";
-import {
-  DEFAULT_NEW_CARDS_LIMIT,
-  getStudySettings,
-  type StudySettings,
-  saveStudySettings as saveStudySettingsRecord,
-} from "./study-settings";
+import { getStorage } from "./storage";
 import { refreshTrayStatus } from "./tray";
 
 type AppDataSnapshot = {
@@ -119,12 +105,12 @@ const INITIAL_STATE: AppStoreState = {
 async function loadFullSnapshot(): Promise<AppDataSnapshot> {
   const [spaces, cards, dashboardStats, spaceStats, recentActivity, studySettings] =
     await Promise.all([
-      listSpaces(),
-      listCards(),
-      getDashboardStats(),
-      listSpaceStats(),
-      listRecentActivity(),
-      getStudySettings(),
+      getStorage().listSpaces(),
+      getStorage().listCards(),
+      getStorage().getDashboardStats(),
+      getStorage().listSpaceStats(),
+      getStorage().listRecentActivity(),
+      getStorage().getStudySettings(),
     ]);
 
   return {
@@ -141,9 +127,9 @@ async function loadCardMutationSnapshot(): Promise<
   Pick<AppDataSnapshot, "dashboardStats" | "spaces" | "spaceStats">
 > {
   const [spaces, dashboardStats, spaceStats] = await Promise.all([
-    listSpaces(),
-    getDashboardStats(),
-    listSpaceStats(),
+    getStorage().listSpaces(),
+    getStorage().getDashboardStats(),
+    getStorage().listSpaceStats(),
   ]);
 
   return {
@@ -156,7 +142,10 @@ async function loadCardMutationSnapshot(): Promise<
 async function loadCardDeletionSnapshot(): Promise<
   Pick<AppDataSnapshot, "dashboardStats" | "spaces">
 > {
-  const [spaces, dashboardStats] = await Promise.all([listSpaces(), getDashboardStats()]);
+  const [spaces, dashboardStats] = await Promise.all([
+    getStorage().listSpaces(),
+    getStorage().getDashboardStats(),
+  ]);
 
   return {
     dashboardStats,
@@ -171,11 +160,11 @@ async function loadReviewSnapshot(): Promise<
   >
 > {
   const [spaces, dashboardStats, spaceStats, recentActivity, studySettings] = await Promise.all([
-    listSpaces(),
-    getDashboardStats(),
-    listSpaceStats(),
-    listRecentActivity(),
-    getStudySettings(),
+    getStorage().listSpaces(),
+    getStorage().getDashboardStats(),
+    getStorage().listSpaceStats(),
+    getStorage().listRecentActivity(),
+    getStorage().getStudySettings(),
   ]);
 
   return {
@@ -224,7 +213,7 @@ export const useAppStore = create<AppStore>((set) => ({
   },
 
   async refreshStudySettings() {
-    const studySettings = await getStudySettings();
+    const studySettings = await getStorage().getStudySettings();
     set({ studySettings });
   },
 
@@ -232,7 +221,7 @@ export const useAppStore = create<AppStore>((set) => ({
     set({ isMutatingCards: true });
 
     try {
-      const createdCard = await createCardRecord(input);
+      const createdCard = await getStorage().createCard(input);
       set((state) => ({
         cards: sortCardRecords([createdCard, ...state.cards]),
       }));
@@ -249,14 +238,14 @@ export const useAppStore = create<AppStore>((set) => ({
     set({ isMutatingCards: true });
 
     try {
-      const updatedCard = await updateCardRecord(input);
+      const updatedCard = await getStorage().updateCard(input);
       set((state) => ({
         cards: sortCardRecords(
           state.cards.map((card) => (card.id === updatedCard.id ? updatedCard : card)),
         ),
       }));
 
-      const spaces = await listSpaces();
+      const spaces = await getStorage().listSpaces();
       set({ spaces });
     } finally {
       set({ isMutatingCards: false });
@@ -267,7 +256,7 @@ export const useAppStore = create<AppStore>((set) => ({
     set({ isMutatingCards: true });
 
     try {
-      await deleteCardRecord(input);
+      await getStorage().deleteCard(input);
       set((state) => ({
         cards: state.cards.filter((card) => card.id !== input.id),
       }));
@@ -284,7 +273,7 @@ export const useAppStore = create<AppStore>((set) => ({
     set({ isMutatingCards: true });
 
     try {
-      const updatedCard = await suspendCardRecord(input);
+      const updatedCard = await getStorage().suspendCard(input);
       set((state) => ({
         cards: state.cards.map((card) => (card.id === updatedCard.id ? updatedCard : card)),
       }));
@@ -303,7 +292,7 @@ export const useAppStore = create<AppStore>((set) => ({
     set({ isMutatingCards: true });
 
     try {
-      const updatedCard = await reviewCardRecord(input);
+      const updatedCard = await getStorage().reviewCard(input);
       set((state) => ({
         cards: sortCardRecords(
           state.cards.map((card) => (card.id === updatedCard.id ? updatedCard : card)),
@@ -321,7 +310,7 @@ export const useAppStore = create<AppStore>((set) => ({
   },
 
   async createSpace(name) {
-    const createdSpace = await createSpaceRecord({ name });
+    const createdSpace = await getStorage().createSpace({ name });
     set((state) => ({
       spaces: sortSpaces([createdSpace, ...state.spaces]),
     }));
@@ -329,7 +318,7 @@ export const useAppStore = create<AppStore>((set) => ({
   },
 
   async deleteSpace(spaceId) {
-    await deleteSpaceRecord({ id: spaceId });
+    await getStorage().deleteSpace({ id: spaceId });
 
     set((state) => ({
       cards: state.cards.filter((card) => card.spaceId !== spaceId),
@@ -344,7 +333,7 @@ export const useAppStore = create<AppStore>((set) => ({
   },
 
   async renameSpace(spaceId, name) {
-    const renamedSpace = await renameSpaceRecord({ id: spaceId, name });
+    const renamedSpace = await getStorage().renameSpace({ id: spaceId, name });
 
     set((state) => ({
       cards: state.cards.map((card) =>
@@ -367,7 +356,7 @@ export const useAppStore = create<AppStore>((set) => ({
     try {
       await Promise.all(
         input.cards.map((card) =>
-          createCardRecord({
+          getStorage().createCard({
             ...card,
             source: "ai",
             spaceId: input.spaceId,
@@ -394,7 +383,7 @@ export const useAppStore = create<AppStore>((set) => ({
     set({ isSavingStudySettings: true });
 
     try {
-      const studySettings = await saveStudySettingsRecord(newCardsLimit);
+      const studySettings = await getStorage().saveStudySettings(newCardsLimit);
       set({ studySettings });
     } finally {
       set({ isSavingStudySettings: false });

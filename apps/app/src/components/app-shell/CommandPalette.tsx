@@ -1,6 +1,5 @@
+import type { CardRecord, SpaceSummary } from "@pupil/core";
 import { useEffect, useRef, useState } from "react";
-import type { CardRecord } from "../../lib/cards";
-import type { SpaceSummary } from "../../lib/spaces";
 import type { AppTabId } from "./AppTitlebar";
 import styles from "./CommandPalette.module.css";
 

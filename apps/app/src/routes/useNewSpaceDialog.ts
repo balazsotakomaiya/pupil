@@ -4,7 +4,7 @@ import { type SyntheticEvent, useCallback, useState } from "react";
 import { toAppError } from "../lib/errors";
 import { notifyError, notifySuccess } from "../lib/notifications";
 import { appQueryKeys } from "../lib/query";
-import { createSpace } from "../lib/spaces";
+import { getStorage } from "../lib/storage";
 
 export function useNewSpaceDialog() {
   const navigate = useNavigate();
@@ -13,7 +13,7 @@ export function useNewSpaceDialog() {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const createSpaceMutation = useMutation({
-    mutationFn: (spaceName: string) => createSpace({ name: spaceName }),
+    mutationFn: (spaceName: string) => getStorage().createSpace({ name: spaceName }),
     onError(mutationError) {
       const appError = toAppError(mutationError, "Failed to create space.");
       setError(appError.message);

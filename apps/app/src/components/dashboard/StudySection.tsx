@@ -1,5 +1,5 @@
+import type { SpaceSummary } from "@pupil/core";
 import { useEffect, useRef, useState } from "react";
-import type { SpaceSummary } from "../../lib/spaces";
 import styles from "./Dashboard.module.css";
 import type { StudySummary } from "./types";
 

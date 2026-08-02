@@ -1,10 +1,10 @@
+import { SPACE_NAME_MAX_LENGTH } from "@pupil/core";
 import { decompress as decompressZstd } from "fzstd";
 import JSZip from "jszip";
 import initSqlJs from "sql.js";
 import sqlWasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
-import { SPACE_NAME_MAX_LENGTH } from "./spaces";
 
 type ParsedAnkiCard = {
   back: string;

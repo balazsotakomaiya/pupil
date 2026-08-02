@@ -9,13 +9,15 @@ This is the repo-level guide for AI agents working anywhere in `pupil`. It cover
 ├── apps/
 │   ├── app/        Desktop product: Tauri + React + SQLite
 │   └── site/       Marketing site: Vite + React
+├── packages/
+│   └── core/       @pupil/core: platform-agnostic domain layer
 ├── docs/           Release notes, specs, and design references
 ├── scripts/        Repo-level automation, including desktop release tooling
 ├── README.md       Product overview and developer entrypoint
 └── BUILDING.md     Cross-platform build prerequisites
 ```
 
-There is no meaningful shared package layer yet. Most implementation work happens inside `apps/app`.
+Most implementation work still happens inside `apps/app`. Logic that must behave identically on every surface belongs in `packages/core` instead.
 
 ## What each app does
 
@@ -35,18 +37,28 @@ Use this app when the task touches studying, cards, imports, AI generation, dash
 
 The marketing site. It is much simpler: a Vite/React static site with no Tauri backend and no local database. Use it only for landing-page, manifesto, or marketing-content tasks.
 
+### `packages/core`
+
+`@pupil/core` — the domain layer shared by every current and future surface: domain types, FSRS scheduling, study-queue rules, shared validation, day/streak helpers, and the `PupilStorage` interface.
+
+It is deliberately platform-free. `packages/core/tsconfig.json` sets `"lib": ["ES2022"]` and `"types": []`, so touching `window`, `localStorage`, or any Node/DOM global fails `typecheck`. Do not add React, Tauri, network, or storage dependencies here.
+
+Consume it through the package root (`import { … } from "@pupil/core"`). Deep imports into `packages/core/src` are not part of the contract. See [`packages/core/README.md`](./packages/core/README.md).
+
 ## Architecture at a glance
 
 ### Desktop app data flow
 
-1. React route/page code calls frontend library helpers in `apps/app/src/lib`.
-2. Those helpers either:
-   - call Tauri commands through `invokeCommand()` in desktop mode, or
-   - fall back to local web storage in browser-only mode.
-3. Rust command handlers in `apps/app/src-tauri/src/commands.rs` validate inputs, open a SQLite connection, and delegate to feature modules.
-4. Feature modules such as `cards.rs`, `spaces.rs`, `analytics.rs`, `imports.rs`, `settings.rs`, and `ai.rs` own the actual SQL and storage behavior.
+1. React route/page code calls `getStorage()` from `apps/app/src/lib/storage` and invokes a method on the returned `PupilStorage`.
+2. `apps/app/src/lib/storage/index.ts` resolves which implementation is active — `createTauriStorage()` in the desktop shell, `createWebStorage()` in a plain browser. This is the only runtime check for where data lives.
+3. `storage/tauri.ts` calls Tauri commands; Rust handlers in `apps/app/src-tauri/src/commands.rs` validate inputs, open a SQLite connection, and delegate to feature modules.
+4. Feature modules such as `cards.rs`, `spaces.rs`, `analytics.rs`, `imports.rs`, `settings.rs`, and `ai/` own the actual SQL and storage behavior.
 
 Keep command handlers thin. Keep SQL close to the feature it serves.
+
+Domain rules used along that path — scheduling, queue construction, validation, day/streak math — come from `@pupil/core` rather than being written inline, so every surface computes them the same way.
+
+**Do not add an `isTauriRuntime()` branch to a data-access path.** That check belongs in `storage/index.ts` alone; anywhere else it re-splits the seam. Adding a persistence operation means adding it to the `PupilStorage` interface in `packages/core` and implementing it in *both* `storage/tauri.ts` and `storage/web.ts` — the compiler enforces that. Platform capabilities that are not persistence (tray, notifications, bootstrap info, file export) legitimately stay outside the interface.
 
 ### Frontend structure
 
@@ -70,7 +82,10 @@ If something is long-lived shell behavior rather than presentational UI, prefer 
 
 - SQLite is the canonical persisted state for the desktop app.
 - AI secrets do not belong in SQLite. They live in Stronghold only.
-- FSRS scheduling stays in TypeScript. Rust persists validated results; it should not recalculate schedules.
+- FSRS scheduling stays in TypeScript, in `@pupil/core`. Rust persists validated results; it should not recalculate schedules.
+- Cross-surface logic belongs in `packages/core`, not `apps/app/src/lib`. If a rule would have to be repeated for a browser, mobile, or sync backend to behave correctly, it is core logic. `apps/app/src/lib` keeps only platform wiring: Tauri IPC, web-storage fallbacks, and app-specific view-model shaping.
+- All persistence goes through `PupilStorage`. Call sites use `getStorage()`; they never import a backend directly and never branch on the runtime.
+- `packages/core` must stay platform-free. No `window`, DOM, React, Tauri, or network access — its `typecheck` is configured to fail if that slips in.
 - Migrations are append-only and wired through the typed `MIGRATIONS` registry in `apps/app/src-tauri/src/migrations.rs`. Each action is explicit SQL or deterministic Rust, declares backup eligibility, and runs transactionally without network or UI dependencies.
 - Query invalidation matters. If a mutation changes cards, spaces, dashboard stats, or study settings, update the matching React Query invalidation path.
 - Tray/dashboard/study counts should share queue rules conceptually. If one count changes, check the others.
@@ -106,6 +121,7 @@ Git hook workflow:
 Test placement conventions:
 
 - Frontend tests live in dedicated `*.test.ts` files, usually next to the library module they cover.
+- Domain-logic tests belong with the module they cover in `packages/core/src`, and run via `bun run test:ts` alongside the app suite.
 - Rust tests live in dedicated files under `apps/app/src-tauri/src/tests/`.
 - Do not embed new tests inside production modules unless there is a strong reason.
 
@@ -130,6 +146,7 @@ Test quality rules:
 
 - UI copy, composition, and interactions: `apps/app/src/components` or `apps/app/src/routes/pages`
 - Query behavior and desktop/web data access: `apps/app/src/lib`
+- Scheduling, queue rules, domain types, shared validation: `packages/core/src`
 - New desktop capabilities or persistence changes: `apps/app/src-tauri/src`
 - Marketing-site content or layout: `apps/site/src`
 - Release automation: `.github/workflows/` and `scripts/desktop-release.mjs`

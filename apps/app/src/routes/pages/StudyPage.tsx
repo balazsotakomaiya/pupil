@@ -1,3 +1,10 @@
+import {
+  computeNewCardsBudget,
+  type DeleteCardInput,
+  type ReviewCardInput,
+  type SuspendCardInput,
+  type UndoReviewCardInput,
+} from "@pupil/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useState } from "react";
@@ -10,7 +17,6 @@ import {
   useSpacesQuery,
   useStudySettingsQuery,
 } from "../../lib/app-queries";
-import { deleteCard, reviewCard, suspendCard, undoReviewCard } from "../../lib/cards";
 import { toAppError } from "../../lib/errors";
 import { notifyError } from "../../lib/notifications";
 import {
@@ -18,7 +24,7 @@ import {
   invalidateAfterCardMutation,
   invalidateAfterReview,
 } from "../../lib/query";
-import { computeNewCardsBudget } from "../../lib/study-settings";
+import { getStorage } from "../../lib/storage";
 
 function StudyPage({ targetSpaceId }: { targetSpaceId?: string }) {
   const queryClient = useQueryClient();
@@ -35,7 +41,7 @@ function StudyPage({ targetSpaceId }: { targetSpaceId?: string }) {
     ? cards.filter((card) => card.spaceId === targetSpaceId)
     : cards;
   const reviewMutation = useMutation({
-    mutationFn: reviewCard,
+    mutationFn: (input: ReviewCardInput) => getStorage().reviewCard(input),
     onSuccess: async () => {
       await invalidateAfterReview(queryClient);
     },
@@ -44,7 +50,7 @@ function StudyPage({ targetSpaceId }: { targetSpaceId?: string }) {
     },
   });
   const undoReviewMutation = useMutation({
-    mutationFn: undoReviewCard,
+    mutationFn: (input: UndoReviewCardInput) => getStorage().undoReviewCard(input),
     onSuccess: async () => {
       await invalidateAfterReview(queryClient);
     },
@@ -53,7 +59,7 @@ function StudyPage({ targetSpaceId }: { targetSpaceId?: string }) {
     },
   });
   const deleteMutation = useMutation({
-    mutationFn: deleteCard,
+    mutationFn: (input: DeleteCardInput) => getStorage().deleteCard(input),
     onSuccess: async () => {
       await invalidateAfterCardDeletion(queryClient);
     },
@@ -62,7 +68,7 @@ function StudyPage({ targetSpaceId }: { targetSpaceId?: string }) {
     },
   });
   const suspendMutation = useMutation({
-    mutationFn: suspendCard,
+    mutationFn: (input: SuspendCardInput) => getStorage().suspendCard(input),
     onSuccess: async () => {
       await invalidateAfterCardMutation(queryClient);
     },

@@ -1,10 +1,8 @@
+import type { CardRecord, SpaceSummary } from "@pupil/core";
+import { buildAdmittedSet, buildDueQueue, previewCardScheduling } from "@pupil/core";
 import { useEffect, useMemo, useState } from "react";
 import type { ExplainCardResult } from "../../lib/ai-explain";
 import type { ExplainCardPayload } from "../../lib/ai-explanation";
-import type { CardRecord } from "../../lib/cards";
-import { previewCardScheduling } from "../../lib/fsrs";
-import type { SpaceSummary } from "../../lib/spaces";
-import { buildAdmittedSet, buildDueQueue } from "../../lib/study-queue";
 import styles from "./Study.module.css";
 import { StudyActions } from "./StudyActions";
 import { StudyBar } from "./StudyBar";
