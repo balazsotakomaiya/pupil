@@ -1,3 +1,4 @@
+import type { StudySettings } from "@pupil/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -18,7 +19,6 @@ import {
   exportReviewLogsCsv,
   getSettingsDataSummary,
 } from "../../lib/data-actions";
-import type { StudySettings } from "../../lib/study-settings";
 import {
   ArrowRightIcon,
   ChevronRightIcon,

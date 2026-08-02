@@ -1,6 +1,6 @@
+import { SPACE_NAME_MAX_LENGTH } from "@pupil/core";
 import type { SyntheticEvent } from "react";
 import { useState } from "react";
-import { SPACE_NAME_MAX_LENGTH } from "../../lib/spaces";
 import { CloseIcon } from "../icons/CloseIcon";
 import { Modal } from "../modal";
 

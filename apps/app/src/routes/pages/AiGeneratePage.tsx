@@ -4,10 +4,10 @@ import { useState } from "react";
 import { AiGenerateScreen } from "../../components/ai-generate";
 import { ScreenErrorBoundary } from "../../components/ErrorBoundary";
 import { useSpacesQuery } from "../../lib/app-queries";
-import { createCard } from "../../lib/cards";
+
 import { notifySuccess } from "../../lib/notifications";
 import { appQueryKeys, invalidateAllAppData } from "../../lib/query";
-import { createSpace } from "../../lib/spaces";
+import { getStorage } from "../../lib/storage";
 import { SettingsPage } from "./SettingsPage";
 
 function AiGeneratePage({ targetSpaceId }: { targetSpaceId?: string }) {
@@ -19,7 +19,7 @@ function AiGeneratePage({ targetSpaceId }: { targetSpaceId?: string }) {
     : null;
   const [showSettings, setShowSettings] = useState(false);
   const createSpaceMutation = useMutation({
-    mutationFn: async (name: string) => createSpace({ name }),
+    mutationFn: async (name: string) => getStorage().createSpace({ name }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: appQueryKeys.spaces });
     },
@@ -31,7 +31,7 @@ function AiGeneratePage({ targetSpaceId }: { targetSpaceId?: string }) {
     }) => {
       await Promise.all(
         input.cards.map((card) =>
-          createCard({
+          getStorage().createCard({
             ...card,
             source: "ai",
             spaceId: input.spaceId,

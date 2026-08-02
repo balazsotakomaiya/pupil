@@ -1,20 +1,5 @@
 import { createEmptyCard, type Card as FsrsCard, fsrs } from "ts-fsrs";
-import type { CardRecord } from "./cards";
-
-export type FsrsReviewGrade = 1 | 2 | 3 | 4;
-
-export type CardFsrsFields = {
-  difficulty: number;
-  due: number;
-  elapsedDays: number;
-  lapses: number;
-  lastReview: number | null;
-  learningSteps: number;
-  reps: number;
-  scheduledDays: number;
-  stability: number;
-  state: number;
-};
+import type { CardFsrsFields, FsrsReviewGrade } from "./types";
 
 export type FsrsReviewLog = {
   due: number;
@@ -33,6 +18,14 @@ export type FsrsPreview = {
 
 export type FsrsScheduleResult = Omit<FsrsPreview, "grade" | "intervalLabel">;
 
+type FsrsLog = {
+  due: Date;
+  elapsed_days: number;
+  review: Date;
+  scheduled_days: number;
+  state: number;
+};
+
 const scheduler = fsrs();
 const GRADES: FsrsReviewGrade[] = [1, 2, 3, 4];
 
@@ -40,7 +33,10 @@ export function createNewCardFsrsFields(now = Date.now()): CardFsrsFields {
   return mapFsrsCard(createEmptyCard(new Date(now)));
 }
 
-export function previewCardScheduling(card: CardRecord, reviewedAt = Date.now()): FsrsPreview[] {
+export function previewCardScheduling(
+  card: CardFsrsFields,
+  reviewedAt = Date.now(),
+): FsrsPreview[] {
   return GRADES.map((grade) => {
     const next = scheduler.next(toFsrsCard(card), new Date(reviewedAt), grade);
 
@@ -54,7 +50,7 @@ export function previewCardScheduling(card: CardRecord, reviewedAt = Date.now())
 }
 
 export function scheduleCard(
-  card: CardRecord,
+  card: CardFsrsFields,
   grade: FsrsReviewGrade,
   reviewedAt = Date.now(),
 ): FsrsScheduleResult {
@@ -66,7 +62,7 @@ export function scheduleCard(
   };
 }
 
-function toFsrsCard(card: CardRecord): FsrsCard {
+function toFsrsCard(card: CardFsrsFields): FsrsCard {
   return {
     difficulty: card.difficulty,
     due: new Date(card.due),
@@ -96,17 +92,7 @@ function mapFsrsCard(card: FsrsCard): CardFsrsFields {
   };
 }
 
-function mapReviewLog(
-  log: Parameters<typeof scheduler.next>[0] extends never
-    ? never
-    : {
-        due: Date;
-        elapsed_days: number;
-        review: Date;
-        scheduled_days: number;
-        state: number;
-      },
-) {
+function mapReviewLog(log: FsrsLog): FsrsReviewLog {
   return {
     due: log.due.getTime(),
     elapsedDays: log.elapsed_days,
@@ -116,7 +102,7 @@ function mapReviewLog(
   };
 }
 
-function formatIntervalLabel(deltaMs: number) {
+function formatIntervalLabel(deltaMs: number): string {
   const totalMinutes = Math.max(1, Math.round(deltaMs / (60 * 1000)));
 
   if (totalMinutes < 60) {
@@ -136,5 +122,6 @@ function formatIntervalLabel(deltaMs: number) {
   }
 
   const totalMonths = Math.max(1, Math.round(totalDays / 30));
+
   return `${totalMonths}mo`;
 }

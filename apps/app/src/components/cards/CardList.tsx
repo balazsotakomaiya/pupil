@@ -1,5 +1,5 @@
+import type { CardRecord } from "@pupil/core";
 import { useState } from "react";
-import type { CardRecord } from "../../lib/cards";
 import { ChevronRightIcon } from "../icons/ChevronRightIcon";
 import { DeleteIcon } from "../icons/DeleteIcon";
 import { EditIcon } from "../icons/EditIcon";

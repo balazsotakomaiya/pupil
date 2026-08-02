@@ -1,3 +1,4 @@
+import type { SpaceSummary } from "@pupil/core";
 import { useEffect, useState } from "react";
 import { DEFAULT_AI_BASE_URL, DEFAULT_AI_MODEL } from "../../lib/ai-providers";
 import {
@@ -6,7 +7,6 @@ import {
   hasConfiguredAiKey,
   loadAiSettings,
 } from "../../lib/ai-settings";
-import type { SpaceSummary } from "../../lib/spaces";
 import styles from "./AiGenerate.module.css";
 import { AiGenerateError } from "./AiGenerateError";
 import { AiGenerateForm, NEW_SPACE_OPTION_ID } from "./AiGenerateForm";

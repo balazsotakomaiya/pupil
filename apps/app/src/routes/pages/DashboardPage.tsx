@@ -1,3 +1,4 @@
+import { computeNewCardsBudget, resolveStudyQueueSnapshot } from "@pupil/core";
 import { useNavigate } from "@tanstack/react-router";
 import { Dashboard } from "../../components/dashboard";
 import { ScreenErrorBoundary } from "../../components/ErrorBoundary";
@@ -29,8 +30,6 @@ import {
   FALLBACK_STATS,
   FALLBACK_STUDY_SUMMARY,
 } from "../../lib/seed-data";
-import { resolveStudyQueueSnapshot } from "../../lib/study-queue";
-import { computeNewCardsBudget } from "../../lib/study-settings";
 import { useShellActions } from "../shell-actions";
 
 export function DashboardPage() {

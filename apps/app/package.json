@@ -15,6 +15,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@pupil/core": "workspace:*",
     "@tanstack/react-query": "^5.99.2",
     "@tanstack/react-router": "^1.168.23",
     "@tauri-apps/api": "^2.4.0",

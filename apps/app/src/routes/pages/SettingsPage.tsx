@@ -9,7 +9,7 @@ import { toAppError } from "../../lib/errors";
 import { notifyError, notifySuccess } from "../../lib/notifications";
 import { resetOnboarding } from "../../lib/onboarding";
 import { appQueryKeys, invalidateAllAppData } from "../../lib/query";
-import { saveStudySettings } from "../../lib/study-settings";
+import { getStorage } from "../../lib/storage";
 
 export function SettingsPage({
   fromAi = false,
@@ -24,7 +24,7 @@ export function SettingsPage({
   const spaces = useSpacesQuery().data ?? [];
   const studySettings = useStudySettingsQuery().data ?? { newCardsLimit: null, newCardsToday: 0 };
   const saveStudySettingsMutation = useMutation({
-    mutationFn: saveStudySettings,
+    mutationFn: (newCardsLimit: number | null) => getStorage().saveStudySettings(newCardsLimit),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: appQueryKeys.studyQueueSnapshot }),
