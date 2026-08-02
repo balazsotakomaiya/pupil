@@ -137,6 +137,14 @@ bun run lint:rust
 bun run format:check
 ```
 
+## Contributing
+
+Setup, conventions, and the check matrix to run before opening a pull request are in [CONTRIBUTING.md](CONTRIBUTING.md). Participation is governed by our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+Found a security issue? Please report it privately — see [SECURITY.md](SECURITY.md).
+
+Release notes live in [CHANGELOG.md](CHANGELOG.md).
+
 ## License
 
 Pupil is available under the MIT License. You can use, modify, distribute, and sell software based on it, as long as you keep the copyright notice and license text. See [LICENSE](LICENSE).
