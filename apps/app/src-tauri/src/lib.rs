@@ -33,8 +33,9 @@ use crate::commands::{
     export_review_logs_csv, generate_cards, get_ai_settings, get_bootstrap_state,
     get_dashboard_stats, get_settings_data_summary, get_study_queue_snapshot, get_study_settings,
     import_anki_cards, list_cards, list_recent_activity, list_space_stats, list_spaces,
-    refresh_tray_status, rename_space, reset_all_data, review_card, save_ai_settings,
-    save_study_settings, suspend_card, test_ai_provider_connection, undo_review_card, update_card,
+    log_frontend_event, refresh_tray_status, rename_space, reset_all_data, review_card,
+    save_ai_settings, save_study_settings, suspend_card, test_ai_provider_connection,
+    undo_review_card, update_card,
 };
 #[cfg(debug_assertions)]
 use crate::constants::{
@@ -98,7 +99,7 @@ fn init_logging(app: &tauri::AppHandle) -> Result<LoggingState, AppError> {
 /// Builds and runs the Tauri application with all plugins, commands, logging,
 /// and database bootstrap wired in one place.
 pub fn run() {
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "mcp-bridge")]
     let mcp_plugin = tauri_plugin_mcp_bridge::Builder::new()
         .bind_address("127.0.0.1")
         .build();
@@ -107,7 +108,7 @@ pub fn run() {
         .manage(StrongholdState::default())
         .menu(build_app_menu);
 
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "mcp-bridge")]
     let builder = builder.plugin(mcp_plugin);
 
     #[cfg(debug_assertions)]
@@ -125,6 +126,12 @@ pub fn run() {
     builder
         .setup(|app| {
             app.manage(init_logging(app.handle())?);
+
+            // Registered at runtime rather than from `capabilities/` so the
+            // grant cannot reach a release bundle even by accident.
+            #[cfg(feature = "mcp-bridge")]
+            app.handle()
+                .add_capability(include_str!("../dev-capabilities/mcp-bridge.json"))?;
 
             #[cfg(desktop)]
             app.handle()
@@ -172,7 +179,8 @@ pub fn run() {
             reset_all_data,
             refresh_tray_status,
             get_study_settings,
-            save_study_settings
+            save_study_settings,
+            log_frontend_event
         ])
         .run(tauri::generate_context!())
         .expect("error while running pupil app");

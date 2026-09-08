@@ -87,6 +87,27 @@ export class NetworkError extends InfraError implements Reportable {
   }
 }
 
+export class TimeoutError extends InfraError implements Reportable {
+  readonly code = "TIMEOUT" as const;
+  readonly reportable = true as const;
+
+  constructor(
+    message: string,
+    readonly timeoutMs: number,
+  ) {
+    super(message);
+  }
+
+  toReport(): ReportPayload {
+    return {
+      code: this.code,
+      context: { timeoutMs: this.timeoutMs },
+      message: this.message,
+      severity: this.severity,
+    };
+  }
+}
+
 export class AiProviderError extends InfraError implements Reportable {
   readonly code = "AI_PROVIDER" as const;
   readonly reportable = true as const;

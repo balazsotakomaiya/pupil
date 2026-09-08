@@ -15,9 +15,19 @@ pub(crate) const AI_SETTING_EXPLAIN_ENABLED_KEY: &str = "ai.explain_enabled";
 pub(crate) const AI_SECRET_SERVICE_NAME: &str = "com.pupil.desktop.ai";
 #[cfg(target_os = "macos")]
 pub(crate) const AI_SECRET_ACCOUNT_NAME: &str = "api_key";
+pub(crate) const FRONTEND_LOG_MAX_MESSAGE_CHARS: usize = 2_000;
+pub(crate) const FRONTEND_LOG_MAX_CONTEXT_CHARS: usize = 4_000;
 pub(crate) const RECENT_ACTIVITY_SESSION_GAP_MS: i64 = 30 * 60 * 1000;
 pub(crate) const RECENT_ACTIVITY_FETCH_MULTIPLIER: i64 = 50;
 pub(crate) const MIN_RECENT_ACTIVITY_FETCH_LIMIT: i64 = 200;
+/// Caps how long a single provider request may hang before the user gets an
+/// error instead of an indefinite spinner. Generation over a large topic is the
+/// slowest legitimate call, so this is deliberately generous.
+pub(crate) const AI_REQUEST_TIMEOUT_SECS: u64 = 90;
+pub(crate) const AI_CONNECT_TIMEOUT_SECS: u64 = 15;
+/// Total wall-clock budget for the explain retry loop. Without it, three
+/// sequential attempts could each burn the full request timeout.
+pub(crate) const AI_EXPLAIN_RETRY_BUDGET_SECS: u64 = 150;
 pub(crate) const DEFAULT_AI_BASE_URL: &str = "https://api.openai.com/v1";
 pub(crate) const DEFAULT_AI_MODEL: &str = "gpt-5.4";
 pub(crate) const DEFAULT_AI_MAX_TOKENS: &str = "4096";

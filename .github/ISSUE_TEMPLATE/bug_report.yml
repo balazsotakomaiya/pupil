@@ -1,0 +1,67 @@
+name: Bug report
+description: Something in Pupil is not working the way it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file this. Please do not report security
+        vulnerabilities here — see [SECURITY.md](https://github.com/balazsotakomaiya/pupil/blob/main/SECURITY.md).
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you get instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Pupil version
+      description: Shown in Settings → About.
+      placeholder: v1.0.0-alpha.9
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Windows
+        - Linux
+    validations:
+      required: true
+
+  - type: textarea
+    id: area
+    attributes:
+      label: Which part of the app?
+      description: Studying, card authoring, Anki import, AI generation, settings, tray, onboarding — whatever fits.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: |
+        Pupil writes a rotating log inside its app data directory:
+        macOS `~/Library/Application Support/com.pupil.desktop/logs/`,
+        Windows `%APPDATA%\com.pupil.desktop\logs\`,
+        Linux `~/.local/share/com.pupil.desktop/logs/`.
+        Please review it for anything private before pasting.
+      render: shell

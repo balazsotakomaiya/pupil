@@ -18,7 +18,9 @@ use crate::cards::{
     review_card_row, save_card_explanation, suspend_card_row, undo_review_card_row,
     update_card_row,
 };
-use crate::constants::AI_SYSTEM_PROMPT;
+use crate::constants::{
+    AI_SYSTEM_PROMPT, FRONTEND_LOG_MAX_CONTEXT_CHARS, FRONTEND_LOG_MAX_MESSAGE_CHARS,
+};
 use crate::error::{AppError, AppResult};
 use crate::imports::import_anki_cards_row;
 use crate::migration_runner::{
@@ -39,12 +41,12 @@ use crate::tray;
 use crate::types::{
     AiConnectionTestResult, AiSettingsState, BootstrapState, CardSummary, CreateCardInput,
     DashboardStats, ExplainCardInput, ExplainCardPayload, ExplainCardResult, ExportDataResult,
-    GenerateCardsInput, GeneratedCardPayload, ImportAnkiInput, ImportAnkiResult,
+    FrontendLogInput, GenerateCardsInput, GeneratedCardPayload, ImportAnkiInput, ImportAnkiResult,
     RecentActivityEntry, ResolvedAiSettings, ReviewCardInput, SaveAiSettingsInput,
     SettingsDataSummary, SpaceStats, SpaceSummary, StudyQueueSnapshot, StudySettingsState,
     SuspendCardInput, UndoReviewCardInput, UpdateCardInput,
 };
-use crate::util::now_ms;
+use crate::util::{now_ms, truncate_chars};
 
 async fn run_blocking<T: Send + 'static>(
     operation: impl FnOnce() -> AppResult<T> + Send + 'static,
@@ -520,6 +522,25 @@ pub(crate) fn reset_all_data(app: AppHandle) -> Result<(), AppError> {
 #[tracing::instrument(skip(app))]
 pub(crate) fn refresh_tray_status(app: AppHandle) -> Result<(), AppError> {
     tray::refresh_tray(&app)
+}
+
+/// Records a renderer log line into the backend's rotating log file. Levels
+/// other than `error`/`warn` fall through to `info` rather than being rejected,
+/// because dropping a diagnostic is worse than filing it slightly too low.
+#[tauri::command]
+pub(crate) fn log_frontend_event(input: FrontendLogInput) {
+    let message = truncate_chars(&input.message, FRONTEND_LOG_MAX_MESSAGE_CHARS);
+    let context = input
+        .context
+        .as_deref()
+        .map(|value| truncate_chars(value, FRONTEND_LOG_MAX_CONTEXT_CHARS))
+        .unwrap_or_default();
+
+    match input.level.as_str() {
+        "error" => tracing::error!(target: "frontend", context = %context, "{message}"),
+        "warn" => tracing::warn!(target: "frontend", context = %context, "{message}"),
+        _ => tracing::info!(target: "frontend", context = %context, "{message}"),
+    }
 }
 
 #[tauri::command]

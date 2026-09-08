@@ -1,3 +1,4 @@
+import { renderCardMarkup } from "../../lib/card-markup";
 import styles from "./Study.module.css";
 import type { StudyCardRecord } from "./types";
 
@@ -64,19 +65,5 @@ export function StudyReviewCard({
 }
 
 function renderStudyHtml(value: string): string {
-  return escapeHtml(value)
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/`(.+?)`/g, "<code>$1</code>")
-    .replace(/_____/g, '<span class="session-cloze-blank"></span>')
-    .replace(/\n/g, "<br>");
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+  return renderCardMarkup(value, "session-cloze-blank");
 }
