@@ -24,6 +24,8 @@ type CardsScreenProps = {
   actionableDueCount: number;
   cards: CardRecord[];
   isMutating: boolean;
+  newCardRequested?: boolean;
+  onNewCardRequestHandled?: () => void;
   onCreateCard: (input: {
     back: string;
     front: string;
@@ -54,6 +56,8 @@ export function CardsScreen({
   actionableDueCount,
   cards,
   isMutating,
+  newCardRequested,
+  onNewCardRequestHandled,
   onCreateCard,
   onDeleteCard,
   onOpenCreateDialog,
@@ -106,6 +110,18 @@ export function CardsScreen({
       setIsEditorOpen(false);
     }
   }, [cards, editingCardId, spaces]);
+
+  useEffect(() => {
+    if (!newCardRequested || spaces.length === 0) {
+      return;
+    }
+
+    if (!isEditorOpen) {
+      resetDraft(spaces, setDraft, setEditingCardId, setError);
+      setIsEditorOpen(true);
+    }
+    onNewCardRequestHandled?.();
+  }, [isEditorOpen, newCardRequested, onNewCardRequestHandled, spaces]);
 
   const filteredCards = sortCardsForList(
     cards.filter((card) => {

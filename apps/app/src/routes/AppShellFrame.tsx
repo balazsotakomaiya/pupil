@@ -10,6 +10,7 @@ type AppShellFrameProps = {
   globalStreak: number | null;
   onOpenCommandPalette: () => void;
   onOpenCreateDialog: () => void;
+  onOpenNewCard?: () => void;
   onSelectTab: (tabId: AppTab["id"]) => void;
   pathname: string;
   tabs: AppTab[];
@@ -21,6 +22,7 @@ export function AppShellFrame({
   globalStreak,
   onOpenCommandPalette,
   onOpenCreateDialog,
+  onOpenNewCard,
   onSelectTab,
   pathname,
   tabs,
@@ -35,6 +37,7 @@ export function AppShellFrame({
             activeTab={activeTab.id}
             globalStreak={activeTab.id === "dashboard" ? globalStreak : null}
             onOpenCreateDialog={onOpenCreateDialog}
+            onOpenNewCard={onOpenNewCard}
             onOpenPalette={onOpenCommandPalette}
             onSelectTab={onSelectTab}
             tabs={tabs}

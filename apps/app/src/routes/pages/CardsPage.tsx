@@ -23,7 +23,7 @@ import { useShellActions } from "../shell-actions";
 export function CardsPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { openCreateDialog } = useShellActions();
+  const { openCreateDialog, newCardRequested, consumeNewCardRequest } = useShellActions();
   const cards = useCardsQuery().data ?? [];
   const spaces = useSpacesQuery().data ?? [];
   const studyQueueSnapshotQuery = useStudyQueueSnapshotQuery();
@@ -93,6 +93,8 @@ export function CardsPage() {
           deleteCardMutation.isPending ||
           suspendCardMutation.isPending
         }
+        newCardRequested={newCardRequested}
+        onNewCardRequestHandled={consumeNewCardRequest}
         onCreateCard={async (input) => {
           await createCardMutation.mutateAsync(input);
         }}

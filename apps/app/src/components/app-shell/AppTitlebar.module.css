@@ -90,6 +90,7 @@
 }
 
 .titlebarRight {
+  flex-shrink: 0;
   gap: var(--space-1-5);
   -webkit-app-region: no-drag;
 }
@@ -172,7 +173,8 @@
 
 .titlebarBtnLabel {
   height: 30px;
-  padding: 0 11px;
+  padding: 0 var(--space-3);
+  white-space: nowrap;
   font-size: 12px;
   font-weight: 500;
 }
@@ -189,7 +191,7 @@
   color: var(--text-primary);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 800px) {
   .titlebar {
     height: auto;
     align-items: flex-start;
