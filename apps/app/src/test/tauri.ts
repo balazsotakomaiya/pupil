@@ -58,11 +58,7 @@ export function resetTauriTestState() {
 }
 
 export async function resetClientStores() {
-  const [{ useAppStore }, { useNotificationStore }] = await Promise.all([
-    import("../lib/app-store"),
-    import("../lib/notifications"),
-  ]);
-  useAppStore.setState(useAppStore.getInitialState(), true);
+  const { useNotificationStore } = await import("../lib/notifications");
   useNotificationStore.setState(useNotificationStore.getInitialState(), true);
 }
 
