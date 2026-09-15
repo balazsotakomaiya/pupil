@@ -3,7 +3,7 @@ import { afterEach, beforeEach, vi } from "vitest";
 
 type InvokeArgs = [command: string, args?: Record<string, unknown>];
 
-export const invokeMock = vi.fn<(...args: InvokeArgs) => Promise<unknown>>();
+export const invokeMock = vi.fn<(...args: InvokeArgs) => Promise<unknown>>(async () => undefined);
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: invokeMock }));
 
