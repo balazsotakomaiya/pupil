@@ -4,10 +4,11 @@ use tauri::{AppHandle, Manager};
 
 use crate::ai::{
     build_explain_prose_fallback_prompt, build_explain_repair_prompt, build_generate_cards_prompt,
-    execute_ai_completion, execute_explain_completion_with_retries, load_ai_settings_state,
-    load_resolved_ai_settings, normalize_ai_settings_input, normalize_generate_cards_input,
-    parse_explain_card_response, parse_generated_cards_response, resolve_ai_settings_for_test,
-    save_ai_settings_rows,
+    execute_ai_completion, execute_explain_completion_with_retries, fetch_model_catalog,
+    load_ai_settings_state, load_resolved_ai_settings, normalize_ai_settings_input,
+    normalize_generate_cards_input, parse_explain_card_response, parse_generated_cards_response,
+    resolve_ai_settings_for_test, resolve_model_catalog_credentials, save_ai_settings_rows,
+    AiModelCatalog, ListAiModelsInput,
 };
 use crate::analytics::{list_space_stats_rows, load_dashboard_stats};
 use crate::app::{
@@ -259,6 +260,20 @@ pub(crate) async fn save_ai_settings(
         save_ai_settings_rows(&app, &mut connection, normalized)
     })
     .await
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(app, input))]
+pub(crate) async fn list_ai_models(
+    app: AppHandle,
+    input: ListAiModelsInput,
+) -> AppResult<AiModelCatalog> {
+    let (base_url, api_key) = run_blocking(move || {
+        let connection = open_app_connection(&app)?;
+        resolve_model_catalog_credentials(&app, &connection, input)
+    })
+    .await?;
+    fetch_model_catalog(&base_url, api_key.as_deref()).await
 }
 
 #[tauri::command]

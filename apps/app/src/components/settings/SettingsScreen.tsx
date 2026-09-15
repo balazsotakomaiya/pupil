@@ -1,11 +1,11 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DEFAULT_AI_BASE_URL,
   DEFAULT_AI_MODEL,
   getProviderForBaseUrl,
   getProviderForKey,
-  getRecommendedModelsForBaseUrl,
+  supportsCustomTemperature,
 } from "../../lib/ai-providers";
 import {
   describeAiSettingsError,
@@ -33,6 +33,7 @@ import styles from "./Settings.module.css";
 import { SettingsAboutCard } from "./SettingsAboutCard";
 import { SettingsConnectionStatus } from "./SettingsConnectionStatus";
 import { SettingsDataCard } from "./SettingsDataCard";
+import { SettingsModelPicker } from "./SettingsModelPicker";
 import { SettingsNav, type SettingsSectionId } from "./SettingsNav";
 import { SettingsShortcutsGrid } from "./SettingsShortcutsGrid";
 import { StudySettingsCard } from "./StudySettingsCard";
@@ -94,12 +95,13 @@ export function SettingsScreen({
   const autoSaveTimerRef = useRef<number | null>(null);
   // Updated on every render so the timeout callback always uses latest state.
   const handleAutoSave = useRef<() => void>(() => {});
-  const [activeSection, setActiveSection] = useState<SettingsSectionId>("appearance");
+  const [activeSection, setActiveSection] = useState<SettingsSectionId>("general");
   const [apiKey, setApiKey] = useState("");
   const [apiKeyEdited, setApiKeyEdited] = useState(false);
   const [hasStoredApiKey, setHasStoredApiKey] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [baseUrl, setBaseUrl] = useState(DEFAULT_AI_BASE_URL);
+  const [loadedBaseUrl, setLoadedBaseUrl] = useState<string | null>(null);
   const [model, setModel] = useState(DEFAULT_AI_MODEL);
   const [maxTokens, setMaxTokens] = useState("4096");
   const [temperature, setTemperature] = useState("0.7");
@@ -147,25 +149,6 @@ export function SettingsScreen({
     label: "Ready",
   });
 
-  const appearanceRef = useRef<HTMLElement | null>(null);
-  const studyRef = useRef<HTMLElement | null>(null);
-  const aiRef = useRef<HTMLElement | null>(null);
-  const dataRef = useRef<HTMLElement | null>(null);
-  const shortcutsRef = useRef<HTMLElement | null>(null);
-  const aboutRef = useRef<HTMLElement | null>(null);
-
-  const sectionRefs = useMemo(
-    () => ({
-      appearance: appearanceRef,
-      about: aboutRef,
-      ai: aiRef,
-      data: dataRef,
-      shortcuts: shortcutsRef,
-      study: studyRef,
-    }),
-    [],
-  );
-
   useEffect(() => {
     let cancelled = false;
 
@@ -178,6 +161,7 @@ export function SettingsScreen({
         }
 
         setHasStoredApiKey(settings.hasApiKey);
+        setLoadedBaseUrl(settings.baseUrl);
         setSavedSettings({
           baseUrl: settings.baseUrl,
           explainEnabled: settings.explainEnabled,
@@ -200,8 +184,8 @@ export function SettingsScreen({
         if (!_connectionStatusCache) {
           setConnectionStatus({
             detail: settings.hasApiKey
-              ? "API key stored safely on this device. Click Save after editing to persist changes."
-              : "No saved API key yet. Click Save after editing to persist changes.",
+              ? "API key saved on this device."
+              : "Add an API key to connect your provider.",
             kind: "idle",
             label: "Not tested",
           });
@@ -252,29 +236,6 @@ export function SettingsScreen({
   }, []);
 
   useEffect(() => {
-    function updateActiveSection() {
-      const entries = (
-        Object.entries(sectionRefs) as Array<[SettingsSectionId, RefObject<HTMLElement | null>]>
-      )
-        .map(([id, ref]) => ({
-          id,
-          top: ref.current?.getBoundingClientRect().top ?? Number.POSITIVE_INFINITY,
-        }))
-        .filter((entry) => Number.isFinite(entry.top))
-        .sort((left, right) => Math.abs(left.top - 140) - Math.abs(right.top - 140));
-
-      if (entries[0]) {
-        setActiveSection(entries[0].id);
-      }
-    }
-
-    updateActiveSection();
-    window.addEventListener("scroll", updateActiveSection, { passive: true });
-
-    return () => window.removeEventListener("scroll", updateActiveSection);
-  }, [sectionRefs]);
-
-  useEffect(() => {
     if (copyState !== "copied") {
       return;
     }
@@ -304,9 +265,15 @@ export function SettingsScreen({
   // Updated on every render so the timeout always calls the latest closure.
   handleAutoSave.current = () => {
     if (!apiKeyEdited) {
-      void persistSettings({ announceSaved: true });
+      void persistSettings({ announceSaved: true }).catch(() => {});
     }
   };
+
+  function markSettingsEdited() {
+    hasUserEditedSettings.current = true;
+    _connectionStatusCache = null;
+    setConnectionStatus({ kind: "idle", label: "Not tested" });
+  }
 
   function scheduleAutoSave(field: "baseUrl" | "model" | "maxTokens" | "temperature") {
     setLastSavedField(field);
@@ -321,7 +288,7 @@ export function SettingsScreen({
 
   function handleSelectSection(sectionId: SettingsSectionId) {
     setActiveSection(sectionId);
-    sectionRefs[sectionId].current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.scrollTo(0, 0);
   }
 
   async function refreshDataSummary() {
@@ -540,8 +507,8 @@ export function SettingsScreen({
   }
 
   const apiKeyHint = hasStoredApiKey
-    ? "Leave the field empty to keep the stored key, or enter a new one to replace it."
-    : "API key will be stored safely on this device. Add one to enable live generation.";
+    ? "Leave empty to keep your saved key."
+    : "Your key is saved securely on this device.";
   const hasUnsavedChanges =
     apiKeyEdited ||
     hasStoredApiKey !== savedSettings.hasApiKey ||
@@ -557,129 +524,174 @@ export function SettingsScreen({
     <div className={`page ${styles.settingsPage}`}>
       <section className={styles.settingsHeader}>
         <h1 className={styles.settingsTitle}>Settings</h1>
-        <p className={styles.settingsDesc}>
-          AI provider configuration, data management, and app preferences.
-        </p>
+        <p className={styles.settingsDesc}>Make Pupil yours.</p>
       </section>
 
       <SettingsNav activeSection={activeSection} onSelect={handleSelectSection} />
 
-      <div className="ruler-divider" />
-
-      <section className={styles.settingsSection} id="appearance" ref={appearanceRef}>
-        <div className={styles.settingsSectionHead}>
-          <div className={styles.settingsSectionTitle}>Appearance</div>
-          <div className={styles.settingsSectionDesc}>
-            Choose the surface that feels most comfortable for your study session.
+      <div
+        role="tabpanel"
+        id="settings-panel-general"
+        aria-labelledby="settings-tab-general"
+        hidden={activeSection !== "general"}
+      >
+        <section className={styles.settingsSection} id="appearance">
+          <div className={styles.settingsSectionHead}>
+            <div className={styles.settingsSectionTitle}>Appearance</div>
+            <div className={styles.settingsSectionDesc}>Set the tone for your study sessions.</div>
           </div>
-        </div>
 
-        <AppearanceSettingsCard />
-      </section>
+          <AppearanceSettingsCard />
+        </section>
 
-      <div className="ruler-divider" />
+        <div className="ruler-divider" />
 
-      <section className={styles.settingsSection} id="study" ref={studyRef}>
-        <div className={styles.settingsSectionHead}>
-          <div className={styles.settingsSectionTitle}>New Cards Per Day</div>
-          <div className={styles.settingsSectionDesc}>
-            Control how many unseen cards are introduced each day. Reviews of cards already in your
-            learning queue always appear when due — this limit only gates new material.
-          </div>
-        </div>
-
-        <StudySettingsCard
-          isSaving={isSavingStudySettings}
-          onSave={handleSaveStudySettings}
-          settings={studySettings}
-        />
-      </section>
-
-      <div className="ruler-divider" />
-
-      <section className={styles.settingsSection} id="ai" ref={aiRef}>
-        <div className={styles.settingsSectionHead}>
-          <div className={styles.settingsSectionTitle}>AI Provider</div>
-          <div className={styles.settingsSectionDesc}>
-            Pupil stores the API key safely on this device and keeps the non-secret provider
-            settings in the local app database. Generation and provider tests now use these saved
-            values directly.
-          </div>
-        </div>
-
-        <div className={styles.settingsFieldGroup}>
-          <div className={styles.settingsField}>
-            <label className={styles.settingsFieldLabel} htmlFor="settings-base-url">
-              Base URL
-              {recentlySaved && lastSavedField === "baseUrl" && (
-                <span className={styles.settingsAutosaveBadge}>Saved</span>
-              )}
-            </label>
-            <input
-              className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
-              disabled={isSettingsBusy}
-              id="settings-base-url"
-              onChange={(event) => {
-                hasUserEditedSettings.current = true;
-                const value = event.target.value;
-                setBaseUrl(value);
-                const detectedModel = detectModelFromUrl(value);
-                if (detectedModel) setModel(detectedModel);
-                scheduleAutoSave("baseUrl");
-              }}
-              placeholder={DEFAULT_AI_BASE_URL}
-              type="text"
-              value={baseUrl}
-            />
-            <div className={styles.settingsFieldHint}>
-              OpenAI-compatible endpoint. Change this for Anthropic, Ollama, or a self-hosted proxy.
+        <section className={styles.settingsSection} id="study">
+          <div className={styles.settingsSectionHead}>
+            <div className={styles.settingsSectionTitle}>New Cards Per Day</div>
+            <div className={styles.settingsSectionDesc}>
+              Set your daily pace. Due reviews always stay in the queue.
             </div>
           </div>
 
-          <div className={styles.settingsField}>
-            <label className={styles.settingsFieldLabel} htmlFor="settings-api-key">
-              API Key
-              <span className={styles.settingsLabelBadge}>Stored safely</span>
-            </label>
-            <div className={styles.settingsKeyInputWrap}>
-              <div className={styles.settingsKeyFieldWrap}>
-                <input
-                  className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
-                  disabled={isSettingsBusy}
-                  id="settings-api-key"
-                  onChange={(event) => {
-                    hasUserEditedSettings.current = true;
-                    const value = event.target.value;
-                    setApiKey(value);
-                    setApiKeyEdited(true);
-                    const provider = detectProviderFromKey(value);
-                    if (provider) {
-                      setBaseUrl(provider.baseUrl);
-                      setModel(provider.model);
-                    }
-                  }}
-                  placeholder={hasStoredApiKey ? "Stored — enter to replace" : "sk-..."}
-                  type={showApiKey ? "text" : "password"}
-                  value={apiKey}
-                />
-                <button
-                  aria-label={showApiKey ? "Hide API key" : "Show API key"}
-                  className={styles.settingsKeyReveal}
-                  disabled={isSettingsBusy}
-                  onClick={() => setShowApiKey((current) => !current)}
-                  type="button"
-                >
-                  {showApiKey ? <EyeClosedIcon /> : <EyeOpenIcon />}
-                </button>
+          <StudySettingsCard
+            isSaving={isSavingStudySettings}
+            onSave={handleSaveStudySettings}
+            settings={studySettings}
+          />
+        </section>
+
+        <div className="ruler-divider" />
+
+        <section className={styles.settingsSection} id="shortcuts">
+          <div className={styles.settingsSectionHead}>
+            <div className={styles.settingsSectionTitle}>Keyboard Shortcuts</div>
+            <div className={styles.settingsSectionDesc}>
+              Active during study sessions and general navigation.
+            </div>
+          </div>
+
+          <SettingsShortcutsGrid items={SHORTCUTS} />
+        </section>
+      </div>
+
+      <div
+        role="tabpanel"
+        id="settings-panel-ai"
+        aria-labelledby="settings-tab-ai"
+        hidden={activeSection !== "ai"}
+      >
+        <section className={styles.settingsSection} id="ai">
+          <div className={styles.settingsSectionHead}>
+            <div className={styles.settingsSectionTitle}>AI Provider</div>
+            <div className={styles.settingsSectionDesc}>
+              Connect a provider for card generation and study explanations.
+            </div>
+          </div>
+
+          <div className={styles.settingsFieldGroup}>
+            <div className={styles.settingsField}>
+              <label className={styles.settingsFieldLabel} htmlFor="settings-base-url">
+                Base URL
+                {recentlySaved && lastSavedField === "baseUrl" && (
+                  <span className={styles.settingsAutosaveBadge}>Saved</span>
+                )}
+              </label>
+              <input
+                className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
+                disabled={isSettingsBusy}
+                id="settings-base-url"
+                onChange={(event) => {
+                  markSettingsEdited();
+                  const value = event.target.value;
+                  setBaseUrl(value);
+                  const detectedModel = detectModelFromUrl(value);
+                  if (
+                    detectedModel &&
+                    getProviderForBaseUrl(value)?.id !== getProviderForBaseUrl(baseUrl)?.id
+                  )
+                    setModel(detectedModel);
+                  scheduleAutoSave("baseUrl");
+                }}
+                placeholder={DEFAULT_AI_BASE_URL}
+                type="text"
+                value={baseUrl}
+              />
+              <div className={styles.settingsFieldHint}>
+                OpenAI-compatible or Anthropic. Custom and local endpoints work too.
               </div>
+            </div>
+            <div className={styles.settingsField}>
+              <label className={styles.settingsFieldLabel} htmlFor="settings-api-key">
+                API Key
+                <span className={styles.settingsLabelBadge}>Stored safely</span>
+              </label>
+              <div className={styles.settingsKeyInputWrap}>
+                <div className={styles.settingsKeyFieldWrap}>
+                  <input
+                    className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
+                    disabled={isSettingsBusy}
+                    id="settings-api-key"
+                    onChange={(event) => {
+                      markSettingsEdited();
+                      const value = event.target.value;
+                      setApiKey(value);
+                      setApiKeyEdited(true);
+                      const provider = detectProviderFromKey(value);
+                      if (
+                        provider &&
+                        provider.baseUrl !== baseUrl &&
+                        baseUrl === DEFAULT_AI_BASE_URL &&
+                        !hasStoredApiKey
+                      ) {
+                        setBaseUrl(provider.baseUrl);
+                        setModel(provider.model);
+                      }
+                    }}
+                    placeholder={hasStoredApiKey ? "Stored — enter to replace" : "sk-..."}
+                    type={showApiKey ? "text" : "password"}
+                    value={apiKey}
+                  />
+                  <button
+                    aria-label={showApiKey ? "Hide API key" : "Show API key"}
+                    className={styles.settingsKeyReveal}
+                    disabled={isSettingsBusy}
+                    onClick={() => setShowApiKey((current) => !current)}
+                    type="button"
+                  >
+                    {showApiKey ? <EyeClosedIcon /> : <EyeOpenIcon />}
+                  </button>
+                </div>
+              </div>
+              <div className={styles.settingsFieldHint}>{apiKeyHint}</div>
+            </div>
+            <SettingsModelPicker
+              baseUrl={baseUrl}
+              apiKey={apiKeyEdited ? apiKey : undefined}
+              autoDiscover={
+                activeSection === "ai" &&
+                baseUrl === loadedBaseUrl &&
+                !hasUnsavedChanges &&
+                hasStoredApiKey
+              }
+              disabled={isSettingsBusy}
+              model={model}
+              saved={recentlySaved && lastSavedField === "model"}
+              onChange={(nextModel) => {
+                markSettingsEdited();
+                setModel(nextModel);
+                scheduleAutoSave("model");
+              }}
+            />
+            <div className={styles.settingsConnectionActions}>
               <div className={styles.settingsKeyActions}>
                 <button
                   className={styles.settingsKeySaveBtn}
-                  disabled={areSettingsActionsBusy || !apiKeyEdited}
+                  disabled={areSettingsActionsBusy || !hasUnsavedChanges}
                   onClick={() => void handleSaveSettings()}
                   type="button"
                 >
-                  {isSavingSettings ? "Saving…" : "Save"}
+                  {isSavingSettings ? "Saving…" : "Save settings"}
                 </button>
                 <button
                   className={styles.settingsKeyTestBtn}
@@ -688,289 +700,247 @@ export function SettingsScreen({
                   type="button"
                 >
                   <ArrowRightIcon />
-                  {isTestingConnection ? "Testing…" : "Test"}
+                  {isTestingConnection ? "Testing…" : "Test connection"}
                 </button>
               </div>
             </div>
-            <div className={styles.settingsFieldHint}>{apiKeyHint}</div>
-          </div>
-
-          <SettingsConnectionStatus
-            detail={connectionStatus.detail}
-            kind={connectionStatus.kind}
-            label={connectionStatus.label}
-          />
-
-          <div className={styles.settingsToggleRow}>
-            <div className={styles.settingsToggleText}>
-              <span className={styles.settingsToggleLabel}>
-                Show "Explain in detail" during study
-              </span>
-              <span className={styles.settingsToggleHint}>
-                Adds an AI button on the back of each card so you can ask for a deeper explanation
-                when you got the card wrong.
-              </span>
-            </div>
-            <button
-              aria-label={
-                explainEnabled
-                  ? "Disable explain in detail button"
-                  : "Enable explain in detail button"
-              }
-              aria-pressed={explainEnabled}
-              className={`${styles.settingsToggleSwitch}${explainEnabled ? ` ${styles.on}` : ""}`}
-              disabled={isSettingsBusy}
-              onClick={() => {
-                hasUserEditedSettings.current = true;
-                setExplainEnabled((current) => {
-                  const next = !current;
-                  setLastSavedField(null);
-                  if (autoSaveTimerRef.current !== null) {
-                    window.clearTimeout(autoSaveTimerRef.current);
-                  }
-                  autoSaveTimerRef.current = window.setTimeout(() => {
-                    autoSaveTimerRef.current = null;
-                    handleAutoSave.current();
-                  }, 400);
-                  return next;
-                });
-              }}
-              type="button"
+            <SettingsConnectionStatus
+              detail={connectionStatus.detail}
+              kind={connectionStatus.kind}
+              label={connectionStatus.label}
             />
-          </div>
-
-          <div className={styles.settingsField}>
-            <label className={styles.settingsFieldLabel} htmlFor="settings-model">
-              Model
-              {recentlySaved && lastSavedField === "model" && (
-                <span className={styles.settingsAutosaveBadge}>Saved</span>
-              )}
-            </label>
-            <input
-              className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
-              disabled={isSettingsBusy}
-              id="settings-model"
-              onChange={(event) => {
-                hasUserEditedSettings.current = true;
-                setModel(event.target.value);
-                scheduleAutoSave("model");
-              }}
-              placeholder="Enter model name"
-              type="text"
-              value={model}
-            />
-            <div className={styles.settingsModelChips}>
-              {getRecommendedModelsForBaseUrl(baseUrl).map((chip) => (
-                <button
-                  className={`${styles.settingsModelChip}${model === chip ? ` ${styles.active}` : ""}`}
-                  disabled={isSettingsBusy}
-                  key={chip}
-                  onClick={() => {
-                    hasUserEditedSettings.current = true;
-                    setModel(chip);
-                    scheduleAutoSave("model");
-                  }}
-                  type="button"
-                >
-                  {chip}
-                </button>
-              ))}
+            <div className="ruler-divider" />
+            <div className={styles.settingsToggleRow}>
+              <div className={styles.settingsToggleText}>
+                <span className={styles.settingsToggleLabel}>
+                  Show "Explain in detail" during study
+                </span>
+                <span className={styles.settingsToggleHint}>
+                  Get a deeper explanation after revealing a card.
+                </span>
+              </div>
+              <button
+                aria-label={
+                  explainEnabled
+                    ? "Disable explain in detail button"
+                    : "Enable explain in detail button"
+                }
+                aria-pressed={explainEnabled}
+                className={`${styles.settingsToggleSwitch}${explainEnabled ? ` ${styles.on}` : ""}`}
+                disabled={isSettingsBusy}
+                onClick={() => {
+                  markSettingsEdited();
+                  setExplainEnabled((current) => {
+                    const next = !current;
+                    setLastSavedField(null);
+                    if (autoSaveTimerRef.current !== null) {
+                      window.clearTimeout(autoSaveTimerRef.current);
+                    }
+                    autoSaveTimerRef.current = window.setTimeout(() => {
+                      autoSaveTimerRef.current = null;
+                      handleAutoSave.current();
+                    }, 400);
+                    return next;
+                  });
+                }}
+                type="button"
+              />
             </div>
-            <div className={styles.settingsFieldHint}>
-              Pick a recommended model or type any model identifier your provider supports.
-            </div>
-          </div>
+            <div>
+              <button
+                className={`${styles.settingsAdvancedToggle}${advancedOpen ? ` ${styles.open}` : ""}`}
+                aria-expanded={advancedOpen}
+                aria-controls="settings-generation-options"
+                onClick={() => setAdvancedOpen((current) => !current)}
+                type="button"
+              >
+                <ChevronRightIcon />
+                Generation options
+              </button>
 
-          <div>
-            <button
-              className={`${styles.settingsAdvancedToggle}${advancedOpen ? ` ${styles.open}` : ""}`}
-              onClick={() => setAdvancedOpen((current) => !current)}
-              type="button"
-            >
-              <ChevronRightIcon />
-              Advanced
-            </button>
+              <div
+                id="settings-generation-options"
+                className={`${styles.settingsAdvancedFields}${advancedOpen ? ` ${styles.open}` : ""}`}
+              >
+                <div className={styles.settingsFieldRow}>
+                  <div className={styles.settingsField}>
+                    <label className={styles.settingsFieldLabel} htmlFor="settings-max-tokens">
+                      Max Tokens
+                      {recentlySaved && lastSavedField === "maxTokens" && (
+                        <span className={styles.settingsAutosaveBadge}>Saved</span>
+                      )}
+                    </label>
+                    <input
+                      className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
+                      disabled={isSettingsBusy}
+                      id="settings-max-tokens"
+                      onChange={(event) => {
+                        markSettingsEdited();
+                        setMaxTokens(event.target.value);
+                        scheduleAutoSave("maxTokens");
+                      }}
+                      placeholder="4096"
+                      type="text"
+                      value={maxTokens}
+                    />
+                  </div>
 
-            <div
-              className={`${styles.settingsAdvancedFields}${advancedOpen ? ` ${styles.open}` : ""}`}
-            >
-              <div className={styles.settingsFieldRow}>
-                <div className={styles.settingsField}>
-                  <label className={styles.settingsFieldLabel} htmlFor="settings-max-tokens">
-                    Max Tokens
-                    {recentlySaved && lastSavedField === "maxTokens" && (
-                      <span className={styles.settingsAutosaveBadge}>Saved</span>
-                    )}
-                  </label>
-                  <input
-                    className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
-                    disabled={isSettingsBusy}
-                    id="settings-max-tokens"
-                    onChange={(event) => {
-                      hasUserEditedSettings.current = true;
-                      setMaxTokens(event.target.value);
-                      scheduleAutoSave("maxTokens");
-                    }}
-                    placeholder="4096"
-                    type="text"
-                    value={maxTokens}
-                  />
+                  <div className={styles.settingsField}>
+                    <label className={styles.settingsFieldLabel} htmlFor="settings-temperature">
+                      Temperature
+                      {recentlySaved && lastSavedField === "temperature" && (
+                        <span className={styles.settingsAutosaveBadge}>Saved</span>
+                      )}
+                    </label>
+                    <input
+                      className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
+                      disabled={isSettingsBusy || !supportsCustomTemperature(model)}
+                      id="settings-temperature"
+                      onChange={(event) => {
+                        markSettingsEdited();
+                        setTemperature(event.target.value);
+                        scheduleAutoSave("temperature");
+                      }}
+                      placeholder="0.0 – 2.0"
+                      type="text"
+                      value={temperature}
+                    />
+                  </div>
                 </div>
 
-                <div className={styles.settingsField}>
-                  <label className={styles.settingsFieldLabel} htmlFor="settings-temperature">
-                    Temperature
-                    {recentlySaved && lastSavedField === "temperature" && (
-                      <span className={styles.settingsAutosaveBadge}>Saved</span>
-                    )}
-                  </label>
-                  <input
-                    className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
-                    disabled={isSettingsBusy}
-                    id="settings-temperature"
-                    onChange={(event) => {
-                      hasUserEditedSettings.current = true;
-                      setTemperature(event.target.value);
-                      scheduleAutoSave("temperature");
-                    }}
-                    placeholder="0.0 – 2.0"
-                    type="text"
-                    value={temperature}
-                  />
+                <div className={styles.settingsFieldHint}>
+                  {supportsCustomTemperature(model)
+                    ? "Lower temperature produces more predictable cards. Higher adds variety."
+                    : "This model controls its own sampling; temperature is not sent."}
                 </div>
-              </div>
-
-              <div className={styles.settingsFieldHint}>
-                Lower temperature produces more predictable cards. Higher adds variety but can
-                reduce accuracy.
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
-      <div className="ruler-divider" />
-
-      <section className={styles.settingsSection} id="data" ref={dataRef}>
-        <div className={styles.settingsSectionHead}>
-          <div className={styles.settingsSectionTitle}>Data</div>
-          <div className={styles.settingsSectionDesc}>
-            All study data is stored locally. Export creates a real copy of the database or review
-            logs, and reset clears this device.
-          </div>
-        </div>
-
-        <div className={styles.settingsDataSectionBody}>
-          <div className={styles.settingsDataCards}>
-            <SettingsDataCard
-              action={
-                <button
-                  className={styles.settingsDataBtn}
-                  disabled={isExportingDatabase}
-                  onClick={() => void handleExportDatabase()}
-                  type="button"
-                >
-                  <DownloadIcon />
-                  {isExportingDatabase ? "Exporting…" : "Export"}
-                </button>
-              }
-              description="Live SQLite file containing all spaces, cards, scheduler state, and study metadata."
-              title="Database"
-              value={
-                <>
-                  <strong>{spacesCount}</strong> spaces · <strong>{cardsCount}</strong> cards
-                </>
-              }
-            />
-
-            <SettingsDataCard
-              action={
-                <button
-                  className={styles.settingsDataBtn}
-                  disabled={isExportingReviewLogs}
-                  onClick={() => void handleExportReviewLogs()}
-                  type="button"
-                >
-                  <DownloadIcon />
-                  {isExportingReviewLogs ? "Exporting…" : "Export CSV"}
-                </button>
-              }
-              description="Review history recorded during study sessions. Export writes a CSV with one row per review."
-              title="Review Logs"
-              value={
-                <>
-                  <strong>{reviewLogCount}</strong> reviews
-                </>
-              }
-            />
-
-            <SettingsDataCard
-              action={
-                <button
-                  className={styles.settingsDataBtn}
-                  onClick={() => void handleCopyPath()}
-                  type="button"
-                >
-                  <CopyIcon />
-                  {copyState === "copied" ? "Copied" : "Copy"}
-                </button>
-              }
-              description={<span className={styles.settingsDataCardDescPath}>{databasePath}</span>}
-              title="Database Path"
-            />
-
-            <SettingsDataCard
-              action={
-                <button
-                  className={`${styles.settingsDataBtn} ${styles.danger}`}
-                  disabled={isResettingData}
-                  onClick={() => void handleReset()}
-                  type="button"
-                >
-                  <TrashIcon />
-                  {isResettingData ? "Resetting…" : "Reset"}
-                </button>
-              }
-              description="Delete all spaces, cards, review history, saved AI settings, and the stored API key from this device."
-              title="Reset All Data"
-              tone="danger"
-            />
+      <div
+        role="tabpanel"
+        id="settings-panel-data"
+        aria-labelledby="settings-tab-data"
+        hidden={activeSection !== "data"}
+      >
+        <section className={styles.settingsSection} id="data">
+          <div className={styles.settingsSectionHead}>
+            <div className={styles.settingsSectionTitle}>Data</div>
+            <div className={styles.settingsSectionDesc}>
+              Back up your collection or export your review history.
+            </div>
           </div>
 
-          <SettingsConnectionStatus
-            detail={dataStatus.detail}
-            kind={dataStatus.kind}
-            label={dataStatus.label}
+          <div className={styles.settingsDataSectionBody}>
+            <div className={styles.settingsDataCards}>
+              <SettingsDataCard
+                action={
+                  <button
+                    className={styles.settingsDataBtn}
+                    disabled={isExportingDatabase}
+                    onClick={() => void handleExportDatabase()}
+                    type="button"
+                  >
+                    <DownloadIcon />
+                    {isExportingDatabase ? "Exporting…" : "Export"}
+                  </button>
+                }
+                description="A complete SQLite backup of your collection and study progress."
+                title="Collection backup"
+                value={
+                  <>
+                    <strong>{spacesCount}</strong> spaces · <strong>{cardsCount}</strong> cards
+                  </>
+                }
+              />
+
+              <SettingsDataCard
+                action={
+                  <button
+                    className={styles.settingsDataBtn}
+                    disabled={isExportingReviewLogs}
+                    onClick={() => void handleExportReviewLogs()}
+                    type="button"
+                  >
+                    <DownloadIcon />
+                    {isExportingReviewLogs ? "Exporting…" : "Export CSV"}
+                  </button>
+                }
+                description="One CSV row per review, ready for your own analysis."
+                title="Review history"
+                value={
+                  <>
+                    <strong>{reviewLogCount}</strong> reviews
+                  </>
+                }
+              />
+
+              <SettingsDataCard
+                action={
+                  <button
+                    className={styles.settingsDataBtn}
+                    onClick={() => void handleCopyPath()}
+                    type="button"
+                  >
+                    <CopyIcon />
+                    {copyState === "copied" ? "Copied" : "Copy"}
+                  </button>
+                }
+                description={
+                  <span className={styles.settingsDataCardDescPath}>{databasePath}</span>
+                }
+                title="Storage location"
+              />
+
+              <SettingsDataCard
+                action={
+                  <button
+                    className={`${styles.settingsDataBtn} ${styles.danger}`}
+                    disabled={isResettingData}
+                    onClick={() => void handleReset()}
+                    type="button"
+                  >
+                    <TrashIcon />
+                    {isResettingData ? "Resetting…" : "Reset"}
+                  </button>
+                }
+                description="Delete all spaces, cards, review history, saved AI settings, and the stored API key from this device."
+                title="Reset this device"
+                tone="danger"
+              />
+            </div>
+
+            {dataStatus.kind !== "idle" && (
+              <SettingsConnectionStatus
+                detail={dataStatus.detail}
+                kind={dataStatus.kind}
+                label={dataStatus.label}
+              />
+            )}
+          </div>
+        </section>
+      </div>
+
+      <div
+        role="tabpanel"
+        id="settings-panel-about"
+        aria-labelledby="settings-tab-about"
+        hidden={activeSection !== "about"}
+      >
+        <section className={styles.settingsSection} id="about">
+          <div className={styles.settingsSectionHead}>
+            <div className={styles.settingsSectionTitle}>About</div>
+          </div>
+
+          <SettingsAboutCard
+            onOpenDocs={() => handleOpenExternal("docs")}
+            onOpenGithub={() => handleOpenExternal("github")}
+            onOpenIssues={() => handleOpenExternal("issues")}
           />
-        </div>
-      </section>
-
-      <div className="ruler-divider" />
-
-      <section className={styles.settingsSection} id="shortcuts" ref={shortcutsRef}>
-        <div className={styles.settingsSectionHead}>
-          <div className={styles.settingsSectionTitle}>Keyboard Shortcuts</div>
-          <div className={styles.settingsSectionDesc}>
-            Active during study sessions and general navigation.
-          </div>
-        </div>
-
-        <SettingsShortcutsGrid items={SHORTCUTS} />
-      </section>
-
-      <div className="ruler-divider" />
-
-      <section className={styles.settingsSection} id="about" ref={aboutRef}>
-        <div className={styles.settingsSectionHead}>
-          <div className={styles.settingsSectionTitle}>About</div>
-        </div>
-
-        <SettingsAboutCard
-          onOpenDocs={() => handleOpenExternal("docs")}
-          onOpenGithub={() => handleOpenExternal("github")}
-          onOpenIssues={() => handleOpenExternal("issues")}
-        />
-      </section>
+        </section>
+      </div>
 
       <div className="page-end" />
     </div>

@@ -8,7 +8,7 @@ type SettingsConnectionStatusProps = {
 
 export function SettingsConnectionStatus({ detail, kind, label }: SettingsConnectionStatusProps) {
   return (
-    <div className={`${styles.settingsConnectionStatus} ${styles[kind]}`}>
+    <div role="status" className={`${styles.settingsConnectionStatus} ${styles[kind]}`}>
       <span className={styles.statusDot} />
       {label}
       {detail ? <span className={styles.statusDetail}>{detail}</span> : null}

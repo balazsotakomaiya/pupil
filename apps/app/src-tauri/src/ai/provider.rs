@@ -92,12 +92,7 @@ async fn execute_openai_compatible_completion(
     let response = http_client()?
         .post(&endpoint)
         .headers(headers)
-        .json(&serde_json::json!({
-            "model": settings.model,
-            "messages": messages,
-            "max_tokens": settings.max_tokens,
-            "temperature": settings.temperature
-        }))
+        .json(&build_openai_payload(settings, messages))
         .send()
         .await
         .map_err(|error| map_transport_error(error, &endpoint, &settings.model))?;
@@ -147,16 +142,19 @@ async fn execute_anthropic_completion(
     );
     headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
 
+    let mut payload = serde_json::json!({
+        "model": settings.model,
+        "max_tokens": settings.max_tokens,
+        "system": system_prompt.unwrap_or_default(),
+        "messages": [{ "role": "user", "content": user_prompt }]
+    });
+    if supports_custom_temperature(&settings.model) {
+        payload["temperature"] = serde_json::json!(settings.temperature);
+    }
     let response = http_client()?
         .post(&endpoint)
         .headers(headers)
-        .json(&serde_json::json!({
-            "model": settings.model,
-            "max_tokens": settings.max_tokens,
-            "temperature": settings.temperature,
-            "system": system_prompt.unwrap_or_default(),
-            "messages": [{ "role": "user", "content": user_prompt }]
-        }))
+        .json(&payload)
         .send()
         .await
         .map_err(|error| map_transport_error(error, &endpoint, &settings.model))?;
@@ -267,4 +265,38 @@ fn truncate_message_detail(detail: &str) -> String {
     } else {
         truncated
     }
+}
+
+pub(crate) fn supports_custom_temperature(model: &str) -> bool {
+    let id = model.rsplit('/').next().unwrap_or(model);
+    ![
+        "gpt-5",
+        "gpt-6",
+        "o1",
+        "o3",
+        "o4",
+        "claude-sonnet-5",
+        "claude-opus-5",
+        "claude-fable-5",
+    ]
+    .iter()
+    .any(|prefix| id.starts_with(prefix))
+}
+
+pub(crate) fn build_openai_payload(settings: &ResolvedAiSettings, messages: Vec<Value>) -> Value {
+    let mut payload = serde_json::json!({"model": settings.model, "messages": messages});
+    let id = settings.model.rsplit('/').next().unwrap_or(&settings.model);
+    let reasoning = ["gpt-5", "gpt-6", "o1", "o3", "o4"]
+        .iter()
+        .any(|prefix| id.starts_with(prefix));
+    if reasoning {
+        payload["max_completion_tokens"] = serde_json::json!(settings.max_tokens);
+        payload["reasoning_effort"] = serde_json::json!("low");
+    } else {
+        payload["max_tokens"] = serde_json::json!(settings.max_tokens);
+    }
+    if supports_custom_temperature(&settings.model) {
+        payload["temperature"] = serde_json::json!(settings.temperature);
+    }
+    payload
 }

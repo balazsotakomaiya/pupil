@@ -32,9 +32,9 @@ use crate::commands::{
     create_card, create_space, delete_card, delete_space, explain_card, export_database_copy,
     export_review_logs_csv, generate_cards, get_ai_settings, get_bootstrap_state,
     get_dashboard_stats, get_settings_data_summary, get_study_queue_snapshot, get_study_settings,
-    import_anki_cards, list_cards, list_recent_activity, list_space_stats, list_spaces,
-    log_frontend_event, refresh_tray_status, rename_space, reset_all_data, review_card,
-    save_ai_settings, save_study_settings, suspend_card, test_ai_provider_connection,
+    import_anki_cards, list_ai_models, list_cards, list_recent_activity, list_space_stats,
+    list_spaces, log_frontend_event, refresh_tray_status, rename_space, reset_all_data,
+    review_card, save_ai_settings, save_study_settings, suspend_card, test_ai_provider_connection,
     undo_review_card, update_card,
 };
 #[cfg(debug_assertions)]
@@ -167,6 +167,7 @@ pub fn run() {
             get_dashboard_stats,
             get_study_queue_snapshot,
             list_space_stats,
+            list_ai_models,
             get_ai_settings,
             save_ai_settings,
             test_ai_provider_connection,

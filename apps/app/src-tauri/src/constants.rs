@@ -29,7 +29,7 @@ pub(crate) const AI_CONNECT_TIMEOUT_SECS: u64 = 15;
 /// sequential attempts could each burn the full request timeout.
 pub(crate) const AI_EXPLAIN_RETRY_BUDGET_SECS: u64 = 150;
 pub(crate) const DEFAULT_AI_BASE_URL: &str = "https://api.openai.com/v1";
-pub(crate) const DEFAULT_AI_MODEL: &str = "gpt-5.4";
+pub(crate) const DEFAULT_AI_MODEL: &str = "gpt-5.6-terra";
 pub(crate) const DEFAULT_AI_MAX_TOKENS: &str = "4096";
 pub(crate) const DEFAULT_AI_TEMPERATURE: &str = "0.7";
 pub(crate) const EXPLAIN_SCHEMA_VERSION: i64 = 1;

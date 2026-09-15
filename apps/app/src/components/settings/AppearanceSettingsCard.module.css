@@ -3,33 +3,12 @@
   flex-direction: column;
   max-width: 560px;
   gap: var(--space-5);
-  padding: var(--space-5) var(--space-6);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--bg-subtle);
 }
 
 .appearanceIntro {
   display: flex;
   align-items: center;
   gap: var(--space-3-5);
-}
-
-.logoPreview {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1-5);
-  width: 82px;
-  height: 44px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  font-family: "Syne", var(--font-sans);
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
 }
 
 .appearanceLabel,
