@@ -54,26 +54,7 @@
 }
 
 .backBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1-5);
-  padding: var(--space-1) 0;
-  border: none;
-  background: transparent;
-  color: var(--text-tertiary);
-  font-size: 13px;
-  font-weight: 500;
-  transition: color 0.15s ease;
   -webkit-app-region: no-drag;
-}
-
-.backBtn:hover {
-  color: var(--text-secondary);
-}
-
-.backBtn svg {
-  width: 14px;
-  height: 14px;
 }
 
 .breadcrumbName {

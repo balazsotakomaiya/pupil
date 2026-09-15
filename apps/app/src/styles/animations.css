@@ -127,6 +127,16 @@
   }
 }
 
+@keyframes studyActionGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5);
+  }
+
+  100% {
+    box-shadow: 0 0 0 12px rgba(255, 255, 255, 0);
+  }
+}
+
 @keyframes nudge-shake {
   0%, 100% { transform: translateX(0); }
   15% { transform: translateX(-4px); }

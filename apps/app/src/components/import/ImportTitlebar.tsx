@@ -1,3 +1,4 @@
+import { Button } from "../Button";
 import { EyeLogo } from "../dashboard/EyeLogo";
 import { BackIcon } from "../icons/AiGenerateIcons";
 import styles from "./ImportTitlebar.module.css";
@@ -18,10 +19,10 @@ export function ImportTitlebar({ backLabel, onBack }: ImportTitlebarProps) {
 
         <div className={styles.titlebarSep} />
 
-        <button className={styles.backBtn} onClick={onBack} type="button">
+        <Button className={styles.backBtn} onClick={onBack} variant="bare">
           <BackIcon />
           {backLabel}
-        </button>
+        </Button>
 
         <div className={styles.titlebarSep} />
 
