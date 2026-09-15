@@ -50,7 +50,7 @@
 
 .themeOption:hover {
   border-color: var(--border-hover);
-  background: color-mix(in srgb, var(--text-primary) 3%, transparent);
+  background: var(--bg-hover);
 }
 
 .themeOption.selected {

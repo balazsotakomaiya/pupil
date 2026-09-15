@@ -249,7 +249,7 @@
 .settingsDataBtn:hover,
 .settingsAboutLink:hover {
   border-color: var(--border-hover);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-hover);
   color: var(--text-primary);
 }
 
@@ -296,15 +296,15 @@
 }
 
 .settingsConnectionStatus.success {
-  border: 1px solid #10b98130;
+  border: 1px solid color-mix(in srgb, var(--success) 19%, transparent);
   background: var(--success-dim);
   color: var(--success);
 }
 
 .settingsConnectionStatus.error {
-  border: 1px solid #ef444430;
-  background: #ef444415;
-  color: #ef4444;
+  border: 1px solid color-mix(in srgb, var(--error) 19%, transparent);
+  background: var(--error-dim);
+  color: var(--error);
 }
 
 .settingsConnectionStatus.idle {
@@ -326,7 +326,7 @@
 }
 
 .settingsConnectionStatus.error .statusDot {
-  background: #ef4444;
+  background: var(--error);
 }
 
 .settingsConnectionStatus.idle .statusDot {
@@ -515,17 +515,17 @@
 }
 
 .settingsDataBtn.danger {
-  border-color: #ef444440;
-  color: #ef4444;
+  border-color: color-mix(in srgb, var(--error) 25%, transparent);
+  color: var(--error);
 }
 
 .settingsDataBtn.danger:hover {
-  border-color: #ef4444;
-  background: #ef444415;
+  border-color: var(--error);
+  background: var(--error-dim);
 }
 
 .settingsDataBtn.danger:disabled:hover {
-  border-color: #ef444440;
+  border-color: color-mix(in srgb, var(--error) 25%, transparent);
   background: transparent;
 }
 

@@ -188,7 +188,7 @@
 
 .visualNode.process,
 .visualNode.state {
-  border-color: #10b98180;
+  border-color: color-mix(in srgb, var(--success) 50%, transparent);
 }
 
 .visualNode.decision {
