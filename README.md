@@ -28,6 +28,12 @@ Create focused study spaces. Import Anki decks. Generate cards from any topic wi
   </tr>
 </table>
 
+## Get Pupil
+
+Download the latest installer for macOS, Windows, or Linux from [GitHub Releases](https://github.com/balazsotakomaiya/pupil/releases/latest). No account is required.
+
+Your cards, review history, and settings stay on your device. If you use AI generation, add your own OpenAI-compatible or Anthropic API key in Settings; it is stored securely on your machine.
+
 ## Why Pupil
 
 Most flashcard tools force a tradeoff.
@@ -68,12 +74,6 @@ Pupil is growing beyond the desktop without giving up its local-first foundation
 - Optional cloud sync for people who study across devices
 - A mobile app for keeping reviews within reach wherever you are
 - Assistant workflows, including a possible MCP bridge so tools like Claude or ChatGPT could push cards directly into Pupil
-
-## Get Pupil
-
-Download the latest installer for macOS, Windows, or Linux from [GitHub Releases](https://github.com/balazsotakomaiya/pupil/releases/latest). No account is required.
-
-Your cards, review history, and settings stay on your device. If you use AI generation, add your own OpenAI-compatible or Anthropic API key in Settings; it is stored securely on your machine.
 
 ## Contributing
 
