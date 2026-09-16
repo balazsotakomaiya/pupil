@@ -185,7 +185,7 @@
 }
 
 .sessionOverflowItem.danger:hover {
-  color: #ef4444;
+  color: var(--error);
   background: rgba(239, 68, 68, 0.07);
 }
 
@@ -371,7 +371,7 @@
   padding: 1px var(--space-1-5);
   border: 1px solid var(--border);
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-hover);
   color: var(--text-tertiary);
   font-family: var(--font-mono);
   font-size: 9px;
@@ -620,7 +620,7 @@
   align-items: center;
   justify-content: center;
   margin-bottom: var(--space-7);
-  border: 2px solid #10b98130;
+  border: 2px solid color-mix(in srgb, var(--success) 19%, transparent);
   border-radius: 999px;
   background: var(--success-dim);
 }
@@ -696,7 +696,7 @@
   gap: var(--space-2);
   margin-bottom: var(--space-9);
   padding: var(--space-2-5) var(--space-4-5);
-  border: 1px solid #10b98130;
+  border: 1px solid color-mix(in srgb, var(--success) 19%, transparent);
   border-radius: 999px;
   background: var(--success-dim);
 }
@@ -738,7 +738,7 @@
 
 .sessionSummaryBtn:hover {
   border-color: var(--border-hover);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-hover);
   color: var(--text-primary);
 }
 
@@ -825,7 +825,7 @@
 
 .sessionExplainTrigger:hover:not(:disabled) {
   border-color: var(--border-hover);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-hover);
   color: var(--text-secondary);
 }
 
@@ -957,7 +957,7 @@
 .sessionExplainHeaderBtn:hover:not(:disabled) {
   border-color: var(--border-hover);
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-hover);
 }
 
 .sessionExplainHeaderBtn:disabled {
@@ -1073,9 +1073,9 @@
   align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-3-5) var(--space-4);
-  border: 1px solid #ef444430;
+  border: 1px solid color-mix(in srgb, var(--error) 19%, transparent);
   border-radius: var(--radius);
-  background: #ef444412;
+  background: color-mix(in srgb, var(--error) 7%, transparent);
   color: #ef8b8b;
   font-size: 13px;
   line-height: 1.5;
@@ -1083,7 +1083,7 @@
 
 .sessionExplainRetryBtn {
   padding: var(--space-1-5) var(--space-3);
-  border: 1px solid #ef444450;
+  border: 1px solid color-mix(in srgb, var(--error) 31%, transparent);
   border-radius: var(--radius);
   background: transparent;
   color: #ef8b8b;
@@ -1095,8 +1095,8 @@
 }
 
 .sessionExplainRetryBtn:hover {
-  border-color: #ef4444;
-  background: #ef444418;
+  border-color: var(--error);
+  background: color-mix(in srgb, var(--error) 9%, transparent);
 }
 
 .sessionExplainFooter {

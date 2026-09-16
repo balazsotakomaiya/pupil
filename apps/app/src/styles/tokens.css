@@ -10,8 +10,12 @@
   --text-primary: #ededed;
   --text-secondary: #888888;
   --text-tertiary: #555555;
+  --bg-hover: color-mix(in srgb, var(--text-primary) 3%, transparent);
+  --overlay-dark: rgba(0, 0, 0, 0.55);
   --success: #10b981;
   --success-dim: #10b98115;
+  --error: #ef4444;
+  --error-dim: #ef444415;
   --radius: 8px;
   --radius-lg: 12px;
   /* Spacing: a 4px base scale with 2px half-steps for compact controls. */
@@ -59,6 +63,9 @@
   --text-primary: #181817;
   --text-secondary: #5f5f59;
   --text-tertiary: #898983;
+  --overlay-dark: rgba(0, 0, 0, 0.4);
   --success: #047857;
   --success-dim: #04785715;
+  --error: #dc2626;
+  --error-dim: #dc262615;
 }

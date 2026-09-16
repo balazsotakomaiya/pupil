@@ -156,7 +156,7 @@
 
 .titlebarBtn:hover,
 .titlebarBtnLabel:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-hover);
   border-color: var(--border-hover);
   color: var(--text-primary);
 }

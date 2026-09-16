@@ -92,7 +92,7 @@
 
 .dropZone.dragOver {
   border-color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-hover);
 }
 
 .dropZone code,
@@ -301,7 +301,7 @@
 }
 
 .importStatusBadge.complete {
-  border: 1px solid #10b98130;
+  border: 1px solid color-mix(in srgb, var(--success) 19%, transparent);
   background: var(--success-dim);
   color: var(--success);
 }
