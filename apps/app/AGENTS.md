@@ -72,6 +72,8 @@ The frontend is organized in three main layers:
 2. **Feature UI** — `src/components/*`
 3. **Data/runtime helpers** — `src/lib/*`
 
+Persisted domain data goes through `getStorage()` (`src/lib/storage`), which selects the Tauri or browser `PupilStorage` implementation once. Shared scheduling, queue, and validation rules live in `@pupil/core`. Thin facades such as `cards.ts` / `spaces.ts` wrap `getStorage()` for call sites and contract tests; do not reintroduce `isTauriRuntime()` branches inside those modules.
+
 Route pages should compose queries, mutations, and navigation. Presentation stays in components. Long-lived shell side effects should usually live in a dedicated route hook rather than expanding `root-shell.tsx` directly.
 
 TanStack Query is the default server-state layer. If a mutation changes cards, spaces, dashboard stats, or study settings, update the relevant invalidation helper in `src/lib/query.ts`.
