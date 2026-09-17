@@ -15,6 +15,7 @@ import {
 export const WEB_STORAGE_KEYS = {
   aiSettings: "pupil.ai.settings",
   cards: "pupil.web.cards",
+  importHistory: "pupil.web.import-history",
   reviewLogs: "pupil.web.review_logs",
   spaces: "pupil.web.spaces",
   studyDays: "pupil.web.study_days",
@@ -150,7 +151,7 @@ export function readNewCardsLimit(fallback: number): number | null {
 }
 
 export function writeNewCardsLimit(newCardsLimit: number | null): void {
-  writeRaw(WEB_STORAGE_KEYS.studySettings, { newCardsLimit });
+  localStore()?.setItem(WEB_STORAGE_KEYS.studySettings, JSON.stringify({ newCardsLimit }));
 }
 
 export function clearAll(): void {

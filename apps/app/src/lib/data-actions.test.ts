@@ -22,10 +22,12 @@ describe("data actions browser fallback", () => {
     window.localStorage.setItem("pupil.web.review_logs", "[]");
     window.localStorage.setItem("pupil.web.cards", "[]");
     window.localStorage.setItem("pupil.ai.settings", "{}");
+    window.localStorage.setItem("pupil.web.import-history", "[]");
     await resetAllData();
     expect(window.localStorage.getItem("pupil.web.review_logs")).toBeNull();
     expect(window.localStorage.getItem("pupil.web.cards")).toBeNull();
     expect(window.localStorage.getItem("pupil.ai.settings")).toBeNull();
+    expect(window.localStorage.getItem("pupil.web.import-history")).toBeNull();
   });
 });
 

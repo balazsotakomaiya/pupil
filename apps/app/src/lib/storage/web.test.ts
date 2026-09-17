@@ -59,13 +59,17 @@ describe("spaces", () => {
     expect(activity[0].spaceName).toBe("Rust Fundamentals");
   });
 
-  it("deletes a space along with its cards", async () => {
-    const { space } = await seedSpaceWithCard(storage);
+  it("deletes a space along with its cards, review logs, and study days", async () => {
+    const { card, space } = await seedSpaceWithCard(storage);
+    await storage.reviewCard({ card, grade: 3 });
+    expect(await storage.listRecentActivity()).toHaveLength(1);
 
     await storage.deleteSpace({ id: space.id });
 
     expect(await storage.listSpaces()).toEqual([]);
     expect(await storage.listCards()).toEqual([]);
+    expect(await storage.listRecentActivity()).toEqual([]);
+    expect(await storage.listSpaceStats()).toEqual([]);
   });
 });
 

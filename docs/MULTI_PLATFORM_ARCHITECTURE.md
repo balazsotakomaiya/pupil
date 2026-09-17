@@ -8,17 +8,16 @@ ones that need to be built, and the order that keeps risk low.
 
 ## TL;DR
 
-- The app already has the most important seam: every data-access function in
-  `apps/app/src/lib` branches on `isTauriRuntime()` between a **Tauri/SQLite
-  backend** and a **localStorage web fallback**. Browser, mobile, and sync are
-  all new branches behind that same seam.
+- Persistence is consolidated behind `PupilStorage`: `getStorage()` selects a
+  Tauri/SQLite or browser/`localStorage` backend once. Browser, mobile, and sync
+  are additional implementations of that interface, not new branches at every
+  call site.
 - FSRS scheduling already lives in shared, platform-agnostic TypeScript
-  (`apps/app/src/lib/fsrs.ts`). It can run unchanged on desktop, browser, and
-  mobile. This is the single most valuable thing about the current design.
-- The cleanest path is to **extract a shared core** (domain types, FSRS, a
-  `Storage` interface) into a workspace package, keep it MIT, and build the
-  closed-source mobile app and paid sync backend as *separate consumers* of that
-  core.
+  (`packages/core`). It can run unchanged on desktop, browser, and mobile. This
+  is the single most valuable thing about the current design.
+- The shared core (`@pupil/core`: domain types, FSRS, study-queue rules,
+  validation, day/streak helpers, `PupilStorage`) stays MIT. Closed-source
+  mobile and paid sync are *separate consumers* of that core.
 - Local-first stays the default. Cloud sync is an **opt-in, paid add-on** layered
   on top — never a requirement to use the app.
 
@@ -68,30 +67,25 @@ call site changes, because no call site knows which one is active.
 
 ### What blocks the next step
 
-1. **The web fallback is a toy.** It is per-file, untyped-at-rest localStorage
-   with no shared abstraction, no quota handling, no real query engine. It
-   proves the seam works; it is not a shippable browser backend.
-2. **Storage logic is duplicated**, once in Rust SQL and once in TS localStorage.
-   Adding a third backend (remote API) by copy-paste would triple the
-   maintenance surface.
+1. **The web fallback is still a toy.** It is consolidated behind `PupilStorage`
+   with typed-at-rest parsing and tests, but it remains `localStorage` with no
+   quota handling and no real query engine. It proves the seam works; it is not
+   a shippable browser backend.
+2. **Store implementations are duplicated**, once in Rust SQL and once in TS
+   localStorage. That duplication is contained behind one interface; adding a
+   third backend still means writing a full `PupilStorage` implementation.
 3. **No sync primitives.** The schema has `updated_at` but no change tokens,
    no soft-delete tombstones, no per-device identity, no conflict resolution.
-4. **No shared package boundary.** `package.json` declares `workspaces:
-   ["apps/*"]` but `AGENTS.md` notes "There is no meaningful shared package
-   layer yet." Closed-source reuse needs that boundary to be explicit.
+4. **Anki import is still a side channel.** Browser import writes through the
+   shared web-store helpers, but import is not yet a `PupilStorage` method, so
+   it still branches on runtime outside `storage/index.ts`.
 5. **Secrets are desktop-shaped.** The AI key lives in Stronghold / macOS
    Keychain (`constants.rs`). Browser and mobile need different secret stores.
 
-> **Status:** gap 4 is closed (`packages/core` exists) and gap 2 is largely
-> addressed — scheduling, queue rules, validation, and day/streak logic are
-> shared, and the web fallback is now a single consolidated implementation
-> rather than per-file localStorage code. What genuinely remains duplicated is
-> the *store* itself: SQL in Rust vs. localStorage in TypeScript. That is
-> inherent to supporting two runtimes and is contained behind one interface.
->
-> Gap 1 is unchanged in substance — the web implementation is consolidated and
-> now covered by tests, but it is still `localStorage` and still not a
-> shippable browser backend. Gaps 3 and 5 are untouched.
+> **Status:** The shared package boundary and consolidated web store are in
+> place (`packages/core`, `apps/app/src/lib/storage`). Gap 1 is unchanged in
+> substance — still `localStorage`, still not shippable as a browser product.
+> Gaps 3–5 remain open.
 
 ---
 

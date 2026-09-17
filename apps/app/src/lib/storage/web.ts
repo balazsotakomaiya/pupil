@@ -114,6 +114,8 @@ export function createWebStorage(): PupilStorage {
 
       writeSpaces(remaining);
       writeCards(readCards().filter((card) => card.spaceId !== input.id));
+      writeReviewLogs(readReviewLogs().filter((log) => log.spaceId !== input.id));
+      writeStudyDays(readStudyDays().filter((day) => day.spaceId !== input.id));
     },
 
     async listCards(input = {}) {
@@ -301,7 +303,7 @@ export function createWebStorage(): PupilStorage {
       const today = formatDayKey(now);
 
       return {
-        dueToday: cards.filter((card) => card.due <= now).length,
+        dueToday: cards.filter((card) => !card.suspended && card.due <= now).length,
         globalStreak: computeStreak(globalDays, today),
         studiedToday: reviewLogs.filter((log) => formatDayKey(log.reviewTime) === today).length,
         studyDays: globalDays,
@@ -417,14 +419,17 @@ function ensureUniqueName(spaces: StoredSpace[], name: string, ignoreId?: string
 
 function toSpaceSummary(space: StoredSpace, cards: CardRecord[], now: number): SpaceSummary {
   const spaceCards = cards.filter((card) => card.spaceId === space.id);
+  const spaceDays = readStudyDays()
+    .filter((entry) => entry.spaceId === space.id)
+    .map((entry) => entry.day);
 
   return {
     cardCount: spaceCards.length,
     createdAt: space.createdAt,
-    dueTodayCount: spaceCards.filter((card) => card.due <= now).length,
+    dueTodayCount: spaceCards.filter((card) => !card.suspended && card.due <= now).length,
     id: space.id,
     name: space.name,
-    streak: 0,
+    streak: computeStreak(spaceDays, formatDayKey(now)),
     updatedAt: space.updatedAt,
   };
 }

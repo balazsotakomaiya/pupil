@@ -1,10 +1,18 @@
-import { SPACE_NAME_MAX_LENGTH } from "@pupil/core";
+import { type CardRecord, createNewCardFsrsFields, SPACE_NAME_MAX_LENGTH } from "@pupil/core";
 import { decompress as decompressZstd } from "fzstd";
 import JSZip from "jszip";
 import initSqlJs from "sql.js";
 import sqlWasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
+import {
+  createId,
+  readCards,
+  readSpaces,
+  WEB_STORAGE_KEYS,
+  writeCards,
+  writeSpaces,
+} from "./storage/web-store";
 
 type ParsedAnkiCard = {
   back: string;
@@ -51,29 +59,7 @@ export type ImportExecutionResult = {
   targetSpaceName?: string | null;
 };
 
-type StoredWebSpace = {
-  createdAt: number;
-  id: string;
-  name: string;
-  updatedAt: number;
-};
-
-type StoredWebCard = {
-  back: string;
-  createdAt: number;
-  due: number;
-  front: string;
-  id: string;
-  source: "manual" | "ai" | "anki";
-  spaceId: string;
-  state: number;
-  tags: string[];
-  updatedAt: number;
-};
-
-const IMPORT_HISTORY_STORAGE_KEY = "pupil.web.import-history";
-const WEB_SPACE_STORAGE_KEY = "pupil.web.spaces";
-const WEB_CARD_STORAGE_KEY = "pupil.web.cards";
+const IMPORT_HISTORY_STORAGE_KEY = WEB_STORAGE_KEYS.importHistory;
 const COLLECTION_FILE_NAMES = [
   "collection.anki21b",
   "collection.anki21",
@@ -495,8 +481,8 @@ function parseModelMap(raw: Record<string, unknown>) {
 }
 
 function importAnkiCardsInWebStorage(input: ImportAnkiPayload) {
-  const spaces = readStoredWebSpaces();
-  const cards = readStoredWebCards();
+  const spaces = [...readSpaces()];
+  const cards: CardRecord[] = [...readCards()];
   const now = Date.now();
   const spacesByName = new Map(spaces.map((space) => [normalizeAsciiLower(space.name), space]));
   const cardsBySpace = new Map<string, Set<string>>();
@@ -531,7 +517,7 @@ function importAnkiCardsInWebStorage(input: ImportAnkiPayload) {
     if (!destinationSpace) {
       destinationSpace = {
         createdAt: now,
-        id: createWebId("space"),
+        id: createId("space"),
         name: normalizedDeckName,
         updatedAt: now,
       };
@@ -560,18 +546,20 @@ function importAnkiCardsInWebStorage(input: ImportAnkiPayload) {
       continue;
     }
 
-    cards.push({
+    const importedCard: CardRecord = {
+      ...createNewCardFsrsFields(now),
       back: card.back,
       createdAt: now,
-      due: now,
       front: card.front,
-      id: createWebId("card"),
+      id: createId("card"),
       source: "anki",
       spaceId: destinationSpace.id,
-      state: 0,
+      spaceName: destinationSpace.name,
+      suspended: false,
       tags: normalizeTags(card.tags),
       updatedAt: now,
-    });
+    };
+    cards.push(importedCard);
     existingCards.add(cardKey);
     cardsBySpace.set(destinationSpace.id, existingCards);
     destinationSpace.updatedAt = now;
@@ -579,8 +567,8 @@ function importAnkiCardsInWebStorage(input: ImportAnkiPayload) {
     deckStats.set(deckKey, stats);
   }
 
-  writeStoredWebSpaces(spaces);
-  writeStoredWebCards(cards);
+  writeSpaces(spaces);
+  writeCards(cards);
 
   const decks = [...deckStats.values()].sort((left, right) =>
     left.deckName.localeCompare(right.deckName),
@@ -607,67 +595,6 @@ function writeImportHistory(history: ImportExecutionResult[]) {
   window.localStorage.setItem(IMPORT_HISTORY_STORAGE_KEY, JSON.stringify(history.slice(0, 12)));
 }
 
-function readStoredWebSpaces(): StoredWebSpace[] {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(WEB_SPACE_STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? parsed.filter(isStoredWebSpace) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeStoredWebSpaces(spaces: StoredWebSpace[]) {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return;
-  }
-
-  window.localStorage.setItem(
-    WEB_SPACE_STORAGE_KEY,
-    JSON.stringify(
-      [...spaces].sort(
-        (left, right) => right.updatedAt - left.updatedAt || right.createdAt - left.createdAt,
-      ),
-    ),
-  );
-}
-
-function readStoredWebCards(): StoredWebCard[] {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(WEB_CARD_STORAGE_KEY);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? parsed.filter(isStoredWebCard) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeStoredWebCards(cards: StoredWebCard[]) {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return;
-  }
-
-  window.localStorage.setItem(WEB_CARD_STORAGE_KEY, JSON.stringify(cards));
-}
-
 function normalizeTags(tags: string[]) {
   const normalized: string[] = [];
 
@@ -692,14 +619,6 @@ function cardPairKey(front: string, back: string) {
   return `${front}\u001f${back}`;
 }
 
-function createWebId(prefix: string) {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
 function formatFileSize(bytes: number) {
   if (bytes < 1024 * 1024) {
     return `${(bytes / 1024).toFixed(1)} KB`;
@@ -710,40 +629,6 @@ function formatFileSize(bytes: number) {
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en-US").format(value);
-}
-
-function isStoredWebSpace(value: unknown): value is StoredWebSpace {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const candidate = value as Partial<StoredWebSpace>;
-  return (
-    typeof candidate.id === "string" &&
-    typeof candidate.name === "string" &&
-    typeof candidate.createdAt === "number" &&
-    typeof candidate.updatedAt === "number"
-  );
-}
-
-function isStoredWebCard(value: unknown): value is StoredWebCard {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const candidate = value as Partial<StoredWebCard>;
-  return (
-    typeof candidate.id === "string" &&
-    typeof candidate.spaceId === "string" &&
-    typeof candidate.front === "string" &&
-    typeof candidate.back === "string" &&
-    Array.isArray(candidate.tags) &&
-    typeof candidate.source === "string" &&
-    typeof candidate.state === "number" &&
-    typeof candidate.due === "number" &&
-    typeof candidate.createdAt === "number" &&
-    typeof candidate.updatedAt === "number"
-  );
 }
 
 function isImportExecutionResult(value: unknown): value is ImportExecutionResult {
