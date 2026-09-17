@@ -1,4 +1,5 @@
 import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
+import { Button } from "../Button";
 import { EyeLogo } from "../dashboard/EyeLogo";
 import { PlusIcon } from "../icons/PlusIcon";
 import { SearchIcon } from "../icons/SearchIcon";
@@ -114,23 +115,18 @@ export function AppTitlebar({
           </div>
         ) : null}
         {onOpenNewCard ? (
-          <button className={styles.titlebarBtnLabel} onClick={onOpenNewCard} type="button">
+          <Button onClick={onOpenNewCard} size="compact" variant="outline">
             <PlusIcon />
             New Card
-          </button>
+          </Button>
         ) : null}
-        <button className={styles.titlebarBtnLabel} onClick={onOpenCreateDialog} type="button">
+        <Button onClick={onOpenCreateDialog} size="compact" variant="outline">
           <PlusIcon />
           New Space
-        </button>
-        <button
-          aria-label="Search"
-          className={styles.titlebarBtn}
-          onClick={onOpenPalette}
-          type="button"
-        >
+        </Button>
+        <Button aria-label="Search" onClick={onOpenPalette} size="iconCompact" variant="outline">
           <SearchIcon />
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { Button } from "../Button";
 import { PlusIcon } from "../icons/PlusIcon";
 import styles from "./Dashboard.module.css";
 import { SpaceCard } from "./SpaceCard";
@@ -14,10 +15,10 @@ export function SpacesSection({ onOpenCreateDialog, onOpenSpace, spaces }: Space
     <section className="section">
       <div className="section-head">
         <span className="section-label">Spaces</span>
-        <button className="btn-ghost" onClick={onOpenCreateDialog} type="button">
+        <Button onClick={onOpenCreateDialog} variant="ghost">
           <PlusIcon />
           New Space
-        </button>
+        </Button>
       </div>
 
       <div className={styles.spacesGrid}>

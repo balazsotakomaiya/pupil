@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Button } from "../Button";
 import { EyeLogo } from "../dashboard/EyeLogo";
 import { BackIcon } from "../icons/BackIcon";
 import { DeleteIcon } from "../icons/DeleteIcon";
@@ -54,10 +55,10 @@ export function SpaceDetailsTitlebar({
 
         <div className={styles.titlebarSep} />
 
-        <button className={styles.backBtn} onClick={onBack} type="button">
+        <Button className={styles.backBtn} onClick={onBack} variant="bare">
           <BackIcon />
           Dashboard
-        </button>
+        </Button>
 
         <div className={styles.titlebarSep} />
 
@@ -65,28 +66,29 @@ export function SpaceDetailsTitlebar({
       </div>
 
       <div className={styles.titlebarRight}>
-        <button className={styles.titlebarBtnLabel} onClick={onOpenNewCard} type="button">
+        <Button onClick={onOpenNewCard} size="compact" variant="outline">
           <PlusIcon />
           New Card
-        </button>
-        <button className={styles.titlebarBtnLabel} onClick={onOpenAiGenerate} type="button">
+        </Button>
+        <Button onClick={onOpenAiGenerate} size="compact" variant="outline">
           <SparklesIcon />
           AI Generate
-        </button>
-        <button className={styles.titlebarBtnLabel} onClick={onOpenImport} type="button">
+        </Button>
+        <Button onClick={onOpenImport} size="compact" variant="outline">
           <ImportIcon />
           Import
-        </button>
+        </Button>
         <div className="more-menu-wrap" ref={menuRef}>
-          <button
+          <Button
             aria-expanded={isMenuOpen}
             aria-label="More actions"
-            className={`${styles.titlebarBtn}${isMenuOpen ? ` ${styles.active}` : ""}`}
+            className={isMenuOpen ? styles.titlebarActionActive : undefined}
             onClick={() => setIsMenuOpen((open) => !open)}
-            type="button"
+            size="iconCompact"
+            variant="outline"
           >
             <MoreVerticalIcon />
-          </button>
+          </Button>
           {isMenuOpen && (
             <div className="more-menu">
               <button

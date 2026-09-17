@@ -1,5 +1,6 @@
 import type { SpaceSummary } from "@pupil/core";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "../Button";
 import styles from "./Dashboard.module.css";
 import type { StudySummary } from "./types";
 
@@ -66,14 +67,13 @@ export function StudySection({
 
         <div className="study-right">
           <div className="more-menu-wrap" ref={pickerRef}>
-            <button
-              className="study-btn-secondary"
+            <Button
               disabled={!hasStudyableSpaces || !onSelectSpaceForStudy}
               onClick={() => setIsPickerOpen((open) => !open)}
-              type="button"
+              variant="outline"
             >
               {summary.secondaryActionLabel}
-            </button>
+            </Button>
             {isPickerOpen && hasStudyableSpaces && (
               <div className={`more-menu ${styles.spacePickerMenu}`}>
                 {studyableSpaces.map((space) => (
@@ -98,17 +98,16 @@ export function StudySection({
               </div>
             )}
           </div>
-          <button
-            className={`study-btn${tapped ? " study-btn--glow" : ""}`}
+          <Button
+            className={`${styles.studyPrimaryAction}${tapped ? ` ${styles.studyPrimaryActionGlow}` : ""}`}
             onClick={() => setTapped(true)}
             onAnimationEnd={() => {
               setTapped(false);
               onPrimaryAction?.();
             }}
-            type="button"
           >
             {summary.primaryActionLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </section>

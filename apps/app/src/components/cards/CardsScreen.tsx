@@ -1,5 +1,6 @@
 import type { CardRecord, SpaceSummary } from "@pupil/core";
 import { useEffect, useRef, useState } from "react";
+import { Button } from "../Button";
 import { GridIcon } from "../icons/GridIcon";
 import { PlusIcon } from "../icons/PlusIcon";
 import { SearchIcon } from "../icons/SearchIcon";
@@ -170,9 +171,9 @@ export function CardsScreen({
               Cards belong to spaces. Start by creating a topic or subject space, then use the
               manual card editor to build your first deck.
             </p>
-            <button className="study-btn" onClick={onOpenCreateDialog} type="button">
+            <Button className={styles.emptyStateAction} onClick={onOpenCreateDialog}>
               New Space
-            </button>
+            </Button>
           </div>
         </section>
       </div>
@@ -283,10 +284,10 @@ export function CardsScreen({
             </span>
           </div>
           <div className={styles.toolbarTopRight}>
-            <button className="btn-ghost" onClick={handleOpenNewCard} type="button">
+            <Button onClick={handleOpenNewCard} variant="ghost">
               <PlusIcon />
               New Card
-            </button>
+            </Button>
           </div>
         </div>
 

@@ -2,6 +2,7 @@ import type { CardRecord, SpaceStats, SpaceSummary } from "@pupil/core";
 import { buildDueQueue } from "@pupil/core";
 import { type SyntheticEvent, useEffect, useRef, useState } from "react";
 import { SpaceDetailsTitlebar } from "../app-shell";
+import { Button } from "../Button";
 import { CardFormPanel } from "../cards/CardFormPanel";
 import { CardList } from "../cards/CardList";
 import { CARD_SORT_OPTIONS, type CardSortMode, sortCardsForList } from "../cards/cardSort";
@@ -356,12 +357,12 @@ export function SpaceDetailsScreen({
             </div>
 
             <div className="study-right">
-              <button className="study-btn-secondary" onClick={onBack} type="button">
+              <Button onClick={onBack} variant="outline">
                 Dashboard
-              </button>
-              <button className="study-btn" onClick={onStartStudy} type="button">
+              </Button>
+              <Button className={styles.spaceStudyAction} onClick={onStartStudy}>
                 Study this space →
-              </button>
+              </Button>
             </div>
           </div>
         </section>
@@ -542,18 +543,18 @@ export function SpaceDetailsScreen({
           <div className="section-head">
             <span className="section-label">Cards</span>
             <div className={styles.toolbarTopRight}>
-              <button className="btn-ghost" onClick={handleOpenNewCard} type="button">
+              <Button onClick={handleOpenNewCard} variant="ghost">
                 <PlusIcon />
                 New Card
-              </button>
-              <button className="btn-ghost" onClick={onOpenAiGenerate} type="button">
+              </Button>
+              <Button onClick={onOpenAiGenerate} variant="ghost">
                 <SparklesIcon />
                 AI Generate
-              </button>
-              <button className="btn-ghost" onClick={onOpenImport} type="button">
+              </Button>
+              <Button onClick={onOpenImport} variant="ghost">
                 <ImportIcon />
                 Import
-              </button>
+              </Button>
             </div>
           </div>
 

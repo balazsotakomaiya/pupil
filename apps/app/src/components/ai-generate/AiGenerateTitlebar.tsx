@@ -1,4 +1,5 @@
 import styles from "../app-shell/AppTitlebar.module.css";
+import { Button } from "../Button";
 import { EyeLogo } from "../dashboard/EyeLogo";
 import { BackIcon } from "../icons/AiGenerateIcons";
 
@@ -18,10 +19,10 @@ export function AiGenerateTitlebar({ backLabel, onBack }: AiGenerateTitlebarProp
 
         <div className={styles.titlebarSep} />
 
-        <button className={styles.backBtn} onClick={onBack} type="button">
+        <Button className={styles.backBtn} onClick={onBack} variant="bare">
           <BackIcon />
           {backLabel}
-        </button>
+        </Button>
 
         <div className={styles.titlebarSep} />
 

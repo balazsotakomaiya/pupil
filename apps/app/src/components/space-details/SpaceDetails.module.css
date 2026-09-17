@@ -459,6 +459,10 @@
 /* ── Responsive ── */
 
 @media (max-width: 768px) {
+  .spaceStudyAction {
+    width: 100%;
+  }
+
   .chartsGrid {
     grid-template-columns: 1fr;
   }
