@@ -9,23 +9,37 @@ Create focused study spaces. Import Anki decks. Generate cards from any topic wi
 
 ## Screenshots
 
-<p>
-  <img src="apps/site/src/assets/screenshots/dashboard.png" alt="Pupil dashboard showing due cards, study stats, and learning spaces" width="100%">
-</p>
+<div align="center">
+
+<img width="100%" alt="Pupil dashboard showing due cards, study stats, and learning spaces" src="apps/site/src/assets/screenshots/dashboard.png" />
+
+</div>
 
 <table>
-  <tr>
-    <td width="50%">
-      <img src="apps/site/src/assets/screenshots/ai-generate.png" alt="AI Generate screen with prompt, space, difficulty, style, and count controls">
-    </td>
-    <td width="50%">
-      <img src="apps/site/src/assets/screenshots/study-review.png" alt="Study screen showing a revealed flashcard answer and FSRS rating buttons">
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Generate cards from a topic</strong></td>
-    <td><strong>Review with FSRS scheduling</strong></td>
-  </tr>
+<tr>
+<td width="50%" valign="middle">
+
+### Generate cards from a topic
+
+Draft a deck from a prompt with space, difficulty, style, and count controls. Review what the model returns before anything lands in your library.
+
+</td>
+<td width="50%">
+<img src="apps/site/src/assets/screenshots/ai-generate.png" alt="AI Generate screen with prompt, space, difficulty, style, and count controls" width="100%" />
+</td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### Review with FSRS scheduling
+
+Reveal the answer, rate your recall, and let FSRS handle the next due date — a focused study flow without clutter.
+
+</td>
+<td width="50%">
+<img src="apps/site/src/assets/screenshots/study-review.png" alt="Study screen showing a revealed flashcard answer and FSRS rating buttons" width="100%" />
+</td>
+</tr>
 </table>
 
 ## Get Pupil
