@@ -471,6 +471,12 @@
   font-size: 14px;
 }
 
+@media (max-width: 768px) {
+  .emptyStateAction {
+    width: 100%;
+  }
+}
+
 @media (max-width: 640px) {
   .cardListHeader,
   .cardRowMain {

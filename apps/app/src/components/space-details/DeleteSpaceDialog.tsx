@@ -1,3 +1,4 @@
+import { Button } from "../Button";
 import { CloseIcon } from "../icons/CloseIcon";
 import { Modal } from "../modal";
 
@@ -32,34 +33,24 @@ export function DeleteSpaceDialog({
               undone.
             </p>
           </div>
-          <button
+          <Button
             aria-label="Close"
-            className="dialog-close"
             disabled={isDeleting}
             onClick={onClose}
-            type="button"
+            size="icon"
+            variant="outline"
           >
             <CloseIcon />
-          </button>
+          </Button>
         </div>
 
         <div className="dialog-actions">
-          <button
-            className="study-btn-secondary"
-            disabled={isDeleting}
-            onClick={onClose}
-            type="button"
-          >
+          <Button disabled={isDeleting} onClick={onClose} variant="outline">
             Cancel
-          </button>
-          <button
-            className="study-btn danger-btn"
-            disabled={isDeleting}
-            onClick={onConfirm}
-            type="button"
-          >
+          </Button>
+          <Button disabled={isDeleting} onClick={onConfirm} variant="destructive">
             {isDeleting ? "Deleting…" : "Delete space"}
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>

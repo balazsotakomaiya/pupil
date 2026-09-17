@@ -111,25 +111,7 @@
 }
 
 .backBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1-5);
-  padding: var(--space-1) 0;
-  border: none;
-  background: transparent;
-  color: var(--text-tertiary);
-  font-size: 13px;
-  font-weight: 500;
-  transition: color 0.15s ease;
-}
-
-.backBtn:hover {
-  color: var(--text-secondary);
-}
-
-.backBtn svg {
-  width: 14px;
-  height: 14px;
+  -webkit-app-region: no-drag;
 }
 
 .breadcrumbName {
@@ -138,54 +120,7 @@
   font-weight: 600;
 }
 
-.titlebarBtn,
-.titlebarBtnLabel {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1-5);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-tertiary);
-  transition:
-    color 0.15s ease,
-    border-color 0.15s ease,
-    background 0.15s ease;
-}
-
-.titlebarBtn:hover,
-.titlebarBtnLabel:hover {
-  background: var(--bg-hover);
-  border-color: var(--border-hover);
-  color: var(--text-primary);
-}
-
-.titlebarBtn {
-  width: 30px;
-  height: 30px;
-}
-
-.titlebarBtn svg {
-  width: 14px;
-  height: 14px;
-}
-
-.titlebarBtnLabel {
-  height: 30px;
-  padding: 0 var(--space-3);
-  white-space: nowrap;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.titlebarBtnLabel svg {
-  width: 13px;
-  height: 13px;
-  opacity: 0.6;
-}
-
-.titlebarBtn.active {
+.titlebarActionActive {
   background: rgba(255, 255, 255, 0.05);
   border-color: var(--border-hover);
   color: var(--text-primary);

@@ -80,98 +80,6 @@
   line-height: 1.5;
 }
 
-/* ─────────────────────── Buttons ─────────────────────── */
-
-/* Base ghost-style button - used by study-btn-secondary, btn-ghost, and dialog-close.
-   AppTitlebar's titlebar-btn and titlebar-btn-label repeat these styles in their own module. */
-.study-btn-secondary,
-.btn-ghost,
-.dialog-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1-5);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-tertiary);
-  transition:
-    color 0.15s ease,
-    border-color 0.15s ease,
-    background 0.15s ease;
-}
-
-.study-btn-secondary:hover,
-.btn-ghost:hover,
-.dialog-close:hover {
-  background: var(--bg-hover);
-  border-color: var(--border-hover);
-  color: var(--text-primary);
-}
-
-.btn-ghost {
-  padding: var(--space-1-5) var(--space-3-5);
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.btn-ghost svg {
-  width: 13px;
-  height: 13px;
-  opacity: 0.6;
-}
-
-.study-btn-secondary {
-  padding: var(--space-2-5) var(--space-4-5);
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.study-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-7);
-  border: none;
-  border-radius: var(--radius);
-  background: var(--text-primary);
-  color: var(--bg);
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
-  transition: opacity 0.15s ease;
-}
-
-.study-btn:hover {
-  opacity: 0.85;
-}
-
-.study-btn:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-@keyframes study-btn-glow {
-  0%   { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); }
-  100% { box-shadow: 0 0 0 12px rgba(255, 255, 255, 0); }
-}
-
-.study-btn--glow {
-  animation: study-btn-glow 0.5s ease-out both;
-}
-
-.study-btn.danger-btn {
-  background: var(--error);
-  color: #fff;
-}
-
-.study-btn.danger-btn:hover {
-  opacity: 0.88;
-}
-
 /* ─────────────────────── Study widget (Dashboard + SpaceDetails) ─────────────────────── */
 
 .study-card,
@@ -326,17 +234,6 @@
   font-size: 14px;
 }
 
-.dialog-close {
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-}
-
-.dialog-close svg {
-  width: 14px;
-  height: 14px;
-}
-
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
@@ -393,14 +290,6 @@
   color: #f87171;
   font-size: 13px;
   line-height: 1.5;
-}
-
-.danger-btn {
-  color: #fca5a5;
-}
-
-.danger-btn:hover {
-  color: #fecaca;
 }
 
 /* ─────────────────────── Misc shared ─────────────────────── */
@@ -529,18 +418,12 @@
     padding: var(--space-7);
   }
 
-  .study-right,
-  .study-btn {
+  .study-right {
     width: 100%;
   }
 
   .study-right {
     flex-direction: column;
-  }
-
-  .study-btn-secondary,
-  .study-btn {
-    justify-content: center;
   }
 
   .stats-grid {

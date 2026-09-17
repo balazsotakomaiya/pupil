@@ -1,5 +1,6 @@
 import type { SyntheticEvent } from "react";
 import { useState } from "react";
+import { Button } from "../Button";
 import { CloseIcon } from "../icons/CloseIcon";
 import { Modal } from "../modal";
 
@@ -47,9 +48,9 @@ export function NewSpaceDialog({
               Start a topic, subject, or project space for your cards.
             </p>
           </div>
-          <button aria-label="Close" className="dialog-close" onClick={onClose} type="button">
+          <Button aria-label="Close" onClick={onClose} size="icon" variant="outline">
             <CloseIcon />
-          </button>
+          </Button>
         </div>
 
         <label className="field">
@@ -70,12 +71,12 @@ export function NewSpaceDialog({
         </label>
 
         <div className={`dialog-actions${shakeKey > 0 ? " shake" : ""}`} key={shakeKey}>
-          <button className="study-btn-secondary" onClick={onClose} type="button">
+          <Button onClick={onClose} variant="outline">
             Cancel
-          </button>
-          <button className="study-btn" disabled={isSubmitting} type="submit">
+          </Button>
+          <Button disabled={isSubmitting} type="submit">
             {isSubmitting ? "Creating..." : "Create Space"}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

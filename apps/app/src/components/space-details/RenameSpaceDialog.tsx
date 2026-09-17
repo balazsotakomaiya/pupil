@@ -1,6 +1,7 @@
 import type { SyntheticEvent } from "react";
 import { useState } from "react";
 import { SPACE_NAME_MAX_LENGTH } from "../../lib/spaces";
+import { Button } from "../Button";
 import { CloseIcon } from "../icons/CloseIcon";
 import { Modal } from "../modal";
 
@@ -49,15 +50,15 @@ export function RenameSpaceDialog({
             <h2 id="rename-space-title">Rename space</h2>
             <p id="rename-space-description">Give this study space a clearer name.</p>
           </div>
-          <button
+          <Button
             aria-label="Close"
-            className="dialog-close"
             disabled={isSubmitting}
             onClick={onClose}
-            type="button"
+            size="icon"
+            variant="outline"
           >
             <CloseIcon />
-          </button>
+          </Button>
         </div>
 
         <label className="field">
@@ -79,17 +80,12 @@ export function RenameSpaceDialog({
         </label>
 
         <div className={`dialog-actions${shakeKey > 0 ? " shake" : ""}`} key={shakeKey}>
-          <button
-            className="study-btn-secondary"
-            disabled={isSubmitting}
-            onClick={onClose}
-            type="button"
-          >
+          <Button disabled={isSubmitting} onClick={onClose} variant="outline">
             Cancel
-          </button>
-          <button className="study-btn" disabled={isSubmitting} type="submit">
+          </Button>
+          <Button disabled={isSubmitting} type="submit">
             {isSubmitting ? "Renaming..." : "Rename space"}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

@@ -16,6 +16,10 @@
   color: var(--text-primary);
 }
 
+.studyPrimaryActionGlow {
+  animation: studyActionGlow 0.5s ease-out both;
+}
+
 /* ── Spaces grid ── */
 
 .spacesGrid {
@@ -343,6 +347,12 @@
 }
 
 /* ── Responsive ── */
+
+@media (max-width: 768px) {
+  .studyPrimaryAction {
+    width: 100%;
+  }
+}
 
 @media (max-width: 640px) {
   .activityRow {
