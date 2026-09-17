@@ -7,13 +7,6 @@
   max-height: min(calc(100vh - 100px), 980px);
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  background:
-    linear-gradient(180deg, rgba(32, 32, 34, 0.96), rgba(17, 17, 18, 0.98)), rgba(17, 17, 17, 0.96);
-  box-shadow:
-    0 30px 90px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
   overflow: hidden;
 }
 
@@ -33,8 +26,8 @@
   flex-shrink: 0;
   isolation: isolate;
   padding-bottom: var(--space-3-5);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: linear-gradient(180deg, #202022, #18181a);
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-elevated) 72%, var(--bg-subtle));
 }
 
 .newCardHead {
@@ -194,11 +187,11 @@
 }
 
 .newCardDiscardBtn.danger {
-  color: #fca5a5;
+  color: var(--error);
 }
 
 .newCardDiscardBtn.danger:hover:not(:disabled) {
-  color: #fecaca;
+  color: color-mix(in srgb, var(--error) 78%, var(--text-primary));
 }
 
 .newCardSaveBtn {
@@ -437,7 +430,7 @@
 }
 
 .newCardTagRemove:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
   color: var(--text-secondary);
 }
 
@@ -505,7 +498,7 @@
 
 .newCardError {
   margin: var(--space-4) var(--space-6) 0;
-  color: #fca5a5;
+  color: var(--error);
   font-size: 13px;
 }
 
@@ -663,7 +656,7 @@
   padding: 1px 5px;
   border: 1px solid var(--border);
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
   font-family: var(--font-mono);
   font-size: 12px;
 }
@@ -686,7 +679,7 @@
   padding: 1px var(--space-1-5);
   border: 1px solid var(--border);
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
   color: var(--text-tertiary);
   font-family: var(--font-mono);
   font-size: 9px;
@@ -790,27 +783,18 @@
 }
 
 @keyframes dialog-heartbeat {
-  0% {
+  0%,
+  100% {
     transform: scale(1);
-    box-shadow:
-      0 30px 90px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
   38% {
     transform: scale(1.012);
     box-shadow:
-      0 36px 100px rgba(0, 0, 0, 0.56),
-      0 0 0 1px rgba(16, 185, 129, 0.2),
-      0 0 0 10px rgba(16, 185, 129, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  }
-
-  100% {
-    transform: scale(1);
-    box-shadow:
-      0 30px 90px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      0 36px 100px color-mix(in srgb, var(--text-primary) 22%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--success) 22%, transparent),
+      0 0 0 10px color-mix(in srgb, var(--success) 10%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--text-primary) 5%, transparent);
   }
 }
 
