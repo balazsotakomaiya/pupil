@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useMemo } from "react";
+import { type ReactNode, useCallback, useMemo, useState } from "react";
 import { CommandPalette } from "../components/app-shell";
 import { NewSpaceDialog } from "../components/dashboard";
 import { ShellActionsContext } from "./shell-actions";
@@ -10,14 +10,21 @@ type ShellActionsProviderProps = {
 };
 
 export function ShellActionsProvider({ children }: ShellActionsProviderProps) {
+  const [newCardRequested, setNewCardRequested] = useState(false);
+  const requestNewCardEditor = useCallback(() => setNewCardRequested(true), []);
+  const consumeNewCardRequest = useCallback(() => setNewCardRequested(false), []);
   const newSpaceDialog = useNewSpaceDialog();
   const commandPalette = useCommandPalette({ onOpenCreateDialog: newSpaceDialog.open });
   const closeShellOverlays = useCallback(() => {
+    setNewCardRequested(false);
     newSpaceDialog.close();
     commandPalette.close();
   }, [commandPalette.close, newSpaceDialog.close]);
   const actions = useMemo(
     () => ({
+      newCardRequested,
+      requestNewCardEditor,
+      consumeNewCardRequest,
       closeCreateDialog: newSpaceDialog.close,
       closeShellOverlays,
       openCommandPalette: commandPalette.open,
@@ -25,6 +32,9 @@ export function ShellActionsProvider({ children }: ShellActionsProviderProps) {
       toggleCommandPalette: commandPalette.toggle,
     }),
     [
+      newCardRequested,
+      requestNewCardEditor,
+      consumeNewCardRequest,
       closeShellOverlays,
       commandPalette.open,
       commandPalette.toggle,

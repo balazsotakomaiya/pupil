@@ -23,6 +23,20 @@ pub(crate) fn decode_tags(tags_json: Option<String>) -> rusqlite::Result<Vec<Str
     }
 }
 
+/// Clamps a string to `max_chars` characters, appending an ellipsis when it had
+/// to cut. Operates on characters rather than bytes so it cannot split a
+/// multi-byte sequence and panic.
+pub(crate) fn truncate_chars(value: &str, max_chars: usize) -> String {
+    let mut chars = value.chars();
+    let truncated = chars.by_ref().take(max_chars).collect::<String>();
+
+    if chars.next().is_some() {
+        format!("{truncated}…")
+    } else {
+        truncated
+    }
+}
+
 pub(crate) fn now_ms() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)

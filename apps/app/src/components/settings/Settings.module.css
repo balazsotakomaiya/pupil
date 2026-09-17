@@ -87,15 +87,15 @@
 .settingsDataCards {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 0;
 }
 
 .settingsAboutMeta {
   display: flex;
   flex-direction: column;
   gap: var(--space-2-5);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--border);
+  padding-top: var(--space-5);
+  margin-top: var(--space-5);
 }
 
 .settingsField {
@@ -223,7 +223,7 @@
 .settingsAboutLink {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--space-1);
   background: transparent;
   transition:
     color 0.15s ease,
@@ -249,7 +249,7 @@
 .settingsDataBtn:hover,
 .settingsAboutLink:hover {
   border-color: var(--border-hover);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-hover);
   color: var(--text-primary);
 }
 
@@ -286,6 +286,7 @@
 
 .settingsConnectionStatus {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2-5) var(--space-3-5);
@@ -295,20 +296,21 @@
 }
 
 .settingsConnectionStatus.success {
-  border: 1px solid #10b98130;
+  border: 1px solid color-mix(in srgb, var(--success) 19%, transparent);
   background: var(--success-dim);
   color: var(--success);
 }
 
 .settingsConnectionStatus.error {
-  border: 1px solid #ef444430;
-  background: #ef444415;
-  color: #ef4444;
+  border: 1px solid color-mix(in srgb, var(--error) 19%, transparent);
+  background: var(--error-dim);
+  color: var(--error);
 }
 
 .settingsConnectionStatus.idle {
-  border: 1px solid var(--border);
-  background: var(--bg-elevated);
+  padding: 0;
+  border: none;
+  background: transparent;
   color: var(--text-secondary);
 }
 
@@ -324,7 +326,7 @@
 }
 
 .settingsConnectionStatus.error .statusDot {
-  background: #ef4444;
+  background: var(--error);
 }
 
 .settingsConnectionStatus.idle .statusDot {
@@ -332,6 +334,8 @@
 }
 
 .settingsConnectionStatus .statusDetail {
+  overflow-wrap: anywhere;
+  min-width: 0;
   margin-left: var(--space-1);
   opacity: 0.7;
   font-family: var(--font-mono);
@@ -427,10 +431,7 @@
 
 .settingsDataCard,
 .settingsAboutCard {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--bg-subtle);
-  transition: border-color 0.2s ease;
+  background: transparent;
 }
 
 .settingsDataCard {
@@ -438,7 +439,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-5) var(--space-6);
+  padding: var(--space-5) 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .settingsDataCard:hover,
@@ -447,7 +449,10 @@
 }
 
 .settingsDataCard.danger {
-  border-color: #ef444425;
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border);
+  border-bottom: none;
 }
 
 .settingsDataCardLeft,
@@ -457,6 +462,7 @@
 }
 
 .settingsDataCardLeft {
+  min-width: 0;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-0-5);
@@ -482,6 +488,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.2px;
+  overflow-wrap: anywhere;
 }
 
 .settingsDataCardValue {
@@ -508,17 +515,17 @@
 }
 
 .settingsDataBtn.danger {
-  border-color: #ef444440;
-  color: #ef4444;
+  border-color: color-mix(in srgb, var(--error) 25%, transparent);
+  color: var(--error);
 }
 
 .settingsDataBtn.danger:hover {
-  border-color: #ef4444;
-  background: #ef444415;
+  border-color: var(--error);
+  background: var(--error-dim);
 }
 
 .settingsDataBtn.danger:disabled:hover {
-  border-color: #ef444440;
+  border-color: color-mix(in srgb, var(--error) 25%, transparent);
   background: transparent;
 }
 
@@ -570,7 +577,7 @@
 
 .settingsAboutCard {
   max-width: 560px;
-  padding: var(--space-7);
+  padding: 0;
 }
 
 .settingsAboutTop {
@@ -843,10 +850,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-3-5) var(--space-4);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg-subtle);
+  padding: 0;
 }
 
 .settingsToggleText {
@@ -902,4 +906,45 @@
 .settingsToggleSwitch:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.settingsPage [hidden] {
+  display: none;
+}
+
+.settingsModelHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.settingsModelRefresh {
+  padding: var(--space-1) 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.settingsModelRefresh:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.settingsConnectionActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.settingsModelChip {
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.settingsNavItem:focus-visible,
+.settingsModelRefresh:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
 }

@@ -46,26 +46,14 @@ export function SettingsAboutCard({
         </div>
       </div>
 
+      <p className={styles.settingsSectionDesc}>
+        Open-source flashcards. Your study data stays on this device.
+      </p>
+
       <div className={styles.settingsAboutMeta}>
         <div className={styles.settingsAboutRow}>
           <span className={styles.settingsAboutLabel}>License</span>
           <span className={styles.settingsAboutVal}>MIT</span>
-        </div>
-        <div className={styles.settingsAboutRow}>
-          <span className={styles.settingsAboutLabel}>Runtime</span>
-          <span className={styles.settingsAboutVal}>Tauri v2 + React 19</span>
-        </div>
-        <div className={styles.settingsAboutRow}>
-          <span className={styles.settingsAboutLabel}>Scheduler</span>
-          <span className={styles.settingsAboutVal}>FSRS-5</span>
-        </div>
-        <div className={styles.settingsAboutRow}>
-          <span className={styles.settingsAboutLabel}>Schema</span>
-          <span className={styles.settingsAboutVal}>0001_init</span>
-        </div>
-        <div className={styles.settingsAboutRow}>
-          <span className={styles.settingsAboutLabel}>Database</span>
-          <span className={styles.settingsAboutVal}>SQLite local store</span>
         </div>
       </div>
 

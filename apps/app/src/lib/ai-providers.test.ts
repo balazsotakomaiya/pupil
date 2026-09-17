@@ -25,13 +25,18 @@ describe("AI_PROVIDERS", () => {
 });
 
 describe("getProviderForBaseUrl", () => {
-  it("matches by substring across known providers", () => {
+  it("matches known provider hosts", () => {
     expect(getProviderForBaseUrl("https://api.openai.com/v1")?.id).toBe("openai");
     expect(getProviderForBaseUrl("https://api.anthropic.com/v1")?.id).toBe("anthropic");
     expect(
       getProviderForBaseUrl("https://generativelanguage.googleapis.com/v1beta/openai")?.id,
     ).toBe("gemini");
     expect(getProviderForBaseUrl("https://openrouter.ai/api/v1")?.id).toBe("openrouter");
+  });
+
+  it("does not match a provider name in an unrelated URL path or host", () => {
+    expect(getProviderForBaseUrl("https://example.com/openai.com")).toBeNull();
+    expect(getProviderForBaseUrl("https://openai.com.example.com/v1")).toBeNull();
   });
 
   it("returns null for an unknown or empty base URL", () => {
@@ -70,12 +75,12 @@ describe("getProviderForKey", () => {
 
 describe("getDefaultModelForBaseUrl", () => {
   it("returns the provider default when the base URL is known", () => {
-    expect(getDefaultModelForBaseUrl("https://api.anthropic.com/v1")).toBe("claude-sonnet-4-6");
+    expect(getDefaultModelForBaseUrl("https://api.anthropic.com/v1")).toBe("claude-sonnet-5");
     expect(
       getDefaultModelForBaseUrl("https://generativelanguage.googleapis.com/v1beta/openai"),
-    ).toBe("gemini-3.1-pro-preview");
+    ).toBe("gemini-3.8-flash");
     expect(getDefaultModelForBaseUrl("https://openrouter.ai/api/v1")).toBe(
-      "anthropic/claude-opus-4.8",
+      "anthropic/claude-sonnet-5",
     );
   });
 
@@ -88,8 +93,8 @@ describe("getDefaultModelForBaseUrl", () => {
 describe("getRecommendedModelsForBaseUrl", () => {
   it("returns the matching provider's recommended models", () => {
     const models = getRecommendedModelsForBaseUrl("https://api.anthropic.com/v1");
-    expect(models).toContain("claude-sonnet-4-6");
-    expect(models).toContain("claude-opus-4-8");
+    expect(models).toContain("claude-sonnet-5");
+    expect(models).toContain("claude-opus-5");
   });
 
   it("falls back to the default provider's models for unknown base URLs", () => {

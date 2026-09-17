@@ -15,6 +15,7 @@ type AppTitlebarProps = {
   activeTab: AppTabId;
   globalStreak?: number | null;
   onOpenCreateDialog: () => void;
+  onOpenNewCard?: () => void;
   onOpenPalette: () => void;
   onSelectTab: (tabId: AppTabId) => void;
   tabs: AppTab[];
@@ -24,6 +25,7 @@ export function AppTitlebar({
   activeTab,
   globalStreak,
   onOpenCreateDialog,
+  onOpenNewCard,
   onOpenPalette,
   onSelectTab,
   tabs,
@@ -110,6 +112,12 @@ export function AppTitlebar({
             <span className="streak-dot" />
             {globalStreak > 0 ? `${globalStreak} day streak` : "No streak yet"}
           </div>
+        ) : null}
+        {onOpenNewCard ? (
+          <button className={styles.titlebarBtnLabel} onClick={onOpenNewCard} type="button">
+            <PlusIcon />
+            New Card
+          </button>
         ) : null}
         <button className={styles.titlebarBtnLabel} onClick={onOpenCreateDialog} type="button">
           <PlusIcon />

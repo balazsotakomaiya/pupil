@@ -1,6 +1,9 @@
 import { createContext, useContext } from "react";
 
 export type ShellActions = {
+  newCardRequested?: boolean;
+  requestNewCardEditor?: () => void;
+  consumeNewCardRequest?: () => void;
   closeCreateDialog: () => void;
   closeShellOverlays: () => void;
   openCommandPalette: () => void;

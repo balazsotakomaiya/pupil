@@ -1,6 +1,6 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
-use crate::constants::AI_EXPLAIN_SYSTEM_PROMPT;
+use crate::constants::{AI_EXPLAIN_RETRY_BUDGET_SECS, AI_EXPLAIN_SYSTEM_PROMPT};
 use crate::error::{AppError, AppResult};
 use crate::types::ExplainCardPayload;
 
@@ -62,11 +62,18 @@ pub(crate) async fn execute_explain_completion_with_retries(
     settings: &crate::types::ResolvedAiSettings,
     user_prompt: &str,
 ) -> AppResult<String> {
+    let started_at = Instant::now();
+    let budget = Duration::from_secs(AI_EXPLAIN_RETRY_BUDGET_SECS);
     let mut attempt = 0;
+
     loop {
         match execute_ai_completion(settings, user_prompt, Some(AI_EXPLAIN_SYSTEM_PROMPT)).await {
             Ok(response) => return Ok(response),
-            Err(error) if is_transient_ai_error(&error) && attempt < 2 => {
+            Err(error)
+                if is_transient_ai_error(&error)
+                    && attempt < 2
+                    && started_at.elapsed() < budget =>
+            {
                 tauri::async_runtime::spawn_blocking(move || {
                     std::thread::sleep(Duration::from_millis(100 * 2_u64.pow(attempt)));
                 })

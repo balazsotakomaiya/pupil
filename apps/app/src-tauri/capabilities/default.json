@@ -3,5 +3,10 @@
   "identifier": "default",
   "description": "Default capability for the main Pupil window.",
   "windows": ["main"],
-  "permissions": ["core:default", "mcp-bridge:default", "opener:default", "stronghold:default"]
+  "permissions": [
+    "core:default",
+    "core:window:allow-set-theme",
+    "opener:default",
+    "stronghold:default"
+  ]
 }

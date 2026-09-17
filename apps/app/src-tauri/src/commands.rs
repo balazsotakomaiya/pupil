@@ -4,10 +4,11 @@ use tauri::{AppHandle, Manager};
 
 use crate::ai::{
     build_explain_prose_fallback_prompt, build_explain_repair_prompt, build_generate_cards_prompt,
-    execute_ai_completion, execute_explain_completion_with_retries, load_ai_settings_state,
-    load_resolved_ai_settings, normalize_ai_settings_input, normalize_generate_cards_input,
-    parse_explain_card_response, parse_generated_cards_response, resolve_ai_settings_for_test,
-    save_ai_settings_rows,
+    execute_ai_completion, execute_explain_completion_with_retries, fetch_model_catalog,
+    load_ai_settings_state, load_resolved_ai_settings, normalize_ai_settings_input,
+    normalize_generate_cards_input, parse_explain_card_response, parse_generated_cards_response,
+    resolve_ai_settings_for_test, resolve_model_catalog_credentials, save_ai_settings_rows,
+    AiModelCatalog, ListAiModelsInput,
 };
 use crate::analytics::{list_space_stats_rows, load_dashboard_stats};
 use crate::app::{
@@ -18,7 +19,9 @@ use crate::cards::{
     review_card_row, save_card_explanation, suspend_card_row, undo_review_card_row,
     update_card_row,
 };
-use crate::constants::AI_SYSTEM_PROMPT;
+use crate::constants::{
+    AI_SYSTEM_PROMPT, FRONTEND_LOG_MAX_CONTEXT_CHARS, FRONTEND_LOG_MAX_MESSAGE_CHARS,
+};
 use crate::error::{AppError, AppResult};
 use crate::imports::import_anki_cards_row;
 use crate::migration_runner::{
@@ -39,12 +42,12 @@ use crate::tray;
 use crate::types::{
     AiConnectionTestResult, AiSettingsState, BootstrapState, CardSummary, CreateCardInput,
     DashboardStats, ExplainCardInput, ExplainCardPayload, ExplainCardResult, ExportDataResult,
-    GenerateCardsInput, GeneratedCardPayload, ImportAnkiInput, ImportAnkiResult,
+    FrontendLogInput, GenerateCardsInput, GeneratedCardPayload, ImportAnkiInput, ImportAnkiResult,
     RecentActivityEntry, ResolvedAiSettings, ReviewCardInput, SaveAiSettingsInput,
     SettingsDataSummary, SpaceStats, SpaceSummary, StudyQueueSnapshot, StudySettingsState,
     SuspendCardInput, UndoReviewCardInput, UpdateCardInput,
 };
-use crate::util::now_ms;
+use crate::util::{now_ms, truncate_chars};
 
 async fn run_blocking<T: Send + 'static>(
     operation: impl FnOnce() -> AppResult<T> + Send + 'static,
@@ -257,6 +260,20 @@ pub(crate) async fn save_ai_settings(
         save_ai_settings_rows(&app, &mut connection, normalized)
     })
     .await
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(app, input))]
+pub(crate) async fn list_ai_models(
+    app: AppHandle,
+    input: ListAiModelsInput,
+) -> AppResult<AiModelCatalog> {
+    let (base_url, api_key) = run_blocking(move || {
+        let connection = open_app_connection(&app)?;
+        resolve_model_catalog_credentials(&app, &connection, input)
+    })
+    .await?;
+    fetch_model_catalog(&base_url, api_key.as_deref()).await
 }
 
 #[tauri::command]
@@ -520,6 +537,25 @@ pub(crate) fn reset_all_data(app: AppHandle) -> Result<(), AppError> {
 #[tracing::instrument(skip(app))]
 pub(crate) fn refresh_tray_status(app: AppHandle) -> Result<(), AppError> {
     tray::refresh_tray(&app)
+}
+
+/// Records a renderer log line into the backend's rotating log file. Levels
+/// other than `error`/`warn` fall through to `info` rather than being rejected,
+/// because dropping a diagnostic is worse than filing it slightly too low.
+#[tauri::command]
+pub(crate) fn log_frontend_event(input: FrontendLogInput) {
+    let message = truncate_chars(&input.message, FRONTEND_LOG_MAX_MESSAGE_CHARS);
+    let context = input
+        .context
+        .as_deref()
+        .map(|value| truncate_chars(value, FRONTEND_LOG_MAX_CONTEXT_CHARS))
+        .unwrap_or_default();
+
+    match input.level.as_str() {
+        "error" => tracing::error!(target: "frontend", context = %context, "{message}"),
+        "warn" => tracing::warn!(target: "frontend", context = %context, "{message}"),
+        _ => tracing::info!(target: "frontend", context = %context, "{message}"),
+    }
 }
 
 #[tauri::command]

@@ -374,8 +374,8 @@
 }
 
 .aiGenAutoToggle.active .aiGenToggleTrack {
-  border-color: #10b98140;
-  background: #10b98125;
+  border-color: color-mix(in srgb, var(--success) 25%, transparent);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
 }
 
 .aiGenAutoToggle.active .aiGenToggleThumb {
@@ -449,7 +449,7 @@
   gap: var(--space-1-5);
   padding: 0;
   border: 0;
-  border-bottom: 1px dashed #10b98160;
+  border-bottom: 1px dashed color-mix(in srgb, var(--success) 38%, transparent);
   background: transparent;
   color: var(--success);
   transition:
@@ -556,15 +556,15 @@
   align-items: center;
   justify-content: center;
   margin-bottom: var(--space-5);
-  border: 1px solid #ef444425;
+  border: 1px solid color-mix(in srgb, var(--error) 15%, transparent);
   border-radius: 12px;
-  background: #ef444415;
+  background: var(--error-dim);
 }
 
 .aiGenErrorIcon svg {
   width: 20px;
   height: 20px;
-  color: #ef4444;
+  color: var(--error);
 }
 
 .aiGenErrorDesc {
@@ -610,7 +610,7 @@
 
 .aiGenErrorBtn:hover {
   border-color: var(--border-hover);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-hover);
   color: var(--text-primary);
 }
 
@@ -685,7 +685,7 @@
 }
 
 .aiGenBulkBtn.approve {
-  border-color: #10b98130;
+  border-color: color-mix(in srgb, var(--success) 19%, transparent);
   color: var(--success);
 }
 
@@ -786,17 +786,17 @@
 }
 
 .aiGenRcBtn.approve {
-  border-color: #10b98130;
+  border-color: color-mix(in srgb, var(--success) 19%, transparent);
   color: var(--success);
 }
 
 .aiGenRcBtn.approve:hover {
-  border-color: #10b98150;
+  border-color: color-mix(in srgb, var(--success) 31%, transparent);
   background: var(--success-dim);
 }
 
 .aiGenRcBtn.approved {
-  border-color: #10b98130;
+  border-color: color-mix(in srgb, var(--success) 19%, transparent);
   background: var(--success-dim);
   color: var(--success);
 }
@@ -898,7 +898,7 @@
 
 .aiGenModalClose:hover {
   border-color: var(--border-hover);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-hover);
   color: var(--text-secondary);
 }
 

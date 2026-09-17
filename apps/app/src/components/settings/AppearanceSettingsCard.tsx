@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { type AppTheme, applyTheme, getSavedTheme } from "../../lib/theme";
-import { EyeLogo } from "../dashboard/EyeLogo";
 import styles from "./AppearanceSettingsCard.module.css";
 
 const THEME_OPTIONS: Array<{ description: string; label: string; value: AppTheme }> = [
@@ -19,10 +18,6 @@ export function AppearanceSettingsCard() {
   return (
     <div className={styles.appearanceCard}>
       <div className={styles.appearanceIntro}>
-        <div className={styles.logoPreview} aria-hidden="true">
-          <EyeLogo height={22} width={22} />
-          <span>pupil</span>
-        </div>
         <div>
           <div className={styles.appearanceLabel}>Interface theme</div>
           <p className={styles.appearanceHint}>Your choice is saved on this device.</p>

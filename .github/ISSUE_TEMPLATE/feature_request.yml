@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest something Pupil should do.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation you run into, rather than the solution you have in mind. It helps to know what you were trying to get done.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like Pupil to do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Anything you have tried instead?
+      description: Workarounds, other tools, or an approach you considered and rejected.
+
+  - type: checkboxes
+    id: direction
+    attributes:
+      label: Fit
+      description: Pupil is local-first, keeps studying calm and immediate, and prefers an opinionated UI over plugin-era complexity.
+      options:
+        - label: I have read the product direction in the README and think this fits it.

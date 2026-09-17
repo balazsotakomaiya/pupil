@@ -187,7 +187,7 @@
   top: var(--space-4);
   right: var(--space-4);
   padding: var(--space-0-5) var(--space-2);
-  border: 1px solid #10b98125;
+  border: 1px solid color-mix(in srgb, var(--success) 15%, transparent);
   border-radius: 999px;
   background: var(--success-dim);
   color: var(--success);

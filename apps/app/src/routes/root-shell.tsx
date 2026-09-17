@@ -96,6 +96,10 @@ function RootShellContent() {
       globalStreak={globalStreak}
       onOpenCommandPalette={shellActions.openCommandPalette}
       onOpenCreateDialog={shellActions.openCreateDialog}
+      onOpenNewCard={() => {
+        shellActions.requestNewCardEditor?.();
+        void navigate({ to: "/cards" });
+      }}
       onSelectTab={selectMainTab}
       pathname={location.pathname}
       tabs={APP_TABS}

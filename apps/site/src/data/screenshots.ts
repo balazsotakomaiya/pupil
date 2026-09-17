@@ -20,7 +20,7 @@ export const SCREENSHOTS = [
   },
   {
     title: "Answer reveal",
-    caption: "Asses your recall and build toward long-term retention.",
+    caption: "Assess your recall and build toward long-term retention.",
     src: studyReviewScreenshot,
     alt: "Study screen showing a revealed flashcard answer and FSRS rating buttons",
   },

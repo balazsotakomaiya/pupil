@@ -76,7 +76,7 @@
 }
 
 .newCardCloseButton:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-hover);
   border-color: var(--border-hover);
   color: var(--text-primary);
 }
@@ -144,8 +144,8 @@
 }
 
 .newCardMakeAnother.active .newCardToggleTrack {
-  border-color: #10b98140;
-  background: #10b98125;
+  border-color: color-mix(in srgb, var(--success) 25%, transparent);
+  background: color-mix(in srgb, var(--success) 15%, transparent);
 }
 
 .newCardMakeAnother.active .newCardToggleThumb {
@@ -274,7 +274,7 @@
 }
 
 .newCardWordCount.over {
-  color: #ef4444;
+  color: var(--error);
 }
 
 .newCardToolbar {
@@ -378,7 +378,7 @@
 }
 
 .newCardLimitGuidance.over {
-  color: #ef4444;
+  color: var(--error);
   font-style: normal;
 }
 

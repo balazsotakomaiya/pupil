@@ -1,4 +1,5 @@
 mod ai;
+mod ai_models;
 mod analytics;
 mod cards;
 mod explain;

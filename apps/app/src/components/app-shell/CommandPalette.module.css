@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   z-index: 500;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--overlay-dark);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   display: flex;
@@ -19,7 +19,7 @@
   border-radius: 16px;
   box-shadow:
     0 24px 80px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+    0 0 0 1px var(--bg-hover) inset;
   overflow: hidden;
   display: flex;
   flex-direction: column;

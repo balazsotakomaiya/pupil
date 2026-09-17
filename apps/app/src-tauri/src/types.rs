@@ -248,6 +248,17 @@ pub(crate) struct ExplainCardInput {
     pub(crate) force: Option<bool>,
 }
 
+/// A log record forwarded from the renderer so frontend failures land in the
+/// same rotating log file as backend ones. Release builds have no devtools, so
+/// without this a user-reported UI bug leaves no trace to ask for.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct FrontendLogInput {
+    pub(crate) level: String,
+    pub(crate) message: String,
+    pub(crate) context: Option<String>,
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ExplainCardResult {

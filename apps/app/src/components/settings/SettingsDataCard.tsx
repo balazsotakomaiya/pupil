@@ -20,13 +20,11 @@ export function SettingsDataCard({
     <div className={`${styles.settingsDataCard}${tone === "danger" ? ` ${styles.danger}` : ""}`}>
       <div className={styles.settingsDataCardLeft}>
         <div className={styles.settingsDataCardTitle}>{title}</div>
+        {value ? <span className={styles.settingsDataCardValue}>{value}</span> : null}
         <div className={styles.settingsDataCardDesc}>{description}</div>
       </div>
 
-      <div className={styles.settingsDataCardRight}>
-        {value ? <span className={styles.settingsDataCardValue}>{value}</span> : null}
-        {action}
-      </div>
+      <div className={styles.settingsDataCardRight}>{action}</div>
     </div>
   );
 }
