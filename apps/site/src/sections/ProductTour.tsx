@@ -1,8 +1,7 @@
 import { useState } from "react";
-import aiGenerateScreenshot from "../assets/screenshots/ai-generate.png";
 import Lightbox from "../components/Lightbox";
 import ScreenshotFrame from "../components/ScreenshotFrame";
-import { SCREENSHOTS } from "../data/screenshots";
+import { AI_GENERATE_FEATURE, SCREENSHOTS } from "../data/screenshots";
 import { cx } from "../lib/cx";
 import shared from "../styles/shared.module.css";
 import styles from "./ProductTour.module.css";
@@ -21,16 +20,13 @@ export default function ProductTour() {
       </p>
       <div className={styles.screenshotFeature}>
         <div className={styles.screenshotCopy}>
-          <p className={styles.screenshotKicker}>AI generation</p>
-          <h3>Turn a topic into a reviewed deck</h3>
-          <p>
-            Pupil drafts cards from your prompt, then keeps you in the loop before anything is
-            saved.
-          </p>
+          <p className={styles.screenshotKicker}>{AI_GENERATE_FEATURE.kicker}</p>
+          <h3>{AI_GENERATE_FEATURE.heading}</h3>
+          <p>{AI_GENERATE_FEATURE.body}</p>
         </div>
         <ScreenshotFrame
-          src={aiGenerateScreenshot}
-          alt="AI Generate screen with prompt, space, difficulty, style, and count controls"
+          src={AI_GENERATE_FEATURE.src}
+          alt={AI_GENERATE_FEATURE.alt}
           onOpen={openLightbox}
           className={styles.cardFrame}
         />

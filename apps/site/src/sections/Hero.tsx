@@ -1,6 +1,6 @@
-import dashboardScreenshot from "../assets/screenshots/dashboard.png";
 import DownloadCTA from "../components/DownloadCTA";
 import ScreenshotFrame from "../components/ScreenshotFrame";
+import { DASHBOARD_SCREENSHOT } from "../data/screenshots";
 import { DESKTOP_APP_VERSION } from "../lib/constants";
 import { cx } from "../lib/cx";
 import styles from "./Hero.module.css";
@@ -36,11 +36,7 @@ export default function Hero() {
       </div>
 
       <div className={styles.heroMockup}>
-        <ScreenshotFrame
-          src={dashboardScreenshot}
-          alt="Pupil dashboard showing due cards, study stats, and learning spaces"
-          priority
-        />
+        <ScreenshotFrame src={DASHBOARD_SCREENSHOT.src} alt={DASHBOARD_SCREENSHOT.alt} priority />
       </div>
     </section>
   );

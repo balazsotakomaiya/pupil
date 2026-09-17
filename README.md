@@ -11,7 +11,7 @@ Create focused study spaces. Import Anki decks. Generate cards from any topic wi
 
 <div align="center">
 
-<img width="100%" alt="Pupil dashboard showing due cards, study stats, and learning spaces" src="apps/site/src/assets/screenshots/dashboard.png" />
+<img width="100%" alt="Pupil dashboard with due queue, study stats, and spaces list" src="apps/site/src/assets/screenshots/dashboard.png" />
 
 </div>
 
@@ -21,11 +21,35 @@ Create focused study spaces. Import Anki decks. Generate cards from any topic wi
 
 ### Generate cards from a topic
 
-Draft a deck from a prompt with space, difficulty, style, and count controls. Review what the model returns before anything lands in your library.
+Describe a topic, pick a space and options, then review generated cards before saving anything.
 
 </td>
 <td width="50%">
-<img src="apps/site/src/assets/screenshots/ai-generate.png" alt="AI Generate screen with prompt, space, difficulty, style, and count controls" width="100%" />
+<img src="apps/site/src/assets/screenshots/ai-generate.png" alt="AI Generate screen with topic prompt, space picker, difficulty, style, count, and Auto controls" width="100%" />
+</td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### Approve cards before they save
+
+Regenerate, discard, or approve each draft, then save only the cards you want into the space.
+
+</td>
+<td width="50%">
+<img src="apps/site/src/assets/screenshots/ai-review.png" alt="Review generated cards screen with per-card regenerate, discard, and approve actions" width="100%" />
+</td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### Study one card at a time
+
+Question first—tap Show answer or press Space when you are ready.
+
+</td>
+<td width="50%">
+<img src="apps/site/src/assets/screenshots/study-front.png" alt="Study screen showing the front of a flashcard and a Show answer control" width="100%" />
 </td>
 </tr>
 <tr>
@@ -33,11 +57,47 @@ Draft a deck from a prompt with space, difficulty, style, and count controls. Re
 
 ### Review with FSRS scheduling
 
-Reveal the answer, rate your recall, and let FSRS handle the next due date — a focused study flow without clutter.
+Rate recall with Again, Hard, Good, or Easy so FSRS schedules the next review.
 
 </td>
 <td width="50%">
-<img src="apps/site/src/assets/screenshots/study-review.png" alt="Study screen showing a revealed flashcard answer and FSRS rating buttons" width="100%" />
+<img src="apps/site/src/assets/screenshots/study-review.png" alt="Study screen with revealed answer and FSRS Again, Hard, Good, and Easy buttons" width="100%" />
+</td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### See how a space is doing
+
+Due counts, retention, review activity, FSRS card states, and recent cards for one space.
+
+</td>
+<td width="50%">
+<img src="apps/site/src/assets/screenshots/space-stats.png" alt="Space detail screen with metrics, review activity chart, card states, and recent activity table" width="100%" />
+</td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### Jump anywhere from ⌘K
+
+Search cards, spaces, or actions—study due cards, generate, import, or open settings from one overlay.
+
+</td>
+<td width="50%">
+<img src="apps/site/src/assets/screenshots/command-palette.png" alt="Command palette overlay with search field, actions list, and spaces list over the dashboard" width="100%" />
+</td>
+</tr>
+<tr>
+<td width="50%" valign="middle">
+
+### Bring Anki decks home
+
+Drag an `.apkg` file in; each Anki deck can become its own Pupil space with fresh FSRS scheduling.
+
+</td>
+<td width="50%">
+<img src="apps/site/src/assets/screenshots/import.png" alt="Import screen with drop zone for .apkg files, deck-to-space option, and last import history" width="100%" />
 </td>
 </tr>
 </table>
