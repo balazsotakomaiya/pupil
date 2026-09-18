@@ -1,9 +1,8 @@
 import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import "./global.css";
 import App from "./App";
-import Manifesto from "./Manifesto";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -25,7 +24,8 @@ createRoot(rootElement).render(
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<App />} />
-        <Route path="/manifesto" element={<Manifesto />} />
+        {/* Redirect until manifesto rewrite ships — see #34 */}
+        <Route path="/manifesto" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,
