@@ -7,6 +7,8 @@ import {
   hasConfiguredAiKey,
   loadAiSettings,
 } from "../../lib/ai-settings";
+import { isTauriRuntime } from "../../lib/runtime";
+import { DesktopAiNotice } from "../DesktopAiNotice";
 import styles from "./AiGenerate.module.css";
 import { AiGenerateError } from "./AiGenerateError";
 import { AiGenerateForm, NEW_SPACE_OPTION_ID } from "./AiGenerateForm";
@@ -50,7 +52,7 @@ export function AiGenerateScreen({
   spaces,
 }: AiGenerateScreenProps) {
   const [aiSettings, setAiSettings] = useState<AiSettings>(DEFAULT_AI_SETTINGS);
-  const [isSettingsLoading, setIsSettingsLoading] = useState(true);
+  const [isSettingsLoading, setIsSettingsLoading] = useState(() => isTauriRuntime());
   const [mode, setMode] = useState<AiGenerateMode>("form");
   const [draft, setDraft] = useState<AiGenerateDraft>(() =>
     createInitialDraft(spaces, initialSpaceId),
@@ -66,6 +68,10 @@ export function AiGenerateScreen({
   const endpointHost = getEndpointHost(aiSettings.baseUrl);
 
   useEffect(() => {
+    if (!isTauriRuntime()) {
+      return;
+    }
+
     let cancelled = false;
 
     async function loadSettings() {
@@ -263,7 +269,9 @@ export function AiGenerateScreen({
       <AiGenerateTitlebar backLabel={backLabel} onBack={onBack} />
 
       <div className={`page ${styles.aiGenPage}`}>
-        {isSettingsLoading ? (
+        {!isTauriRuntime() ? (
+          <DesktopAiNotice layout="page" />
+        ) : isSettingsLoading ? (
           <AiGenerateLoading model="AI provider" topic="Loading saved settings" />
         ) : mode === "no-key" ? (
           <AiGenerateNoKey onOpenSettings={onOpenSettings} />

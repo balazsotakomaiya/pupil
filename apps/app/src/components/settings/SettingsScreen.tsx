@@ -20,6 +20,7 @@ import {
   getSettingsDataSummary,
 } from "../../lib/data-actions";
 import { isTauriRuntime } from "../../lib/runtime";
+import { DesktopAiNotice } from "../DesktopAiNotice";
 import {
   ArrowRightIcon,
   ChevronRightIcon,
@@ -586,237 +587,243 @@ export function SettingsScreen({
           <div className={styles.settingsSectionHead}>
             <div className={styles.settingsSectionTitle}>AI Provider</div>
             <div className={styles.settingsSectionDesc}>
-              Connect a provider for card generation and study explanations.
+              {isTauriRuntime()
+                ? "Connect a provider for card generation and study explanations."
+                : "Generation and explanations run in Pupil for desktop."}
             </div>
           </div>
 
-          <div className={styles.settingsFieldGroup}>
-            <div className={styles.settingsField}>
-              <label className={styles.settingsFieldLabel} htmlFor="settings-base-url">
-                Base URL
-                {recentlySaved && lastSavedField === "baseUrl" && (
-                  <span className={styles.settingsAutosaveBadge}>Saved</span>
-                )}
-              </label>
-              <input
-                className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
-                disabled={isSettingsBusy}
-                id="settings-base-url"
-                onChange={(event) => {
-                  markSettingsEdited();
-                  const value = event.target.value;
-                  setBaseUrl(value);
-                  const detectedModel = detectModelFromUrl(value);
-                  if (
-                    detectedModel &&
-                    getProviderForBaseUrl(value)?.id !== getProviderForBaseUrl(baseUrl)?.id
-                  )
-                    setModel(detectedModel);
-                  scheduleAutoSave("baseUrl");
-                }}
-                placeholder={DEFAULT_AI_BASE_URL}
-                type="text"
-                value={baseUrl}
-              />
-              <div className={styles.settingsFieldHint}>
-                OpenAI-compatible or Anthropic. Custom and local endpoints work too.
-              </div>
-            </div>
-            <div className={styles.settingsField}>
-              <label className={styles.settingsFieldLabel} htmlFor="settings-api-key">
-                API Key
-                <span className={styles.settingsLabelBadge}>Stored safely</span>
-              </label>
-              <div className={styles.settingsKeyInputWrap}>
-                <div className={styles.settingsKeyFieldWrap}>
-                  <input
-                    className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
-                    disabled={isSettingsBusy}
-                    id="settings-api-key"
-                    onChange={(event) => {
-                      markSettingsEdited();
-                      const value = event.target.value;
-                      setApiKey(value);
-                      setApiKeyEdited(true);
-                      const provider = detectProviderFromKey(value);
-                      if (
-                        provider &&
-                        provider.baseUrl !== baseUrl &&
-                        baseUrl === DEFAULT_AI_BASE_URL &&
-                        !hasStoredApiKey
-                      ) {
-                        setBaseUrl(provider.baseUrl);
-                        setModel(provider.model);
-                      }
-                    }}
-                    placeholder={hasStoredApiKey ? "Stored — enter to replace" : "sk-..."}
-                    type={showApiKey ? "text" : "password"}
-                    value={apiKey}
-                  />
-                  <button
-                    aria-label={showApiKey ? "Hide API key" : "Show API key"}
-                    className={styles.settingsKeyReveal}
-                    disabled={isSettingsBusy}
-                    onClick={() => setShowApiKey((current) => !current)}
-                    type="button"
-                  >
-                    {showApiKey ? <EyeClosedIcon /> : <EyeOpenIcon />}
-                  </button>
+          {isTauriRuntime() ? (
+            <div className={styles.settingsFieldGroup}>
+              <div className={styles.settingsField}>
+                <label className={styles.settingsFieldLabel} htmlFor="settings-base-url">
+                  Base URL
+                  {recentlySaved && lastSavedField === "baseUrl" && (
+                    <span className={styles.settingsAutosaveBadge}>Saved</span>
+                  )}
+                </label>
+                <input
+                  className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
+                  disabled={isSettingsBusy}
+                  id="settings-base-url"
+                  onChange={(event) => {
+                    markSettingsEdited();
+                    const value = event.target.value;
+                    setBaseUrl(value);
+                    const detectedModel = detectModelFromUrl(value);
+                    if (
+                      detectedModel &&
+                      getProviderForBaseUrl(value)?.id !== getProviderForBaseUrl(baseUrl)?.id
+                    )
+                      setModel(detectedModel);
+                    scheduleAutoSave("baseUrl");
+                  }}
+                  placeholder={DEFAULT_AI_BASE_URL}
+                  type="text"
+                  value={baseUrl}
+                />
+                <div className={styles.settingsFieldHint}>
+                  OpenAI-compatible or Anthropic. Custom and local endpoints work too.
                 </div>
               </div>
-              <div className={styles.settingsFieldHint}>{apiKeyHint}</div>
-            </div>
-            <SettingsModelPicker
-              baseUrl={baseUrl}
-              apiKey={apiKeyEdited ? apiKey : undefined}
-              autoDiscover={
-                activeSection === "ai" &&
-                baseUrl === loadedBaseUrl &&
-                !hasUnsavedChanges &&
-                hasStoredApiKey
-              }
-              disabled={isSettingsBusy}
-              model={model}
-              saved={recentlySaved && lastSavedField === "model"}
-              onChange={(nextModel) => {
-                markSettingsEdited();
-                setModel(nextModel);
-                scheduleAutoSave("model");
-              }}
-            />
-            <div className={styles.settingsConnectionActions}>
-              <div className={styles.settingsKeyActions}>
-                <button
-                  className={styles.settingsKeySaveBtn}
-                  disabled={areSettingsActionsBusy || !hasUnsavedChanges}
-                  onClick={() => void handleSaveSettings()}
-                  type="button"
-                >
-                  {isSavingSettings ? "Saving…" : "Save settings"}
-                </button>
-                <button
-                  className={styles.settingsKeyTestBtn}
-                  disabled={areSettingsActionsBusy}
-                  onClick={() => void handleTestConnection()}
-                  type="button"
-                >
-                  <ArrowRightIcon />
-                  {isTestingConnection ? "Testing…" : "Test connection"}
-                </button>
-              </div>
-            </div>
-            <SettingsConnectionStatus
-              detail={connectionStatus.detail}
-              kind={connectionStatus.kind}
-              label={connectionStatus.label}
-            />
-            <div className="ruler-divider" />
-            <div className={styles.settingsToggleRow}>
-              <div className={styles.settingsToggleText}>
-                <span className={styles.settingsToggleLabel}>
-                  Show "Explain in detail" during study
-                </span>
-                <span className={styles.settingsToggleHint}>
-                  Get a deeper explanation after revealing a card.
-                </span>
-              </div>
-              <button
-                aria-label={
-                  explainEnabled
-                    ? "Disable explain in detail button"
-                    : "Enable explain in detail button"
-                }
-                aria-pressed={explainEnabled}
-                className={`${styles.settingsToggleSwitch}${explainEnabled ? ` ${styles.on}` : ""}`}
-                disabled={isSettingsBusy}
-                onClick={() => {
-                  markSettingsEdited();
-                  setExplainEnabled((current) => {
-                    const next = !current;
-                    setLastSavedField(null);
-                    if (autoSaveTimerRef.current !== null) {
-                      window.clearTimeout(autoSaveTimerRef.current);
-                    }
-                    autoSaveTimerRef.current = window.setTimeout(() => {
-                      autoSaveTimerRef.current = null;
-                      handleAutoSave.current();
-                    }, 400);
-                    return next;
-                  });
-                }}
-                type="button"
-              />
-            </div>
-            <div>
-              <button
-                className={`${styles.settingsAdvancedToggle}${advancedOpen ? ` ${styles.open}` : ""}`}
-                aria-expanded={advancedOpen}
-                aria-controls="settings-generation-options"
-                onClick={() => setAdvancedOpen((current) => !current)}
-                type="button"
-              >
-                <ChevronRightIcon />
-                Generation options
-              </button>
-
-              <div
-                id="settings-generation-options"
-                className={`${styles.settingsAdvancedFields}${advancedOpen ? ` ${styles.open}` : ""}`}
-              >
-                <div className={styles.settingsFieldRow}>
-                  <div className={styles.settingsField}>
-                    <label className={styles.settingsFieldLabel} htmlFor="settings-max-tokens">
-                      Max Tokens
-                      {recentlySaved && lastSavedField === "maxTokens" && (
-                        <span className={styles.settingsAutosaveBadge}>Saved</span>
-                      )}
-                    </label>
+              <div className={styles.settingsField}>
+                <label className={styles.settingsFieldLabel} htmlFor="settings-api-key">
+                  API Key
+                  <span className={styles.settingsLabelBadge}>Stored safely</span>
+                </label>
+                <div className={styles.settingsKeyInputWrap}>
+                  <div className={styles.settingsKeyFieldWrap}>
                     <input
                       className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
                       disabled={isSettingsBusy}
-                      id="settings-max-tokens"
+                      id="settings-api-key"
                       onChange={(event) => {
                         markSettingsEdited();
-                        setMaxTokens(event.target.value);
-                        scheduleAutoSave("maxTokens");
+                        const value = event.target.value;
+                        setApiKey(value);
+                        setApiKeyEdited(true);
+                        const provider = detectProviderFromKey(value);
+                        if (
+                          provider &&
+                          provider.baseUrl !== baseUrl &&
+                          baseUrl === DEFAULT_AI_BASE_URL &&
+                          !hasStoredApiKey
+                        ) {
+                          setBaseUrl(provider.baseUrl);
+                          setModel(provider.model);
+                        }
                       }}
-                      placeholder="4096"
-                      type="text"
-                      value={maxTokens}
+                      placeholder={hasStoredApiKey ? "Stored — enter to replace" : "sk-..."}
+                      type={showApiKey ? "text" : "password"}
+                      value={apiKey}
                     />
-                  </div>
-
-                  <div className={styles.settingsField}>
-                    <label className={styles.settingsFieldLabel} htmlFor="settings-temperature">
-                      Temperature
-                      {recentlySaved && lastSavedField === "temperature" && (
-                        <span className={styles.settingsAutosaveBadge}>Saved</span>
-                      )}
-                    </label>
-                    <input
-                      className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
-                      disabled={isSettingsBusy || !supportsCustomTemperature(model)}
-                      id="settings-temperature"
-                      onChange={(event) => {
-                        markSettingsEdited();
-                        setTemperature(event.target.value);
-                        scheduleAutoSave("temperature");
-                      }}
-                      placeholder="0.0 – 2.0"
-                      type="text"
-                      value={temperature}
-                    />
+                    <button
+                      aria-label={showApiKey ? "Hide API key" : "Show API key"}
+                      className={styles.settingsKeyReveal}
+                      disabled={isSettingsBusy}
+                      onClick={() => setShowApiKey((current) => !current)}
+                      type="button"
+                    >
+                      {showApiKey ? <EyeClosedIcon /> : <EyeOpenIcon />}
+                    </button>
                   </div>
                 </div>
+                <div className={styles.settingsFieldHint}>{apiKeyHint}</div>
+              </div>
+              <SettingsModelPicker
+                baseUrl={baseUrl}
+                apiKey={apiKeyEdited ? apiKey : undefined}
+                autoDiscover={
+                  activeSection === "ai" &&
+                  baseUrl === loadedBaseUrl &&
+                  !hasUnsavedChanges &&
+                  hasStoredApiKey
+                }
+                disabled={isSettingsBusy}
+                model={model}
+                saved={recentlySaved && lastSavedField === "model"}
+                onChange={(nextModel) => {
+                  markSettingsEdited();
+                  setModel(nextModel);
+                  scheduleAutoSave("model");
+                }}
+              />
+              <div className={styles.settingsConnectionActions}>
+                <div className={styles.settingsKeyActions}>
+                  <button
+                    className={styles.settingsKeySaveBtn}
+                    disabled={areSettingsActionsBusy || !hasUnsavedChanges}
+                    onClick={() => void handleSaveSettings()}
+                    type="button"
+                  >
+                    {isSavingSettings ? "Saving…" : "Save settings"}
+                  </button>
+                  <button
+                    className={styles.settingsKeyTestBtn}
+                    disabled={areSettingsActionsBusy}
+                    onClick={() => void handleTestConnection()}
+                    type="button"
+                  >
+                    <ArrowRightIcon />
+                    {isTestingConnection ? "Testing…" : "Test connection"}
+                  </button>
+                </div>
+              </div>
+              <SettingsConnectionStatus
+                detail={connectionStatus.detail}
+                kind={connectionStatus.kind}
+                label={connectionStatus.label}
+              />
+              <div className="ruler-divider" />
+              <div className={styles.settingsToggleRow}>
+                <div className={styles.settingsToggleText}>
+                  <span className={styles.settingsToggleLabel}>
+                    Show "Explain in detail" during study
+                  </span>
+                  <span className={styles.settingsToggleHint}>
+                    Get a deeper explanation after revealing a card.
+                  </span>
+                </div>
+                <button
+                  aria-label={
+                    explainEnabled
+                      ? "Disable explain in detail button"
+                      : "Enable explain in detail button"
+                  }
+                  aria-pressed={explainEnabled}
+                  className={`${styles.settingsToggleSwitch}${explainEnabled ? ` ${styles.on}` : ""}`}
+                  disabled={isSettingsBusy}
+                  onClick={() => {
+                    markSettingsEdited();
+                    setExplainEnabled((current) => {
+                      const next = !current;
+                      setLastSavedField(null);
+                      if (autoSaveTimerRef.current !== null) {
+                        window.clearTimeout(autoSaveTimerRef.current);
+                      }
+                      autoSaveTimerRef.current = window.setTimeout(() => {
+                        autoSaveTimerRef.current = null;
+                        handleAutoSave.current();
+                      }, 400);
+                      return next;
+                    });
+                  }}
+                  type="button"
+                />
+              </div>
+              <div>
+                <button
+                  className={`${styles.settingsAdvancedToggle}${advancedOpen ? ` ${styles.open}` : ""}`}
+                  aria-expanded={advancedOpen}
+                  aria-controls="settings-generation-options"
+                  onClick={() => setAdvancedOpen((current) => !current)}
+                  type="button"
+                >
+                  <ChevronRightIcon />
+                  Generation options
+                </button>
 
-                <div className={styles.settingsFieldHint}>
-                  {supportsCustomTemperature(model)
-                    ? "Lower temperature produces more predictable cards. Higher adds variety."
-                    : "This model controls its own sampling; temperature is not sent."}
+                <div
+                  id="settings-generation-options"
+                  className={`${styles.settingsAdvancedFields}${advancedOpen ? ` ${styles.open}` : ""}`}
+                >
+                  <div className={styles.settingsFieldRow}>
+                    <div className={styles.settingsField}>
+                      <label className={styles.settingsFieldLabel} htmlFor="settings-max-tokens">
+                        Max Tokens
+                        {recentlySaved && lastSavedField === "maxTokens" && (
+                          <span className={styles.settingsAutosaveBadge}>Saved</span>
+                        )}
+                      </label>
+                      <input
+                        className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
+                        disabled={isSettingsBusy}
+                        id="settings-max-tokens"
+                        onChange={(event) => {
+                          markSettingsEdited();
+                          setMaxTokens(event.target.value);
+                          scheduleAutoSave("maxTokens");
+                        }}
+                        placeholder="4096"
+                        type="text"
+                        value={maxTokens}
+                      />
+                    </div>
+
+                    <div className={styles.settingsField}>
+                      <label className={styles.settingsFieldLabel} htmlFor="settings-temperature">
+                        Temperature
+                        {recentlySaved && lastSavedField === "temperature" && (
+                          <span className={styles.settingsAutosaveBadge}>Saved</span>
+                        )}
+                      </label>
+                      <input
+                        className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
+                        disabled={isSettingsBusy || !supportsCustomTemperature(model)}
+                        id="settings-temperature"
+                        onChange={(event) => {
+                          markSettingsEdited();
+                          setTemperature(event.target.value);
+                          scheduleAutoSave("temperature");
+                        }}
+                        placeholder="0.0 – 2.0"
+                        type="text"
+                        value={temperature}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.settingsFieldHint}>
+                    {supportsCustomTemperature(model)
+                      ? "Lower temperature produces more predictable cards. Higher adds variety."
+                      : "This model controls its own sampling; temperature is not sent."}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <DesktopAiNotice layout="section" />
+          )}
         </section>
       </div>
 

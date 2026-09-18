@@ -24,6 +24,7 @@ import {
   invalidateAfterCardMutation,
   invalidateAfterReview,
 } from "../../lib/query";
+import { isTauriRuntime } from "../../lib/runtime";
 import { getStorage } from "../../lib/storage";
 
 function StudyPage({ targetSpaceId }: { targetSpaceId?: string }) {
@@ -89,6 +90,7 @@ function StudyPage({ targetSpaceId }: { targetSpaceId?: string }) {
       title="Study session unavailable"
     >
       <StudyScreen
+        aiAvailable={isTauriRuntime()}
         cards={sessionCards}
         explainButtonEnabled={aiSettings?.explainEnabled ?? true}
         hasAiKey={aiSettings?.hasApiKey ?? false}
