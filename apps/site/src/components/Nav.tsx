@@ -1,9 +1,7 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import styles from "./Nav.module.css";
 
 export default function Nav() {
-  const { pathname } = useLocation();
-
   return (
     <nav className={styles.nav}>
       <div className={styles.navInner}>
@@ -21,14 +19,7 @@ export default function Nav() {
           <li>
             <a href="/#how-it-works">How it works</a>
           </li>
-          <li>
-            <Link
-              to="/manifesto"
-              className={pathname === "/manifesto" ? styles.navLinkActive : undefined}
-            >
-              Manifesto
-            </Link>
-          </li>
+          {/* Manifesto nav restored when rewrite ships — see #34 */}
           <li>
             <a
               href="https://github.com/balazsotakomaiya/pupil"
