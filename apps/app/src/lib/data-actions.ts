@@ -1,7 +1,16 @@
+import { type CardRecord, DEFAULT_NEW_CARDS_LIMIT, type StudyDayRecord } from "@pupil/core";
 import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
 import { clearWebStorage } from "./storage";
-import { ALL_WEB_STORAGE_KEYS, WEB_STORAGE_KEYS } from "./storage/web-store";
+import {
+  readCards,
+  readNewCardsLimit,
+  readReviewLogs,
+  readSpaces,
+  readStudyDays,
+  type StoredReviewLog,
+  type StoredSpace,
+} from "./storage/web-store";
 
 export type SettingsDataSummary = {
   databasePath: string;
@@ -13,6 +22,16 @@ export type ExportDataResult = {
   recordCount: number;
 };
 
+export type WebCollectionExport = {
+  cards: CardRecord[];
+  exportedAt: number;
+  reviewLogs: StoredReviewLog[];
+  spaces: StoredSpace[];
+  studyDays: StudyDayRecord[];
+  studySettings: { newCardsLimit: number | null };
+  version: 1;
+};
+
 export async function getSettingsDataSummary(): Promise<SettingsDataSummary> {
   if (isTauriRuntime()) {
     return invokeCommand<SettingsDataSummary>("get_settings_data_summary");
@@ -20,7 +39,21 @@ export async function getSettingsDataSummary(): Promise<SettingsDataSummary> {
 
   return {
     databasePath: "Browser preview uses localStorage",
-    reviewLogCount: readStoredArray(WEB_STORAGE_KEYS.reviewLogs).length,
+    reviewLogCount: readReviewLogs().length,
+  };
+}
+
+export function buildWebCollectionExport(now = Date.now()): WebCollectionExport {
+  return {
+    version: 1,
+    exportedAt: now,
+    spaces: readSpaces(),
+    cards: readCards(),
+    reviewLogs: readReviewLogs(),
+    studyDays: readStudyDays(),
+    studySettings: {
+      newCardsLimit: readNewCardsLimit(DEFAULT_NEW_CARDS_LIMIT),
+    },
   };
 }
 
@@ -29,21 +62,21 @@ export async function exportDatabaseCopy(): Promise<ExportDataResult> {
     return invokeCommand<ExportDataResult>("export_database_copy");
   }
 
+  const payload = buildWebCollectionExport();
+
   downloadBlob(
-    `pupil-export-${Date.now()}.json`,
-    JSON.stringify(
-      Object.fromEntries(
-        ALL_WEB_STORAGE_KEYS.map((key) => [key, window.localStorage.getItem(key)]),
-      ),
-      null,
-      2,
-    ),
+    `pupil-export-${payload.exportedAt}.json`,
+    JSON.stringify(payload, null, 2),
     "application/json",
   );
 
   return {
     path: "Downloaded in browser",
-    recordCount: 1,
+    recordCount:
+      payload.spaces.length +
+      payload.cards.length +
+      payload.reviewLogs.length +
+      payload.studyDays.length,
   };
 }
 
@@ -52,18 +85,18 @@ export async function exportReviewLogsCsv(): Promise<ExportDataResult> {
     return invokeCommand<ExportDataResult>("export_review_logs_csv");
   }
 
-  const logs = readStoredArray(WEB_STORAGE_KEYS.reviewLogs);
+  const logs = readReviewLogs();
   const rows = [
     "review_time,space_id,grade,state,due,elapsed_days,scheduled_days",
     ...logs.map((log) =>
       [
-        csvField(String(log.reviewTime ?? "")),
-        csvField(String(log.spaceId ?? "")),
-        csvField(String(log.grade ?? "")),
-        csvField(String(log.state ?? "")),
-        csvField(String(log.due ?? "")),
+        csvField(String(log.reviewTime)),
+        csvField(log.spaceId),
+        csvField(String(log.grade)),
+        csvField(String(log.state)),
+        csvField(String(log.due)),
         csvField(String(log.elapsedDays ?? "")),
-        csvField(String(log.scheduledDays ?? "")),
+        csvField(String(log.scheduledDays)),
       ].join(","),
     ),
   ];
@@ -83,25 +116,6 @@ export async function resetAllData(): Promise<void> {
   }
 
   clearWebStorage();
-}
-
-function readStoredArray(key: string): Array<Record<string, unknown>> {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return [];
-  }
-
-  const raw = window.localStorage.getItem(key);
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? (parsed as Array<Record<string, unknown>>) : [];
-  } catch {
-    return [];
-  }
 }
 
 function downloadBlob(filename: string, content: string, type: string) {

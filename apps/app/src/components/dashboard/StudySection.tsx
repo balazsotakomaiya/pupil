@@ -100,10 +100,12 @@ export function StudySection({
           </div>
           <Button
             className={`${styles.studyPrimaryAction}${tapped ? ` ${styles.studyPrimaryActionGlow}` : ""}`}
-            onClick={() => setTapped(true)}
+            onClick={() => {
+              setTapped(true);
+              onPrimaryAction?.();
+            }}
             onAnimationEnd={() => {
               setTapped(false);
-              onPrimaryAction?.();
             }}
           >
             {summary.primaryActionLabel}

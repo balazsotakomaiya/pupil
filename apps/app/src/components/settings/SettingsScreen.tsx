@@ -19,6 +19,7 @@ import {
   exportReviewLogsCsv,
   getSettingsDataSummary,
 } from "../../lib/data-actions";
+import { isTauriRuntime } from "../../lib/runtime";
 import {
   ArrowRightIcon,
   ChevronRightIcon,
@@ -399,11 +400,11 @@ export function SettingsScreen({
       setDataStatus({
         detail: result.path,
         kind: "success",
-        label: "Database exported",
+        label: "Collection exported",
       });
     } catch (error: unknown) {
       setDataStatus({
-        detail: describeAiSettingsError(error, "Database export failed."),
+        detail: describeAiSettingsError(error, "Collection export failed."),
         kind: "error",
         label: "Export failed",
       });
@@ -847,7 +848,11 @@ export function SettingsScreen({
                     {isExportingDatabase ? "Exporting…" : "Export"}
                   </button>
                 }
-                description="A complete SQLite backup of your collection and study progress."
+                description={
+                  isTauriRuntime()
+                    ? "A complete SQLite backup of your collection and study progress."
+                    : "A JSON backup of your spaces, cards, and study progress."
+                }
                 title="Collection backup"
                 value={
                   <>
@@ -879,14 +884,16 @@ export function SettingsScreen({
 
               <SettingsDataCard
                 action={
-                  <button
-                    className={styles.settingsDataBtn}
-                    onClick={() => void handleCopyPath()}
-                    type="button"
-                  >
-                    <CopyIcon />
-                    {copyState === "copied" ? "Copied" : "Copy"}
-                  </button>
+                  isTauriRuntime() ? (
+                    <button
+                      className={styles.settingsDataBtn}
+                      onClick={() => void handleCopyPath()}
+                      type="button"
+                    >
+                      <CopyIcon />
+                      {copyState === "copied" ? "Copied" : "Copy"}
+                    </button>
+                  ) : null
                 }
                 description={
                   <span className={styles.settingsDataCardDescPath}>{databasePath}</span>

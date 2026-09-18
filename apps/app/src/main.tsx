@@ -3,6 +3,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { queryClient } from "./lib/query";
+import { applyRuntimeMarker } from "./lib/runtime";
 import { applySavedTheme } from "./lib/theme";
 import "./styles/animations.css";
 import "./styles/tokens.css";
@@ -16,6 +17,7 @@ if (!rootElement) {
   throw new Error("Root element #root was not found.");
 }
 
+applyRuntimeMarker();
 applySavedTheme();
 
 createRoot(rootElement).render(
