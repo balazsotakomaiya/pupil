@@ -1,3 +1,11 @@
+import {
+  type CreateCardInput,
+  computeNewCardsBudget,
+  type DeleteCardInput,
+  resolveStudyQueueSnapshot,
+  type SuspendCardInput,
+  type UpdateCardInput,
+} from "@pupil/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { CardsScreen } from "../../components/cards";
@@ -8,7 +16,6 @@ import {
   useStudyQueueSnapshotQuery,
   useStudySettingsQuery,
 } from "../../lib/app-queries";
-import { createCard, deleteCard, suspendCard, updateCard } from "../../lib/cards";
 import { toAppError } from "../../lib/errors";
 import { notifyError, notifySuccess } from "../../lib/notifications";
 import {
@@ -16,8 +23,7 @@ import {
   invalidateAfterCardDeletion,
   invalidateAfterCardMutation,
 } from "../../lib/query";
-import { resolveStudyQueueSnapshot } from "../../lib/study-queue";
-import { computeNewCardsBudget } from "../../lib/study-settings";
+import { getStorage } from "../../lib/storage";
 import { useShellActions } from "../shell-actions";
 
 export function CardsPage() {
@@ -35,7 +41,7 @@ export function CardsPage() {
     snapshotData: studyQueueSnapshotQuery.data,
   });
   const createCardMutation = useMutation({
-    mutationFn: createCard,
+    mutationFn: (input: CreateCardInput) => getStorage().createCard(input),
     onSuccess: async () => {
       await invalidateAfterCardMutation(queryClient);
       notifySuccess("Card saved");
@@ -45,7 +51,7 @@ export function CardsPage() {
     },
   });
   const updateCardMutation = useMutation({
-    mutationFn: updateCard,
+    mutationFn: (input: UpdateCardInput) => getStorage().updateCard(input),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: appQueryKeys.cards }),
@@ -59,7 +65,7 @@ export function CardsPage() {
     },
   });
   const deleteCardMutation = useMutation({
-    mutationFn: deleteCard,
+    mutationFn: (input: DeleteCardInput) => getStorage().deleteCard(input),
     onSuccess: async () => {
       await invalidateAfterCardDeletion(queryClient);
       notifySuccess("Card deleted");
@@ -69,7 +75,7 @@ export function CardsPage() {
     },
   });
   const suspendCardMutation = useMutation({
-    mutationFn: suspendCard,
+    mutationFn: (input: SuspendCardInput) => getStorage().suspendCard(input),
     onSuccess: async () => {
       await invalidateAfterCardMutation(queryClient);
     },

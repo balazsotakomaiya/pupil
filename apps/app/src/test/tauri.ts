@@ -57,6 +57,11 @@ export function resetTauriTestState() {
   vi.useRealTimers();
 }
 
+async function resetActiveStorage() {
+  const { setStorage } = await import("../lib/storage");
+  setStorage(null);
+}
+
 export async function resetClientStores() {
   const { useNotificationStore } = await import("../lib/notifications");
   useNotificationStore.setState(useNotificationStore.getInitialState(), true);
@@ -68,6 +73,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   resetTauriTestState();
+  await resetActiveStorage();
   await resetClientStores();
   restoreLocalStorage();
 });

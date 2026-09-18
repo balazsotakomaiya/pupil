@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { CardRecord } from "./cards";
-import {
-  type CardFsrsFields,
-  createNewCardFsrsFields,
-  previewCardScheduling,
-  scheduleCard,
-} from "./fsrs";
+import { createNewCardFsrsFields, previewCardScheduling, scheduleCard } from "./fsrs";
+import type { CardFsrsFields, CardRecord } from "./types";
 
 function createCard(overrides: Partial<CardRecord> = {}): CardRecord {
   const now = Date.UTC(2026, 3, 19, 10, 0, 0);
@@ -55,6 +50,13 @@ describe("scheduleCard", () => {
     expect(result.updatedCard.lastReview).toBe(reviewedAt);
     expect(result.reviewLog.reviewTime).toBe(reviewedAt);
     expect(result.updatedCard.due).toBeGreaterThanOrEqual(reviewedAt);
+    expect(result.updatedCard.reps).toBeGreaterThan(0);
+  });
+
+  it("schedules from bare FSRS state without a full card record", () => {
+    const reviewedAt = Date.UTC(2026, 3, 19, 10, 0, 0);
+    const result = scheduleCard(createNewCardFsrsFields(reviewedAt), 3, reviewedAt);
+
     expect(result.updatedCard.reps).toBeGreaterThan(0);
   });
 });

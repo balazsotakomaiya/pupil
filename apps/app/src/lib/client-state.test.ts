@@ -21,6 +21,21 @@ import { getStudySettings, saveStudySettings } from "./study-settings";
 
 const NOW = Date.UTC(2026, 6, 17, 10, 0, 0);
 
+function studyReviewLog(overrides: { cardId: string; reviewTime: number; state: number }) {
+  return {
+    id: `log-${overrides.cardId}-${overrides.reviewTime}-${overrides.state}`,
+    cardId: overrides.cardId,
+    due: overrides.reviewTime,
+    elapsedDays: 0,
+    grade: 3,
+    reviewTime: overrides.reviewTime,
+    scheduledDays: 1,
+    spaceId: "space-a",
+    spaceName: "Space A",
+    state: overrides.state,
+  };
+}
+
 function seedQueryKeys() {
   const client = createTestQueryClient();
   for (const key of Object.values(appQueryKeys)) {
@@ -147,11 +162,11 @@ describe("browser-persisted client state", () => {
     window.localStorage.setItem(
       "pupil.web.review_logs",
       JSON.stringify([
-        { cardId: "card-a", reviewTime: NOW, state: 0 },
-        { cardId: "card-a", reviewTime: NOW, state: 0 },
-        { cardId: "card-b", reviewTime: NOW, state: 0 },
-        { cardId: "old", reviewTime: NOW - 24 * 60 * 60 * 1000, state: 0 },
-        { cardId: "review", reviewTime: NOW, state: 2 },
+        studyReviewLog({ cardId: "card-a", reviewTime: NOW, state: 0 }),
+        studyReviewLog({ cardId: "card-a", reviewTime: NOW, state: 0 }),
+        studyReviewLog({ cardId: "card-b", reviewTime: NOW, state: 0 }),
+        studyReviewLog({ cardId: "old", reviewTime: NOW - 24 * 60 * 60 * 1000, state: 0 }),
+        studyReviewLog({ cardId: "review", reviewTime: NOW, state: 2 }),
       ]),
     );
 
@@ -163,7 +178,7 @@ describe("browser-persisted client state", () => {
     vi.setSystemTime(NOW);
     window.localStorage.setItem(
       "pupil.web.review_logs",
-      JSON.stringify([{ cardId: "card-a", reviewTime: NOW, state: 0 }]),
+      JSON.stringify([studyReviewLog({ cardId: "card-a", reviewTime: NOW, state: 0 })]),
     );
     await expect(saveStudySettings(null)).resolves.toEqual({
       newCardsLimit: null,

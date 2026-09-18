@@ -1,8 +1,8 @@
+import { buildStudyQueueCountMap } from "@pupil/core";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useState } from "react";
 import type { AppTabId } from "../components/app-shell/AppTitlebar";
 import { useCardsQuery, useSpacesQuery, useStudyQueueSnapshotQuery } from "../lib/app-queries";
-import { buildStudyQueueCountMap } from "../lib/study-queue";
 
 type CommandPaletteInput = {
   onOpenCreateDialog: () => void;

@@ -23,6 +23,10 @@
   opacity: 0.6;
 }
 
+:global(:root[data-runtime="web"]) .button:not(:disabled) {
+  cursor: pointer;
+}
+
 .primary,
 .destructive {
   border-radius: var(--radius);
@@ -73,6 +77,19 @@
 .ghost {
   padding: var(--space-1-5) var(--space-3-5);
   color: var(--text-secondary);
+}
+
+.ghost svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.outline:not(.icon):not(.iconCompact):not(.compact) svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
 }
 
 .outline:hover:not(:disabled),

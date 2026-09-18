@@ -1,6 +1,6 @@
+import type { SpaceSummary } from "@pupil/core";
 import { type ChangeEvent, type DragEvent, useMemo, useRef, useState } from "react";
 import { type ImportExecutionResult, importApkgFile, readImportHistory } from "../../lib/imports";
-import type { SpaceSummary } from "../../lib/spaces";
 import { ChevronDownIcon } from "../icons/ImportIcons";
 import styles from "./Import.module.css";
 import { ImportDropZone } from "./ImportDropZone";

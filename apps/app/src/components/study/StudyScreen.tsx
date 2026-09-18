@@ -1,10 +1,8 @@
+import type { CardRecord, SpaceSummary } from "@pupil/core";
+import { buildAdmittedSet, buildDueQueue, previewCardScheduling } from "@pupil/core";
 import { useEffect, useMemo, useState } from "react";
 import type { ExplainCardResult } from "../../lib/ai-explain";
 import type { ExplainCardPayload } from "../../lib/ai-explanation";
-import type { CardRecord } from "../../lib/cards";
-import { previewCardScheduling } from "../../lib/fsrs";
-import type { SpaceSummary } from "../../lib/spaces";
-import { buildAdmittedSet, buildDueQueue } from "../../lib/study-queue";
 import styles from "./Study.module.css";
 import { StudyActions } from "./StudyActions";
 import { StudyBar } from "./StudyBar";
@@ -17,6 +15,7 @@ import type { StudyCardRecord, StudyGrade, StudyScope } from "./types";
 type UndoEntry = { snapshot: StudyCardRecord; grade: StudyGrade };
 
 type StudyScreenProps = {
+  aiAvailable?: boolean;
   cards: StudyCardRecord[];
   explainButtonEnabled: boolean;
   hasAiKey: boolean;
@@ -41,9 +40,11 @@ type ExplainState = {
   generatedAt: number | null;
   isLoading: boolean;
   payload: ExplainCardPayload | null;
+  unavailable: boolean;
 };
 
 export function StudyScreen({
+  aiAvailable = true,
   cards,
   explainButtonEnabled,
   hasAiKey,
@@ -332,6 +333,7 @@ export function StudyScreen({
       generatedAt: null,
       isLoading: true,
       payload: null,
+      unavailable: false,
     });
 
     try {
@@ -343,6 +345,7 @@ export function StudyScreen({
         generatedAt: result.generatedAt,
         isLoading: false,
         payload: result.payload,
+        unavailable: false,
       });
     } catch (nextError: unknown) {
       const message =
@@ -354,6 +357,7 @@ export function StudyScreen({
         generatedAt: null,
         isLoading: false,
         payload: null,
+        unavailable: false,
       });
     }
   }
@@ -362,11 +366,23 @@ export function StudyScreen({
     if (!displayCard) {
       return;
     }
+    if (!aiAvailable) {
+      setExplain({
+        cardId: displayCard.id,
+        cached: false,
+        error: null,
+        generatedAt: null,
+        isLoading: false,
+        payload: null,
+        unavailable: true,
+      });
+      return;
+    }
     if (!hasAiKey) {
       onMissingAiKey();
       return;
     }
-    if (explain && explain.cardId === displayCard.id && !explain.error) {
+    if (explain && explain.cardId === displayCard.id && !explain.error && !explain.unavailable) {
       return;
     }
     void runExplain(displayCard.id, false);
@@ -533,7 +549,7 @@ export function StudyScreen({
 
           {explainButtonEnabled && isAnswerVisible && !isSuspendedView ? (
             <StudyExplainTrigger
-              hasApiKey={hasAiKey}
+              hasApiKey={aiAvailable ? hasAiKey : true}
               isLoading={explain?.isLoading === true && explain.cardId === displayCard.id}
               onActivate={handleExplainTrigger}
             />
@@ -584,6 +600,7 @@ export function StudyScreen({
           generatedAt={explain.generatedAt}
           isCached={explain.cached}
           isLoading={explain.isLoading}
+          unavailable={explain.unavailable}
           onClose={handleExplainClose}
           onRegenerate={handleExplainRegenerate}
           onRetry={handleExplainRetry}

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import styles from "./Settings.module.css";
 
 type SettingsDataCardProps = {
-  action: ReactNode;
+  action?: ReactNode;
   description: ReactNode;
   title: string;
   tone?: "default" | "danger";
@@ -24,7 +24,7 @@ export function SettingsDataCard({
         <div className={styles.settingsDataCardDesc}>{description}</div>
       </div>
 
-      <div className={styles.settingsDataCardRight}>{action}</div>
+      {action ? <div className={styles.settingsDataCardRight}>{action}</div> : null}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import initSqlJs from "sql.js";
 import sqlWasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 import { describe, expect, it, vi } from "vitest";
 import { enableTauriRuntime, invokeMock } from "../test/tauri";
+import { listCards } from "./cards";
 import { importApkgFile, readImportHistory } from "./imports";
 import { listSpaces } from "./spaces";
 
@@ -102,16 +103,26 @@ describe("APKG input validation", () => {
       parsedCardCount: 1,
     });
     const [storedSpace] = await listSpaces();
+    const [listedCard] = await listCards();
+    expect(listedCard).toMatchObject({
+      back: "Rules",
+      front: "Ownership",
+      source: "anki",
+      spaceId: storedSpace.id,
+      spaceName: "Rust",
+      tags: ["rust", "systems"],
+    });
     expect(JSON.parse(window.localStorage.getItem("pupil.web.cards") ?? "[]")).toEqual([
       expect.objectContaining({
         back: "Rules",
         front: "Ownership",
         source: "anki",
         spaceId: storedSpace.id,
+        spaceName: "Rust",
         tags: ["rust", "systems"],
       }),
     ]);
-    expect(storedSpace).toMatchObject({ name: "Rust" });
+    expect(storedSpace).toMatchObject({ name: "Rust", cardCount: 1 });
     expect(readImportHistory()).toEqual([
       expect.objectContaining({ decks: [expect.objectContaining({ spaceName: "Rust" })] }),
     ]);

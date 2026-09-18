@@ -1,5 +1,5 @@
+import type { SpaceSummary } from "@pupil/core";
 import { useEffect, useRef, useState } from "react";
-import type { SpaceSummary } from "../../lib/spaces";
 import { Button } from "../Button";
 import styles from "./Dashboard.module.css";
 import type { StudySummary } from "./types";
@@ -100,10 +100,12 @@ export function StudySection({
           </div>
           <Button
             className={`${styles.studyPrimaryAction}${tapped ? ` ${styles.studyPrimaryActionGlow}` : ""}`}
-            onClick={() => setTapped(true)}
+            onClick={() => {
+              setTapped(true);
+              onPrimaryAction?.();
+            }}
             onAnimationEnd={() => {
               setTapped(false);
-              onPrimaryAction?.();
             }}
           >
             {summary.primaryActionLabel}

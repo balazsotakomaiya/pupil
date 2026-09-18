@@ -1,3 +1,11 @@
+import {
+  type CardRecord,
+  type DashboardStats,
+  dayKeyAtOffset,
+  type RecentActivityRecord,
+  type SpaceStats,
+  type SpaceSummary,
+} from "@pupil/core";
 import type {
   ActivityItem,
   SpaceCardData,
@@ -5,11 +13,7 @@ import type {
   StreakCellData,
   StudySummary,
 } from "../components/dashboard";
-import type { RecentActivityRecord } from "./activity";
-import type { CardRecord } from "./cards";
 import { FALLBACK_STREAK_OFFSETS } from "./seed-data";
-import type { SpaceSummary } from "./spaces";
-import type { DashboardStats, SpaceStats } from "./stats";
 
 export function buildStudySummary(
   spaces: SpaceSummary[],
@@ -197,13 +201,13 @@ export function buildStreakCells(
     }
   } else {
     for (const offset of FALLBACK_STREAK_OFFSETS) {
-      studiedDays.add(formatDayOffset(offset));
+      studiedDays.add(dayKeyAtOffset(offset, now));
     }
   }
 
   return Array.from({ length: totalCells }, (_, index) => {
     const dayOffset = totalCells - index - 1;
-    const dateLabel = formatDayOffset(dayOffset, now);
+    const dateLabel = dayKeyAtOffset(dayOffset, now);
 
     return {
       id: `streak-${dayOffset}`,
@@ -310,16 +314,6 @@ function formatCompactAge(timestamp: number, now: number): string {
   const months = Math.floor(days / 30);
 
   return `${months}mo ago`;
-}
-
-function formatDayOffset(offset: number, now = Date.now()) {
-  const day = new Date(now);
-  day.setHours(0, 0, 0, 0);
-  day.setDate(day.getDate() - offset);
-  const year = day.getFullYear();
-  const month = `${day.getMonth() + 1}`.padStart(2, "0");
-  const date = `${day.getDate()}`.padStart(2, "0");
-  return `${year}-${month}-${date}`;
 }
 
 function joinLabels(labels: string[]): string {

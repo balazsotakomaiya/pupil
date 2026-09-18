@@ -1,4 +1,4 @@
-import type { CardRecord } from "../../lib/cards";
+import type { CardRecord } from "@pupil/core";
 
 export type StudyScope = "global" | "space";
 

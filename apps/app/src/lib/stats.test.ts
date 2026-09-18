@@ -3,21 +3,62 @@ import { enableTauriRuntime, invokeMock } from "../test/tauri";
 import { getDashboardStats, listSpaceStats } from "./stats";
 
 const NOW = Date.UTC(2026, 6, 17, 12, 0, 0);
+
+function card(overrides: { id: string; due: number }) {
+  return {
+    id: overrides.id,
+    spaceId: "space-a",
+    spaceName: "Space A",
+    front: "Front",
+    back: "Back",
+    tags: [],
+    source: "manual",
+    state: 2,
+    due: overrides.due,
+    stability: 1,
+    difficulty: 5,
+    elapsedDays: 0,
+    scheduledDays: 1,
+    learningSteps: 0,
+    reps: 1,
+    lapses: 0,
+    lastReview: null,
+    createdAt: NOW,
+    updatedAt: NOW,
+    suspended: false,
+  };
+}
+
+function reviewLog(overrides: { reviewTime: number; grade: number }) {
+  return {
+    id: `log-${overrides.reviewTime}`,
+    cardId: "card-a",
+    due: overrides.reviewTime,
+    elapsedDays: 0,
+    grade: overrides.grade,
+    reviewTime: overrides.reviewTime,
+    scheduledDays: 1,
+    spaceId: "space-a",
+    spaceName: "Space A",
+    state: 2,
+  };
+}
+
 function seedStatsStorage() {
   vi.useFakeTimers();
   vi.setSystemTime(NOW);
   window.localStorage.setItem(
     "pupil.web.cards",
     JSON.stringify([
-      { spaceId: "space-a", due: NOW - 1 },
-      { spaceId: "space-a", due: NOW + 1 },
+      card({ id: "card-due", due: NOW - 1 }),
+      card({ id: "card-later", due: NOW + 1 }),
     ]),
   );
   window.localStorage.setItem(
     "pupil.web.review_logs",
     JSON.stringify([
-      { spaceId: "space-a", reviewTime: NOW, grade: 3 },
-      { spaceId: "space-a", reviewTime: NOW - 24 * 60 * 60 * 1000, grade: 1 },
+      reviewLog({ reviewTime: NOW, grade: 3 }),
+      reviewLog({ reviewTime: NOW - 24 * 60 * 60 * 1000, grade: 1 }),
     ]),
   );
   window.localStorage.setItem(

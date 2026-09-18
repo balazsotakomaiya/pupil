@@ -1,13 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { listRecentActivity } from "./activity";
 import { loadAiSettings } from "./ai-settings";
 import { loadBootstrapState } from "./bootstrap";
-import { listCards } from "./cards";
 import { appQueryKeys } from "./query";
-import { listSpaces } from "./spaces";
-import { getDashboardStats, listSpaceStats } from "./stats";
-import { getStudyQueueSnapshot } from "./study-queue";
-import { getStudySettings } from "./study-settings";
+import { getStorage } from "./storage";
 
 function useCoreQuery<T>(queryKey: readonly unknown[], queryFn: () => Promise<T>) {
   return useQuery({
@@ -21,31 +16,31 @@ export function useBootstrapQuery() {
 }
 
 export function useCardsQuery() {
-  return useCoreQuery(appQueryKeys.cards, () => listCards());
+  return useCoreQuery(appQueryKeys.cards, () => getStorage().listCards());
 }
 
 export function useDashboardStatsQuery() {
-  return useCoreQuery(appQueryKeys.dashboardStats, () => getDashboardStats());
+  return useCoreQuery(appQueryKeys.dashboardStats, () => getStorage().getDashboardStats());
 }
 
 export function useStudyQueueSnapshotQuery() {
-  return useCoreQuery(appQueryKeys.studyQueueSnapshot, () => getStudyQueueSnapshot());
+  return useCoreQuery(appQueryKeys.studyQueueSnapshot, () => getStorage().getStudyQueueSnapshot());
 }
 
 export function useRecentActivityQuery() {
-  return useCoreQuery(appQueryKeys.recentActivity, () => listRecentActivity());
+  return useCoreQuery(appQueryKeys.recentActivity, () => getStorage().listRecentActivity());
 }
 
 export function useSpaceStatsQuery() {
-  return useCoreQuery(appQueryKeys.spaceStats, () => listSpaceStats());
+  return useCoreQuery(appQueryKeys.spaceStats, () => getStorage().listSpaceStats());
 }
 
 export function useSpacesQuery() {
-  return useCoreQuery(appQueryKeys.spaces, () => listSpaces());
+  return useCoreQuery(appQueryKeys.spaces, () => getStorage().listSpaces());
 }
 
 export function useStudySettingsQuery() {
-  return useCoreQuery(appQueryKeys.studySettings, () => getStudySettings());
+  return useCoreQuery(appQueryKeys.studySettings, () => getStorage().getStudySettings());
 }
 
 export function useAiSettingsQuery() {

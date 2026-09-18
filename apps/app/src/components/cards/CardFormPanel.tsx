@@ -1,6 +1,6 @@
+import type { SpaceSummary } from "@pupil/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { renderCardMarkup } from "../../lib/card-markup";
-import type { SpaceSummary } from "../../lib/spaces";
 import { BoldIcon } from "../icons/BoldIcon";
 import { ChevronDownIcon } from "../icons/ChevronDownIcon";
 import { CloseIcon } from "../icons/CloseIcon";

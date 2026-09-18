@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ExplainCardPayload } from "../../lib/ai-explanation";
+import { DesktopAiNotice } from "../DesktopAiNotice";
 import styles from "./Study.module.css";
 import { StudyExplainContent } from "./StudyExplainContent";
 
@@ -10,6 +11,7 @@ type StudyExplainPanelProps = {
   generatedAt: number | null;
   isCached: boolean;
   isLoading: boolean;
+  unavailable?: boolean;
   onClose: () => void;
   onRegenerate: () => void;
   onRetry: () => void;
@@ -22,6 +24,7 @@ export function StudyExplainPanel({
   generatedAt,
   isCached,
   isLoading,
+  unavailable = false,
   onClose,
   onRegenerate,
   onRetry,
@@ -56,7 +59,7 @@ export function StudyExplainPanel({
             <span className={styles.sessionExplainSub}>{promptPreview}</span>
           </div>
           <div className={styles.sessionExplainHeaderActions}>
-            {payload && !isLoading && !error ? (
+            {payload && !isLoading && !error && !unavailable ? (
               <button
                 className={styles.sessionExplainHeaderBtn}
                 disabled={isLoading}
@@ -78,7 +81,9 @@ export function StudyExplainPanel({
         </header>
 
         <div className={styles.sessionExplainBody}>
-          {isLoading ? (
+          {unavailable ? (
+            <DesktopAiNotice layout="panel" />
+          ) : isLoading ? (
             <div className={styles.sessionExplainLoading}>
               <div className={styles.sessionExplainSkeleton} />
               <div className={styles.sessionExplainSkeleton} />
@@ -102,10 +107,12 @@ export function StudyExplainPanel({
           ) : null}
         </div>
 
-        <footer className={styles.sessionExplainFooter}>
-          <span>{isCached ? "From cache" : payload ? "Just generated" : ""}</span>
-          <span>{generatedAt ? formatRelativeTime(generatedAt) : ""}</span>
-        </footer>
+        {unavailable ? null : (
+          <footer className={styles.sessionExplainFooter}>
+            <span>{isCached ? "From cache" : payload ? "Just generated" : ""}</span>
+            <span>{generatedAt ? formatRelativeTime(generatedAt) : ""}</span>
+          </footer>
+        )}
       </aside>
     </>
   );
