@@ -1,3 +1,9 @@
+<div align="center">
+
+![Pupil — flashcards that actually work with your brain](docs/assets/readme-header.jpg)
+
+</div>
+
 # Pupil
 
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-blue)

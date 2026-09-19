@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Pupil — README header</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@700&family=Instrument+Serif:ital@1&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      html, body { width: 1200px; height: 300px; }
+
+      body {
+        position: relative;
+        overflow: hidden;
+        background: #0a0a0a;
+        color: #ededed;
+        font-family: "Inter", -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Dither band across the top of the banner, fading straight down */
+      .backdrop {
+        position: absolute;
+        inset: 0;
+        background: url("/dither-gradient.webp") center top / cover no-repeat;
+        mask-image: linear-gradient(to bottom, black 0%, transparent 55%);
+        -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 55%);
+      }
+
+      .card {
+        position: relative;
+        height: 100%;
+        padding: 0 64px 64px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 38px;
+        letter-spacing: -0.5px;
+        text-shadow: 0 2px 24px rgba(0, 0, 0, 0.55);
+      }
+
+      .tagline {
+        font-size: 24px;
+        font-weight: 500;
+        letter-spacing: -0.4px;
+        color: #ededed;
+        text-shadow: 0 1px 12px rgba(0, 0, 0, 0.65);
+      }
+      .tagline em {
+        font-style: italic;
+        font-family: "Instrument Serif", Georgia, serif;
+        font-weight: 400;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="backdrop"></div>
+
+    <div class="card">
+      <div class="brand">
+        <svg width="42" height="42" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path
+            d="M3 26 C7 17 15 13 26 13 C37 13 45 17 49 26 C45 35 37 39 26 39 C15 39 7 35 3 26Z"
+            stroke="#ededed"
+            stroke-width="1.5"
+            fill="none"
+          />
+          <circle cx="26" cy="26" r="8" stroke="#ededed" stroke-width="1.5" fill="none" />
+          <circle cx="26" cy="26" r="4" fill="#ededed" />
+        </svg>
+        pupil
+      </div>
+
+      <div class="tagline">Flashcards that <em>actually</em> work with your brain</div>
+    </div>
+  </body>
+</html>
