@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Pupil — OG card</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@700&family=Instrument+Serif:ital@1&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      html, body { width: 1200px; height: 630px; }
+
+      body {
+        position: relative;
+        overflow: hidden;
+        background: #0a0a0a;
+        color: #ededed;
+        font-family: "Inter", -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Dither gradient backdrop — same treatment as the landing hero */
+      .backdrop {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 500px;
+        background: url("/dither-gradient.webp") center top / cover no-repeat;
+        mask-image: radial-gradient(ellipse 100% 100% at 50% 0%, black 45%, transparent 80%);
+        -webkit-mask-image: radial-gradient(ellipse 100% 100% at 50% 0%, black 45%, transparent 80%);
+      }
+
+      /* Blueprint rulers, dimmed over the image like on the site */
+      .ruler {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: linear-gradient(
+          to bottom,
+          rgba(42, 42, 42, 0.2) 0,
+          rgba(42, 42, 42, 0.2) 340px,
+          #2a2a2a 500px
+        );
+        mask-image: repeating-linear-gradient(to bottom, black 0 1px, transparent 1px 5px);
+        -webkit-mask-image: repeating-linear-gradient(to bottom, black 0 1px, transparent 1px 5px);
+      }
+      .ruler-left { left: 56px; }
+      .ruler-right { right: 56px; }
+
+      .card {
+        position: relative;
+        height: 100%;
+        padding: 64px 96px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 34px;
+        letter-spacing: -0.5px;
+      }
+
+      .headline {
+        margin-top: auto;
+        font-size: 68px;
+        font-weight: 600;
+        line-height: 1.08;
+        letter-spacing: -2.5px;
+        max-width: 880px;
+        text-shadow: 0 2px 24px rgba(0, 0, 0, 0.55);
+      }
+      .headline em {
+        font-style: italic;
+        font-family: "Instrument Serif", Georgia, serif;
+        font-weight: 400;
+      }
+
+      .bottom {
+        margin-top: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        font-size: 17px;
+        font-weight: 500;
+        color: #c9c9c9;
+        background: rgba(10, 10, 10, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 999px;
+        padding: 8px 20px;
+        letter-spacing: 0.2px;
+      }
+
+      .domain {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 17px;
+        color: #888;
+        letter-spacing: 0.02em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <div class="ruler ruler-left"></div>
+    <div class="ruler ruler-right"></div>
+
+    <div class="card">
+      <div class="logo">
+        <svg width="40" height="40" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path
+            d="M3 26 C7 17 15 13 26 13 C37 13 45 17 49 26 C45 35 37 39 26 39 C15 39 7 35 3 26Z"
+            stroke="#ededed"
+            stroke-width="1.5"
+            fill="none"
+          />
+          <circle cx="26" cy="26" r="8" stroke="#ededed" stroke-width="1.5" fill="none" />
+          <circle cx="26" cy="26" r="4" fill="#ededed" />
+        </svg>
+        pupil
+      </div>
+
+      <h1 class="headline">
+        Flashcards that <em>actually</em> work<br />
+        with your brain
+      </h1>
+
+      <div class="bottom">
+        <span class="pill">Open source · Local-first · FSRS-5</span>
+        <span class="domain">pupil.otakomaiya.com</span>
+      </div>
+    </div>
+  </body>
+</html>
