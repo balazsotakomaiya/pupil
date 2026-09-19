@@ -15,21 +15,27 @@ export type AppTab = {
 type AppTitlebarProps = {
   activeTab: AppTabId;
   globalStreak?: number | null;
+  onInstallUpdate?: () => void;
   onOpenCreateDialog: () => void;
   onOpenNewCard?: () => void;
   onOpenPalette: () => void;
   onSelectTab: (tabId: AppTabId) => void;
   tabs: AppTab[];
+  updateActionLabel?: string | null;
+  updateBusy?: boolean;
 };
 
 export function AppTitlebar({
   activeTab,
   globalStreak,
+  onInstallUpdate,
   onOpenCreateDialog,
   onOpenNewCard,
   onOpenPalette,
   onSelectTab,
   tabs,
+  updateActionLabel,
+  updateBusy = false,
 }: AppTitlebarProps) {
   const tabsRef = useRef<HTMLDivElement | null>(null);
   const tabRefs = useRef<Partial<Record<AppTabId, HTMLButtonElement>>>({});
@@ -108,6 +114,11 @@ export function AppTitlebar({
       </div>
 
       <div className={styles.titlebarRight}>
+        {updateActionLabel && onInstallUpdate ? (
+          <Button disabled={updateBusy} onClick={onInstallUpdate} size="compact" variant="ghost">
+            {updateActionLabel}
+          </Button>
+        ) : null}
         {activeTab === "dashboard" && globalStreak !== undefined && globalStreak !== null ? (
           <div className={styles.titlebarStatus}>
             <span className="streak-dot" />

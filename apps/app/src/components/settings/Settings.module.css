@@ -633,6 +633,63 @@
   font-weight: 500;
 }
 
+.settingsAboutUpdate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.settingsAboutUpdateHint {
+  margin: 0;
+  max-width: 42ch;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.settingsAboutUpdateTrack {
+  overflow: hidden;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--bg-elevated);
+}
+
+.settingsAboutUpdateFill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--text-tertiary);
+  transition: width 0.2s ease;
+}
+
+.settingsAboutUpdateFill.done {
+  background: var(--success);
+}
+
+.settingsAboutUpdateBtn {
+  padding: 5px var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.settingsAboutUpdateBtn:hover:not(:disabled) {
+  border-color: var(--border-hover);
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.settingsAboutUpdateBtn:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
 .settingsAboutLinks {
   margin-top: var(--space-4);
 }
