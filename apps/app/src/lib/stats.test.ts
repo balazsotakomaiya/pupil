@@ -26,6 +26,7 @@ function card(overrides: { id: string; due: number }) {
     createdAt: NOW,
     updatedAt: NOW,
     suspended: false,
+    hasExplanation: false,
   };
 }
 

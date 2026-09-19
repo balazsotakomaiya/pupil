@@ -14,7 +14,7 @@ pub(crate) fn parse_explain_card_response(response_text: &str) -> AppResult<Expl
             Some("empty response"),
         ));
     }
-    let payload: ExplainCardPayload = serde_json::from_str(&candidate).map_err(|error| {
+    let mut payload: ExplainCardPayload = serde_json::from_str(&candidate).map_err(|error| {
         AppError::ai_provider(
             "The AI explanation did not match the required JSON contract.",
             Some(error.to_string()),
@@ -23,6 +23,7 @@ pub(crate) fn parse_explain_card_response(response_text: &str) -> AppResult<Expl
     payload.validate(candidate.len()).map_err(|error| {
         AppError::ai_provider("The AI explanation failed validation.", Some(error))
     })?;
+    payload.drop_glossary_visual();
     Ok(payload)
 }
 
@@ -46,6 +47,12 @@ fn extract_json_object_candidate(response_text: &str) -> String {
         (Some(start), Some(end)) if start <= end => unfenced[start..=end].to_string(),
         _ => unfenced,
     }
+}
+
+pub(crate) fn build_explain_card_prompt(front: &str, back: &str) -> String {
+    format!(
+        "Flashcard front (what the learner saw):\n{front}\n\nFlashcard back (the answer they got wrong):\n{back}\n\nExplain this card in detail. Keep visual null unless the concept is inherently diagrammatic and a diagram would teach structure that prose cannot."
+    )
 }
 
 pub(crate) fn build_explain_repair_prompt(original: &str, error: &AppError) -> String {

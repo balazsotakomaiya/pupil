@@ -1,6 +1,6 @@
 use crate::cards::{
-    create_card_row, delete_card_row, list_card_summaries, review_card_row, suspend_card_row,
-    undo_review_card_row, update_card_row,
+    create_card_row, delete_card_row, list_card_summaries, review_card_row, save_card_explanation,
+    suspend_card_row, undo_review_card_row, update_card_row,
 };
 use crate::tests::support::{
     open_test_connection, seed_card, seed_review_log, seed_space, TEST_NOW,
@@ -312,4 +312,39 @@ fn review_persists_fsrs_fields_log_and_global_and_space_study_days() {
             .unwrap(),
         1
     );
+}
+
+#[test]
+fn cards_list_reports_whether_an_explanation_exists() {
+    let connection = open_seeded_connection();
+    seed_card(
+        &connection,
+        "card-b",
+        "space-a",
+        "Other",
+        "Back",
+        0,
+        1000,
+        false,
+        1,
+    );
+    save_card_explanation(
+        &connection,
+        "card-a",
+        r#"{"schemaVersion":1,"paragraphs":["A definition.","It needs context.","This completes the explanation."],"visual":null}"#,
+        42,
+    )
+    .expect("save explanation");
+
+    let listed = list_card_summaries(&connection, None).expect("list cards");
+    let card_a = listed
+        .iter()
+        .find(|card| card.id == "card-a")
+        .expect("card-a");
+    let card_b = listed
+        .iter()
+        .find(|card| card.id == "card-b")
+        .expect("card-b");
+    assert!(card_a.has_explanation);
+    assert!(!card_b.has_explanation);
 }

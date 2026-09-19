@@ -3,12 +3,12 @@ use std::fs;
 use tauri::{AppHandle, Manager};
 
 use crate::ai::{
-    build_explain_prose_fallback_prompt, build_explain_repair_prompt, build_generate_cards_prompt,
-    execute_ai_completion, execute_explain_completion_with_retries, fetch_model_catalog,
-    load_ai_settings_state, load_resolved_ai_settings, normalize_ai_settings_input,
-    normalize_generate_cards_input, parse_explain_card_response, parse_generated_cards_response,
-    resolve_ai_settings_for_test, resolve_model_catalog_credentials, save_ai_settings_rows,
-    AiModelCatalog, ListAiModelsInput,
+    build_explain_card_prompt, build_explain_prose_fallback_prompt, build_explain_repair_prompt,
+    build_generate_cards_prompt, execute_ai_completion, execute_explain_completion_with_retries,
+    fetch_model_catalog, load_ai_settings_state, load_resolved_ai_settings,
+    normalize_ai_settings_input, normalize_generate_cards_input, parse_explain_card_response,
+    parse_generated_cards_response, resolve_ai_settings_for_test,
+    resolve_model_catalog_credentials, save_ai_settings_rows, AiModelCatalog, ListAiModelsInput,
 };
 use crate::analytics::{list_space_stats_rows, load_dashboard_stats};
 use crate::app::{
@@ -464,12 +464,6 @@ pub(crate) async fn explain_card(
         generated_at,
         cached: false,
     })
-}
-
-fn build_explain_card_prompt(front: &str, back: &str) -> String {
-    format!(
-        "Flashcard front (what the learner saw):\n{front}\n\nFlashcard back (the answer they got wrong):\n{back}\n\nExplain this card in detail."
-    )
 }
 
 #[tauri::command]

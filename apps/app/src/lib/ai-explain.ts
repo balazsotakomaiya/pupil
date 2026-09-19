@@ -1,4 +1,8 @@
-import { type ExplainCardPayload, isExplainCardPayload } from "./ai-explanation";
+import {
+  type ExplainCardPayload,
+  isExplainCardPayload,
+  sanitizeExplainPayload,
+} from "./ai-explanation";
 import { invokeCommand } from "./ipc";
 import { isTauriRuntime } from "./runtime";
 import { withTimeout } from "./timeout";
@@ -43,6 +47,6 @@ export function normalizeExplainCardResult(value: unknown): ExplainCardResult {
   return {
     cached: result.cached,
     generatedAt: result.generatedAt,
-    payload,
+    payload: sanitizeExplainPayload(payload),
   };
 }

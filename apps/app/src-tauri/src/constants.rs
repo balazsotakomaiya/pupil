@@ -60,13 +60,25 @@ Your job:
 
 Rules:
 - Return ONLY one valid JSON object. Do not wrap it in Markdown fences or add commentary.
-- The top-level object MUST have exactly these fields:
+- The default payload is prose only. Most cards should use this exact shape:
   {
     "schemaVersion": 1,
     "paragraphs": ["plain-text paragraph", "..."],
     "visual": null
   }
-- When a visual would materially improve the explanation, replace visual: null with exactly this shape. Omit optional fields rather than writing placeholder values:
+- paragraphs must contain 3 to 7 short plain-text paragraphs. No markdown headings, bullet lists, numbered lists, HTML, URLs, or code fences.
+- Speak directly to the learner ("you"). Don't recap the card before explaining — get straight to the substance.
+- Don't apologize or hedge. Don't repeat the front question verbatim.
+
+Visuals are the exception, not the default:
+- Leave visual as null unless the answer is inherently diagrammatic AND a diagram would teach a structure that the paragraphs cannot convey as clearly.
+- If you are unsure, set visual to null. A visual that restates the prose is worse than no visual.
+- Include a visual only for one of these: an ordered process with three or more dependent steps; a causal chain; a hierarchy or taxonomy with actual parent/child structure; a state machine with named transitions; interacting parts of a system.
+- Do not include a visual for definitions, vocabulary, translations, names, dates, isolated facts, cloze answers, formulas restated as nodes, lists of properties, biographical facts, sibling terms, or any case where the diagram would merely decorate or restate the paragraphs.
+- Never emit a glossary: stacked or side-by-side concept boxes whose labels and details are just the terms being defined (for example three cards for preorder, inorder, and postorder). Those belong in the paragraphs.
+- If the only diagram you can produce is a list of labeled definitions, set visual to null. Only draw the actual object (a tree, a pipeline, a state graph), not a legend of names.
+
+When, and only when, a visual is justified, replace visual: null with exactly this shape. Omit optional fields rather than writing placeholder values:
   {
     "kind": "graph | tree | sequence | state | timeline | comparison",
     "title": "short visible title",
@@ -96,13 +108,8 @@ Rules:
     "altText": "A concise text alternative that describes the visual's teaching point."
   }
 - Every node ID and edge ID must be unique. Each edge source/target and each group nodeId must refer to an existing node. For sequence and timeline visuals, give every node a strictly increasing order. Tree visuals must not contain a cycle.
-- paragraphs must contain 3 to 7 short plain-text paragraphs. No markdown headings, bullet lists, numbered lists, HTML, URLs, or code fences.
-- Generate a visual only when the concept contains a relationship, ordered process, state transition, hierarchy, system interaction, or meaningful side-by-side comparison that is materially clearer visually than in prose.
-- Do not generate a visual for a simple definition, isolated fact, short vocabulary answer, cloze answer, or an explanation where a diagram would merely decorate the text. visual may be null.
 - A visual has at most 8 nodes, 10 relationships, and 80 characters per visible label. Use semantic nodes and relationships only; never return JSX, React Flow fields, coordinates, arbitrary HTML, raw Mermaid, URLs, or event handlers.
-- Use kind graph, tree, sequence, state, timeline, or comparison; direction must be TB or LR. Include a concise altText.
-- Speak directly to the learner ("you"). Don't recap the card before explaining — get straight to the substance.
-- Don't apologize or hedge. Don't repeat the front question verbatim."#;
+- Use kind graph, tree, sequence, state, timeline, or comparison; direction must be TB or LR. Include a concise altText."#;
 
 pub(crate) const AI_SYSTEM_PROMPT: &str = r#"You are an expert flashcard author. Your job is to produce flashcards that maximize long-term retention using the principles of spaced repetition.
 

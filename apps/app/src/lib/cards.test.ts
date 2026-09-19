@@ -27,6 +27,7 @@ function card(overrides: Partial<CardRecord> = {}): CardRecord {
     createdAt: NOW,
     updatedAt: NOW,
     suspended: false,
+    hasExplanation: false,
     ...createNewCardFsrsFields(NOW),
     ...overrides,
   };
@@ -150,6 +151,7 @@ describe("card browser fallback", () => {
     ).resolves.toMatchObject({
       back: "Answer",
       front: "Question",
+      hasExplanation: false,
       spaceId: space.id,
       tags: ["rust"],
     });

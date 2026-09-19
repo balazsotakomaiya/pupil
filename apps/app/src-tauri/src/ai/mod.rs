@@ -7,7 +7,7 @@ mod settings;
 mod validation;
 
 pub(crate) use explain::{
-    build_explain_prose_fallback_prompt, build_explain_repair_prompt,
+    build_explain_card_prompt, build_explain_prose_fallback_prompt, build_explain_repair_prompt,
     execute_explain_completion_with_retries, parse_explain_card_response,
 };
 pub(crate) use generation::{

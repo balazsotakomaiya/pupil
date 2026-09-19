@@ -252,6 +252,7 @@ function parseCard(value: unknown): CardRecord[] {
       suspended: card.suspended === true,
       tags: card.tags.filter((tag): tag is string => typeof tag === "string"),
       updatedAt: card.updatedAt,
+      hasExplanation: card.hasExplanation === true,
     },
   ];
 }

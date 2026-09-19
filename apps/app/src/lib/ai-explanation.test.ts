@@ -3,6 +3,7 @@ import {
   buildExplanationGraph,
   type ExplainCardPayload,
   isExplainCardPayload,
+  sanitizeExplainPayload,
 } from "./ai-explanation";
 
 const visual = {
@@ -105,5 +106,72 @@ describe("AI explanation contract", () => {
       { x: 0, y: 0 },
       { x: 180, y: 0 },
     ]);
+  });
+
+  it("spaces stacked nodes far enough that detailed cards do not overlap", () => {
+    const graph = buildExplanationGraph({
+      ...visual,
+      direction: "TB",
+      nodes: [
+        {
+          id: "one",
+          role: "process",
+          label: "First step of the process",
+          detail: "A longer supporting note that wraps onto extra lines.",
+          order: 1,
+        },
+        {
+          id: "two",
+          role: "process",
+          label: "Second step of the process",
+          detail: "Another longer supporting note for the following step.",
+          order: 2,
+        },
+      ],
+    });
+
+    expect(graph.nodes[1].position.y).toBeGreaterThan(graph.nodes[0].position.y + 58);
+  });
+
+  it("drops glossary concept lists", () => {
+    const glossary = sanitizeExplainPayload({
+      schemaVersion: 1,
+      paragraphs: ["Explain it.", "Here is the context.", "This completes the explanation."],
+      visual: {
+        ...visual,
+        kind: "comparison",
+        nodes: [
+          { id: "pre", role: "concept", label: "Preorder" },
+          { id: "in", role: "concept", label: "Inorder" },
+          { id: "post", role: "concept", label: "Postorder" },
+        ],
+        edges: [
+          { id: "a", source: "pre", target: "in" },
+          { id: "b", source: "in", target: "post" },
+        ],
+      },
+    });
+    expect(glossary.visual).toBeNull();
+  });
+
+  it("keeps branching concept trees", () => {
+    const tree = sanitizeExplainPayload({
+      schemaVersion: 1,
+      paragraphs: ["Explain it.", "Here is the context.", "This completes the explanation."],
+      visual: {
+        ...visual,
+        kind: "tree",
+        nodes: [
+          { id: "root", role: "concept", label: "Root" },
+          { id: "left", role: "concept", label: "Left" },
+          { id: "right", role: "concept", label: "Right" },
+        ],
+        edges: [
+          { id: "to_left", source: "root", target: "left" },
+          { id: "to_right", source: "root", target: "right" },
+        ],
+      },
+    });
+    expect(tree.visual).not.toBeNull();
   });
 });

@@ -31,6 +31,7 @@ export type CardRecord = CardFsrsFields & {
   createdAt: number;
   updatedAt: number;
   suspended: boolean;
+  hasExplanation: boolean;
 };
 
 export type SpaceSummary = {

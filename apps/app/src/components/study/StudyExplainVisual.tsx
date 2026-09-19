@@ -10,6 +10,8 @@ import {
 import { Component, type ErrorInfo, type ReactNode, useEffect, useRef } from "react";
 import {
   buildExplanationGraph,
+  EXPLAIN_NODE_MIN_HEIGHT,
+  EXPLAIN_NODE_WIDTH,
   type ExplanationGraphEdge,
   type ExplanationGraphNode,
   type VisualSpec,
@@ -48,8 +50,8 @@ function StudyExplainFlow({ isExpanded, onToggleExpanded, visual }: StudyExplain
   const { nodes, edges } = buildExplanationGraph(visual, displayDirection);
   const left = Math.min(...nodes.map((node) => node.position.x));
   const top = Math.min(...nodes.map((node) => node.position.y));
-  const right = Math.max(...nodes.map((node) => node.position.x + 138));
-  const bottom = Math.max(...nodes.map((node) => node.position.y + 58));
+  const right = Math.max(...nodes.map((node) => node.position.x + EXPLAIN_NODE_WIDTH));
+  const bottom = Math.max(...nodes.map((node) => node.position.y + EXPLAIN_NODE_MIN_HEIGHT));
   const translateExtent: [[number, number], [number, number]] = [
     [left - 160, top - 120],
     [right + 160, bottom + 120],
@@ -107,10 +109,14 @@ function StudyExplainFlow({ isExpanded, onToggleExpanded, visual }: StudyExplain
           nodesConnectable={false}
           nodesDraggable={false}
           onNodeClick={(_, node) => {
-            void flowRef.current?.setCenter(node.position.x + 69, node.position.y + 29, {
-              duration: 180,
-              zoom: 1.25,
-            });
+            void flowRef.current?.setCenter(
+              node.position.x + EXPLAIN_NODE_WIDTH / 2,
+              node.position.y + EXPLAIN_NODE_MIN_HEIGHT / 2,
+              {
+                duration: 180,
+                zoom: 1.25,
+              },
+            );
           }}
           onInit={(instance) => {
             flowRef.current = instance;
@@ -134,13 +140,24 @@ function StudyExplainFlow({ isExpanded, onToggleExpanded, visual }: StudyExplain
 
 function SemanticNode({ data }: NodeProps) {
   const nodeData = data as ExplanationGraphNode["data"];
+  const isHorizontal = nodeData.direction === "LR";
   return (
     <div className={`${styles.visualNode} ${styles[nodeData.role]}`}>
-      <Handle className={styles.handle} position={Position.Top} type="target" />
+      <Handle
+        className={styles.handle}
+        isConnectable={false}
+        position={isHorizontal ? Position.Left : Position.Top}
+        type="target"
+      />
       <span className={styles.nodeRole}>{nodeData.role}</span>
       <strong>{nodeData.label}</strong>
       {nodeData.detail ? <small>{nodeData.detail}</small> : null}
-      <Handle className={styles.handle} position={Position.Bottom} type="source" />
+      <Handle
+        className={styles.handle}
+        isConnectable={false}
+        position={isHorizontal ? Position.Right : Position.Bottom}
+        type="source"
+      />
     </div>
   );
 }

@@ -1,11 +1,14 @@
 import type { CardRecord, SpaceSummary } from "@pupil/core";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import type { ExplainCardPayload } from "../../lib/ai-explanation";
 import { Button } from "../Button";
 import { GridIcon } from "../icons/GridIcon";
 import { PlusIcon } from "../icons/PlusIcon";
 import { SearchIcon } from "../icons/SearchIcon";
 import { SortIcon } from "../icons/SortIcon";
 import { Pagination } from "../Pagination";
+import { StudyExplainPanel } from "../study/StudyExplainPanel";
 import { CardFormPanel } from "./CardFormPanel";
 import { CardList } from "./CardList";
 import styles from "./Cards.module.css";
@@ -42,7 +45,22 @@ type CardsScreenProps = {
     spaceId: string;
     tags: string[];
   }) => Promise<void>;
+  onExplainCard?: (input: { cardId: string; force?: boolean }) => Promise<{
+    cached: boolean;
+    generatedAt: number;
+    payload: ExplainCardPayload;
+  }>;
   spaces: SpaceSummary[];
+};
+
+type CardExplainView = {
+  cardId: string;
+  cardFront: string;
+  cached: boolean;
+  error: string | null;
+  generatedAt: number | null;
+  isLoading: boolean;
+  payload: ExplainCardPayload | null;
 };
 
 const EMPTY_DRAFT: CardDraft = {
@@ -63,6 +81,7 @@ export function CardsScreen({
   onOpenCreateDialog,
   onSuspendCard,
   onUpdateCard,
+  onExplainCard,
   spaces,
 }: CardsScreenProps) {
   const [draft, setDraft] = useState<CardDraft>(EMPTY_DRAFT);
@@ -78,6 +97,7 @@ export function CardsScreen({
   const [spaceFilter, setSpaceFilter] = useState<string>("all");
   const [sortMode, setSortMode] = useState<CardSortMode>("due");
   const [currentPage, setCurrentPage] = useState(1);
+  const [explainView, setExplainView] = useState<CardExplainView | null>(null);
   const cardListSectionRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -221,6 +241,7 @@ export function CardsScreen({
       await onDeleteCard({ id: targetCardId });
       resetDraft(spaces, setDraft, setEditingCardId, setError);
       setExpandedCardId((currentCardId) => (currentCardId === targetCardId ? null : currentCardId));
+      setExplainView((current) => (current?.cardId === targetCardId ? null : current));
       setIsEditorOpen(false);
     } catch (nextError: unknown) {
       setError(nextError instanceof Error ? nextError.message : "Failed to delete card.");
@@ -264,6 +285,50 @@ export function CardsScreen({
 
   function handleToggleExpand(cardId: string) {
     setExpandedCardId((currentCardId) => (currentCardId === cardId ? null : cardId));
+  }
+
+  async function handleViewExplanation(cardId: string, force: boolean) {
+    if (!onExplainCard) {
+      return;
+    }
+
+    const card = cards.find((item) => item.id === cardId);
+    if (!card) {
+      return;
+    }
+
+    setExplainView({
+      cardId,
+      cardFront: card.front,
+      cached: false,
+      error: null,
+      generatedAt: null,
+      isLoading: true,
+      payload: null,
+    });
+
+    try {
+      const result = await onExplainCard({ cardId, force });
+      setExplainView({
+        cardId,
+        cardFront: card.front,
+        cached: result.cached,
+        error: null,
+        generatedAt: result.generatedAt,
+        isLoading: false,
+        payload: result.payload,
+      });
+    } catch (nextError: unknown) {
+      setExplainView({
+        cardId,
+        cardFront: card.front,
+        cached: false,
+        error: nextError instanceof Error ? nextError.message : "Failed to load explanation.",
+        generatedAt: null,
+        isLoading: false,
+        payload: null,
+      });
+    }
   }
 
   function handlePageChange(page: number) {
@@ -379,6 +444,9 @@ export function CardsScreen({
           expandedCardId={expandedCardId}
           onDeleteCard={(cardId) => void handleDelete(cardId)}
           onEditCard={handleEditCard}
+          onViewExplanation={
+            onExplainCard ? (cardId) => void handleViewExplanation(cardId, false) : undefined
+          }
           onSuspendCard={(cardId, suspended) => void onSuspendCard({ id: cardId, suspended })}
           onToggleExpand={handleToggleExpand}
         />
@@ -405,6 +473,24 @@ export function CardsScreen({
         successPulseTick={editorSuccessPulseTick}
         spaces={spaces}
       />
+      {explainView
+        ? createPortal(
+            <div className={styles.explainOverlay}>
+              <StudyExplainPanel
+                cardFront={explainView.cardFront}
+                error={explainView.error}
+                generatedAt={explainView.generatedAt}
+                isCached={explainView.cached}
+                isLoading={explainView.isLoading}
+                onClose={() => setExplainView(null)}
+                onRegenerate={() => void handleViewExplanation(explainView.cardId, true)}
+                onRetry={() => void handleViewExplanation(explainView.cardId, false)}
+                payload={explainView.payload}
+              />
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

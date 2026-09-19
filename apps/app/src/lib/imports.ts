@@ -558,6 +558,7 @@ function importAnkiCardsInWebStorage(input: ImportAnkiPayload) {
       suspended: false,
       tags: normalizeTags(card.tags),
       updatedAt: now,
+      hasExplanation: false,
     };
     cards.push(importedCard);
     existingCards.add(cardKey);

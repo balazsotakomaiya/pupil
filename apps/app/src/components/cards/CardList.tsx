@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ChevronRightIcon } from "../icons/ChevronRightIcon";
 import { DeleteIcon } from "../icons/DeleteIcon";
 import { EditIcon } from "../icons/EditIcon";
+import { SparklesIcon } from "../icons/SparklesIcon";
 import { SuspendIcon } from "../icons/SuspendIcon";
 import styles from "./Cards.module.css";
 import { DeleteCardDialog } from "./DeleteCardDialog";
@@ -13,6 +14,7 @@ type CardListProps = {
   mode?: "all" | "space";
   onDeleteCard: (cardId: string) => void;
   onEditCard: (cardId: string) => void;
+  onViewExplanation?: (cardId: string) => void;
   onSuspendCard?: (cardId: string, suspended: boolean) => void;
   onToggleExpand: (cardId: string) => void;
 };
@@ -23,6 +25,7 @@ export function CardList({
   mode = "all",
   onDeleteCard,
   onEditCard,
+  onViewExplanation,
   onSuspendCard,
   onToggleExpand,
 }: CardListProps) {
@@ -116,6 +119,16 @@ export function CardList({
                   ))}
 
                   <div className={styles.cardExpandedActions}>
+                    {onViewExplanation && card.hasExplanation ? (
+                      <button
+                        className={styles.actionBtn}
+                        onClick={() => onViewExplanation(card.id)}
+                        type="button"
+                      >
+                        <SparklesIcon />
+                        View explanation
+                      </button>
+                    ) : null}
                     <button
                       className={styles.actionBtn}
                       onClick={() => onEditCard(card.id)}

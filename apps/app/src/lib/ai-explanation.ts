@@ -192,11 +192,22 @@ function hasCycle(nodes: VisualNode[], edges: VisualEdge[]): boolean {
   return nodes.some((node) => visit(node.id));
 }
 
+export const EXPLAIN_NODE_WIDTH = 138;
+export const EXPLAIN_NODE_MIN_HEIGHT = 58;
+const NODE_GAP = 34;
+const LEVEL_PITCH_X = 180;
+const SIBLING_PITCH_X = 180;
+
 export type ExplanationGraphNode = {
   id: string;
   type: "semantic";
   position: { x: number; y: number };
-  data: { role: VisualNodeRole; label: string; detail?: string };
+  data: {
+    role: VisualNodeRole;
+    label: string;
+    detail?: string;
+    direction: VisualDirection;
+  };
 };
 
 export type ExplanationGraphEdge = {
@@ -240,17 +251,50 @@ export function buildExplanationGraph(
   const ordered = [...visual.nodes].sort(
     (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.id.localeCompare(b.id),
   );
+  const heightById = new Map(
+    visual.nodes.map((node) => [node.id, estimatedNodeHeight(node)] as const),
+  );
+  const maxHeightByLevel = new Map<number, number>();
+  for (const node of ordered) {
+    const level = levels.get(node.id) ?? 0;
+    maxHeightByLevel.set(
+      level,
+      Math.max(
+        maxHeightByLevel.get(level) ?? 0,
+        heightById.get(node.id) ?? EXPLAIN_NODE_MIN_HEIGHT,
+      ),
+    );
+  }
+  const yAtLevel = new Map<number, number>();
+  let stackedY = 0;
+  [...maxHeightByLevel.keys()]
+    .sort((a, b) => a - b)
+    .forEach((level) => {
+      yAtLevel.set(level, stackedY);
+      stackedY += (maxHeightByLevel.get(level) ?? EXPLAIN_NODE_MIN_HEIGHT) + NODE_GAP;
+    });
   const lanes = new Map<number, number>();
+  const siblingY = new Map<number, number>();
   const nodes = ordered.map((node) => {
     const level = levels.get(node.id) ?? 0;
     const index = lanes.get(level) ?? 0;
     lanes.set(level, index + 1);
+    const height = heightById.get(node.id) ?? EXPLAIN_NODE_MIN_HEIGHT;
+    const yAmongSiblings = siblingY.get(level) ?? 0;
+    siblingY.set(level, yAmongSiblings + height + NODE_GAP);
     return {
       id: node.id,
       type: "semantic" as const,
       position:
-        direction === "LR" ? { x: level * 180, y: index * 92 } : { x: index * 180, y: level * 92 },
-      data: { role: node.role, label: node.label, detail: node.detail },
+        direction === "LR"
+          ? { x: level * LEVEL_PITCH_X, y: yAmongSiblings }
+          : { x: index * SIBLING_PITCH_X, y: yAtLevel.get(level) ?? 0 },
+      data: {
+        role: node.role,
+        label: node.label,
+        detail: node.detail,
+        direction,
+      },
     };
   });
   const edges = visual.edges.map((edge) => ({
@@ -262,4 +306,30 @@ export function buildExplanationGraph(
     style: edge.style === "dashed" ? { strokeDasharray: "5 4" } : undefined,
   }));
   return { nodes, edges };
+}
+
+function estimatedNodeHeight(node: VisualNode): number {
+  const labelLines = Math.max(1, Math.ceil(node.label.length / 18));
+  const detailLines = node.detail ? Math.max(1, Math.ceil(node.detail.length / 22)) : 0;
+  return Math.max(EXPLAIN_NODE_MIN_HEIGHT, 36 + labelLines * 15 + detailLines * 13);
+}
+
+export function isGlossaryVisual(visual: VisualSpec): boolean {
+  if (!visual.nodes.every((node) => node.role === "concept" || node.role === "annotation")) {
+    return false;
+  }
+  const outgoing = new Map<string, number>();
+  const incoming = new Map<string, number>();
+  for (const edge of visual.edges) {
+    outgoing.set(edge.source, (outgoing.get(edge.source) ?? 0) + 1);
+    incoming.set(edge.target, (incoming.get(edge.target) ?? 0) + 1);
+  }
+  return !visual.nodes.some(
+    (node) => (outgoing.get(node.id) ?? 0) > 1 || (incoming.get(node.id) ?? 0) > 1,
+  );
+}
+
+export function sanitizeExplainPayload(payload: ExplainCardPayload): ExplainCardPayload {
+  if (!payload.visual || !isGlossaryVisual(payload.visual)) return payload;
+  return { ...payload, visual: null };
 }

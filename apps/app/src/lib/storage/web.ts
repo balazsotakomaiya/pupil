@@ -140,6 +140,7 @@ export function createWebStorage(): PupilStorage {
         suspended: false,
         tags: normalized.tags,
         updatedAt: now,
+        hasExplanation: false,
       };
 
       writeCards([created, ...readCards()]);

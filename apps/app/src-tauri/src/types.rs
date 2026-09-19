@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -65,6 +65,7 @@ pub(crate) struct CardSummary {
     pub(crate) updated_at: i64,
     #[serde(rename = "suspended")]
     pub(crate) is_suspended: bool,
+    pub(crate) has_explanation: bool,
 }
 
 #[derive(Deserialize)]
@@ -395,6 +396,12 @@ impl ExplainCardPayload {
         }
         Ok(())
     }
+
+    pub(crate) fn drop_glossary_visual(&mut self) {
+        if self.visual.as_ref().is_some_and(VisualSpec::is_glossary) {
+            self.visual = None;
+        }
+    }
 }
 
 /// Parses a payload read from SQLite. Unlike provider-response parsing, stored
@@ -402,14 +409,36 @@ impl ExplainCardPayload {
 pub(crate) fn parse_persisted_explain_card_payload(
     serialized: &str,
 ) -> Result<ExplainCardPayload, String> {
-    let payload = serde_json::from_str::<ExplainCardPayload>(serialized)
+    let mut payload = serde_json::from_str::<ExplainCardPayload>(serialized)
         .map_err(|error| error.to_string())?;
     payload.validate(serialized.len())?;
+    payload.drop_glossary_visual();
 
     Ok(payload)
 }
 
 impl VisualSpec {
+    fn is_glossary(&self) -> bool {
+        if !self.nodes.iter().all(|node| {
+            matches!(
+                node.role,
+                VisualNodeRole::Concept | VisualNodeRole::Annotation
+            )
+        }) {
+            return false;
+        }
+        let mut outgoing = HashMap::<&str, usize>::new();
+        let mut incoming = HashMap::<&str, usize>::new();
+        for edge in &self.edges {
+            *outgoing.entry(edge.source.as_str()).or_insert(0) += 1;
+            *incoming.entry(edge.target.as_str()).or_insert(0) += 1;
+        }
+        !self.nodes.iter().any(|node| {
+            outgoing.get(node.id.as_str()).copied().unwrap_or(0) > 1
+                || incoming.get(node.id.as_str()).copied().unwrap_or(0) > 1
+        })
+    }
+
     fn validate(&self) -> Result<(), String> {
         if !safe_text(&self.title) || !safe_text(&self.description) || !safe_text(&self.alt_text) {
             return Err("visual text must be non-empty plain text".to_string());

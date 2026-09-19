@@ -1,10 +1,7 @@
 use rusqlite::Connection;
 
-use crate::ai::{
-    build_explain_prose_fallback_prompt, build_explain_repair_prompt, parse_explain_card_response,
-};
+use crate::ai::parse_explain_card_response;
 use crate::cards::{fetch_card_explanation_source, save_card_explanation, update_card_row};
-use crate::error::AppError;
 use crate::tests::support::{open_test_connection, seed_card, seed_space};
 use crate::types::NormalizedCardUpdateInput;
 
@@ -145,12 +142,71 @@ fn explanation_contract_accepts_fenced_json_objects() {
 }
 
 #[test]
-fn explanation_prompts_keep_contract_and_previous_response_context() {
-    assert!(build_explain_prose_fallback_prompt().contains("schemaVersion 1"));
-    let repair =
-        build_explain_repair_prompt("bad response", &AppError::validation("missing field"));
-    assert!(repair.contains("bad response"));
-    assert!(repair.contains("missing field"));
+fn explanation_parser_drops_glossary_concept_lists() {
+    let glossary = serde_json::json!({
+        "schemaVersion": 1,
+        "paragraphs": [
+            "Preorder visits the root first.",
+            "Inorder visits the root in the middle.",
+            "Postorder visits the root last."
+        ],
+        "visual": {
+            "kind": "comparison",
+            "title": "Traversal orders",
+            "description": "Three ways to walk a binary tree.",
+            "direction": "TB",
+            "nodes": [
+                {"id": "pre", "role": "concept", "label": "Preorder", "detail": "Root, left, right."},
+                {"id": "in", "role": "concept", "label": "Inorder", "detail": "Left, root, right."},
+                {"id": "post", "role": "concept", "label": "Postorder", "detail": "Left, right, root."}
+            ],
+            "edges": [
+                {"id": "a", "source": "pre", "target": "in"},
+                {"id": "b", "source": "in", "target": "post"}
+            ],
+            "altText": "Three traversal orders stacked as definitions."
+        }
+    })
+    .to_string();
+
+    assert!(parse_explain_card_response(&glossary)
+        .expect("glossary payload")
+        .visual
+        .is_none());
+}
+
+#[test]
+fn explanation_parser_keeps_branching_concept_trees() {
+    let tree = serde_json::json!({
+        "schemaVersion": 1,
+        "paragraphs": [
+            "A binary tree has a root and two children.",
+            "The left child is visited before the right child.",
+            "That parent-child structure is the thing to remember."
+        ],
+        "visual": {
+            "kind": "tree",
+            "title": "A binary tree",
+            "description": "Root with left and right children.",
+            "direction": "TB",
+            "nodes": [
+                {"id": "root", "role": "concept", "label": "Root"},
+                {"id": "left", "role": "concept", "label": "Left"},
+                {"id": "right", "role": "concept", "label": "Right"}
+            ],
+            "edges": [
+                {"id": "to_left", "source": "root", "target": "left"},
+                {"id": "to_right", "source": "root", "target": "right"}
+            ],
+            "altText": "Root connects to left and right children."
+        }
+    })
+    .to_string();
+
+    assert!(parse_explain_card_response(&tree)
+        .expect("tree payload")
+        .visual
+        .is_some());
 }
 
 fn seeded_connection() -> Connection {

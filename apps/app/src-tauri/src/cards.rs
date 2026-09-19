@@ -33,7 +33,8 @@ pub(crate) fn list_card_summaries(
                cards.last_review,
                cards.created_at,
                cards.updated_at,
-               cards.is_suspended
+               cards.is_suspended,
+               cards.explanation_payload IS NOT NULL
         FROM cards
         INNER JOIN spaces ON spaces.id = cards.space_id
         WHERE (?1 IS NULL OR cards.space_id = ?1)
@@ -364,7 +365,8 @@ fn fetch_card_summary(connection: &Connection, id: &str) -> rusqlite::Result<Car
                cards.last_review,
                cards.created_at,
                cards.updated_at,
-               cards.is_suspended
+               cards.is_suspended,
+               cards.explanation_payload IS NOT NULL
         FROM cards
         INNER JOIN spaces ON spaces.id = cards.space_id
         WHERE cards.id = ?1
@@ -398,6 +400,7 @@ fn map_card_summary_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<CardSummary
         created_at: row.get(17)?,
         updated_at: row.get(18)?,
         is_suspended: row.get::<_, i64>(19).unwrap_or(0) != 0,
+        has_explanation: row.get::<_, i64>(20).unwrap_or(0) != 0,
     })
 }
 
