@@ -1058,6 +1058,27 @@
   text-transform: uppercase;
 }
 
+.sessionExplainLoadingHint {
+  margin-top: 0;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  animation: sessionExplainHintIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes sessionExplainHintIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes sessionExplainShimmer {
   0% {
     background-position: 200% 0;

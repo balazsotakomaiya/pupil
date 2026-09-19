@@ -30,6 +30,7 @@ export function StudyExplainPanel({
   onRetry,
 }: StudyExplainPanelProps) {
   const [isVisualExpanded, setIsVisualExpanded] = useState(false);
+  const [slowHintStage, setSlowHintStage] = useState(0);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -43,6 +44,22 @@ export function StudyExplainPanel({
     window.addEventListener("keydown", handleKeyDown, { capture: true });
     return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
   }, [onClose]);
+
+  // The explanation request isn't streamed, so slow models leave the panel on
+  // skeletons for a while. Escalate the reassurance the longer the wait goes on.
+  useEffect(() => {
+    if (!isLoading) {
+      setSlowHintStage(0);
+      return;
+    }
+    setSlowHintStage(0);
+    const reassureTimerId = window.setTimeout(() => setSlowHintStage(1), 5000);
+    const patienceTimerId = window.setTimeout(() => setSlowHintStage(2), 20000);
+    return () => {
+      window.clearTimeout(reassureTimerId);
+      window.clearTimeout(patienceTimerId);
+    };
+  }, [isLoading, cardFront]);
 
   const promptPreview = cardFront.length > 60 ? `${cardFront.slice(0, 60)}…` : cardFront;
 
@@ -90,6 +107,17 @@ export function StudyExplainPanel({
               <div className={styles.sessionExplainSkeleton} />
               <div className={styles.sessionExplainSkeleton} />
               <span className={styles.sessionExplainLoadingNote}>Asking your model…</span>
+              {slowHintStage > 0 ? (
+                <span
+                  key={slowHintStage}
+                  aria-live="polite"
+                  className={`${styles.sessionExplainLoadingNote} ${styles.sessionExplainLoadingHint}`}
+                >
+                  {slowHintStage === 1
+                    ? "Still working on it — hang tight, your explanation is on its way…"
+                    : "Okay, this one's a thinker — your model is still digging deep. Hang in there…"}
+                </span>
+              ) : null}
             </div>
           ) : error ? (
             <div className={styles.sessionExplainError}>
