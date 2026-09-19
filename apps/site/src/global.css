@@ -33,6 +33,7 @@ body {
   --border: #1e1e1e;
   --border-hover: #333;
   --ruler: #2a2a2a;
+  --ruler-dim: rgba(42, 42, 42, 0.2); /* rulers faded over the hero dither gradient */
 
   /* Text */
   --text-primary: #ededed;

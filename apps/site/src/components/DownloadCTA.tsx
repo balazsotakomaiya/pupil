@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { AppleIcon, DownloadIcon, LinuxIcon, WindowsIcon } from "../icons";
 import { DESKTOP_APP_VERSION, DOWNLOAD_BASE, RELEASES_URL, REPO_URL } from "../lib/constants";
+import { cx } from "../lib/cx";
 import { detectOS, type OS } from "../lib/detectOS";
 import styles from "./DownloadCTA.module.css";
 
@@ -29,10 +30,10 @@ const OS_CONFIG: Record<OS, { label: string; icon: ReactNode; downloadUrl: strin
   },
 };
 
-export default function DownloadCTA() {
+export default function DownloadCTA({ onBackdrop = false }: { onBackdrop?: boolean }) {
   const { label, icon, downloadUrl } = OS_CONFIG[detectOS()];
   return (
-    <div className={styles.heroCtasGroup}>
+    <div className={cx(styles.heroCtasGroup, onBackdrop && styles.onBackdrop)}>
       <div className={styles.heroCtas}>
         <a
           href={downloadUrl}

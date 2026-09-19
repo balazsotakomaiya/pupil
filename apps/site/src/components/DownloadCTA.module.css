@@ -69,3 +69,27 @@
 .btnAllPlatforms:hover {
   color: var(--text-secondary);
 }
+
+/* ─── On-backdrop variant (over the hero dither gradient) ───────────────── */
+.onBackdrop .btnSecondary {
+  color: #d6d6d6;
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(10, 10, 10, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.onBackdrop .btnSecondary:hover {
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.38);
+  background: rgba(10, 10, 10, 0.6);
+}
+
+.onBackdrop .btnAllPlatforms {
+  color: #a8a8a8;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+}
+
+.onBackdrop .btnAllPlatforms:hover {
+  color: var(--text-primary);
+}

@@ -1,7 +1,28 @@
 .hero {
+  position: relative;
   padding: var(--space-24) var(--space-8) var(--space-20);
   max-width: 960px;
   margin: 0 auto;
+}
+
+/* ─── Dither gradient backdrop (demo) ───────────────────────────────────── */
+.heroBackdrop {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  height: 760px;
+  background: url("/dither-gradient.webp") center top / cover no-repeat;
+  mask-image: radial-gradient(ellipse 100% 100% at 50% 0%, black 45%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 100% 100% at 50% 0%, black 45%, transparent 80%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hero > :not(.heroBackdrop) {
+  position: relative;
+  z-index: 1;
 }
 
 .heroBadge {
@@ -10,8 +31,11 @@
   gap: var(--space-2-5);
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-secondary);
-  border: 1px solid var(--border);
+  color: #c9c9c9;
+  background: rgba(10, 10, 10, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 999px;
   padding: 5px var(--space-3-5);
   margin-bottom: var(--space-6);
@@ -21,8 +45,8 @@
 .heroBadgeChip {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--text-tertiary);
-  background: var(--bg-elevated);
+  color: #a3a3a3;
+  background: rgba(255, 255, 255, 0.08);
   padding: var(--space-0-5) var(--space-2);
   border-radius: 999px;
 }
@@ -34,6 +58,7 @@
   letter-spacing: -1.5px;
   max-width: 720px;
   margin-bottom: var(--space-5);
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.55);
 }
 
 .heroTitle em {
@@ -45,9 +70,10 @@
 .heroDesc {
   font-size: 16px;
   line-height: 1.6;
-  color: var(--text-secondary);
+  color: #bababa;
   max-width: 520px;
   margin-bottom: var(--space-9);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.65);
 }
 
 .heroMockup {
@@ -57,11 +83,30 @@
   -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
 }
 
+.heroMockupImg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-lg);
+}
+
 /* ─── Hero entrance animation (Linear-style blur-up, per line) ──────────── */
+/* Backdrop fades in first; everything else holds until the dither is in. */
+.heroAnim .heroBackdrop {
+  opacity: 0;
+  animation: heroBackdropFade 1.1s ease-out forwards;
+}
+
+@keyframes heroBackdropFade {
+  to {
+    opacity: 1;
+  }
+}
+
 .heroAnim .heroBadge {
   opacity: 0;
   transform: translateY(8px);
-  animation: heroFadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) 60ms forwards;
+  animation: heroFadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) 650ms forwards;
 }
 
 .heroTitleLine {
@@ -82,11 +127,11 @@
 }
 
 .heroAnim .heroDesc {
-  animation: heroBlurUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 320ms forwards;
+  animation: heroBlurUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 1120ms forwards;
 }
 
 .heroAnim .heroCtaWrap {
-  animation: heroBlurUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 480ms forwards;
+  animation: heroBlurUp 0.85s cubic-bezier(0.22, 1, 0.36, 1) 1280ms forwards;
 }
 
 .heroAnim .heroMockup {
@@ -95,7 +140,7 @@
   transform-origin: 50% 100%;
   transform: perspective(1600px) rotateX(16deg) translateY(64px) scale(0.97);
   will-change: opacity, filter, transform;
-  animation: heroMockupRise 1.3s cubic-bezier(0.16, 1, 0.3, 1) 650ms forwards;
+  animation: heroMockupRise 1.3s cubic-bezier(0.16, 1, 0.3, 1) 1450ms forwards;
 }
 
 @keyframes heroBlurUp {
@@ -122,6 +167,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .heroAnim .heroBackdrop,
   .heroAnim .heroBadge,
   .heroTitleLine,
   .heroAnim .heroDesc,
@@ -137,6 +183,13 @@
 @media (max-width: 640px) {
   .hero {
     padding: var(--space-16) var(--space-5) var(--space-14);
+  }
+
+  .heroBadge {
+    font-size: 11px;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    white-space: nowrap;
   }
 
   .heroMockup {

@@ -11,15 +11,35 @@
   overflow: hidden;
 }
 
-/* Vertical rulers — dashes running top-to-bottom */
+/* Vertical rulers — dashes running top-to-bottom.
+   Dashes come from the mask; the color comes from the background gradient,
+   which drops to a faint ruler color while crossing the hero dither gradient
+   and eases back to full strength as the image ends.
+   --hero-shift/--hero-tint-height are set from JS to track the hero
+   backdrop's viewport position. */
 .rulerV {
   top: 0;
   bottom: 0;
   width: 1px;
-  background-image: repeating-linear-gradient(
+  background: linear-gradient(
     to bottom,
-    var(--ruler) 0px,
-    var(--ruler) 1px,
+    var(--ruler) 0,
+    var(--ruler) var(--hero-shift, -10000px),
+    var(--ruler-dim) calc(var(--hero-shift, -10000px) + 160px),
+    var(--ruler-dim) calc(var(--hero-shift, -10000px) + var(--hero-tint-height, 0px) - 160px),
+    var(--ruler) calc(var(--hero-shift, -10000px) + var(--hero-tint-height, 0px))
+  );
+  mask-image: repeating-linear-gradient(
+    to bottom,
+    black 0px,
+    black 1px,
+    transparent 1px,
+    transparent 5px
+  );
+  -webkit-mask-image: repeating-linear-gradient(
+    to bottom,
+    black 0px,
+    black 1px,
     transparent 1px,
     transparent 5px
   );
