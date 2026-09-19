@@ -1,28 +1,29 @@
+/* Hero is full-bleed so the backdrop can size to the layout viewport with
+   inset-inline: 0 — never wider than the body, so no horizontal overflow. */
 .hero {
   position: relative;
-  padding: var(--space-24) var(--space-8) var(--space-20);
-  max-width: 960px;
-  margin: 0 auto;
+  padding: var(--space-24) 0 var(--space-20);
 }
 
-/* ─── Dither gradient backdrop (demo) ───────────────────────────────────── */
+.heroInner {
+  position: relative;
+  z-index: 1;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 var(--space-8);
+}
+
+/* ─── Dither gradient backdrop ──────────────────────────────────────────── */
 .heroBackdrop {
   position: absolute;
   top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100vw;
+  inset-inline: 0;
   height: 760px;
   background: url("/dither-gradient.webp") center top / cover no-repeat;
   mask-image: radial-gradient(ellipse 100% 100% at 50% 0%, black 45%, transparent 80%);
   -webkit-mask-image: radial-gradient(ellipse 100% 100% at 50% 0%, black 45%, transparent 80%);
   pointer-events: none;
   z-index: 0;
-}
-
-.hero > :not(.heroBackdrop) {
-  position: relative;
-  z-index: 1;
 }
 
 .heroBadge {
@@ -182,7 +183,11 @@
 
 @media (max-width: 640px) {
   .hero {
-    padding: var(--space-16) var(--space-5) var(--space-14);
+    padding: var(--space-16) 0 var(--space-14);
+  }
+
+  .heroInner {
+    padding: 0 var(--space-5);
   }
 
   .heroBadge {

@@ -22,27 +22,29 @@ export default function Hero() {
   return (
     <section className={cx(styles.hero, styles.heroAnim)}>
       <div className={styles.heroBackdrop} aria-hidden="true" />
-      <div className={styles.heroBadge}>
-        <span className={styles.heroBadgeChip}>v{DESKTOP_APP_VERSION}</span>
-        Open source · Local-first · FSRS-5
-      </div>
-      <AnimatedHeroTitle />
-      <p className={styles.heroDesc}>
-        Pupil generates, organizes, and adapts cards to your knowledge gaps using AI and
-        science-backed spaced repetition. No account needed.
-      </p>
-      <div className={styles.heroCtaWrap}>
-        <DownloadCTA onBackdrop />
-      </div>
+      <div className={styles.heroInner}>
+        <div className={styles.heroBadge}>
+          <span className={styles.heroBadgeChip}>v{DESKTOP_APP_VERSION}</span>
+          Open source · Local-first · FSRS-5
+        </div>
+        <AnimatedHeroTitle />
+        <p className={styles.heroDesc}>
+          Pupil generates, organizes, and adapts cards to your knowledge gaps using AI and
+          science-backed spaced repetition. No account needed.
+        </p>
+        <div className={styles.heroCtaWrap}>
+          <DownloadCTA onBackdrop />
+        </div>
 
-      <div className={styles.heroMockup}>
-        <img
-          className={styles.heroMockupImg}
-          src={DASHBOARD_SCREENSHOT.src}
-          alt={DASHBOARD_SCREENSHOT.alt}
-          loading="eager"
-          decoding="sync"
-        />
+        <div className={styles.heroMockup}>
+          <img
+            className={styles.heroMockupImg}
+            src={DASHBOARD_SCREENSHOT.src}
+            alt={DASHBOARD_SCREENSHOT.alt}
+            loading="eager"
+            decoding="sync"
+          />
+        </div>
       </div>
     </section>
   );
