@@ -6,6 +6,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [1.0.0-alpha.11] - 2026-09-20
+
+### Added
+
+- View a cached AI explanation from the cards list (expanded card → explanation panel), without starting a study session.
+- Escalating status copy while an explanation is still loading, so long waits feel intentional rather than stuck.
+
+### Changed
+
+- Study explanation prompts steer harder toward learner-facing prose and only emit a diagram when the concept is inherently structural (not a glossary / definition decoration).
+- Persisted glossary-style visuals are dropped when loading a cached explanation, so older decorative diagrams no longer resurface.
+- Card summaries expose whether an explanation is already cached (`has_explanation`).
+- Marketing site: Open Graph / Twitter social card (`og.jpg`) with the dither gradient treatment; README header banner asset.
+
+### Fixed
+
+- React Flow connection handle dots no longer show on explanation diagrams.
+
 ## [1.0.0-alpha.10] - 2026-09-19
 
 ### Added
@@ -42,11 +60,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Pupil has been published as a `1.0.0` alpha series. Release notes and downloadable assets for each are on the [releases page](https://github.com/balazsotakomaiya/pupil/releases). Broad strokes:
 
+- **1.0.0-alpha.11** — explanation UX polish (cards-list viewer, fewer decorative diagrams, slow-load status), plus site OG/README banner assets.
 - **1.0.0-alpha.10** — light mode, `@pupil/core` / `PupilStorage`, design tokens, in-app OTA update UI, and the hardening/docs/test work accumulated since alpha.9.
 - **1.0.0-alpha.9** — early public alpha cut on the July line (see GitHub release assets).
 - **1.0.0-alpha.8** — AI card explanations with generated visual charts, and a migration path for database updates.
 - **1.0.0-alpha.7** — Stronghold vault encrypted with a random key held in the OS keystore, centralized modals, delete confirmations, and a rebuilt marketing site with platform-specific download links.
 - **1.0.0-alpha.1 – alpha.6** — the initial public alpha line: spaces, manual card authoring, Anki `.apkg` import, AI generation with a review gate, FSRS-5 scheduling, dashboard and per-space stats, tray integration, and data export.
 
-[Unreleased]: https://github.com/balazsotakomaiya/pupil/compare/app-v1.0.0-alpha.10...HEAD
+[Unreleased]: https://github.com/balazsotakomaiya/pupil/compare/app-v1.0.0-alpha.11...HEAD
+[1.0.0-alpha.11]: https://github.com/balazsotakomaiya/pupil/compare/app-v1.0.0-alpha.10...app-v1.0.0-alpha.11
 [1.0.0-alpha.10]: https://github.com/balazsotakomaiya/pupil/compare/app-v1.0.0-alpha.9...app-v1.0.0-alpha.10
