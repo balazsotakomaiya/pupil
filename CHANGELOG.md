@@ -6,6 +6,32 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [1.0.0-beta.1] - 2026-09-25
+
+First beta. The feature set is settled; this cut is about polish.
+
+### Added
+
+- Launch animation: the eye draws itself, opens and glances once before the app fades in. Click to skip; reduced-motion users get a short fade.
+- Overlay title bar on macOS: the traffic lights sit inside Pupil's own bar, every title bar drags the window, double-click maximises, and fullscreen drops the reserved space.
+- Shared `Menu`, `StatusPanel` and `CountUp` components, with keyboard navigation and focus return for menus.
+- Study summary count-up and check-draw animation; study cards animate in on each review; space-details activity bars grow in.
+- Reassurance copy while slow AI explanations load.
+
+### Changed
+
+- Inter, JetBrains Mono and Syne ship with the app instead of loading from Google Fonts, and the CSP no longer allows Google domains.
+- Error, not-found and failed-start screens use one consistent status panel with a recovery action.
+- Higher contrast for study labels, rating buttons and inactive titlebar tabs; hard-coded colours moved onto theme tokens so light mode holds up everywhere.
+- Study explanations fine-tuned; diagram connection handles hidden.
+- Marketing site redesign.
+
+### Fixed
+
+- Space-details activity bars collapsed to a sliver.
+- Duplicate React keys in the space-details activity chart.
+- The Import title bar used a hard-coded dark background in light mode.
+
 ## [1.0.0-alpha.10] - 2026-09-19
 
 ### Added
@@ -42,11 +68,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Pupil has been published as a `1.0.0` alpha series. Release notes and downloadable assets for each are on the [releases page](https://github.com/balazsotakomaiya/pupil/releases). Broad strokes:
 
+- **1.0.0-beta.1** — first beta: launch animation, macOS overlay title bar, shared menu/status components, bundled fonts, and a UI polish pass.
 - **1.0.0-alpha.10** — light mode, `@pupil/core` / `PupilStorage`, design tokens, in-app OTA update UI, and the hardening/docs/test work accumulated since alpha.9.
 - **1.0.0-alpha.9** — early public alpha cut on the July line (see GitHub release assets).
 - **1.0.0-alpha.8** — AI card explanations with generated visual charts, and a migration path for database updates.
 - **1.0.0-alpha.7** — Stronghold vault encrypted with a random key held in the OS keystore, centralized modals, delete confirmations, and a rebuilt marketing site with platform-specific download links.
 - **1.0.0-alpha.1 – alpha.6** — the initial public alpha line: spaces, manual card authoring, Anki `.apkg` import, AI generation with a review gate, FSRS-5 scheduling, dashboard and per-space stats, tray integration, and data export.
 
-[Unreleased]: https://github.com/balazsotakomaiya/pupil/compare/app-v1.0.0-alpha.10...HEAD
+[Unreleased]: https://github.com/balazsotakomaiya/pupil/compare/app-v1.0.0-beta.1...HEAD
+[1.0.0-beta.1]: https://github.com/balazsotakomaiya/pupil/compare/app-v1.0.0-alpha.10...app-v1.0.0-beta.1
 [1.0.0-alpha.10]: https://github.com/balazsotakomaiya/pupil/compare/app-v1.0.0-alpha.9...app-v1.0.0-alpha.10
