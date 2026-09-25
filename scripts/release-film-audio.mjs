@@ -225,6 +225,42 @@ function thump(freq = 55, { from = 2, decay = 0.25 } = {}) {
   return blip(freq, { decay, from, drop: 0.035, harmonics: 0.15 });
 }
 
+/** Taiko-style drum: a pitched skin that sags, over a dull slap of low noise. */
+function taiko(freq = 70, { decay = 0.35, seed = 9 } = {}) {
+  return normalize(
+    layer([
+      [0, thump(freq, { from: 1.8, decay })],
+      [0, thump(freq * 1.5, { from: 1.4, decay: decay * 0.4 }), 0.3],
+      [0, normalize(burst(0.08, 320, { type: "lp", seed })), 0.45],
+    ]),
+  );
+}
+
+/** A low brass swell ("braam"): detuned saws on a root and fifth, through a low-pass that opens. */
+function braam(freq, { dur = 1.6, attack = 0.06, open = 1400 } = {}) {
+  const out = new Float32Array(samples(dur));
+  const lp = new Filter("lp", 150, 1.1);
+  const voices = [
+    [1, -0.006],
+    [1, 0.006],
+    [1.5, 0.003],
+    [0.5, 0],
+  ].map(([ratio, detune]) => {
+    const f = freq * ratio * (1 + detune);
+    return [f, Math.min(14, Math.floor(2500 / f))];
+  });
+  for (let i = 0; i < out.length; i++) {
+    const t = i / SR;
+    const rise = Math.min(1, t / attack);
+    if (i % 32 === 0) lp.set(120 + open * rise * Math.exp(-t / (dur * 0.3)), 1.1);
+    let v = 0;
+    for (const [f, harmonics] of voices)
+      for (let k = 1; k <= harmonics; k++) v += sin(f * k * t) / k;
+    out[i] = lp.run(v) * rise * Math.exp(-t / (dur * 0.35));
+  }
+  return normalize(out);
+}
+
 /** A swell of rising noise and tone that stops dead at its end. */
 function riser(dur) {
   const noise = sweep(dur, 300, 3500, { attack: 0.97, q: 0.8, seed: 21 });
@@ -280,8 +316,9 @@ function grains(
 // ─── Sound effects ──────────────────────────────────────────────────────────
 
 /**
- * Renders one cue. Returns `[signal, levelDb, pan, reverbSend]`, or a stereo pair
- * `{ l, r, level, send }` for voices with their own stereo image.
+ * Renders one cue. Returns `[signal, levelDb, pan, reverbSend, hallSend]`, or a stereo pair
+ * `{ l, r, level, send }` for voices with their own stereo image. The hall is a long, dark
+ * reverb kept for the big moments.
  */
 function effect(cue) {
   const g = cue.gain ?? 1;
@@ -332,12 +369,15 @@ function effect(cue) {
     case "flash":
       return [
         layer([
-          [0, normalize(sweep(0.9, 3200, 800, { attack: 0.02, q: 0.7, seed, curve: 2.5 })), 0.6],
-          [0, normalize(thump(45, { from: 2.5, decay: 0.5 }))],
+          [0, normalize(sweep(0.9, 3200, 800, { attack: 0.02, q: 0.7, seed, curve: 2.5 })), 0.5],
+          [0, normalize(thump(40, { from: 2.5, decay: 0.6 }))],
+          [0, taiko(62, { decay: 0.45, seed }), 0.6],
+          [0, braam(mtof(38), { dur: 1.8, open: 1200 }), 0.5],
         ]),
-        -11,
+        -9,
         0,
-        0.35,
+        0.2,
+        0.4,
       ];
     case "bloom":
       return [sweep(0.9, 1800, 250, { q: 0.8, attack: 0.25, seed }), -18, 0, 0.4];
@@ -555,15 +595,31 @@ function effect(cue) {
       }
       return [
         layer([
-          [0, thump(55, { from: 2.2, decay: 0.3 })],
-          [0, burst(0.04, cue.bright ? 2400 : 1400, { seed })],
-          [0, normalize(stab), 0.55],
+          [0, normalize(thump(42, { from: 2.4, decay: 0.45 }))],
+          [0, taiko(cue.note < 47 ? 66 : 74, { decay: 0.3, seed }), 0.7],
+          [0, braam(f / 2, { dur: 0.9, attack: 0.02, open: cue.bright ? 1800 : 1200 }), 0.55],
+          [0, burst(0.04, cue.bright ? 2400 : 1400, { seed }), 0.6],
+          [0, normalize(stab), 0.35],
+        ]),
+        -6,
+        0,
+        0.15,
+        0.35,
+      ];
+    }
+    case "impact":
+      return [
+        layer([
+          [0, normalize(thump(36, { from: 3, decay: 0.9 }))],
+          [0, taiko(58, { decay: 0.6, seed }), 0.7],
+          [0, braam(mtof(38), { dur: 3.2, attack: 0.03, open: 1500 }), 0.6],
+          [0, normalize(sweep(1.4, 2400, 300, { attack: 0.01, q: 0.7, seed, curve: 2.2 })), 0.3],
         ]),
         -7,
         0,
-        0.25,
+        0.15,
+        0.6,
       ];
-    }
     case "swoosh":
       return [sweep(dur, 400, 1400, { q: 0.9, attack: 0.5, seed }), -21, 0, 0.3];
     default:
@@ -661,6 +717,27 @@ function renderBed(cues, duration, bus, send) {
       send.add(t, sig, db(-25) * accent * fade * 0.5, k % 2 ? 0.3 : -0.3);
     }
   }
+  // Drums: a taiko pulse on the beat grid that builds from the aperture to the features' whip,
+  // from one hit a bar to a roll of 16ths.
+  const whip = cues.find((c) => c.type === "whip");
+  if (on) {
+    const step = 60 / BPM / 4;
+    const end = whip ? whip.t - 0.04 : off ? off.t : duration;
+    for (let k = 0, t = on.t; t < end; k++, t = on.t + k * step) {
+      const p = (t - on.t) / (end - on.t);
+      const every = p < 0.3 ? 16 : p < 0.6 ? 8 : p < 0.82 ? 4 : p < 0.94 ? 2 : 1;
+      if (k % every) continue;
+      const down = k % 16 === 0;
+      const vel = (down ? 1 : k % 8 === 0 ? 0.8 : k % 4 === 0 ? 0.65 : 0.5) * (0.5 + 0.5 * p);
+      const sig = taiko(down ? 60 : k % 8 === 0 ? 68 : 80, {
+        decay: down ? 0.4 : 0.22,
+        seed: k + 1,
+      });
+      const pan = down ? 0 : k % 8 === 0 ? -0.2 : 0.2;
+      bus.add(t, sig, db(-5) * vel, pan);
+      send.add(t, sig, db(-5) * vel * 0.6, pan);
+    }
+  }
   // At the resolve: a deep swell under the final chord.
   const resolve = chords.find((c) => c.name === "Dresolve");
   if (resolve) {
@@ -738,6 +815,7 @@ export function renderSoundtrack(cues, duration) {
   const length = samples(duration);
   const sfx = new Bus(length);
   const sfxSend = new Bus(length);
+  const sfxHall = new Bus(length);
   const bed = new Bus(length);
   const bedSend = new Bus(length);
 
@@ -745,10 +823,11 @@ export function renderSoundtrack(cues, duration) {
     const fx = effect(cue);
     if (!fx) continue;
     if (Array.isArray(fx)) {
-      const [sig, level, pan, send] = fx;
+      const [sig, level, pan, send, hall] = fx;
       normalize(sig);
       sfx.add(cue.t, sig, db(level), pan);
       if (send) sfxSend.add(cue.t, sig, db(level) * send, pan);
+      if (hall) sfxHall.add(cue.t, sig, db(level) * hall, pan);
     } else {
       let peak = 0;
       for (let i = 0; i < fx.l.length; i++)
@@ -769,14 +848,22 @@ export function renderSoundtrack(cues, duration) {
   }
   renderBed(cues, duration, bed, bedSend);
 
-  for (const [dry, send, opts] of [
-    [sfx, sfxSend, { room: 0.72, damp: 0.55 }],
-    [bed, bedSend, { room: 0.88, damp: 0.5 }],
+  for (const [dry, sends] of [
+    [
+      sfx,
+      [
+        [sfxSend, { room: 0.72, damp: 0.55 }],
+        [sfxHall, { room: 0.95, damp: 0.6 }],
+      ],
+    ],
+    [bed, [[bedSend, { room: 0.9, damp: 0.5 }]]],
   ]) {
-    const wet = freeverb(send, opts);
-    for (let i = 0; i < length; i++) {
-      dry.l[i] += wet.l[i];
-      dry.r[i] += wet.r[i];
+    for (const [send, opts] of sends) {
+      const wet = freeverb(send, opts);
+      for (let i = 0; i < length; i++) {
+        dry.l[i] += wet.l[i];
+        dry.r[i] += wet.r[i];
+      }
     }
     // Round off the top: everything here is meant to sound felt, not glassy.
     for (const side of [dry.l, dry.r]) {
@@ -808,10 +895,10 @@ function loudness({ l, r }) {
 }
 
 /** Music sits this far under the effects, whether it is the generated bed or a --music track. */
-const MUSIC_UNDER_SFX = 3;
+const MUSIC_UNDER_SFX = 2;
 
 /**
- * Mixes the stems: the music is balanced against the effects and dips under each feature hit,
+ * Mixes the stems: the music is balanced against the effects and dips under each big hit,
  * everything fades over the last second, and a limiter leaves headroom for normalisation.
  */
 export function mixSoundtrack({ sfx, bed }, cues, { bedGain = 1 } = {}) {
@@ -824,7 +911,7 @@ export function mixSoundtrack({ sfx, bed }, cues, { bedGain = 1 } = {}) {
   const balance = db(loudness(sfx) - MUSIC_UNDER_SFX - loudness(bed)) * bedGain;
   const duck = new Float32Array(n).fill(1);
   for (const cue of cues) {
-    if (cue.type !== "hit") continue;
+    if (!["hit", "flash", "impact"].includes(cue.type)) continue;
     const s = samples(cue.t);
     for (let i = 0; i < samples(0.7) && s + i < n; i++) {
       duck[s + i] = Math.min(duck[s + i], 1 - 0.5 * Math.exp(-i / (SR * 0.2)));
