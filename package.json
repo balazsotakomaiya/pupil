@@ -25,7 +25,8 @@
     "prepare": "lefthook install",
     "release:check": "bun ./scripts/desktop-release.mjs check",
     "release:version": "bun ./scripts/desktop-release.mjs version",
-    "release:film": "node ./scripts/render-release-film.mjs"
+    "release:film": "node ./scripts/render-release-film.mjs",
+    "details:film": "node ./scripts/render-release-film.mjs --page design-details.html"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.12",

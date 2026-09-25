@@ -1,0 +1,2075 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pupil — Design details</title>
+    <!--
+      Pupil · Design details: a series of short promo films, each one about a single piece of the
+      app's interface, recreated from the app's own components and tokens (apps/app/src).
+
+      Like release-film.html, everything on screen is a pure function of time: render(t) sets
+      every style and nothing uses CSS animations, so the page plays live in a browser and renders
+      frame-perfect to video with scripts/render-release-film.mjs (--page design-details.html).
+
+      Query params (or hash tokens, e.g. #another-portrait):
+        ?snippet=palette | another   01 Command palette (default), 02 Make another
+        ?format=landscape | portrait 16:9 1920×1080 (default) or 4:5 1080×1350
+        ?t=<seconds>  ?render  ?loop  ?hud=0   as in the release film
+
+      Keys: Space play/pause · ←/→ step a frame (Shift: 1s) · Home restart.
+    -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@700&family=Instrument+Serif:ital@1&display=block"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        /* The app's dark theme (apps/app/src/styles/tokens.css). */
+        --bg: #0a0a0a;
+        --bg-subtle: #111111;
+        --bg-elevated: #161616;
+        --border: #1e1e1e;
+        --border-hover: #333333;
+        --ruler: #2a2a2a;
+        --text-primary: #ededed;
+        --text-secondary: #888888;
+        --text-tertiary: #555555;
+        --bg-hover: color-mix(in srgb, var(--text-primary) 3%, transparent);
+        --success: #10b981;
+        --radius: 8px;
+        --radius-lg: 12px;
+        --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+        --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
+        --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+        --font-logo: "Syne", var(--font-sans);
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+      body {
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      #stage { position: absolute; left: 0; top: 0; overflow: hidden; background: var(--bg); transform-origin: 0 0; }
+      .layer { position: absolute; inset: 0; }
+      .serif { font-family: var(--font-serif); font-style: italic; font-weight: 400; }
+      .w { display: inline-block; }
+      #world { position: absolute; inset: 0; }
+
+      #light {
+        position: absolute;
+        left: -240px;
+        top: -160px;
+        width: 2400px;
+        height: 1350px;
+        background: url("public/dither-gradient.webp") center / cover no-repeat;
+        -webkit-mask-image: radial-gradient(ellipse 72% 78% at 50% 16%, #000 28%, transparent 78%);
+        mask-image: radial-gradient(ellipse 72% 78% at 50% 16%, #000 28%, transparent 78%);
+        transform-origin: 50% 30%;
+        opacity: 0;
+      }
+
+      /* ─── Title ───────────────────────────────────────────────────────── */
+      #title { visibility: hidden; }
+      .eyebrow {
+        position: absolute;
+        left: 200px;
+        top: 250px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-family: var(--font-mono);
+        font-size: 18px;
+        font-weight: 500;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: #8a8a8a;
+        white-space: nowrap;
+      }
+      .eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 14px var(--success); }
+      .t-ghost {
+        position: absolute;
+        right: 150px;
+        top: 150px;
+        font-size: 620px;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: -0.06em;
+        color: transparent;
+        -webkit-text-stroke: 1.5px #202020;
+      }
+      .t-text { position: absolute; left: 200px; top: 330px; }
+      .tl { overflow: hidden; padding: 0 0.06em 0.2em 0; margin-bottom: -0.2em; line-height: 0.95; }
+      .tl.indent { padding-left: 170px; }
+      .tw { display: inline-block; white-space: nowrap; font-size: 176px; font-weight: 600; letter-spacing: -0.05em; }
+      .tw.serif { font-size: 206px; letter-spacing: -0.02em; font-weight: 400; }
+      .t-cap {
+        position: absolute;
+        left: 200px;
+        top: 822px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        font-family: var(--font-mono);
+        font-size: 20px;
+        font-weight: 500;
+        letter-spacing: 0.16em;
+        color: #8a8a8a;
+        white-space: nowrap;
+      }
+      .caret { display: inline-block; width: 0.62em; height: 1.05em; margin-left: 6px; background: currentColor; vertical-align: -0.18em; }
+
+      /* ─── The app window, framed by the camera ────────────────────────── */
+      #cam { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+      #win {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1280px;
+        height: 800px;
+        overflow: hidden;
+        border: 1px solid #262626;
+        border-radius: 14px;
+        background: var(--bg);
+        box-shadow: 0 60px 160px -20px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(0, 0, 0, 0.6);
+      }
+      #app { position: absolute; inset: 0; }
+      #scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.55); opacity: 0; }
+
+      /* App titlebar (AppTitlebar.module.css) */
+      .titlebar {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 52px;
+        padding: 0 20px;
+        border-bottom: 1px solid var(--border);
+        background: color-mix(in srgb, var(--bg) 85%, transparent);
+      }
+      .tb-left { display: flex; align-items: center; gap: 20px; }
+      .tb-logo { display: flex; align-items: center; gap: 7px; }
+      .tb-logo svg { width: 22px; height: 22px; }
+      .tb-word { font-family: var(--font-logo); font-size: 17px; font-weight: 700; letter-spacing: -0.5px; line-height: 1; }
+      .tb-sep { width: 1px; height: 18px; background: var(--border); }
+      .tb-tabs { display: flex; gap: 2px; }
+      .tb-tab { padding: 5px 11px; border-radius: 5px; font-size: 13px; font-weight: 500; color: var(--text-tertiary); }
+      .tb-tab.on { background: var(--bg-elevated); color: var(--text-primary); }
+      .tb-status { display: flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); }
+      .streak-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15); }
+
+      .screen { position: absolute; left: 0; right: 0; top: 52px; bottom: 0; padding: 40px 56px; visibility: hidden; }
+      .ruler { height: 1px; background-image: repeating-linear-gradient(to right, var(--ruler) 0 1px, transparent 1px 5px); }
+      .mono-label { font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-tertiary); }
+      .btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 7px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+      .btn.primary { background: var(--text-primary); color: var(--bg); }
+      .btn.outline { border: 1px solid var(--border-hover); color: var(--text-secondary); }
+      .btn svg { width: 13px; height: 13px; }
+      .badge {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 1px 6px;
+      }
+
+      /* Dashboard */
+      .study-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 30px 32px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: linear-gradient(180deg, #131313, #0f0f0f);
+      }
+      .study-eyebrow { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.2px; color: var(--text-secondary); }
+      .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18); }
+      .study-headline { margin-top: 12px; font-size: 40px; font-weight: 600; letter-spacing: -1.4px; }
+      .study-sub { margin-top: 6px; font-size: 14px; color: var(--text-secondary); }
+      .study-right { display: flex; gap: 10px; }
+      .sec-head { display: flex; justify-content: space-between; align-items: baseline; margin: 30px 0 14px; }
+      .sec-meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); }
+      .spaces { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .space-card { padding: 18px 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-subtle); }
+      .space-top { display: flex; justify-content: space-between; align-items: center; }
+      .space-name { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
+      .space-desc { margin-top: 4px; font-size: 12.5px; color: var(--text-tertiary); }
+      .space-meta { display: flex; gap: 22px; margin-top: 16px; }
+      .space-meta b { display: block; font-family: var(--font-mono); font-size: 16px; font-weight: 500; color: var(--text-primary); }
+      .space-meta span { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-tertiary); }
+
+      /* Space page and card list */
+      .crumb { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.2px; color: var(--text-tertiary); }
+      .page-h1 { margin-top: 10px; font-size: 34px; font-weight: 600; letter-spacing: -1.1px; }
+      .page-sub { margin-top: 6px; font-size: 14px; color: var(--text-secondary); }
+      .stats { display: flex; gap: 34px; margin: 24px 0 26px; }
+      .stats b { display: block; font-family: var(--font-mono); font-size: 22px; font-weight: 500; }
+      .stats span { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-tertiary); }
+      .rows { margin-top: 12px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+      .row-wrap { overflow: hidden; }
+      .row { display: flex; align-items: center; gap: 16px; height: 50px; padding: 0 18px; border-top: 1px solid var(--border); font-size: 13.5px; background: var(--bg); }
+      .row-wrap:first-child .row { border-top: 0; }
+      .row .front { flex: 1; min-width: 0; font-weight: 500; letter-spacing: -0.1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .row .sp { width: 150px; font-size: 12px; color: var(--text-tertiary); }
+      .row .due { width: 64px; text-align: right; font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); }
+      .row .badge { width: 88px; text-align: center; }
+      .row .flash { position: absolute; inset: 0; background: rgba(16, 185, 129, 0.08); opacity: 0; }
+      .row { position: relative; }
+      .cards-head { display: flex; align-items: flex-end; justify-content: space-between; }
+      .cards-count { margin-left: 12px; font-family: var(--font-mono); font-size: 12px; color: var(--text-tertiary); letter-spacing: 0; font-weight: 400; }
+      .searchbar { display: flex; align-items: center; gap: 8px; margin-top: 22px; height: 38px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-subtle); font-size: 13px; color: var(--text-tertiary); }
+      .searchbar svg { width: 14px; height: 14px; }
+
+      /* ─── Command palette (CommandPalette.module.css) ─────────────────── */
+      #palette {
+        position: absolute;
+        left: 360px;
+        top: 144px;
+        width: 560px;
+        max-height: 480px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: var(--bg-subtle);
+        border: 1px solid var(--border-hover);
+        border-radius: 16px;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--bg-hover) inset;
+        transform-origin: 50% 0;
+        visibility: hidden;
+      }
+      .p-input { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+      .p-input-icon { color: var(--text-tertiary); flex-shrink: 0; }
+      .p-input-icon svg { width: 16px; height: 16px; display: block; }
+      .p-chip {
+        position: relative;
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+        height: 21px;
+        overflow: hidden;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        background: var(--bg-elevated);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        white-space: nowrap;
+      }
+      .p-chip-in { position: relative; flex: none; display: flex; align-items: center; gap: 4px; height: 19px; padding: 0 8px; }
+      .p-chip-in svg { width: 10px; height: 10px; opacity: 0.5; flex: none; }
+      .p-chip-labels { position: relative; height: 19px; overflow: hidden; }
+      .p-chip-labels span { position: absolute; left: 0; top: 0; line-height: 19px; }
+      .p-chip-sep { color: var(--text-tertiary); opacity: 0.4; margin-left: 2px; }
+      .p-field { position: relative; flex: 1; font-size: 15px; letter-spacing: -0.1px; white-space: nowrap; height: 22px; line-height: 22px; }
+      .p-ph { position: absolute; left: 0; top: 0; color: var(--text-tertiary); }
+      .p-typed { color: var(--text-primary); }
+      .i-caret { display: inline-block; width: 1.5px; height: 18px; margin-left: 1px; background: var(--text-primary); vertical-align: -3px; }
+      .p-ph .i-caret { position: absolute; left: -1px; top: 2px; margin: 0; }
+      .kbd {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        font-weight: 500;
+        color: var(--text-tertiary);
+        background: var(--bg-elevated);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 2px 6px;
+        min-width: 20px;
+        text-align: center;
+        line-height: 1.5;
+      }
+      .p-results { flex: 1; min-height: 0; overflow: hidden; padding: 6px; }
+      .p-glabel-wrap, .p-wrap { overflow: hidden; }
+      .p-glabel { font-family: var(--font-mono); font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px; color: var(--text-tertiary); padding: 8px 12px 4px; }
+      .p-item { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; }
+      .p-sel { position: absolute; inset: 0; border-radius: 8px; background: var(--bg-elevated); outline: 1px solid var(--border-hover); opacity: 0; }
+      .p-icon {
+        position: relative;
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .p-icon svg { width: 13px; height: 13px; color: var(--text-tertiary); }
+      .p-content { position: relative; flex: 1; min-width: 0; }
+      .p-title { font-size: 13.5px; font-weight: 500; letter-spacing: -0.1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .p-sub { font-size: 11.5px; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+      mark { background: transparent; color: var(--text-primary); text-decoration: underline; text-decoration-color: var(--success); text-underline-offset: 2px; font-weight: 600; }
+      .p-meta { position: relative; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+      .p-shortcut { display: flex; gap: 2px; }
+      .p-arrow { color: var(--text-tertiary); opacity: 0; }
+      .p-arrow svg { width: 12px; height: 12px; display: block; }
+      .p-footer { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; border-top: 1px solid var(--border); flex-shrink: 0; background: rgba(255, 255, 255, 0.01); }
+      .p-hints { display: flex; align-items: center; gap: 12px; }
+      .p-hint { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-tertiary); }
+      .p-hint .kbd { font-size: 8px; padding: 1px 4px; min-width: 16px; }
+      .p-logo { font-family: var(--font-mono); font-size: 9px; color: var(--text-tertiary); opacity: 0.4; letter-spacing: 0.5px; }
+
+      /* ─── New card dialog (CardFormPanel.module.css, Modal) ───────────── */
+      #dialog {
+        position: absolute;
+        left: 210px;
+        top: 76px;
+        width: 860px;
+        height: 700px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid var(--border-hover);
+        border-radius: 20px;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--bg-elevated) 72%, var(--bg-subtle)), var(--bg-subtle));
+        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5), inset 0 1px 0 color-mix(in srgb, var(--text-primary) 5%, transparent);
+        visibility: hidden;
+      }
+      .nc-top { flex-shrink: 0; padding-bottom: 14px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--bg-elevated) 72%, var(--bg-subtle)); }
+      .nc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 24px 24px 0; }
+      .nc-title { margin: 0 0 6px; font-size: 20px; font-weight: 600; letter-spacing: -0.4px; }
+      .nc-desc { color: var(--text-secondary); font-size: 14px; }
+      .nc-close { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 6px; color: var(--text-tertiary); }
+      .nc-close svg { width: 14px; height: 14px; }
+      .nc-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px 0; }
+      .nc-another { display: flex; align-items: center; gap: 7px; }
+      .nc-another-label { color: var(--text-tertiary); font-size: 12px; font-weight: 500; white-space: nowrap; }
+      .nc-track { position: relative; width: 28px; height: 16px; flex-shrink: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-elevated); }
+      .nc-thumb { position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 999px; background: var(--text-tertiary); }
+      .nc-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+      .nc-discard, .nc-save { display: inline-flex; align-items: center; justify-content: center; height: 32px; border-radius: 6px; font-size: 12px; font-weight: 600; letter-spacing: -0.1px; white-space: nowrap; }
+      .nc-discard { padding: 0 14px; border: 1px solid var(--border); color: var(--text-tertiary); }
+      .nc-save { gap: 6px; padding: 0 16px; background: var(--text-primary); color: var(--bg); }
+      .nc-save svg { width: 13px; height: 13px; }
+      .nc-form { flex: 1; min-height: 0; overflow: hidden; padding: 24px 24px 0; }
+      .nc-block + .nc-block { margin-top: 24px; }
+      .nc-chrome { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+      .nc-label { color: var(--text-tertiary); font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 1.2px; text-transform: uppercase; }
+      .nc-count { color: var(--text-tertiary); font-family: var(--font-mono); font-size: 10px; font-weight: 500; }
+      .nc-toolbar { display: flex; align-items: center; gap: 1px; padding: 6px 10px; border: 1px solid var(--border); border-bottom: none; border-radius: 12px 12px 0 0; background: var(--bg-subtle); }
+      .nc-fmt { display: flex; align-items: center; justify-content: center; width: 30px; height: 28px; border-radius: 5px; color: var(--text-tertiary); }
+      .nc-fmt svg { width: 15px; height: 15px; }
+      .nc-fsep { width: 1px; height: 18px; margin: 0 4px; background: var(--border); }
+      .nc-hint { margin-left: auto; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.3px; opacity: 0.6; }
+      .nc-area {
+        position: relative;
+        width: 100%;
+        padding: 16px 18px;
+        border: 1px solid var(--border);
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        background: var(--bg-subtle);
+        font-size: 15px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+      }
+      .nc-area.front { height: 128px; font-weight: 500; letter-spacing: -0.2px; }
+      .nc-area.back { height: 200px; }
+      .nc-area .ph { position: absolute; left: 18px; top: 16px; color: var(--text-tertiary); font-weight: 400; letter-spacing: 0; }
+      .nc-area .i-caret { height: 19px; vertical-align: -4px; }
+      .nc-area .ph .i-caret { position: absolute; left: -2px; top: 3px; margin: 0; }
+      .nc-guide { margin-top: 6px; color: var(--text-tertiary); font-size: 11px; line-height: 1.4; font-style: italic; }
+
+      /* ─── Frame overlays: cursor, keycast, callouts ───────────────────── */
+      #cursor { position: absolute; left: 0; top: 0; width: 26px; height: 38px; visibility: hidden; transform-origin: 3px 3px; }
+      #cursor svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5)); }
+      #click-ring { position: absolute; left: 0; top: 0; width: 60px; height: 60px; margin: -30px 0 0 -30px; border: 1.5px solid #ededed; border-radius: 50%; opacity: 0; }
+
+      #keys { position: absolute; left: 0; right: 0; display: flex; justify-content: center; }
+      .keygroup { position: absolute; display: flex; gap: 12px; visibility: hidden; }
+      .key {
+        position: relative;
+        min-width: 64px;
+        height: 64px;
+        padding: 0 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #333;
+        border-bottom-width: 4px;
+        border-radius: 12px;
+        background: #171717;
+        font-family: var(--font-mono);
+        font-size: 24px;
+        font-weight: 500;
+        color: #9a9a9a;
+        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.8);
+      }
+      .key.wide { font-size: 18px; letter-spacing: 0.08em; }
+
+      #notes-svg { position: absolute; inset: 0; overflow: visible; }
+      #notes-svg path { fill: none; stroke: #6a6a6a; stroke-width: 1.25; }
+      #notes-svg .ring { fill: none; stroke: #ededed; stroke-width: 1.5; }
+      #notes-svg .pulse { fill: none; stroke: #ededed; stroke-width: 1; }
+      #notes-svg .dot { fill: #ededed; }
+      .note {
+        position: absolute;
+        font-family: var(--font-mono);
+        font-size: 16px;
+        font-weight: 500;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #8a8a8a;
+        white-space: nowrap;
+        visibility: hidden;
+      }
+      .note b { color: #ededed; font-weight: 500; }
+      .note.caption {
+        left: 0;
+        top: 0;
+        padding: 14px 26px;
+        font-size: 19px;
+        border: 1px solid #2a2a2a;
+        border-radius: 999px;
+        background: rgba(12, 12, 12, 0.9);
+        box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.8);
+      }
+      .note .caret { width: 0.6em; }
+
+      /* ─── End card ────────────────────────────────────────────────────── */
+      #end { visibility: hidden; }
+      .eye { overflow: visible; }
+      .eye .iris { transform-box: fill-box; transform-origin: center; }
+      #end-eye { position: absolute; left: 0; top: 0; width: 194px; height: 194px; }
+      #end-word {
+        position: absolute;
+        left: 0;
+        top: 0;
+        font-family: var(--font-logo);
+        font-size: 176px;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        white-space: nowrap;
+      }
+      .lm { display: inline-block; overflow: hidden; padding: 0 0.005em 0.24em; margin-bottom: -0.24em; vertical-align: top; }
+      .lm > span { display: inline-block; }
+      #end-tag { position: absolute; left: 0; right: 0; top: 606px; text-align: center; font-size: 38px; font-weight: 500; letter-spacing: -0.02em; color: #d6d6d6; }
+      #end-tag em { font-family: var(--font-serif); font-style: italic; font-weight: 400; font-size: 1.14em; }
+      #end-meta { position: absolute; left: 0; right: 0; top: 694px; display: flex; justify-content: center; align-items: center; gap: 22px; font-size: 21px; color: #9a9a9a; }
+      #end-meta > * { display: flex; align-items: center; gap: 10px; }
+      .vchip { padding: 6px 16px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 999px; background: rgba(255, 255, 255, 0.07); font-family: var(--font-mono); font-size: 18px; letter-spacing: 0.08em; color: #cfcfcf; }
+      .sep { width: 1px; height: 22px; background: #333; }
+      .mkbd { padding: 2px 10px; border: 1px solid #333; border-bottom-width: 3px; border-radius: 7px; background: #171717; font-family: var(--font-mono); font-size: 18px; color: #cfcfcf; }
+      #end-url { position: absolute; left: 0; right: 0; top: 904px; text-align: center; font-family: var(--font-mono); font-size: 19px; letter-spacing: 0.14em; color: #6a6a6a; }
+
+      /* ─── Frame: vignette, rulers, HUD, grain ─────────────────────────── */
+      #vignette { background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.5) 100%); }
+      .rl { position: absolute; }
+      .rl.v { top: 0; bottom: 0; width: 1px; background-image: repeating-linear-gradient(to bottom, #2e2e2e 0 1px, transparent 1px 5px); }
+      .rl.h { left: 0; right: 0; height: 1px; background-image: repeating-linear-gradient(to right, #2e2e2e 0 1px, transparent 1px 5px); }
+      .plus { position: absolute; width: 15px; height: 15px; margin: -7px 0 0 -7px; }
+      .plus::before, .plus::after { content: ""; position: absolute; background: #5a5a5a; }
+      .plus::before { left: 7px; top: 0; width: 1px; height: 15px; }
+      .plus::after { left: 0; top: 7px; width: 15px; height: 1px; }
+      .ht { position: absolute; font-family: var(--font-mono); font-size: 14px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #5e5e5e; white-space: pre; }
+      .ht b { color: #9a9a9a; font-weight: 500; }
+      #grain { mix-blend-mode: overlay; opacity: 0.34; background-size: 640px 640px; }
+      #fade { background: #000; opacity: 0; }
+      .hud-off #hud { display: none; }
+
+      /* ─── Portrait 4:5 (1080×1350) ────────────────────────────────────── */
+      .fmt-portrait .eyebrow { left: 80px; top: 300px; }
+      .fmt-portrait .t-ghost { right: 30px; top: auto; bottom: 150px; font-size: 520px; }
+      .fmt-portrait .t-text { left: 80px; top: 390px; }
+      .fmt-portrait .tw { font-size: 150px; }
+      .fmt-portrait .tw.serif { font-size: 176px; }
+      .fmt-portrait .tl.indent { padding-left: 90px; }
+      .fmt-portrait .t-cap { left: 80px; top: 860px; font-size: 22px; }
+      .fmt-portrait #end-tag { top: 726px; left: 110px; right: 110px; font-size: 52px; line-height: 1.2; text-wrap: balance; }
+      .fmt-portrait #end-meta { top: 900px; font-size: 26px; }
+      .fmt-portrait .vchip { font-size: 22px; }
+      .fmt-portrait #end-url { top: 1150px; font-size: 24px; }
+      .fmt-portrait .note { font-size: 20px; }
+      .fmt-portrait .note.caption { font-size: 22px; }
+
+      /* ─── Playback UI (hidden when rendering) ─────────────────────────── */
+      #ui {
+        position: fixed;
+        left: 50%;
+        bottom: 18px;
+        width: min(820px, calc(100vw - 32px));
+        transform: translateX(-50%);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 14px;
+        padding: 8px 16px 8px 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 999px;
+        background: rgba(18, 18, 18, 0.78);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: #aaa;
+        transition: opacity 0.3s;
+      }
+      #ui.idle { opacity: 0; }
+      #ui button { width: 32px; height: 32px; flex: none; border: 0; border-radius: 50%; background: #ededed; color: #0a0a0a; font: inherit; font-size: 11px; cursor: pointer; }
+      #ui input { flex: 1; accent-color: #ededed; }
+      #ui .ui-switch { width: auto; padding: 0 14px; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 999px; background: transparent; color: #cfcfcf; white-space: nowrap; }
+      #ui output { min-width: 96px; text-align: right; font-variant-numeric: tabular-nums; }
+      body.render #ui { display: none; }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <div id="world">
+        <div id="light"></div>
+
+        <!-- Title: the episode number and its one-line idea -->
+        <section class="layer" id="title">
+          <div class="t-ghost" id="t-ghost">01</div>
+          <div class="eyebrow"><span class="dot"></span><span id="t-kicker"></span></div>
+          <div class="t-text">
+            <div class="tl"><span class="tw" id="t-l1"></span></div>
+            <div class="tl indent"><span class="tw serif" id="t-l2"></span></div>
+          </div>
+          <div class="t-cap" id="t-cap"></div>
+        </section>
+
+        <!-- The product, in a window the camera moves around -->
+        <div id="cam">
+          <div id="win">
+            <div id="app">
+              <div class="titlebar">
+                <div class="tb-left">
+                  <div class="tb-logo"><svg class="eye" id="tb-eye"></svg><span class="tb-word">pupil</span></div>
+                  <div class="tb-sep"></div>
+                  <div class="tb-tabs"><span class="tb-tab" id="tab-dash">Dashboard</span><span class="tb-tab" id="tab-cards">Cards</span></div>
+                </div>
+                <div class="tb-status"><span class="streak-dot"></span>12-day streak</div>
+              </div>
+
+              <!-- Dashboard -->
+              <div class="screen" id="scr-dash">
+                <div class="study-card">
+                  <div>
+                    <div class="study-eyebrow"><span class="live-dot"></span>READY TO STUDY</div>
+                    <div class="study-headline">28 cards due</div>
+                    <div class="study-sub">Across 4 spaces · about 9 minutes</div>
+                  </div>
+                  <div class="study-right"><span class="btn outline">Choose space</span><span class="btn primary">Start studying</span></div>
+                </div>
+                <div class="sec-head"><span class="mono-label">Spaces</span><span class="sec-meta">4 spaces · 512 cards</span></div>
+                <div class="spaces" id="dash-spaces"></div>
+              </div>
+
+              <!-- Space: Biology -->
+              <div class="screen" id="scr-space">
+                <div class="crumb">SPACES / BIOLOGY</div>
+                <div class="page-h1">Biology</div>
+                <div class="page-sub">Cells, genetics and the machinery of life.</div>
+                <div class="stats">
+                  <div><b>142</b><span>Cards</span></div>
+                  <div><b>9</b><span>Due today</span></div>
+                  <div><b>91%</b><span>Retention</span></div>
+                  <div><b>12</b><span>Day streak</span></div>
+                </div>
+                <div class="ruler"></div>
+                <div class="rows" id="space-rows"></div>
+              </div>
+
+              <!-- All cards -->
+              <div class="screen" id="scr-cards">
+                <div class="cards-head">
+                  <div class="page-h1">All Cards<span class="cards-count" id="cards-count">512 cards</span></div>
+                  <span class="btn primary" id="btn-new"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 3v8M3 7h8" /></svg>New card</span>
+                </div>
+                <div class="searchbar"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5" /><path d="M10.5 10.5L14 14" /></svg>Search cards…</div>
+                <div class="rows" id="card-rows"></div>
+              </div>
+            </div>
+            <div id="scrim"></div>
+
+            <!-- Command palette -->
+            <div id="palette" role="dialog">
+              <div class="p-input">
+                <div class="p-input-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5" /><path d="M10.5 10.5L14 14" /></svg></div>
+                <div class="p-chip" id="p-chip">
+                  <div class="p-chip-in">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="1.5" y="1.5" width="9" height="9" rx="2" /></svg>
+                    <span class="p-chip-labels" id="p-chip-labels"></span>
+                    <span class="p-chip-sep">›</span>
+                  </div>
+                </div>
+                <div class="p-field"><span class="p-ph" id="p-ph"></span><span class="p-typed" id="p-typed"></span></div>
+                <span class="kbd">esc</span>
+              </div>
+              <div class="p-results" id="p-results"></div>
+              <div class="p-footer">
+                <div class="p-hints">
+                  <div class="p-hint"><span class="kbd">↑</span><span class="kbd">↓</span>Navigate</div>
+                  <div class="p-hint"><span class="kbd">↵</span>Open</div>
+                  <div class="p-hint"><span class="kbd">tab</span>Scope</div>
+                </div>
+                <div class="p-logo">⌘K</div>
+              </div>
+            </div>
+
+            <!-- New card dialog -->
+            <div id="dialog" role="dialog">
+              <div class="nc-top">
+                <div class="nc-head">
+                  <div>
+                    <div class="nc-title">New Card</div>
+                    <div class="nc-desc">Write a focused prompt/answer pair. Keep the front atomic and the back tight.</div>
+                  </div>
+                  <div class="nc-close"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3l10 10M13 3L3 13" /></svg></div>
+                </div>
+                <div class="nc-actions">
+                  <div class="nc-another" id="nc-another">
+                    <span class="nc-another-label" id="nc-another-label">Make another</span>
+                    <span class="nc-track" id="nc-track"><span class="nc-thumb" id="nc-thumb"></span></span>
+                  </div>
+                  <div class="nc-right">
+                    <span class="nc-discard">Discard</span>
+                    <span class="nc-save" id="nc-save"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 7l3 3 6-6.5" /></svg><span id="nc-save-label">Save card</span></span>
+                  </div>
+                </div>
+              </div>
+              <div class="nc-form">
+                <div class="nc-block">
+                  <div class="nc-chrome"><span class="nc-label">Front</span><span class="nc-count" id="nc-count-front">0 / 30 words</span></div>
+                  <div class="nc-toolbar" style="margin-top: 8px">
+                    <span class="nc-fmt"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5h4.5a3 3 0 011.93 5.3A3.25 3.25 0 019.25 14H4V2.5zm2 2V7h2.5a1 1 0 000-2H6zm0 4.5v3h3.25a1.25 1.25 0 000-2.5H6z" /></svg></span>
+                    <span class="nc-fmt"><svg viewBox="0 0 16 16"><path d="M6 2.5h6M4 13.5h6M9.5 2.5L6.5 13.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" /></svg></span>
+                    <span class="nc-fmt"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><path d="M5.5 4L2.5 8l3 4M10.5 4l3 4-3 4" /></svg></span>
+                    <span class="nc-fsep"></span>
+                    <span class="nc-fmt"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><path d="M2 12h3M6.5 12h3M11.5 12h2.5" /><path d="M4.5 8H11.5" stroke-width="1.8" /></svg></span>
+                    <span class="nc-hint">Markdown</span>
+                  </div>
+                  <div class="nc-area front" id="nc-front"></div>
+                  <div class="nc-guide">One question. One concept. No compound prompts.</div>
+                </div>
+                <div class="nc-block">
+                  <div class="nc-chrome"><span class="nc-label">Back</span><span class="nc-count" id="nc-count-back">0 / 60 words</span></div>
+                  <div class="nc-toolbar">
+                    <span class="nc-fmt"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5h4.5a3 3 0 011.93 5.3A3.25 3.25 0 019.25 14H4V2.5zm2 2V7h2.5a1 1 0 000-2H6zm0 4.5v3h3.25a1.25 1.25 0 000-2.5H6z" /></svg></span>
+                    <span class="nc-fmt"><svg viewBox="0 0 16 16"><path d="M6 2.5h6M4 13.5h6M9.5 2.5L6.5 13.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.6" /></svg></span>
+                    <span class="nc-fmt"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><path d="M5.5 4L2.5 8l3 4M10.5 4l3 4-3 4" /></svg></span>
+                    <span class="nc-hint">Markdown</span>
+                  </div>
+                  <div class="nc-area back" id="nc-back"></div>
+                  <div class="nc-guide">Answer the front, then stop. If you need a paragraph, the card is too broad.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- End card: the eye and wordmark, the episode's line -->
+        <section class="layer" id="end">
+          <svg class="eye" id="end-eye"></svg>
+          <div id="end-word"><span class="lm"><span>p</span></span><span class="lm"><span>u</span></span><span class="lm"><span>p</span></span><span class="lm"><span>i</span></span><span class="lm"><span>l</span></span></div>
+          <p id="end-tag"><span class="w" id="end-tag-in"></span></p>
+          <div id="end-meta"></div>
+          <div id="end-url">pupil.otakomaiya.com</div>
+        </section>
+      </div>
+
+      <svg id="notes-svg" viewBox="0 0 1920 1080"></svg>
+      <div id="notes" class="layer"></div>
+      <div id="keys"></div>
+      <div id="click-ring"></div>
+      <div id="cursor">
+        <svg viewBox="0 0 18 26"><path d="M1.5 1.5v20.2l5-4.9 3.4 7.7 3.3-1.4-3.3-7.6h7z" fill="#fff" stroke="#000" stroke-width="1.3" stroke-linejoin="round" /></svg>
+      </div>
+      <div id="vignette" class="layer"></div>
+
+      <div id="hud" class="layer">
+        <div class="rl v"></div>
+        <div class="rl v"></div>
+        <div class="rl h"></div>
+        <div class="rl h"></div>
+        <i class="plus"></i>
+        <i class="plus"></i>
+        <i class="plus"></i>
+        <i class="plus"></i>
+        <div class="ht tl"><b>PUPIL</b>  DESIGN DETAILS</div>
+        <div class="ht tr" id="hud-ep"></div>
+        <div class="ht bl" id="hud-scene"></div>
+        <div class="ht br" id="hud-tc"></div>
+      </div>
+
+      <div id="grain" class="layer"></div>
+      <div id="fade" class="layer"></div>
+    </div>
+
+    <div id="ui">
+      <button id="ui-play" aria-label="Play or pause">❚❚</button>
+      <button id="ui-snippet" class="ui-switch"></button>
+      <button id="ui-format" class="ui-switch"></button>
+      <input id="ui-scrub" type="range" min="0" max="15" step="0.001" value="0" aria-label="Scrub" />
+      <output id="ui-time">00.00 / 15.00</output>
+    </div>
+
+    <script>
+      (() => {
+        const params = new URLSearchParams(location.search);
+        const FORMATS = {
+          landscape: { w: 1920, h: 1080, mx: 120, my: 90 },
+          portrait: { w: 1080, h: 1350, mx: 64, my: 72 },
+        };
+        const SNIPPETS = ["palette", "another"];
+        const TOKENS = location.hash.slice(1).split("-");
+        const pick = (name, options) => [params.get(name), ...TOKENS].find((v) => options.includes(v));
+        const FORMAT = pick("format", Object.keys(FORMATS)) ?? "landscape";
+        const SNIPPET = pick("snippet", SNIPPETS) ?? "palette";
+        const { w: W, h: H, mx: MX, my: MY } = FORMATS[FORMAT];
+        const CX = W / 2;
+        const PORTRAIT = FORMAT === "portrait";
+        const FPS = 60;
+        const RENDER = params.has("render");
+        const LOOP = params.has("loop");
+        document.body.classList.add(`fmt-${FORMAT}`);
+        if (RENDER) document.body.classList.add("render");
+        if (params.get("hud") === "0") document.body.classList.add("hud-off");
+
+        // ─── Timeline math (as in release-film.html) ───────────────────────
+        const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+        const lerp = (a, b, p) => a + (b - a) * p;
+        const E = {
+          lin: (p) => p,
+          inQuad: (p) => p * p,
+          outQuad: (p) => 1 - (1 - p) * (1 - p),
+          inCubic: (p) => p * p * p,
+          outCubic: (p) => 1 - (1 - p) ** 3,
+          inOutCubic: (p) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2),
+          outQuart: (p) => 1 - (1 - p) ** 4,
+          inOutQuart: (p) => (p < 0.5 ? 8 * p ** 4 : 1 - (-2 * p + 2) ** 4 / 2),
+          inExpo: (p) => (p <= 0 ? 0 : 2 ** (10 * p - 10)),
+          outExpo: (p) => (p >= 1 ? 1 : 1 - 2 ** (-10 * p)),
+          inOutSine: (p) => -(Math.cos(Math.PI * p) - 1) / 2,
+          outBack: (p, s = 1.70158) => 1 + (s + 1) * (p - 1) ** 3 + s * (p - 1) ** 2,
+        };
+        // The app's own curve for the palette and titlebar: cubic-bezier(0.16, 1, 0.3, 1).
+        const appEase = (p) => {
+          let lo = 0;
+          let hi = 1;
+          for (let i = 0; i < 24; i++) {
+            const u = (lo + hi) / 2;
+            const x = 3 * (1 - u) ** 2 * u * 0.16 + 3 * (1 - u) * u * u * 0.3 + u ** 3;
+            if (x < p) lo = u;
+            else hi = u;
+          }
+          const u = (lo + hi) / 2;
+          return 3 * (1 - u) ** 2 * u + 3 * (1 - u) * u * u + u ** 3;
+        };
+        const P = (t, a, b, e = E.lin) => e(clamp((t - a) / (b - a)));
+        const V = (t, a, b, from, to, e) => lerp(from, to, P(t, a, b, e));
+        const bell = (t, a, b) => Math.sin(Math.PI * P(t, a, b));
+        const hash = (n) => {
+          const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+          return x - Math.floor(x);
+        };
+        const mixHex = (a, b, p) => {
+          const ca = [1, 3, 5].map((i) => Number.parseInt(a.slice(i, i + 2), 16));
+          const cb = [1, 3, 5].map((i) => Number.parseInt(b.slice(i, i + 2), 16));
+          return `rgb(${ca.map((c, i) => Math.round(lerp(c, cb[i], p))).join(",")})`;
+        };
+
+        const $ = (s, r = document) => r.querySelector(s);
+        const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+        const vis = (el, on) => {
+          el.style.visibility = on ? "inherit" : "hidden";
+        };
+        const setHTML = (el, html) => {
+          if (el._html !== html) {
+            el.innerHTML = html;
+            el._html = html;
+          }
+        };
+        const blurUp = (el, t, enter, exit, o = {}) => {
+          const { dist = 60, blur = 18, dur = 0.8, exitDist = 70, exitDur = 0.4 } = o;
+          const p = P(t, enter, enter + dur, E.outExpo);
+          const q = exit == null ? 0 : P(t, exit, exit + exitDur, E.inCubic);
+          const b = (1 - p) * blur + q * blur;
+          el.style.opacity = P(t, enter, enter + dur * 0.45) * (1 - q);
+          el.style.transform = `translateY(${(1 - p) * dist - q * exitDist}px)`;
+          el.style.filter = b > 0.05 ? `blur(${b}px)` : "none";
+        };
+        /** Typed-on text with a block caret while it types (and blinking briefly after). */
+        const typeOn = (el, text, t, a, b, { hold = 0.5 } = {}) => {
+          const n = Math.floor(P(t, a, b) * text.length);
+          const caret = t < b + hold && (n < text.length || Math.floor((t - b) * 4) % 2 === 0);
+          setHTML(el, `${text.slice(0, n)}${caret && t >= a ? '<span class="caret"></span>' : ""}`);
+        };
+
+        const stage = $("#stage");
+        stage.style.width = `${W}px`;
+        stage.style.height = `${H}px`;
+        let stageScale = 1;
+
+        // ─── Episodes ──────────────────────────────────────────────────────
+        const EPISODES = {
+          palette: {
+            n: "01",
+            name: "Command palette",
+            kicker: "Pupil details — 01",
+            l1: "Never reach",
+            l2: "for the mouse.",
+            cap: "THE COMMAND PALETTE · ⌘K",
+            tag: "Everything in Pupil, <em>one keystroke</em> away.",
+            meta: '<span class="vchip">DETAILS 01</span><span>Command palette</span><span class="sep"></span><span class="mkbd">⌘K</span>',
+            end: 12.7,
+          },
+          another: {
+            n: "02",
+            name: "Make another",
+            kicker: "Pupil details — 02",
+            l1: "Stay in",
+            l2: "the flow.",
+            cap: "NEW CARD · MAKE ANOTHER",
+            tag: "Card after card, <em>without</em> breaking stride.",
+            meta: '<span class="vchip">DETAILS 02</span><span>Make another</span>',
+            end: 16.9,
+          },
+        };
+        const EP = EPISODES[SNIPPET];
+        const END = EP.end; // the end card takes over here
+        const DURATION = END + 3.6;
+
+        // ─── Light ─────────────────────────────────────────────────────────
+        const light = $("#light");
+        const updateLight = (t) => {
+          const o = V(t, 0, 1.2, 0, 0.42, E.inOutSine) - V(t, 2.2, 3.2, 0, 0.3, E.inOutSine) + V(t, END - 0.2, END + 1.2, 0, 0.7, E.inOutSine);
+          const drift = t / DURATION;
+          light.style.opacity = o;
+          light.style.transform = `translate(${lerp(-260, 60, drift)}px, ${lerp(-200, -260, drift)}px) scale(1.12) rotate(${lerp(-3, 2, drift)}deg)`;
+        };
+
+        // ─── Eye rig (the release film's, with its "ink" lids) ────────────
+        const lidLines = (closed) => ({ t1: lerp(17, 29, closed), t2: lerp(13, 31, closed), b1: lerp(35, 29, closed), b2: lerp(39, 31, closed) });
+        const almond = (g) =>
+          `M3 26 C7 ${g.t1} 15 ${g.t2} 26 ${g.t2} C37 ${g.t2} 45 ${g.t1} 49 26 C45 ${g.b1} 37 ${g.b2} 26 ${g.b2} C15 ${g.b2} 7 ${g.b1} 3 26Z`;
+        const inkLid = (y1, y2, w) => almond({ t1: y1 - w * 0.42, t2: y2 - w / 2, b1: y1 + w * 0.42, b2: y2 + w / 2 });
+        const INK = { top: 2.6, bottom: 1.5, iris: 1.3 };
+        const blinkAt = (t, t0) => P(t, t0, t0 + 0.08, E.inQuad) * (1 - P(t, t0 + 0.11, t0 + 0.27, E.outCubic));
+        let eyeCount = 0;
+        const mountEye = (svg, { ink = false, weight = 1.5 } = {}) => {
+          const id = `eye-${eyeCount++}`;
+          const irisWeight = ink ? INK.iris : weight;
+          svg.setAttribute("viewBox", "0 0 52 52");
+          svg.innerHTML = `
+            <defs>
+              <clipPath id="${id}-lens"><path class="lens" /></clipPath>
+              <linearGradient id="${id}-wipe" gradientUnits="userSpaceOnUse" x1="0" x2="3" y1="0" y2="0">
+                <stop offset="0" stop-color="#fff" /><stop offset="1" stop-color="#fff" stop-opacity="0" />
+              </linearGradient>
+              <mask id="${id}-draw" maskUnits="userSpaceOnUse" x="-4" y="-4" width="60" height="60">
+                <rect x="-4" y="-4" width="60" height="60" fill="url(#${id}-wipe)" />
+              </mask>
+            </defs>
+            <circle class="echo" cx="26" cy="26" r="4" fill="none" stroke="#ededed" stroke-width="0.6" opacity="0" />
+            <g clip-path="url(#${id}-lens)">
+              <g class="gaze">
+                <circle class="iris" pathLength="1" cx="26" cy="26" r="8" fill="none" stroke="#ededed"
+                  stroke-width="${irisWeight}" stroke-linecap="round" stroke-dasharray="1 1" />
+                <circle class="pupil" cx="26" cy="26" r="4" fill="#ededed" />
+              </g>
+            </g>
+            <g class="lids" mask="url(#${id}-draw)">${
+              ink
+                ? `<path class="lid-top" fill="#ededed" /><path class="lid-bottom" fill="#ededed" />`
+                : `<path class="lid" fill="none" stroke="#ededed" stroke-width="${weight}" />`
+            }</g>`;
+          const [lens, lids, iris, pupil, gaze, echo] = [".lens", ".lids", ".iris", ".pupil", ".gaze", ".echo"].map((sel) => $(sel, svg));
+          const [lid, lidTop, lidBottom] = [".lid", ".lid-top", ".lid-bottom"].map((sel) => $(sel, svg));
+          const wipe = $("linearGradient", svg);
+          return {
+            echo,
+            set({ lids: drawn = 1, iris: ring = 1, pupil: r = 4, gaze: dx = 0, blink = 0 }) {
+              const g = lidLines(blink);
+              const d = almond(g);
+              lens.setAttribute("d", d);
+              if (ink) {
+                lidTop.setAttribute("d", inkLid(g.t1, g.t2, INK.top));
+                lidBottom.setAttribute("d", inkLid(g.b1, g.b2, INK.bottom));
+              } else {
+                lid.setAttribute("d", d);
+              }
+              const x = lerp(-4, 56, drawn);
+              wipe.setAttribute("x1", x - 3);
+              wipe.setAttribute("x2", x);
+              lids.style.opacity = drawn > 0 ? 1 : 0;
+              iris.style.strokeDashoffset = 1 - ring;
+              iris.style.opacity = Math.min(1, ring * 10);
+              iris.style.transform = `rotate(${-90 - (1 - ring) * 160}deg)`;
+              pupil.setAttribute("r", Math.max(0, r));
+              gaze.setAttribute("transform", `translate(${dx} 0)`);
+            },
+          };
+        };
+        mountEye($("#tb-eye"), { weight: 2.6 }).set({});
+
+        // ─── Title ─────────────────────────────────────────────────────────
+        const title = (() => {
+          const el = $("#title");
+          const kicker = $("#t-kicker");
+          const [l1, l2] = [$("#t-l1"), $("#t-l2")];
+          const cap = $("#t-cap");
+          const ghost = $("#t-ghost");
+          const eyebrow = $(".eyebrow", el);
+          l1.textContent = EP.l1;
+          l2.textContent = EP.l2;
+          ghost.textContent = EP.n;
+          return {
+            update(t) {
+              vis(el, t < 2.9);
+              if (t >= 2.9) return;
+              const out = P(t, 2.2, 2.62, E.inExpo);
+              typeOn(kicker, EP.kicker.toUpperCase(), t, 0.15, 0.6, { hold: 0 });
+              eyebrow.style.opacity = 1 - out;
+              [l1, l2].forEach((ln, i) => {
+                const p = P(t, 0.3 + i * 0.12, 1.05 + i * 0.12, E.outExpo);
+                const q = P(t, 2.2 + i * 0.05, 2.6 + i * 0.05, E.inExpo);
+                ln.style.transform = `translateY(${(1 - p) * 120 - q * 120}%)`;
+              });
+              typeOn(cap, EP.cap, t, 1.0, 1.45, { hold: 0.7 });
+              cap.style.opacity = 1 - out;
+              ghost.style.opacity = P(t, 0.2, 0.7) * (1 - out);
+              ghost.style.transform = `translateX(${V(t, 0.2, 1.6, 90, 0, E.outCubic) - out * 60}px)`;
+            },
+          };
+        })();
+
+        // ─── App content ───────────────────────────────────────────────────
+        const SPACES = [
+          { name: "Biology", desc: "Cells, genetics and the machinery of life.", cards: 142, due: 9, streak: "12d" },
+          { name: "Systems Design", desc: "Trade-offs at scale.", cards: 96, due: 4, streak: "5d" },
+          { name: "Japanese N4", desc: "Vocabulary and grammar for the N4.", cards: 210, due: 12, streak: "30d" },
+          { name: "Organic Chemistry", desc: "Mechanisms, not memorisation.", cards: 64, due: 3, streak: "" },
+        ];
+        $("#dash-spaces").innerHTML = SPACES.map(
+          (s) => `<div class="space-card">
+              <div class="space-top"><span class="space-name">${s.name}</span>${s.streak ? `<span class="sec-meta" style="display:flex;align-items:center;gap:6px"><span class="streak-dot"></span>${s.streak}</span>` : ""}</div>
+              <div class="space-desc">${s.desc}</div>
+              <div class="space-meta"><div><b>${s.cards}</b><span>Cards</span></div><div><b>${s.due}</b><span>Due</span></div></div>
+            </div>`,
+        ).join("");
+        const rowHTML = (r) =>
+          `<div class="row-wrap"><div class="row"><span class="flash"></span><span class="front">${r.front}</span><span class="sp">${r.space}</span><span class="badge">${r.state}</span><span class="due">${r.due}</span></div></div>`;
+        $("#space-rows").innerHTML = [
+          { front: "Mitosis vs meiosis: how many daughter cells?", space: "Biology", state: "Learning", due: "10m" },
+          { front: "What does the mitochondria produce?", space: "Biology", state: "Review", due: "today" },
+          { front: "Which enzyme unwinds DNA during replication?", space: "Biology", state: "New", due: "—" },
+          { front: "What is the function of ribosomes?", space: "Biology", state: "Review", due: "3d" },
+          { front: "What does ATP stand for?", space: "Biology", state: "Review", due: "6d" },
+          { front: "Where does glycolysis take place?", space: "Biology", state: "Learning", due: "1h" },
+        ]
+          .map(rowHTML)
+          .join("");
+
+        const screens = { dash: $("#scr-dash"), space: $("#scr-space"), cards: $("#scr-cards") };
+        const tabs = { dash: $("#tab-dash"), cards: $("#tab-cards") };
+        const showScreen = (name, fadeFrom = null, p = 1) => {
+          for (const [k, el] of Object.entries(screens)) {
+            const on = k === name || (k === fadeFrom && p < 1);
+            vis(el, on);
+            el.style.opacity = k === name ? (fadeFrom ? p : 1) : 1 - p;
+            el.style.transform = k === name && fadeFrom ? `translateY(${(1 - p) * 10}px)` : "none";
+          }
+          tabs.dash.classList.toggle("on", name === "dash");
+          tabs.cards.classList.toggle("on", name === "cards");
+        };
+        const app = $("#app");
+        const scrim = $("#scrim");
+        /** Dims and blurs the app behind an overlay, as the app's overlays do (o: 0 → 1). */
+        const setOverlay = (o, blur) => {
+          scrim.style.opacity = o;
+          app.style.filter = o > 0.001 ? `blur(${o * blur}px)` : "none";
+        };
+
+        // ─── Camera ────────────────────────────────────────────────────────
+        // The window lives in app pixels (1280×800). The camera frames a focus point at a zoom,
+        // interpolating between keys with an ease, zoom in log space.
+        const cam = $("#cam");
+        const win = $("#win");
+        let camNow = { fx: 640, fy: 400, s: 1 };
+        const applyCam = ({ fx, fy, s }) => {
+          camNow = { fx, fy, s };
+          cam.style.transform = `translate(${W / 2}px, ${H / 2}px) scale(${s}) translate(${-fx}px, ${-fy}px)`;
+        };
+        /** App pixels → stage pixels under the current camera. */
+        const toStage = (x, y) => [W / 2 + camNow.s * (x - camNow.fx), H / 2 + camNow.s * (y - camNow.fy)];
+        /** Frames a rect (app px) inside the ruler margins, filling `fill` of the space. */
+        const frame = (r, fill = 0.94, max = 99) => ({
+          fx: r.x + r.w / 2,
+          fy: r.y + r.h / 2,
+          s: Math.min(max, ((W - 2 * MX) / r.w) * fill, ((H - 2 * MY) / r.h) * fill),
+        });
+        const camAt = (t, keys) => {
+          let i = 0;
+          while (i < keys.length - 2 && t >= keys[i + 1][0]) i++;
+          const [t0, a0, e = E.inOutCubic] = keys[i];
+          const [t1, b0] = keys[i + 1];
+          const a = typeof a0 === "function" ? a0(t) : a0;
+          const b = typeof b0 === "function" ? b0(t) : b0;
+          const p = e(clamp((t - t0) / (t1 - t0)));
+          return { fx: lerp(a.fx, b.fx, p), fy: lerp(a.fy, b.fy, p), s: Math.exp(lerp(Math.log(a.s), Math.log(b.s), p)) };
+        };
+        /** Rect of an element in app pixels (measured with the camera at identity). */
+        const measure = (el) => {
+          const r = el.getBoundingClientRect();
+          const w = win.getBoundingClientRect();
+          return { x: (r.left - w.left) / stageScale, y: (r.top - w.top) / stageScale, w: r.width / stageScale, h: r.height / stageScale };
+        };
+        /** Rect of an element in stage pixels, as drawn now. */
+        const onStage = (el) => {
+          const r = el.getBoundingClientRect();
+          const s = stage.getBoundingClientRect();
+          return { x: (r.left - s.left) / stageScale, y: (r.top - s.top) / stageScale, w: r.width / stageScale, h: r.height / stageScale };
+        };
+        const WIN = { x: 0, y: 0, w: 1280, h: 800 };
+        /** The window rising into place after the title (and sinking away before the end). */
+        const updateWindow = (t) => {
+          const p = P(t, 2.35, 3.2, E.outExpo);
+          const q = P(t, END - 0.35, END + 0.2, E.inCubic);
+          vis(cam, p > 0 && q < 1);
+          win.style.opacity = P(t, 2.35, 2.75) * (1 - q);
+          const b = (1 - p) * 14 + q * 16;
+          win.style.filter = b > 0.05 ? `blur(${b}px)` : "none";
+          win.style.transform = `translateY(${(1 - p) * 120 - q * 60}px)`;
+        };
+
+        // ─── Cursor ────────────────────────────────────────────────────────
+        const cursorEl = $("#cursor");
+        const ring = $("#click-ring");
+        /** path: [t, x, y] in app px (moves ease between points); clicks: times. */
+        const updateCursor = (t, path, clicks, from, to) => {
+          const on = path.length > 0 && t >= from && t < to;
+          vis(cursorEl, on);
+          if (!on) {
+            ring.style.opacity = 0;
+            return;
+          }
+          let i = 0;
+          while (i < path.length - 2 && t >= path[i + 1][0]) i++;
+          const [t0, x0, y0] = path[i];
+          const [t1, x1, y1] = path[Math.min(i + 1, path.length - 1)];
+          const p = t1 > t0 ? E.inOutCubic(clamp((t - t0) / (t1 - t0))) : 1;
+          // A slight arc, like a hand moving a mouse.
+          const arc = Math.sin(Math.PI * p) * Math.min(40, Math.hypot(x1 - x0, y1 - y0) * 0.12);
+          const [sx, sy] = toStage(lerp(x0, x1, p), lerp(y0, y1, p) - arc / camNow.s);
+          let press = 0;
+          let rp = 1;
+          for (const c of clicks) {
+            press = Math.max(press, bell(t, c, c + 0.16));
+            if (t >= c && t < c + 0.5) rp = P(t, c, c + 0.5, E.outCubic);
+          }
+          const size = PORTRAIT ? 1.2 : 1;
+          cursorEl.style.opacity = P(t, from, from + 0.2) * (1 - P(t, to - 0.2, to));
+          cursorEl.style.transform = `translate(${sx - 3}px, ${sy - 3}px) scale(${size * (1 - press * 0.12)})`;
+          ring.style.opacity = rp < 1 ? (1 - rp) * 0.7 : 0;
+          ring.style.transform = `translate(${sx}px, ${sy}px) scale(${0.3 + rp * 0.9})`;
+        };
+
+        // ─── Keycast ───────────────────────────────────────────────────────
+        const keysEl = $("#keys");
+        keysEl.style.top = `${H - MY - (PORTRAIT ? 150 : 108)}px`;
+        /** groups: { keys: [label…], presses: [[t, keyIndex]…] } */
+        const makeKeys = (groups) =>
+          groups.map((g) => {
+            const el = document.createElement("div");
+            el.className = "keygroup";
+            el.innerHTML = g.keys.map((k) => `<span class="key${k.length > 1 ? " wide" : ""}">${k}</span>`).join("");
+            keysEl.append(el);
+            return { ...g, el, caps: $$(".key", el), from: g.presses[0][0] - 0.3, to: g.presses.at(-1)[0] + 0.75 };
+          });
+        const updateKeys = (t, groups) => {
+          for (const g of groups) {
+            const on = t >= g.from && t < g.to;
+            vis(g.el, on);
+            if (!on) continue;
+            const p = P(t, g.from, g.from + 0.3, E.outExpo);
+            const q = P(t, g.to - 0.3, g.to, E.inCubic);
+            g.el.style.opacity = P(t, g.from, g.from + 0.15) * (1 - q);
+            const b = (1 - p) * 8 + q * 8;
+            g.el.style.filter = b > 0.05 ? `blur(${b}px)` : "none";
+            g.el.style.transform = `translate(-50%, ${(1 - p) * 24 + q * 10}px)`;
+            g.el.style.left = "50%";
+            g.caps.forEach((cap, k) => {
+              let down = 0;
+              let lit = 0;
+              for (const [pt, pk] of g.presses) {
+                if (pk !== k) continue;
+                down = Math.max(down, P(t, pt - 0.03, pt, E.outQuad) * (1 - P(t, pt + 0.08, pt + 0.2, E.outCubic)));
+                lit = Math.max(lit, P(t, pt - 0.03, pt) * (1 - P(t, pt + 0.25, pt + 0.6)));
+              }
+              cap.style.transform = `translateY(${down * 3}px)`;
+              cap.style.borderBottomWidth = `${4 - down * 3}px`;
+              cap.style.marginBottom = `${down * 3}px`;
+              cap.style.color = mixHex("#9a9a9a", "#ededed", lit);
+              cap.style.borderColor = mixHex("#333333", "#6a6a6a", lit);
+              cap.style.background = mixHex("#171717", "#222222", lit);
+            });
+          }
+        };
+
+        // ─── Callouts ──────────────────────────────────────────────────────
+        // Spec-sheet notes: a ring on the detail, an elbow leader, a typed mono label.
+        const notesSvg = $("#notes-svg");
+        notesSvg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+        const notesEl = $("#notes");
+        const SVGNS = "http://www.w3.org/2000/svg";
+        /**
+         * notes: { from, to, label, target: () => el, at: [ax, ay], pos: (tx, ty) => [x, y], align }
+         * draws a ring on the detail and an elbow leader (up or down, then across) to the label;
+         * { caption: y } instead draws a centred caption pill at that height.
+         */
+        const makeNotes = (notes) =>
+          notes.map((n) => {
+            const g = document.createElementNS(SVGNS, "g");
+            g.innerHTML = '<path pathLength="1" stroke-dasharray="1 1" /><circle class="pulse" r="10" /><circle class="ring" r="7" /><circle class="dot" r="2" />';
+            notesSvg.append(g);
+            const labelEl = document.createElement("div");
+            labelEl.className = n.caption != null ? "note caption" : "note";
+            notesEl.append(labelEl);
+            return { ...n, g, labelEl, path: $("path", g), pulse: $(".pulse", g), ring: $(".ring", g), dot: $(".dot", g), text: n.label.replace(/<[^>]+>/g, "") };
+          });
+        const updateNotes = (t, notes) => {
+          for (const n of notes) {
+            const on = t >= n.from && t < n.to;
+            const caption = n.caption != null;
+            n.g.style.visibility = on && !caption ? "visible" : "hidden";
+            vis(n.labelEl, on);
+            if (!on) continue;
+            const out = P(t, n.to - 0.35, n.to, E.inCubic);
+            if (caption) {
+              const k = Math.floor(P(t, n.from + 0.15, n.from + 0.15 + n.text.length * 0.02) * n.text.length);
+              let shown = 0;
+              const html = n.label.replace(/(<[^>]+>)|([^<]+)/g, (m, tag, txt) => {
+                if (tag) return tag;
+                const part = txt.slice(0, Math.max(0, k - shown));
+                shown += txt.length;
+                return part;
+              });
+              setHTML(n.labelEl, `${html}${k < n.text.length ? '<span class="caret"></span>' : ""}`);
+              const p = P(t, n.from, n.from + 0.5, E.outExpo);
+              n.labelEl.style.opacity = P(t, n.from, n.from + 0.2) * (1 - out);
+              n.labelEl.style.transform = `translate(calc(${CX}px - 50%), ${n.caption + (1 - p) * 16 - out * 10}px)`;
+              const b = (1 - p) * 8 + out * 6;
+              n.labelEl.style.filter = b > 0.05 ? `blur(${b}px)` : "none";
+              continue;
+            }
+            const r = onStage(n.target());
+            const [ax, ay] = n.at ?? [0.5, 0.5];
+            const tx = r.x + r.w * ax;
+            const ty = r.y + r.h * ay;
+            const [lx, ly] = n.pos(tx, ty);
+            const grow = P(t, n.from + 0.1, n.from + 0.5, E.inOutCubic);
+            // Elbow: from the detail vertically to the label's line, then across to the label.
+            n.path.setAttribute("d", `M${tx} ${ty} L${tx} ${ly} L${lx} ${ly}`);
+            n.path.style.strokeDashoffset = 1 - grow;
+            n.path.style.opacity = 1 - out;
+            const pop = E.outBack(P(t, n.from, n.from + 0.3));
+            for (const [c, rr] of [
+              [n.ring, 7 * pop],
+              [n.dot, 2 * pop],
+            ]) {
+              c.setAttribute("cx", tx);
+              c.setAttribute("cy", ty);
+              c.setAttribute("r", Math.max(0, rr));
+              c.style.opacity = 1 - out;
+            }
+            const pp = ((t - n.from) % 1.4) / 1.4;
+            n.pulse.setAttribute("cx", tx);
+            n.pulse.setAttribute("cy", ty);
+            n.pulse.setAttribute("r", 7 + pp * 16);
+            n.pulse.style.opacity = (1 - pp) * 0.5 * (1 - out) * P(t, n.from + 0.3, n.from + 0.4);
+            // The label types on after the leader arrives; the bold part keeps its weight.
+            const k = Math.floor(P(t, n.from + 0.45, n.from + 0.45 + n.text.length * 0.022) * n.text.length);
+            let shown = 0;
+            const html = n.label.replace(/(<[^>]+>)|([^<]+)/g, (m, tag, txt) => {
+              if (tag) return tag;
+              const part = txt.slice(0, Math.max(0, k - shown));
+              shown += txt.length;
+              return part;
+            });
+            const typing = t >= n.from + 0.45 && (k < n.text.length || Math.floor((t - n.from) * 4) % 2 === 0);
+            setHTML(n.labelEl, `${html}${typing && t < n.to - 0.4 ? '<span class="caret"></span>' : ""}`);
+            n.labelEl.style.opacity = 1 - out;
+            const right = n.align === "right";
+            n.labelEl.style.transform = `translate(${right ? `calc(${lx}px - 100% - 16px)` : `${lx + 16}px`}, ${ly - 12}px)`;
+            n.labelEl.style.filter = out > 0.01 ? `blur(${out * 6}px)` : "none";
+          }
+        };
+
+        // ─── 01 · Command palette ──────────────────────────────────────────
+        const ICONS = {
+          study: '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="7" r="5.5" /><path d="M7 4v3.5l2 1.5" /></svg>',
+          plus: '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 3v8M3 7h8" /></svg>',
+          sparkle: '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M7 1l1.5 4L13 7l-4.5 2L7 13 5.5 9 1 7l4.5-2z" /></svg>',
+          import: '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M10 8.5v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3" /><path d="M7 2v7.5" /><path d="M5 7l2 2.5L9 7" /></svg>',
+          settings: '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="7" cy="7" r="2" /><path d="M7 1v2M7 11v2M1 7h2M11 7h2M2.8 2.8l1.4 1.4M9.8 9.8l1.4 1.4M11.2 2.8l-1.4 1.4M4.2 9.8l-1.4 1.4" /></svg>',
+          space: '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="2" width="10" height="10" rx="2.5" /></svg>',
+          card: '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="3" width="10" height="8" rx="1.5" /><path d="M4.5 6h5M4.5 8.5h3" /></svg>',
+          grid: '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="1.5" y="1.5" width="4.5" height="4.5" rx="1" /><rect x="8" y="1.5" width="4.5" height="4.5" rx="1" /><rect x="1.5" y="8" width="4.5" height="4.5" rx="1" /><rect x="8" y="8" width="4.5" height="4.5" rx="1" /></svg>',
+          list: '<svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 3.5h10M2 7h7M2 10.5h9" /></svg>',
+          arrow: '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4.5 2l4 4-4 4" /></svg>',
+        };
+        const totalDue = SPACES.reduce((n, s) => n + s.due, 0);
+        const totalCards = SPACES.reduce((n, s) => n + s.cards, 0);
+        const GROUPS = [
+          {
+            id: "actions",
+            label: "Actions",
+            items: [
+              { title: "Study all due cards", sub: `${totalDue} cards across ${SPACES.length} spaces`, icon: "study" },
+              { title: "New Space", sub: "Create an empty space", icon: "plus" },
+              { title: "AI Generate", sub: "Generate cards with AI", icon: "sparkle" },
+              { title: "Import .apkg", sub: "Import from Anki", icon: "import" },
+              { title: "Settings", sub: "AI provider, data, shortcuts", icon: "settings", shortcut: "⌘," },
+            ],
+          },
+          { id: "spaces", label: "Spaces", items: SPACES.map((s) => ({ title: s.name, sub: `${s.cards} cards · ${s.due} due`, icon: "space" })) },
+          {
+            id: "cards",
+            label: "Cards",
+            items: [
+              { title: "What does the mitochondria produce?", sub: "Biology", badge: "Review" },
+              { title: "Mitosis vs meiosis: how many daughter cells?", sub: "Biology", badge: "Learning" },
+              { title: "What is the CAP theorem?", sub: "Systems Design", badge: "Review" },
+              { title: "How do you say ‘library’ in Japanese?", sub: "Japanese N4", badge: "New" },
+              { title: "Which enzyme unwinds DNA during replication?", sub: "Biology", badge: "New" },
+              { title: "When should you shard a database?", sub: "Systems Design", badge: "Learning" },
+              { title: "What is an SN2 reaction?", sub: "Organic Chemistry", badge: "Relearning" },
+            ].map((c) => ({ ...c, icon: "card" })),
+          },
+          {
+            id: "navigate",
+            label: "Navigate",
+            items: [
+              { title: "Dashboard", sub: "Home screen", icon: "grid" },
+              { title: "All Cards", sub: `${totalCards} cards total`, icon: "list" },
+              { title: "Import", sub: "Anki import", icon: "import" },
+            ],
+          },
+        ];
+        const SCOPES = ["actions", "spaces", "cards", "navigate"];
+        const SCOPE_LABEL = { actions: "Actions", spaces: "Spaces", cards: "Cards", navigate: "Navigate" };
+        const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+        /** The app's highlight(): the first match, underlined. */
+        const highlight = (text, q) => {
+          const i = q ? text.toLowerCase().indexOf(q) : -1;
+          if (i < 0) return esc(text);
+          return `${esc(text.slice(0, i))}<mark>${esc(text.slice(i, i + q.length))}</mark>${esc(text.slice(i + q.length))}`;
+        };
+
+        const palette = (() => {
+          const el = $("#palette");
+          const results = $("#p-results");
+          results.innerHTML = GROUPS.map(
+            (g) =>
+              `<div class="p-group"><div class="p-glabel-wrap"><div class="p-glabel">${g.label}</div></div>${g.items
+                .map(
+                  (it) => `<div class="p-wrap"><div class="p-item"><div class="p-sel"></div><div class="p-icon">${ICONS[it.icon]}</div>
+                    <div class="p-content"><div class="p-title"></div><div class="p-sub"></div></div>
+                    <div class="p-meta">${it.badge ? `<span class="badge">${it.badge}</span>` : ""}${
+                      it.shortcut ? `<div class="p-shortcut">${[...it.shortcut].map((k) => `<span class="kbd">${k}</span>`).join("")}</div>` : ""
+                    }<div class="p-arrow">${ICONS.arrow}</div></div></div></div>`,
+                )
+                .join("")}</div>`,
+          ).join("");
+          const groups = GROUPS.map((g, gi) => {
+            const gel = $$(".p-group", results)[gi];
+            return {
+              ...g,
+              labelWrap: $(".p-glabel-wrap", gel),
+              items: g.items.map((it, ii) => {
+                const wrap = $$(".p-wrap", gel)[ii];
+                return { ...it, wrap, sel: $(".p-sel", wrap), iconEl: $(".p-icon", wrap), titleEl: $(".p-title", wrap), subEl: $(".p-sub", wrap), arrow: $(".p-arrow", wrap), badgeEl: $(".badge", wrap) };
+              }),
+            };
+          });
+          const chip = $("#p-chip");
+          const chipLabels = $("#p-chip-labels");
+          chipLabels.innerHTML = SCOPES.map((s) => `<span>${SCOPE_LABEL[s]}</span>`).join("");
+          const chipSpans = $$("span", chipLabels);
+          const ph = $("#p-ph");
+          const typed = $("#p-typed");
+
+          /** State at time t: { scope, query, sel } from a list of [t, patch] events. */
+          const stateAt = (t, events) => {
+            let s = { scope: null, query: "", sel: 0, since: 0, typedAt: -9 };
+            for (const [et, patch] of events) {
+              if (et > t) break;
+              const reset = "scope" in patch || "query" in patch;
+              s = { ...s, ...patch, since: et, prev: s, sel: patch.sel ?? (reset ? 0 : s.sel), typedAt: "query" in patch ? et : s.typedAt };
+            }
+            return s;
+          };
+          const matches = (it, q) => !q || it.title.toLowerCase().includes(q) || it.sub.toLowerCase().includes(q);
+          const visibleIn = (s) => groups.map((g) => g.items.map((it) => (s.scope === null || s.scope === g.id) && matches(it, s.query)));
+          const flatOf = (s) => {
+            const v = visibleIn(s);
+            return groups.flatMap((g, gi) => g.items.filter((_, ii) => v[gi][ii]));
+          };
+          const chipW = {};
+          const labelW = {};
+          const layout = { natural: new Map(), label: 0 };
+          return {
+            el,
+            groups,
+            stateAt,
+            flatOf,
+            chipW,
+            measure() {
+              for (const g of groups) {
+                layout.label = g.labelWrap.firstElementChild.offsetHeight;
+                for (const it of g.items) layout.natural.set(it, it.wrap.firstElementChild.offsetHeight);
+              }
+              // The chip's natural width with each scope's label in it.
+              chip.style.display = "flex";
+              chip.style.width = "auto";
+              chipSpans.forEach((sp, i) => {
+                labelW[SCOPES[i]] = sp.offsetWidth;
+                chipLabels.style.width = `${sp.offsetWidth}px`;
+                chipW[SCOPES[i]] = chip.offsetWidth;
+              });
+            },
+            /** Draws the palette for state events at time t; returns its current height. */
+            update(t, events, { open = 1 } = {}) {
+              const s = stateAt(t, events);
+              const prev = s.prev ?? s;
+              const m = P(t, s.since, s.since + 0.16, E.outCubic); // list morph
+              const vNow = visibleIn(s);
+              const vWas = visibleIn(prev);
+              const q = s.query.toLowerCase();
+              const flat = flatOf(s);
+              const prevFlat = flatOf(prev);
+              const selNow = flat[Math.min(s.sel, flat.length - 1)];
+              const selWas = prevFlat[Math.min(prev.sel, prevFlat.length - 1)];
+              const sm = P(t, s.since, s.since + 0.08);
+              groups.forEach((g, gi) => {
+                const gNow = vNow[gi].some(Boolean) ? 1 : 0;
+                const gWas = vWas[gi].some(Boolean) ? 1 : 0;
+                const gk = lerp(gWas, gNow, m);
+                g.labelWrap.style.height = `${layout.label * gk}px`;
+                g.labelWrap.style.opacity = gk;
+                g.items.forEach((it, ii) => {
+                  const k = lerp(vWas[gi][ii] ? 1 : 0, vNow[gi][ii] ? 1 : 0, m);
+                  it.wrap.style.height = `${layout.natural.get(it) * k}px`;
+                  it.wrap.style.opacity = k;
+                  setHTML(it.titleEl, highlight(it.title, q));
+                  setHTML(it.subEl, highlight(it.sub, q));
+                  // The selection moves with the app's quick background fade.
+                  const selAmt = it === selNow ? (selWas === selNow ? 1 : sm) : it === selWas ? 1 - sm : 0;
+                  it.sel.style.opacity = selAmt;
+                  it.arrow.style.opacity = selAmt;
+                  it.iconEl.style.borderColor = mixHex("#1e1e1e", "#333333", selAmt);
+                });
+              });
+              // Scope chip: grows in, and its label rolls to the next scope.
+              const wNow = s.scope ? chipW[s.scope] : 0;
+              const wWas = prev.scope ? chipW[prev.scope] : 0;
+              const cm = P(t, s.since, s.since + 0.2, appEase);
+              const cw = lerp(wWas, wNow, cm);
+              chip.style.width = `${cw}px`;
+              chipLabels.style.width = `${lerp(prev.scope ? labelW[prev.scope] : labelW[s.scope] ?? 0, s.scope ? labelW[s.scope] : 0, cm)}px`;
+              chip.style.display = cw > 0.5 ? "flex" : "none";
+              chip.style.opacity = Math.min(1, cw / 20);
+              chip.style.marginRight = `${cw > 0.5 ? 0 : -10}px`;
+              chipSpans.forEach((sp, i) => {
+                const id = SCOPES[i];
+                const y = id === s.scope ? (1 - cm) * 100 : id === prev.scope && prev.scope !== s.scope ? -cm * 100 : 200;
+                sp.style.transform = `translateY(${y}%)`;
+              });
+              // Input: typed text with a caret, or the scope's placeholder.
+              const caretOn = t - s.typedAt < 0.5 || Math.floor((t - Math.max(s.typedAt, 0)) * 1.8) % 2 === 0;
+              const caret = open >= 1 && caretOn ? '<span class="i-caret"></span>' : "";
+              if (s.query) {
+                setHTML(ph, "");
+                setHTML(typed, `${esc(s.query)}${caret}`);
+              } else {
+                setHTML(ph, `${caret}${s.scope ? `Search ${SCOPE_LABEL[s.scope].toLowerCase()}…` : "Search cards, spaces, or actions…"}`);
+                setHTML(typed, "");
+              }
+              return el.offsetHeight;
+            },
+          };
+        })();
+
+        const episodePalette = () => {
+          const K = { cmd: 3.4, k: 3.52, open: 3.55, tabs: [4.9, 5.5, 6.1], type: [7.0, 7.22, 7.44, 7.66], down: 9.0, enter: 10.9 };
+          const EVENTS = [
+            [K.tabs[0], { scope: "actions" }],
+            [K.tabs[1], { scope: "spaces" }],
+            [K.tabs[2], { scope: "cards" }],
+            ...K.type.map((kt, i) => [kt, { query: "mito".slice(0, i + 1) }]),
+            [K.down, { sel: 1 }],
+          ];
+          const keys = makeKeys([
+            { keys: ["⌘", "K"], presses: [[K.cmd, 0], [K.k, 1]] },
+            { keys: ["tab"], presses: K.tabs.map((kt) => [kt, 0]) },
+            { keys: ["↓"], presses: [[K.down, 0]] },
+            { keys: ["↵"], presses: [[K.enter, 0]] },
+          ]);
+          const cardsGroup = palette.groups[2];
+          const pal = () => onStage(palette.el);
+          const notes = makeNotes([
+            {
+              from: 5.05,
+              to: 6.95,
+              target: () => $("#p-chip"),
+              at: [0.55, 0],
+              label: "<b>Tab</b> cycles the scope",
+              pos: (tx) => [tx + 70, pal().y - 50],
+            },
+            {
+              from: 7.85,
+              to: 9.35,
+              target: () => $("mark", cardsGroup.items[0].titleEl) ?? cardsGroup.items[0].titleEl,
+              at: [0.7, 0],
+              label: "Matches, <b>underlined</b>",
+              pos: (tx) => [tx + 70, pal().y - 50],
+            },
+            {
+              from: 9.2,
+              to: 10.85,
+              target: () => cardsGroup.items[1].badgeEl,
+              at: [0.5, 1],
+              label: "Card state <b>at a glance</b>",
+              pos: (tx) => [tx - 40, pal().y + pal().h + 56],
+              align: "right",
+            },
+          ]);
+          let heights = {};
+          let PAL = { x: 360, y: 144, w: 560 };
+          return {
+            scenes: [
+              [0, "01  THE IDEA"],
+              [K.cmd, "02  ⌘K, ANYWHERE"],
+              [K.tabs[0], "03  SCOPE"],
+              [K.type[0], "04  SEARCH"],
+              [K.down, "05  SELECT"],
+              [K.enter, "06  OPEN"],
+              [END, "07  PUPIL"],
+            ],
+            measure() {
+              palette.el.style.visibility = "inherit";
+              palette.measure();
+              // The palette's height in each state, for the camera to follow.
+              // (Each read just after that state's list morph, before the next event.)
+              for (const [et] of [[0], ...EVENTS]) heights[et] = palette.update(et + 0.18, EVENTS);
+              PAL = measure(palette.el);
+              palette.el.style.visibility = "hidden";
+            },
+            update(t) {
+              const enter = K.enter;
+              showScreen(t < enter + 0.05 ? "dash" : "space", t >= enter + 0.05 && t < enter + 0.35 ? "dash" : null, P(t, enter + 0.05, enter + 0.35, E.outCubic));
+              const open = P(t, K.open, K.open + 0.32, appEase);
+              const close = P(t, enter + 0.02, enter + 0.16, E.inQuad);
+              const shown = t >= K.open && close < 1;
+              setOverlay(open * (1 - close), 6);
+              vis(palette.el, shown);
+              if (shown) {
+                palette.update(t, EVENTS, { open });
+                palette.el.style.opacity = open * (1 - close);
+                palette.el.style.transform = `translateY(${(1 - open) * -8}px) scale(${lerp(0.97, 1, open) - close * 0.01})`;
+              }
+              // Camera: the whole window, then the palette (following its height), closer
+              // for the search, and back out to the space it opened.
+              const palH = (tt) => {
+                let h = heights[0];
+                let hp = heights[0];
+                let since = 0;
+                for (const [et] of EVENTS) {
+                  if (et > tt) break;
+                  hp = h;
+                  h = heights[et];
+                  since = et;
+                }
+                return lerp(hp, h, P(tt, since, since + 0.7, E.inOutCubic));
+              };
+              // The keycast sits under the palette, so frame the palette a little high.
+              const lift = PORTRAIT ? 90 : 60;
+              const palKey = (tt) => {
+                const f = frame({ x: PAL.x, y: PAL.y, w: PAL.w, h: 480 }, 0.9);
+                return { ...f, fy: PAL.y + palH(tt) / 2 + lift / f.s };
+              };
+              const closeKey = (tt) => {
+                const f = frame({ x: PAL.x, y: PAL.y, w: PAL.w, h: 480 }, 0.9);
+                const s = f.s * 1.15;
+                return { fx: PAL.x + PAL.w * 0.5, fy: PAL.y + palH(tt) / 2 + lift / s, s };
+              };
+              const wide = frame(WIN, 0.96);
+              applyCam(
+                camAt(t, [
+                  [0, wide],
+                  [3.5, wide],
+                  [4.5, palKey],
+                  [6.75, palKey],
+                  [7.6, closeKey],
+                  [9.0, closeKey],
+                  [9.8, (tt) => ({ ...closeKey(tt), fx: PAL.x + PAL.w * 0.56 })],
+                  [enter + 0.1, (tt) => ({ ...closeKey(tt), fx: PAL.x + PAL.w * 0.56 })],
+                  [enter + 1.0, { ...wide, s: wide.s * 1.0 }],
+                  [END, { ...wide, s: wide.s * 1.04 }],
+                ]),
+              );
+              updateKeys(t, keys);
+              updateNotes(t, notes);
+              updateCursor(t, [], [], 0, 0);
+            },
+            cues(at) {
+              at(0, "chord", { name: "Dmaj9" });
+              at(0.2, "ting", { note: 62, gain: 0.6 });
+              at(0.3, "sweep", { dur: 0.7, gain: 0.5 });
+              at(2.2, "whoosh", { dur: 0.5, dir: "up", gain: 0.45 });
+              at(2.4, "chord", { name: "Bm11" });
+              at(2.4, "pulse", { on: true, rate: 1, drums: false });
+              at(2.85, "land", { soft: true, gain: 0.6 });
+              at(K.cmd, "key", { seed: 3 });
+              at(K.k, "key", { seed: 7 });
+              at(K.open, "pop", { note: 62, gain: 0.6 });
+              at(K.open, "swish", { gain: 0.35 });
+              K.tabs.forEach((kt, i) => {
+                at(kt, "key", { seed: 11 + i });
+                at(kt + 0.02, "tap", { gain: 0.45 });
+              });
+              at(6.8, "chord", { name: "Gmaj9" });
+              K.type.forEach((kt, i) => at(kt, "key", { seed: 21 + i }));
+              at(K.down, "key", { seed: 31 });
+              at(K.down + 0.02, "tick", { gain: 0.5 });
+              at(9.2, "chord", { name: "A6sus" });
+              at(K.enter, "key", { seed: 41 });
+              at(K.enter + 0.02, "click");
+              at(K.enter + 0.04, "whoosh", { dur: 0.45, dir: "down", gain: 0.45 });
+              for (const n of [5.05, 7.85, 9.2]) at(n + 0.1, "stroke", { dur: 0.35, gain: 0.5 });
+            },
+          };
+        };
+
+        // ─── 02 · Make another ─────────────────────────────────────────────
+        const episodeAnother = () => {
+          const dialog = $("#dialog");
+          const track = $("#nc-track");
+          const thumb = $("#nc-thumb");
+          const toggleLabel = $("#nc-another-label");
+          const save = $("#nc-save");
+          const saveLabel = $("#nc-save-label");
+          const front = $("#nc-front");
+          const back = $("#nc-back");
+          const countFront = $("#nc-count-front");
+          const countBack = $("#nc-count-back");
+          const countAll = $("#cards-count");
+          const OPEN = 3.85;
+          const TOGGLE = [5.75, 6.45];
+          const CARDS = [
+            { front: "What does FSRS stand for?", back: "Free Spaced Repetition Scheduler.", f: [7.95, 8.95], b: [9.25, 10.35], save: 10.75 },
+            { front: "Who maintains FSRS?", back: "The Open Spaced Repetition project.", f: [11.5, 12.05], b: [12.2, 12.85], save: 13.1 },
+            { front: "Which scheduler did FSRS replace?", back: "SM-2.", f: [13.55, 14.05], b: [14.15, 14.35], save: 14.55 },
+          ];
+          const ESC = 14.95;
+          const EXISTING = [
+            { front: "What is the CAP theorem?", space: "Systems Design", state: "Review", due: "3d" },
+            { front: "What does the mitochondria produce?", space: "Biology", state: "Review", due: "today" },
+            { front: "How do you say ‘library’ in Japanese?", space: "Japanese N4", state: "New", due: "—" },
+            { front: "When should you shard a database?", space: "Systems Design", state: "Learning", due: "10m" },
+            { front: "What is an SN2 reaction?", space: "Organic Chemistry", state: "Relearning", due: "1h" },
+            { front: "Which enzyme unwinds DNA during replication?", space: "Biology", state: "New", due: "—" },
+            { front: "What does ATP stand for?", space: "Biology", state: "Review", due: "6d" },
+            { front: "Where does glycolysis take place?", space: "Biology", state: "Learning", due: "1h" },
+            { front: "What is eventual consistency?", space: "Systems Design", state: "Review", due: "2d" },
+          ];
+          const rows = $("#card-rows");
+          rows.innerHTML = [...CARDS]
+            .reverse()
+            .map((c) => rowHTML({ front: c.front, space: "Learning Science", state: "New", due: "—" }))
+            .concat(EXISTING.map(rowHTML))
+            .join("");
+          const newRows = $$(".row-wrap", rows).slice(0, 3).reverse(); // in save order
+          const words = (s) => (s.trim() ? s.trim().split(/\s+/).length : 0);
+          const keys = makeKeys([{ keys: ["esc"], presses: [[ESC, 0]] }]);
+          const captionY = H - MY - (PORTRAIT ? 170 : 120);
+          const notes = makeNotes([
+            {
+              from: 6.55,
+              to: 7.9,
+              target: () => track,
+              at: [0.5, 1],
+              label: "On <b>by default</b>",
+              pos: (tx, ty) => [tx + 60, ty + 110],
+            },
+            {
+              from: CARDS[0].save + 0.3,
+              to: CARDS[0].save + 1.9,
+              caption: captionY,
+              label: "Saved. <b>Still open</b>, cursor back on front.",
+            },
+            {
+              from: ESC + 0.75,
+              to: END - 0.1,
+              caption: captionY,
+              label: "<b>Three cards</b>, one dialog.",
+            },
+          ]);
+          const targets = {};
+          return {
+            scenes: [
+              [0, "01  THE IDEA"],
+              [3.3, "02  NEW CARD"],
+              [5.2, "03  MAKE ANOTHER"],
+              [7.8, "04  WRITE"],
+              [CARDS[0].save, "05  SAVE, AND AGAIN"],
+              [ESC, "06  DONE"],
+              [END, "07  PUPIL"],
+            ],
+            measure() {
+              vis(dialog, true);
+              showScreen("cards");
+              for (const [k, el] of Object.entries({ dialog, track, another: $("#nc-another"), save, front, back, newBtn: $("#btn-new"), rows: $("#card-rows") }))
+                targets[k] = measure(el);
+              vis(dialog, false);
+            },
+            update(t) {
+              showScreen("cards");
+              // Rows slide in behind the dialog as each card is saved; the count ticks up.
+              const saved = CARDS.filter((c) => t >= c.save + 0.12).length;
+              countAll.textContent = `${512 + saved} cards`;
+              newRows.forEach((r, i) => {
+                const p = P(t, CARDS[i].save + 0.12, CARDS[i].save + 0.5, appEase);
+                r.style.height = `${50 * p}px`;
+                r.style.opacity = p;
+                $(".flash", r).style.opacity = P(t, ESC + 0.2, ESC + 0.4) * (1 - P(t, ESC + 1.1, ESC + 1.8));
+              });
+              const open = P(t, OPEN, OPEN + 0.34, appEase);
+              const close = P(t, ESC + 0.02, ESC + 0.22, E.inQuad);
+              const shown = t >= OPEN && close < 1;
+              setOverlay(open * (1 - close), 10);
+              vis(dialog, shown);
+              if (shown) {
+                // The save heartbeat (dialog-heartbeat, 0.42s): a swell and a green ring.
+                let beat = 0;
+                for (const c of CARDS) {
+                  const p = P(t, c.save + 0.1, c.save + 0.62);
+                  if (p > 0 && p < 1) beat = E.inOutSine(p < 0.38 ? p / 0.38 : (1 - p) / 0.62);
+                }
+                dialog.style.opacity = open * (1 - close);
+                dialog.style.transform = `translateY(${(1 - open) * 8 + close * 6}px) scale(${lerp(0.96, 1, open) - close * 0.02 + beat * 0.012})`;
+                dialog.style.boxShadow = `0 ${lerp(30, 36, beat)}px ${lerp(90, 100, beat)}px rgba(0,0,0,0.5), 0 0 0 1px rgba(16,185,129,${0.22 * beat}), 0 0 0 10px rgba(16,185,129,${0.1 * beat}), inset 0 1px 0 rgba(237,237,237,0.05)`;
+              }
+              // Make another: on by default; clicked off, then back on.
+              const on = t < TOGGLE[0] ? 1 : t < TOGGLE[1] ? 1 - P(t, TOGGLE[0], TOGGLE[0] + 0.2, E.inOutQuad) : P(t, TOGGLE[1], TOGGLE[1] + 0.2, E.inOutQuad);
+              const hover = P(t, 5.3, 5.45) * (1 - P(t, 7.0, 7.2));
+              thumb.style.transform = `translateX(${12 * on}px)`;
+              thumb.style.background = mixHex("#555555", "#10b981", on);
+              track.style.background = `color-mix(in srgb, #10b981 ${15 * on}%, #161616)`;
+              track.style.borderColor = `color-mix(in srgb, #10b981 ${25 * on}%, #1e1e1e)`;
+              toggleLabel.style.color = mixHex("#555555", "#888888", Math.max(on, hover));
+              // Writing: each card types into Front then Back; saving clears both and puts the
+              // caret back on Front, ready for the next one.
+              let f = "";
+              let b = "";
+              let focus = "front";
+              let typedAt = -9;
+              for (const c of CARDS) {
+                if (t < c.f[0] - 0.4) break;
+                if (t >= c.save + 0.12) {
+                  f = "";
+                  b = "";
+                  focus = "front";
+                  typedAt = c.save + 0.12;
+                  continue;
+                }
+                const fp = P(t, c.f[0], c.f[1]);
+                const bp = P(t, c.b[0], c.b[1]);
+                f = c.front.slice(0, Math.round(fp * c.front.length));
+                b = c.back.slice(0, Math.round(bp * c.back.length));
+                focus = t >= c.b[0] - 0.12 ? "back" : "front";
+                typedAt = t < c.f[1] ? t : t < c.b[0] ? c.f[1] : t < c.b[1] ? t : c.b[1];
+              }
+              const blink = t - typedAt < 0.5 || Math.floor((t - typedAt) * 1.8) % 2 === 0;
+              const fill = (el, text, ph, focused) => {
+                const caret = focused && shown && t >= OPEN + 0.3 && blink ? '<span class="i-caret"></span>' : "";
+                setHTML(el, text ? `${esc(text)}${caret}` : `<span class="ph">${caret}${ph}</span>`);
+                el.style.borderColor = focused ? "#333333" : "#1e1e1e";
+              };
+              fill(front, f, "A clear, single question or prompt...", focus === "front");
+              fill(back, b, "A direct answer. Just enough context to be unambiguous...", focus === "back");
+              countFront.textContent = `${words(f)} / 30 words`;
+              countBack.textContent = `${words(b)} / 60 words`;
+              let pressing = 0;
+              let busy = false;
+              for (const c of CARDS) {
+                pressing = Math.max(pressing, bell(t, c.save - 0.02, c.save + 0.12));
+                if (t >= c.save && t < c.save + 0.12) busy = true;
+              }
+              save.style.transform = `scale(${1 - pressing * 0.04})`;
+              save.style.opacity = busy ? 0.5 : 1;
+              saveLabel.textContent = busy ? "Creating..." : "Save card";
+
+              // Camera: the window; into the dialog; right up to the toggle; back to write.
+              const wide = frame(WIN, 0.96);
+              const top = frame({ x: targets.dialog.x, y: targets.dialog.y, w: targets.dialog.w, h: targets.front.y + targets.front.h - targets.dialog.y + 40 }, 0.96);
+              const a = targets.another;
+              const macro = frame({ x: a.x - 20, y: a.y - 26, w: a.w + 40, h: a.h + 52 }, 0.9, PORTRAIT ? 4.4 : 5.2);
+              // Writing: from the actions bar (toggle, Save) down into the Back field.
+              const writeTop = targets.save.y - 18;
+              const write = frame({ x: targets.dialog.x, y: writeTop, w: targets.dialog.w, h: targets.back.y + 120 - writeTop }, 0.98);
+              const list = frame({ x: targets.rows.x - 20, y: targets.rows.y - 90, w: targets.rows.w + 40, h: 330 }, 0.9);
+              applyCam(
+                camAt(t, [
+                  [0, wide],
+                  [OPEN + 0.1, wide],
+                  [4.85, top],
+                  [5.1, top],
+                  [5.9, macro, E.inOutQuart],
+                  [7.0, macro],
+                  [7.8, write],
+                  [CARDS[0].save, { ...write, s: write.s * 1.03 }],
+                  [ESC, { ...write, s: write.s * 1.07 }],
+                  [ESC + 1.0, list],
+                  [END, { ...list, s: list.s * 1.03 }],
+                ]),
+              );
+
+              // The cursor: to "New card", then the toggle, then Save after each card.
+              const nb = targets.newBtn;
+              const tg = { x: targets.another.x + targets.another.w - 14, y: targets.another.y + targets.another.h / 2 };
+              const sv = { x: targets.save.x + targets.save.w * 0.55, y: targets.save.y + targets.save.h * 0.6 };
+              const rest = { x: sv.x + 120, y: sv.y + 260 };
+              const path = [
+                [3.0, nb.x + nb.w + 160, nb.y + 180],
+                [3.55, nb.x + nb.w * 0.6, nb.y + nb.h * 0.6],
+                [3.8, nb.x + nb.w * 0.6, nb.y + nb.h * 0.6],
+                [4.9, tg.x + 90, tg.y + 120],
+                [5.45, tg.x, tg.y],
+                [7.1, tg.x, tg.y],
+                [7.8, rest.x, rest.y],
+              ];
+              for (const c of CARDS) {
+                path.push([c.save - 0.45, rest.x, rest.y], [c.save - 0.05, sv.x, sv.y], [c.save + 0.3, sv.x, sv.y], [c.save + 0.75, rest.x, rest.y]);
+              }
+              updateCursor(t, path, [3.75, ...TOGGLE, ...CARDS.map((c) => c.save)], 3.0, ESC + 0.2);
+              updateKeys(t, keys);
+              updateNotes(t, notes);
+            },
+            cues(at) {
+              at(0, "chord", { name: "Dmaj9" });
+              at(0.2, "ting", { note: 62, gain: 0.6 });
+              at(0.3, "sweep", { dur: 0.7, gain: 0.5 });
+              at(2.2, "whoosh", { dur: 0.5, dir: "up", gain: 0.45 });
+              at(2.4, "chord", { name: "Gmaj9" });
+              at(2.4, "pulse", { on: true, rate: 1, drums: false });
+              at(2.85, "land", { soft: true, gain: 0.6 });
+              at(3.75, "click");
+              at(OPEN, "pop", { note: 57, gain: 0.6 });
+              at(OPEN, "swish", { gain: 0.35 });
+              at(5.2, "chord", { name: "Bm11" });
+              at(TOGGLE[0], "click");
+              at(TOGGLE[0] + 0.02, "toggle", { on: false });
+              at(TOGGLE[1], "click");
+              at(TOGGLE[1] + 0.02, "toggle", { on: true });
+              at(6.6, "stroke", { dur: 0.35, gain: 0.5 });
+              at(7.8, "chord", { name: "A6sus" });
+              CARDS.forEach((c, ci) => {
+                for (const [text, [a, b], s] of [
+                  [c.front, c.f, 1],
+                  [c.back, c.b, 2],
+                ]) {
+                  const n = Math.max(2, Math.round(text.length / 3));
+                  for (let i = 0; i < n; i++) at(lerp(a, b, (i + 0.5) / n), "key", { seed: ci * 97 + s * 31 + i });
+                }
+                at(c.save, "click");
+                at(c.save + 0.1, "approve", { step: ci % 2 });
+              });
+              at(11.4, "chord", { name: "Gmaj9" });
+              at(13.4, "chord", { name: "Em9" });
+              at(CARDS[0].save + 0.35, "stroke", { dur: 0.35, gain: 0.5 });
+              at(ESC, "key", { seed: 77 });
+              at(ESC + 0.03, "whoosh", { dur: 0.45, dir: "down", gain: 0.45 });
+              at(ESC + 0.3, "riffle", { gain: 0.4 });
+            },
+          };
+        };
+
+        const episode = SNIPPET === "another" ? episodeAnother() : episodePalette();
+
+        // ─── End card ──────────────────────────────────────────────────────
+        const endCard = (() => {
+          const el = $("#end");
+          const eyeEl = $("#end-eye");
+          const eye = mountEye(eyeEl, { ink: true });
+          const word = $("#end-word");
+          const letters = $$(".lm > span", word);
+          const tag = $("#end-tag-in");
+          const metaEl = $("#end-meta");
+          tag.innerHTML = EP.tag;
+          metaEl.innerHTML = EP.meta;
+          const meta = [...metaEl.children];
+          const url = $("#end-url");
+          const EYE_Y = PORTRAIT ? 560 : 452;
+          const EYE_BOX = 194;
+          const EYE_LENS = (EYE_BOX * 46) / 52;
+          const GAP = 34;
+          const layout = { eyeFinal: CX, wordLeft: 0, wordTop: 0 };
+          // The release film's lockup, on its own clock: u = 12.5 is the pupil landing.
+          return {
+            measure() {
+              const total = EYE_LENS + GAP + word.offsetWidth;
+              const left = CX - total / 2;
+              layout.eyeFinal = left + EYE_LENS / 2;
+              layout.wordLeft = left + EYE_LENS + GAP;
+              layout.wordTop = EYE_Y - 0.66 * 176;
+            },
+            update(T) {
+              const u = T - (END + 0.1) + 12.5;
+              vis(el, u >= 12.5);
+              if (u < 12.5) return;
+              const slide = P(u, 12.62, 13.22, E.inOutCubic);
+              const ex = lerp(CX, layout.eyeFinal, slide);
+              eyeEl.style.transform = `translate(${ex - EYE_BOX / 2}px, ${EYE_Y - EYE_BOX / 2}px)`;
+              const ep = P(u, 12.5, 13.1, E.outCubic);
+              eye.echo.setAttribute("r", 4 + ep * 30);
+              eye.echo.setAttribute("opacity", ep < 1 ? (1 - ep) * 0.6 : 0);
+              eye.set({
+                pupil: 4 * (1 + 0.3 * bell(u, 12.5, 12.68)) * P(u, 12.5, 12.56, E.outBack),
+                iris: P(u, 12.5, 12.86, E.inOutCubic),
+                lids: P(u, 12.56, 12.98, E.inOutCubic),
+                gaze: V(u, 13.9, 14.1, 0, 2.2, E.inOutCubic) - V(u, 14.2, 14.45, 0, 2.2, E.inOutCubic),
+                blink: blinkAt(u, 14.9),
+              });
+              const wx = layout.wordLeft - (1 - slide) * 180;
+              const clipLeft = Math.max(0, ex + EYE_LENS / 2 + 6 - wx);
+              word.style.transform = `translate(${wx}px, ${layout.wordTop}px)`;
+              word.style.clipPath = `inset(-40% -10% -40% ${clipLeft}px)`;
+              letters.forEach((l, i) => {
+                const p = P(u, 12.78 + i * 0.045, 13.38 + i * 0.045, E.outExpo);
+                l.style.transform = `translateY(${(1 - p) * 140}%)`;
+              });
+              blurUp(tag, u, 13.02, null, { dist: 30, blur: 14, dur: 0.9 });
+              meta.forEach((m, i) => blurUp(m, u, 13.22 + i * 0.06, null, { dist: 22, blur: 8, dur: 0.7 }));
+              blurUp(url, u, 13.5, null, { dist: 14, blur: 6, dur: 0.7 });
+            },
+          };
+        })();
+
+        // ─── Frame: HUD, grain, fade ───────────────────────────────────────
+        const hud = $("#hud");
+        const rulers = $$(".rl", hud);
+        const pluses = $$(".plus", hud);
+        const hudText = $$(".ht", hud);
+        const hudScene = $("#hud-scene");
+        const hudTc = $("#hud-tc");
+        $("#hud-ep").textContent = `${EP.n} / ${EP.name.toUpperCase()}`;
+        {
+          const [left, right, top, bottom] = rulers;
+          left.style.left = `${MX}px`;
+          right.style.left = `${W - MX}px`;
+          top.style.top = `${MY}px`;
+          bottom.style.top = `${H - MY}px`;
+          const corners = [
+            [MX, MY],
+            [W - MX, MY],
+            [MX, H - MY],
+            [W - MX, H - MY],
+          ];
+          pluses.forEach((p, i) => {
+            p.style.left = `${corners[i][0]}px`;
+            p.style.top = `${corners[i][1]}px`;
+          });
+          const [tl, tr, bl, br] = hudText;
+          for (const h of [tl, bl]) h.style.left = `${MX}px`;
+          for (const h of [tr, br]) h.style.right = `${MX}px`;
+          for (const h of [tl, tr]) h.style.top = `${MY - 48}px`;
+          for (const h of [bl, br]) h.style.top = `${H - MY + 30}px`;
+        }
+        const GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/#·";
+        const pad = (n) => String(n).padStart(2, "0");
+        const updateHud = (t) => {
+          const frameNo = Math.floor(t * FPS + 1e-6);
+          rulers.forEach((r, i) => {
+            const p = P(t, 0.02 + i * 0.05, 0.95 + i * 0.05, E.outExpo);
+            r.style.transform = r.classList.contains("v") ? `scaleY(${p})` : `scaleX(${p})`;
+          });
+          for (const p of pluses) p.style.opacity = P(t, 0.6, 0.95);
+          for (const h of hudText) h.style.opacity = P(t, 0.3, 0.8);
+          const scenes = episode.scenes;
+          let si = 0;
+          while (si < scenes.length - 1 && t >= scenes[si + 1][0]) si++;
+          const [since, label] = scenes[si];
+          const dt = t - since;
+          let out = "";
+          for (let i = 0; i < label.length; i++) {
+            const ch = label[i];
+            out += ch === " " || dt > 0.03 + i * 0.018 ? ch : GLYPHS[Math.floor(hash(frameNo * 31 + i) * GLYPHS.length)];
+          }
+          hudScene.textContent = out;
+          hudTc.textContent = `00:00:${pad(Math.floor(t))}:${pad(frameNo % FPS)}`;
+        };
+        const grain = $("#grain");
+        (() => {
+          const c = document.createElement("canvas");
+          c.width = 320;
+          c.height = 320;
+          const ctx = c.getContext("2d");
+          const img = ctx.createImageData(320, 320);
+          for (let i = 0; i < img.data.length; i += 4) {
+            const v = Math.floor(hash(i * 0.25 + 7) * 255);
+            img.data[i] = v;
+            img.data[i + 1] = v;
+            img.data[i + 2] = v;
+            img.data[i + 3] = 255;
+          }
+          ctx.putImageData(img, 0, 0);
+          grain.style.backgroundImage = `url(${c.toDataURL()})`;
+        })();
+        const updateGrain = (t) => {
+          const f = Math.floor(t * 24 + 1e-6);
+          grain.style.backgroundPosition = `${Math.floor(hash(f) * 640)}px ${Math.floor(hash(f + 0.5) * 640)}px`;
+        };
+        const fade = $("#fade");
+
+        // ─── Sound cues (synthesised by scripts/release-film-audio.mjs) ────
+        const CUES = [];
+        {
+          const at = (t, type, o = {}) => CUES.push({ t: Number(Math.max(0, t).toFixed(4)), type, ...o });
+          episode.cues(at);
+          // The end card: the window sinks away, the pupil lands, and the eye blinks.
+          at(END - 0.35, "whoosh", { dur: 0.5, dir: "down", low: true, gain: 0.5 });
+          at(END, "swoosh", { end: END + 0.1 });
+          at(END + 0.1, "chord", { name: "Dresolve" });
+          at(END + 0.1, "pulse", { on: false });
+          at(END + 0.1, "land", { soft: true });
+          at(END + 0.1, "impact", { soft: true });
+          at(END + 0.1, "ting", { note: 50 });
+          at(END + 0.1 + 14.9 - 12.5, "blink");
+          CUES.sort((x, y) => x.t - y.t);
+        }
+
+        // ─── Render ────────────────────────────────────────────────────────
+        const render = (time) => {
+          const t = clamp(time, 0, DURATION);
+          updateLight(t);
+          title.update(t);
+          updateWindow(t);
+          episode.update(t);
+          endCard.update(t);
+          updateHud(t);
+          updateGrain(t);
+          fade.style.opacity = LOOP ? P(t, DURATION - 0.24, DURATION, E.inOutCubic) : 0;
+        };
+
+        const fit = () => {
+          if (RENDER) {
+            stageScale = 1;
+            stage.style.transform = "none";
+            return;
+          }
+          stageScale = Math.min(innerWidth / W, innerHeight / H);
+          const x = (innerWidth - W * stageScale) / 2;
+          const y = (innerHeight - H * stageScale) / 2;
+          stage.style.transform = `translate(${x}px, ${y}px) scale(${stageScale})`;
+        };
+
+        const ready = (async () => {
+          await Promise.all(
+            ["400 20px Inter", "500 20px Inter", "600 20px Inter", "400 20px 'JetBrains Mono'", "500 20px 'JetBrains Mono'", "700 20px Syne", "italic 400 20px 'Instrument Serif'"].map((f) =>
+              document.fonts.load(f),
+            ),
+          );
+          await document.fonts.ready;
+          const img = new Image();
+          img.src = "public/dither-gradient.webp";
+          await img.decode().catch(() => {});
+          fit();
+          // Measure the UI with the camera at rest, in app pixels.
+          cam.style.transform = "none";
+          vis(cam, true);
+          episode.measure();
+          endCard.measure();
+        })();
+
+        // ─── Playback ──────────────────────────────────────────────────────
+        const ui = $("#ui");
+        const playBtn = $("#ui-play");
+        const scrub = $("#ui-scrub");
+        const timeOut = $("#ui-time");
+        let playing = false;
+        scrub.max = DURATION;
+        let current = clamp(Number(params.get("t")) || 0, 0, DURATION);
+        let origin = 0;
+        const show = (t) => {
+          current = t;
+          render(t);
+          scrub.value = t;
+          timeOut.textContent = `${t.toFixed(2).padStart(5, "0")} / ${DURATION.toFixed(2)}`;
+        };
+        const setPlaying = (on) => {
+          playing = on;
+          origin = performance.now() - current * 1000;
+          playBtn.textContent = on ? "❚❚" : "▶";
+        };
+        const tick = (now) => {
+          if (playing) show(((now - origin) / 1000) % DURATION);
+          requestAnimationFrame(tick);
+        };
+        const step = (dt) => {
+          setPlaying(false);
+          show(clamp(current + dt, 0, DURATION - 1 / FPS));
+        };
+        playBtn.addEventListener("click", () => setPlaying(!playing));
+        const reopen = (snippet, format) => {
+          location.hash = `${snippet}-${format}`;
+          location.reload();
+        };
+        const snippetBtn = $("#ui-snippet");
+        const formatBtn = $("#ui-format");
+        const next = SNIPPETS[(SNIPPETS.indexOf(SNIPPET) + 1) % SNIPPETS.length];
+        snippetBtn.textContent = `Show ${EPISODES[next].name}`;
+        formatBtn.textContent = PORTRAIT ? "Show 16:9" : "Show 4:5";
+        snippetBtn.addEventListener("click", () => reopen(next, FORMAT));
+        formatBtn.addEventListener("click", () => reopen(SNIPPET, PORTRAIT ? "landscape" : "portrait"));
+        scrub.addEventListener("input", () => {
+          setPlaying(false);
+          show(Number(scrub.value));
+        });
+        addEventListener("keydown", (e) => {
+          if (e.code === "Space") {
+            e.preventDefault();
+            setPlaying(!playing);
+          } else if (e.code === "ArrowRight") step(e.shiftKey ? 1 : 1 / FPS);
+          else if (e.code === "ArrowLeft") step(e.shiftKey ? -1 : -1 / FPS);
+          else if (e.code === "Home") show(0);
+        });
+        let idleTimer = 0;
+        addEventListener("pointermove", () => {
+          ui.classList.remove("idle");
+          clearTimeout(idleTimer);
+          idleTimer = setTimeout(() => playing && ui.classList.add("idle"), 1800);
+        });
+        addEventListener("resize", fit);
+
+        window.__film = { duration: DURATION, snippet: SNIPPET, cues: CUES, width: W, height: H, fps: FPS, ready, seek: (t) => render(t) };
+
+        ready.then(() => {
+          show(current);
+          if (!RENDER) {
+            setPlaying(true);
+            requestAnimationFrame(tick);
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

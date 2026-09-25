@@ -117,8 +117,14 @@ The renderer needs Playwright with Chromium and an ffmpeg build with libx264 on 
 | 240×240 looping GIF, for the Product Hunt thumbnail (limit 3MB) | `node scripts/render-release-film.mjs --format thumb --width 240 --out thumbnail.gif` |
 | Stills for covers and gallery images (Product Hunt gallery is 1270×760) | `node scripts/render-release-film.mjs --no-hud --stills 4.5,8.1,11.6,18.3` |
 
-**Sound.** Videos get a soundtrack synthesised from the film's own cue list ([`scripts/release-film-audio.mjs`](../scripts/release-film-audio.mjs)): sound effects on the picture's events (the blink, typing, approvals, the flip, each review on the curve, the feature hits) and a placeholder D-major music bed, mixed with the music 3 dB under the effects and normalised to -14 LUFS. Because the cues come from the same timeline as the picture, re-pacing the film moves the sound with it. Options:
+**Sound.** Videos get a soundtrack synthesised from the film's own cue list ([`scripts/release-film-audio.mjs`](../scripts/release-film-audio.mjs)): sound effects on the picture's events (the blink, typing, approvals, the flip, each review on the curve, the feature hits) and a placeholder D-major music bed, mixed with the music 2 dB under the effects and normalised to -14 LUFS. Because the cues come from the same timeline as the picture, re-pacing the film moves the sound with it. Options:
 
 - `--music track.mp3` replaces the placeholder bed with a licensed track, balanced automatically; `--music-gain 2` nudges it in dB.
 - `--stems dir/` also writes `sfx.wav`, `music.wav` and `mix.wav` for editing elsewhere.
 - `--silent` renders a silent AAC track instead. `--cut ai` renders the experimental cut, which gives AI generation its own scene ("Write your own cards. / Or let AI draft them.", then topic → drafts → approved cards → the study deck) and puts "Cross platform" in its place among the feature words; preview it at `/release-film.html#ai`.
+
+### Design details
+
+A post-launch series of shorter, slower films, each about one piece of the interface, lives at [`apps/site/design-details.html`](../apps/site/design-details.html). The UI is recreated from the app's own components and tokens and framed by a moving camera, with a keycast for shortcuts and spec-style callouts on the details. Episodes: `palette` (01, the command palette: ⌘K, Tab through scopes, underlined matches, card-state badges) and `another` (02, the New Card dialog's Make another toggle: save, stay open, write the next one). Preview at `/design-details.html#another` (add `-portrait` for 4:5).
+
+They render with the same script and soundtrack pipeline (a calmer bed, without drums): `bun run details:film --snippet another` writes `docs/assets/design-details-another.mp4`, and every option above (`--format portrait`, `--fps 30`, `--stills`, `--music`) applies.

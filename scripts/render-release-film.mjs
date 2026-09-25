@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 /**
- * Renders the release film (apps/site/release-film.html) to video, frame by frame.
+ * Renders the release film (apps/site/release-film.html), or another film page built the same
+ * way, to video, frame by frame.
  *
  *   node scripts/render-release-film.mjs                       → docs/assets/release-film.mp4
  *   node scripts/render-release-film.mjs --format portrait --fps 30 --out linkedin.mp4
  *   node scripts/render-release-film.mjs --format thumb --width 240 --out thumbnail.gif
  *   node scripts/render-release-film.mjs --stills 2.5,6.4,13.8 --no-hud [--out-dir stills/]
+ *   node scripts/render-release-film.mjs --page design-details.html --snippet another
  *
- * Options: --format landscape|portrait|thumb, --cut classic|ai, --fps, --crf, --width <px>,
+ * Options: --page <file in apps/site> (default release-film.html), --snippet <id> (the
+ * design-details episode), --format landscape|portrait|thumb, --cut classic|ai, --fps, --crf, --width <px>,
  * --loop (fade to black at the end so the film loops), --no-hud (hide the frame overlay),
  * --workers <n>. An output ending in .gif is encoded as a looping GIF; anything else is H.264
  * with AAC audio. Stills default to the OS tmpdir.
@@ -40,7 +43,7 @@ import {
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = join(ROOT, "apps/site");
-const PAGE = "release-film.html";
+const DEFAULT_PAGE = "release-film.html";
 // Big enough for every format; captures are clipped to the film's own size.
 const VIEWPORT = { width: 1920, height: 1350 };
 
@@ -56,7 +59,9 @@ const MIME = {
 
 function parseArgs(argv) {
   const opts = {
-    out: join(ROOT, "docs/assets/release-film.mp4"),
+    out: null,
+    page: DEFAULT_PAGE,
+    snippet: null,
     fps: null,
     crf: 22,
     format: "landscape",
@@ -81,6 +86,8 @@ function parseArgs(argv) {
     else {
       const value = argv[++i];
       if (flag === "--out") opts.out = resolve(value);
+      else if (flag === "--page") opts.page = value;
+      else if (flag === "--snippet") opts.snippet = value;
       else if (flag === "--format") opts.format = value;
       else if (flag === "--cut") opts.cut = value;
       else if (flag === "--fps") opts.fps = Number(value);
@@ -95,6 +102,8 @@ function parseArgs(argv) {
       else throw new Error(`Unknown argument: ${flag}`);
     }
   }
+  const name = opts.page.replace(/\.html$/, "") + (opts.snippet ? `-${opts.snippet}` : "");
+  opts.out ??= join(ROOT, "docs/assets", `${name}.mp4`);
   opts.gif = extname(opts.out) === ".gif";
   // GIF frame delays are in centiseconds, so 25fps (4cs) is the smoothest exact rate.
   opts.fps ??= opts.gif ? 25 : 60;
@@ -304,7 +313,8 @@ async function main() {
   if (opts.loop) query.set("loop", "1");
   if (opts.cut !== "classic") query.set("cut", opts.cut);
   if (!opts.hud) query.set("hud", "0");
-  const url = `http://127.0.0.1:${server.address().port}/${PAGE}?${query}`;
+  if (opts.snippet) query.set("snippet", opts.snippet);
+  const url = `http://127.0.0.1:${server.address().port}/${opts.page}?${query}`;
   const workers = opts.stills ? 1 : opts.workers;
   const films = await Promise.all(Array.from({ length: workers }, () => openFilm(chromium, url)));
 

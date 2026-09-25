@@ -379,7 +379,12 @@ function effect(cue) {
       ];
     }
     case "stroke":
-      return [sweep(dur, 700, 1800, { q: 0.7, attack: 0.3, seed }), -22, (p) => p - 0.5, 0.2];
+      return [
+        sweep(dur, 700, 1800, { q: 0.7, attack: 0.3, seed }),
+        -22 + 20 * Math.log10(g),
+        (p) => p - 0.5,
+        0.2,
+      ];
     case "whoosh": {
       const [f0, f1] =
         cue.dir === "down"
@@ -500,7 +505,7 @@ function effect(cue) {
           [0, thump(mtof(cue.soft ? 38 : 33), { from: 2, decay: 0.22 })],
           [0, burst(0.06, 380, { type: "lp", seed }), 0.35],
         ]),
-        cue.soft ? -16 : -13,
+        (cue.soft ? -16 : -13) + 20 * Math.log10(g),
         0,
         0.15,
       ];
@@ -593,18 +598,33 @@ function effect(cue) {
       ];
     }
     case "impact":
+      // soft: the same landing without the brass, for calmer films.
       return [
         layer([
           [0, normalize(thump(mtof(26), { from: 3, decay: 0.9 }))],
-          [0, taiko(mtof(38), { decay: 0.6, seed }), 0.7],
-          [0, braam(mtof(38), { dur: 3.2, attack: 0.03, open: 1500 }), 0.6],
+          [0, taiko(mtof(38), { decay: 0.6, seed }), cue.soft ? 0.4 : 0.7],
+          [0, braam(mtof(38), { dur: 3.2, attack: 0.03, open: 1500 }), cue.soft ? 0 : 0.6],
           [0, normalize(sweep(1.4, 2400, 300, { attack: 0.01, q: 0.7, seed, curve: 2.2 })), 0.3],
         ]),
-        -7,
+        cue.soft ? -12 : -7,
         0,
         0.15,
         0.6,
       ];
+    case "toggle": {
+      // A switch: a tiny click, then two felt taps rising (on) or falling (off).
+      const [a, b] = cue.on ? [57, 62] : [62, 57];
+      return [
+        layer([
+          [0, normalize(burst(0.004, 1600, { seed, type: "bp", q: 0.8 })), 0.35],
+          [0.004, mallet(mtof(a), { decay: 0.05, wood: 0.1 }), 0.6],
+          [0.06, mallet(mtof(b), { decay: 0.09, wood: 0.1 })],
+        ]),
+        -17,
+        0,
+        0.1,
+      ];
+    }
     case "swoosh":
       return [sweep(dur, 400, 1400, { q: 0.9, attack: 0.5, seed }), -21, 0, 0.3];
     default:
@@ -691,11 +711,13 @@ function renderBed(cues, duration, bus, send) {
   const [hushFrom, hushTo] = reviews.length
     ? [reviews[0].t - 0.15, reviews.at(-1).t + 0.3]
     : [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
-  // The arpeggio: a soft, low pluck on 8th notes through the current chord's upper tones.
+  // The arpeggio: a soft, low pluck through the current chord's upper tones, on 8th notes (or
+  // `rate` notes a beat, from the pulse cue).
   const on = cues.find((c) => c.type === "pulse" && c.on);
   const off = cues.find((c) => c.type === "pulse" && !c.on);
   if (on) {
-    const step = 60 / BPM / 2;
+    const rate = on.rate ?? 2;
+    const step = 60 / BPM / rate;
     const pattern = [0, 2, 1, 3, 2, 1, 3, 2];
     for (let k = 0, t = on.t; t < (off ? off.t : duration); k++, t = on.t + k * step) {
       if (t > hushFrom && t < hushTo) continue;
@@ -703,7 +725,7 @@ function renderBed(cues, duration, bus, send) {
       const tones = CHORDS[chord.name].slice(-4);
       const note = tones[pattern[k % pattern.length] % tones.length];
       const accent = k % 4 === 0 ? 1 : 0.7;
-      const sig = blip(mtof(note), { decay: 0.16, harmonics: 0.15 });
+      const sig = blip(mtof(note), { decay: rate < 2 ? 0.3 : 0.16, harmonics: 0.15 });
       const fade = Math.min(1, (t - on.t) / 1.2); // eases in from the aperture
       bus.add(t, sig, db(-25) * accent * fade, k % 2 ? 0.3 : -0.3);
       send.add(t, sig, db(-25) * accent * fade * 0.5, k % 2 ? 0.3 : -0.3);
@@ -711,8 +733,9 @@ function renderBed(cues, duration, bus, send) {
   }
   // Drums: a taiko pulse on the beat grid that builds from the aperture (one hit a bar, then
   // two, then four), rests under the review notes, and rolls in 16ths into the features' whip.
+  // A pulse cue with drums: false keeps the bed to pads and arpeggio.
   const whip = cues.find((c) => c.type === "whip");
-  if (on) {
+  if (on && on.drums !== false) {
     const step = 60 / BPM / 4;
     const end = whip ? whip.t - 0.04 : off ? off.t : duration;
     const buildTo = Math.min(hushFrom, end - 0.6);
