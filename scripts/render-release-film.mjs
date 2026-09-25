@@ -10,7 +10,12 @@
  * Options: --format landscape|portrait|thumb, --cut classic|ai, --fps, --crf, --width <px>,
  * --loop (fade to black at the end so the film loops), --no-hud (hide the frame overlay),
  * --workers <n>. An output ending in .gif is encoded as a looping GIF; anything else is H.264
- * with a silent AAC track, which is what social platforms expect. Stills default to the OS tmpdir.
+ * with AAC audio. Stills default to the OS tmpdir.
+ *
+ * Sound: the soundtrack is synthesised from the film's own cue list (release-film-audio.mjs):
+ * sound effects on the picture's events and a placeholder music bed, normalised to -14 LUFS.
+ * --music <file> replaces the bed with a licensed track (--music-gain <dB> to balance it),
+ * --stems <dir> also writes sfx.wav, music.wav and mix.wav, and --silent renders a silent track.
  *
  * The page exposes window.__film.seek(t); every frame is seeked and screenshotted, so the output
  * is identical no matter how fast the machine is. The version shown on screen is read from
@@ -19,12 +24,19 @@
  * Requires Playwright with Chromium (resolved locally, then from the global npm root) and an
  * ffmpeg build with libx264, on PATH or given as FFMPEG=/path/to/ffmpeg.
  */
-import { execSync, spawn } from "node:child_process";
-import { mkdirSync, readFileSync, statSync } from "node:fs";
+import { execFileSync, execSync, spawn, spawnSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readFileSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { availableParallelism, tmpdir } from "node:os";
 import { dirname, extname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import {
+  fromInterleaved,
+  mixSoundtrack,
+  renderSoundtrack,
+  SAMPLE_RATE,
+  writeWav,
+} from "./release-film-audio.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = join(ROOT, "apps/site");
@@ -52,6 +64,10 @@ function parseArgs(argv) {
     width: null,
     loop: false,
     hud: true,
+    silent: false,
+    music: null,
+    musicGain: 0,
+    stems: null,
     stills: null,
     outDir: join(tmpdir(), "pupil-release-film-stills"),
     // Each worker is its own headless browser; leave a core for the encoder.
@@ -61,6 +77,7 @@ function parseArgs(argv) {
     const flag = argv[i];
     if (flag === "--loop") opts.loop = true;
     else if (flag === "--no-hud") opts.hud = false;
+    else if (flag === "--silent") opts.silent = true;
     else {
       const value = argv[++i];
       if (flag === "--out") opts.out = resolve(value);
@@ -72,6 +89,9 @@ function parseArgs(argv) {
       else if (flag === "--stills") opts.stills = value.split(",").map(Number);
       else if (flag === "--out-dir") opts.outDir = resolve(value);
       else if (flag === "--workers") opts.workers = Math.max(1, Number(value));
+      else if (flag === "--music") opts.music = resolve(value);
+      else if (flag === "--music-gain") opts.musicGain = Number(value);
+      else if (flag === "--stems") opts.stems = resolve(value);
       else throw new Error(`Unknown argument: ${flag}`);
     }
   }
@@ -118,21 +138,27 @@ function encoderArgs(opts) {
     const palette = "split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer";
     return [...input, "-vf", `${resize}${palette}`, "-loop", "0", opts.out];
   }
-  // PNG frames in, BT.709 H.264 out, plus the silent AAC track many upload pipelines expect;
-  // faststart so the file streams on the web.
+  // PNG frames in, BT.709 H.264 out, with the soundtrack (or the silent AAC track many upload
+  // pipelines expect); faststart so the file streams on the web.
+  const audioIn = opts.audio
+    ? ["-i", opts.audio.wav]
+    : ["-f", "lavfi", "-i", `anullsrc=channel_layout=stereo:sample_rate=${SAMPLE_RATE}`];
+  const audioFilter = opts.audio ? ["-af", `${opts.audio.filter},aresample=${SAMPLE_RATE}`] : [];
   return [
     ...input,
-    "-f",
-    "lavfi",
-    "-i",
-    "anullsrc=channel_layout=stereo:sample_rate=48000",
+    ...audioIn,
+    "-map",
+    "0:v",
+    "-map",
+    "1:a",
     "-shortest",
     "-vf",
     `${resize}scale=out_color_matrix=bt709:out_range=tv,format=yuv420p`,
+    ...audioFilter,
     "-c:a",
     "aac",
     "-b:a",
-    "128k",
+    "192k",
     "-c:v",
     "libx264",
     "-preset",
@@ -149,6 +175,44 @@ function encoderArgs(opts) {
     "+faststart",
     opts.out,
   ];
+}
+
+const LOUDNESS = "I=-14:TP=-1.5:LRA=11"; // YouTube's target, with true-peak headroom
+
+/**
+ * Synthesises the soundtrack from the film's cues (or mixes in --music), writes it to WAV and
+ * measures it, so the encode can normalise it to -14 LUFS in one linear pass.
+ */
+function buildSoundtrack(film, opts) {
+  const ffmpeg = process.env.FFMPEG ?? "ffmpeg";
+  const stems = renderSoundtrack(film.cues, film.duration);
+  if (opts.music) {
+    const args = ["-v", "error", "-i", opts.music, "-f", "f32le", "-ac", "2"];
+    const raw = execFileSync(ffmpeg, [...args, "-ar", String(SAMPLE_RATE), "-"], {
+      maxBuffer: 1 << 30,
+    });
+    stems.bed = fromInterleaved(raw, film.duration);
+  }
+  const mix = mixSoundtrack(stems, film.cues, { bedGain: 10 ** (opts.musicGain / 20) });
+  const dir = opts.stems ?? mkdtempSync(join(tmpdir(), "pupil-film-audio-"));
+  mkdirSync(dir, { recursive: true });
+  const wav = join(dir, "mix.wav");
+  writeWav(wav, mix);
+  if (opts.stems) {
+    writeWav(join(dir, "sfx.wav"), stems.sfx);
+    writeWav(join(dir, "music.wav"), stems.bed);
+  }
+  const probe = spawnSync(
+    ffmpeg,
+    ["-hide_banner", "-i", wav, "-af", `loudnorm=${LOUDNESS}:print_format=json`, "-f", "null", "-"],
+    { encoding: "utf8" },
+  );
+  const from = probe.stderr.lastIndexOf("{");
+  const m = JSON.parse(probe.stderr.slice(from, probe.stderr.indexOf("}", from) + 1));
+  const measured = `measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}`;
+  const filter = `loudnorm=${LOUDNESS}:${measured}:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true`;
+  console.log(`soundtrack: ${film.cues.length} cues, measured ${m.input_i} LUFS → -14 LUFS`);
+  return { wav, filter };
 }
 
 function startEncoder(opts) {
@@ -181,7 +245,7 @@ async function openFilm(chromium, url) {
     await route.fulfill({ response: await route.fetch() });
   });
   await page.goto(url, { waitUntil: "networkidle" });
-  const { duration, width, height } = await page.evaluate(async () => {
+  const { duration, width, height, cues } = await page.evaluate(async () => {
     await window.__film.ready;
     return window.__film;
   });
@@ -193,6 +257,7 @@ async function openFilm(chromium, url) {
     browser,
     page,
     duration,
+    cues,
     clip,
     seek: (t) => page.evaluate((time) => window.__film.seek(time), t),
     capture: async () => {
@@ -209,6 +274,7 @@ async function openFilm(chromium, url) {
 /** Renders every frame across the workers, feeding the encoder in order. */
 async function renderVideo(films, opts) {
   const frames = Math.round(films[0].duration * opts.fps);
+  if (!opts.gif && !opts.silent) opts.audio = buildSoundtrack(films[0], opts);
   const encoder = startEncoder(opts);
   const started = Date.now();
   for (let batch = 0; batch < frames; batch += films.length) {

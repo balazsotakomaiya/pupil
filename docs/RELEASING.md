@@ -117,4 +117,8 @@ The renderer needs Playwright with Chromium and an ffmpeg build with libx264 on 
 | 240×240 looping GIF, for the Product Hunt thumbnail (limit 3MB) | `node scripts/render-release-film.mjs --format thumb --width 240 --out thumbnail.gif` |
 | Stills for covers and gallery images (Product Hunt gallery is 1270×760) | `node scripts/render-release-film.mjs --no-hud --stills 4.5,8.1,11.6,18.3` |
 
-Videos carry a silent AAC track because some upload pipelines expect one. `--cut ai` renders the experimental cut, which gives AI generation its own scene ("Write your own cards. / Or let AI draft them.", then topic → drafts → approved cards → the study deck) and puts "Opens in a blink" in its place among the feature words; preview it at `/release-film.html#ai`.
+**Sound.** Videos get a soundtrack synthesised from the film's own cue list ([`scripts/release-film-audio.mjs`](../scripts/release-film-audio.mjs)): sound effects on the picture's events (the blink, typing, approvals, the flip, each review on the curve, the feature hits) and a placeholder D-major music bed, mixed with the music 3 dB under the effects and normalised to -14 LUFS. Because the cues come from the same timeline as the picture, re-pacing the film moves the sound with it. Options:
+
+- `--music track.mp3` replaces the placeholder bed with a licensed track, balanced automatically; `--music-gain 2` nudges it in dB.
+- `--stems dir/` also writes `sfx.wav`, `music.wav` and `mix.wav` for editing elsewhere.
+- `--silent` renders a silent AAC track instead. `--cut ai` renders the experimental cut, which gives AI generation its own scene ("Write your own cards. / Or let AI draft them.", then topic → drafts → approved cards → the study deck) and puts "Opens in a blink" in its place among the feature words; preview it at `/release-film.html#ai`.

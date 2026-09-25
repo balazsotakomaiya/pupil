@@ -1526,6 +1526,7 @@
             el,
             from: AI ? AI_AT : Number.POSITIVE_INFINITY,
             to: AI_AT + AI_LEN,
+            topicLength: TOPIC.length,
             update(m) {
               const s = m - AI_AT; // scene clock
               const a = (s - AI_INTRO) / AI_SLOW; // the UI's clock, a touch slower than real time
@@ -1916,6 +1917,7 @@
             el,
             from: 7.45,
             to: 10.3,
+            reviewTimes: rv.map((r) => r.when),
             update(t) {
               const whip = P(t, 9.98, 10.24, E.inExpo);
               cam.style.transform = `translateX(${V(t, 7.5, 10, 36, -36) - whip * W * 0.57}px)`;
@@ -2265,6 +2267,123 @@
 
         const fade = $("#fade");
         const vignette = $("#vignette");
+        // ─── Sound cues ────────────────────────────────────────────────────
+        // The soundtrack hangs off the same timeline as the picture: cues are written in
+        // choreography time and converted to real seconds through the pacing map, so re-pacing
+        // the film moves the sound with it. scripts/release-film-audio.mjs synthesises them.
+        /** Master time → real seconds (the inverse of master()). */
+        const realOf = (mt) => {
+          for (let i = 1; i < KNOTS.length; i++) {
+            const [T0, m0] = KNOTS[i - 1];
+            const [T1, m1] = KNOTS[i];
+            if (mt <= m1 && m1 > m0) return lerp(T0, T1, (mt - m0) / (m1 - m0));
+          }
+          return DURATION;
+        };
+        /** Classic 15s time → master time (the AI cut shifts everything after its scene). */
+        const masterOf = (t) => (AI && t >= RESUME ? t + GAP : t);
+        const CUES = [];
+        if (!THUMB) {
+          const at = (mt, type, o = {}) => CUES.push({ t: Number(realOf(Math.max(0, mt)).toFixed(4)), type, ...o });
+          const atC = (t, type, o) => at(masterOf(t), type, o);
+          const until = (mt) => Number(realOf(mt).toFixed(4));
+          const ui = (u) => AI_AT + AI_INTRO + u * AI_SLOW;
+
+          // Music: chord changes follow the scenes; the pulse runs from the aperture to the logo.
+          at(2.27, "chord", { name: "Dmaj9" });
+          at(2.27, "pulse", { on: true });
+          if (AI) {
+            at(AI_AT, "chord", { name: "Bm11" });
+            at(ui(1.55), "chord", { name: "Gmaj9" });
+            atC(RESUME, "chord", { name: "Em9" });
+          } else {
+            atC(4.56, "chord", { name: "Bm11" });
+          }
+          atC(7.6, "chord", { name: "Gmaj9" });
+          atC(8.2, "chord", { name: "A6sus" });
+          atC(10.1, "chord", { name: "Bm7" });
+          atC(11.25, "chord", { name: "Gmaj7" });
+          atC(12.1, "chord", { name: "Asus4" });
+          atC(12.5, "chord", { name: "Dresolve" });
+          atC(12.5, "pulse", { on: false });
+
+          // 01 · Aperture
+          at(0, "drone", { end: until(2.25) });
+          at(0.15, "ting", { note: 86 });
+          [0.3, 0.47, 0.64].forEach((m, i) => at(m, "ping", { note: 81, gain: 1 - i * 0.3 }));
+          at(0.4, "sweep", { dur: 0.62, gain: 0.8 });
+          at(0.66, "sweep", { dur: 0.7 });
+          at(1.6, "blink");
+          at(1.88, "riser", { end: until(2.25) });
+          at(2.25, "flash");
+          at(2.27, "bloom");
+
+          // 02 · Premise
+          at(2.42, "tap");
+          at(2.6, "sparkle", { gain: 0.6 });
+          at(2.94, "tap", { gain: 0.7 });
+          at(3.28, "stroke", { dur: 0.52 });
+          at(AI ? 4.18 : 4.38, "whoosh", { dur: 0.5, dir: "up", gain: 0.7 });
+
+          // AI generation
+          if (AI) {
+            at(AI_AT + 0.33, "tap");
+            at(AI_AT + 1.02, "tap", { gain: 0.8 });
+            at(AI_AT + 1.16, "sparkle", { bright: true });
+            at(AI_AT + 1.92, "whoosh", { dur: 0.5, dir: "up", gain: 0.5 });
+            at(ui(0.05), "zip", { end: until(ui(0.42)) });
+            at(ui(0.3), "pop", { note: 69, gain: 0.7 });
+            for (let i = 0; i < sA.topicLength; i++) {
+              at(ui(0.72 + ((i + 1) / sA.topicLength) * 0.6), "key", { seed: i + 1 });
+            }
+            for (let i = 0; i < 4; i++) at(ui(0.9 + i * 0.06), "tick", { gain: 0.6 });
+            at(ui(1.44), "click");
+            at(ui(1.55), "whoosh", { dur: 0.5, dir: "down", gain: 0.6 });
+            at(ui(1.6), "shimmer", { end: until(ui(2.75)) });
+            at(ui(2.85), "approve");
+            at(ui(3.0), "approve", { step: 1 });
+            at(ui(3.15), "discard");
+            at(ui(3.48), "click");
+            at(ui(3.55), "chime");
+            at(ui(3.68), "whoosh", { dur: 0.55, dir: "up" });
+            at(ui(4.0), "land");
+            atC(RESUME, "riffle", { gain: 0.7 });
+          }
+
+          // 03 · Recall
+          if (!AI) {
+            atC(4.56, "whoosh", { dur: 0.6, dir: "up", low: true, gain: 0.7 });
+            atC(4.62, "riffle");
+            atC(5.02, "swish", { gain: 0.7 });
+          }
+          atC(5.84, "thock");
+          atC(5.96, "flip");
+          for (let i = 0; i < 4; i++) atC(6.36 + i * 0.05, "tick", { gain: 0.45 });
+          atC(6.98, "click");
+          atC(7.04, "pop", { note: 81 });
+          atC(7.16, "whoosh", { dur: 0.45, dir: "right" });
+          atC(7.46, "whoosh", { dur: 0.5, dir: "up", high: true, gain: 0.5 });
+          atC(7.56, "whoosh", { dur: 0.5, dir: "down", low: true, gain: 0.7 });
+
+          // 04 · Schedule: each review lands a note higher, as the memory strengthens.
+          atC(7.98, "pop", { note: 88, gain: 0.6 });
+          const REVIEW_NOTES = [74, 76, 78, 81, 83];
+          s4.reviewTimes.forEach((w, i) => atC(w, "pluck", { note: REVIEW_NOTES[i] }));
+          atC(9.98, "whip");
+
+          // 05 · Features: one hit per cut.
+          [10.18, 10.75, 11.25, 11.75].forEach((c, i) => atC(c, "hit", { note: [50, 47, 43, 45][i], bright: i === 2 }));
+          atC(12.06, "whoosh", { dur: 0.4, dir: "up", gain: 0.5 });
+
+          // 06 · Release: the dot lands as the pupil; the final blink.
+          atC(12.12, "swoosh", { end: until(masterOf(12.5)) });
+          atC(12.5, "land", { soft: true });
+          atC(12.5, "ting", { note: 86 });
+          atC(12.5, "sweep", { dur: 0.5, gain: 0.6 });
+          atC(14.02, "blink");
+          CUES.sort((x, y) => x.t - y.t);
+        }
+
         const scenes = THUMB ? [sT] : [s1, s2, sA, s3, s4, s5, s6];
         if (THUMB) for (const s of [s1, s2, sA, s3, s4, s5, s6]) vis(s.el, false);
         for (const s of [s1, s2, sA]) s.clock = "master";
@@ -2414,6 +2533,7 @@
         window.__film = {
           duration: DURATION,
           cut: CUT,
+          cues: CUES,
           width: W,
           height: H,
           fps: FPS,
