@@ -457,9 +457,34 @@
       #fade { background: #000; opacity: 0; }
 
       /* ─── AI generation (experimental ?cut=ai) ────────────────────────── */
-      #ai-title { position: absolute; left: 200px; top: 150px; }
-      #ai-title h2 { margin-top: 24px; font-size: 86px; font-weight: 600; line-height: 1; letter-spacing: -0.04em; white-space: nowrap; }
-      #ai-title .serif { font-size: 1.12em; letter-spacing: -0.01em; }
+      #ai-eyebrow { position: absolute; left: 200px; top: 150px; }
+      .ai-line {
+        position: absolute;
+        left: 200px;
+        font-size: 120px;
+        font-weight: 600;
+        line-height: 1.05;
+        letter-spacing: -0.04em;
+        white-space: nowrap;
+        transform-origin: 0 0;
+      }
+      #ai-line1 { top: 380px; }
+      #ai-line2 { top: 520px; }
+      #ai-keep { position: absolute; left: 200px; top: 196px; font-size: 86px; font-weight: 600; line-height: 1; letter-spacing: -0.04em; white-space: nowrap; }
+      #ai-keep .serif { font-size: 1.12em; letter-spacing: -0.01em; }
+      .ai-word { position: relative; margin-right: 0.16em; }
+      .ai-grad {
+        padding-right: 0.03em;
+        background: linear-gradient(90deg, #ff3d1f, #ffa04a);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: drop-shadow(0 0 26px rgba(255, 91, 46, 0.55));
+      }
+      .ai-spark { position: absolute; right: -0.3em; top: -0.16em; width: 0.3em; height: 0.3em; color: #ffa04a; }
+      #ai-status .gen { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 8px; white-space: nowrap; color: #ff8a5c; }
+      #ai-status .gen svg, .ai-draft svg { width: 15px; height: 15px; color: #ff8a5c; }
+      .ai-draft { display: flex; align-items: center; gap: 8px; }
       #ai-field { position: absolute; overflow: hidden; border: 1px solid #2a2a2a; background: #111; }
       .ai-field-in { position: absolute; left: 0; top: 0; display: flex; gap: 18px; padding: 30px 32px; font-size: 30px; letter-spacing: -0.01em; white-space: nowrap; }
       .ai-field-in svg { width: 30px; height: 30px; flex: none; margin-top: 4px; color: #8a8a8a; }
@@ -523,8 +548,11 @@
       .fmt-portrait .vchip { font-size: 22px; }
       .fmt-portrait .plat svg { width: 25px; height: 25px; }
       .fmt-portrait #s6-url { top: 1150px; font-size: 24px; }
-      .fmt-portrait #ai-title { left: 80px; top: 176px; width: 920px; }
-      .fmt-portrait #ai-title h2 { font-size: 100px; line-height: 1.02; white-space: normal; }
+      .fmt-portrait #ai-eyebrow { left: 80px; top: 176px; }
+      .fmt-portrait .ai-line { left: 80px; width: 920px; font-size: 96px; line-height: 1.04; white-space: normal; }
+      .fmt-portrait #ai-line1 { top: 380px; }
+      .fmt-portrait #ai-line2 { top: 620px; }
+      .fmt-portrait #ai-keep { left: 80px; top: 222px; width: 920px; font-size: 100px; line-height: 1.02; white-space: normal; }
       .fmt-portrait .ai-field-in { font-size: 32px; }
       .fmt-portrait #ai-opts { flex-wrap: wrap; row-gap: 14px; font-size: 22px; }
       .fmt-portrait .ai-btn { margin-left: 0; font-size: 22px; }
@@ -641,14 +669,22 @@
 
         <!-- AI generation (experimental ?cut=ai): topic → drafts → approved → the study deck -->
         <section class="layer scene" id="sA">
-          <div id="ai-title">
-            <div class="eyebrow w"><span class="dot"></span>AI generation</div>
-            <h2>
-              <span class="w">Describe</span> <span class="w">a</span> <span class="w">topic.</span>
-              <span class="w serif">Approve</span> <span class="w">the</span> <span class="w">cards.</span>
-            </h2>
+          <div id="ai-eyebrow" class="eyebrow"><span class="dot"></span>AI generation</div>
+          <div class="ai-line" id="ai-line1">
+            <span class="w">Write</span> <span class="w">your</span> <span class="w">own</span> <span class="w">cards.</span>
           </div>
-          <div id="ai-status"><b>0</b> approved · <b>0</b> discarded · <b>3</b> total</div>
+          <div class="ai-line" id="ai-line2">
+            <span class="w">Or</span> <span class="w">let</span>
+            <span class="w ai-word"><span class="ai-grad">AI</span><svg class="ai-spark" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" /></svg></span>
+            <span class="w">draft</span> <span class="w">them.</span>
+          </div>
+          <div id="ai-keep">
+            <span class="w">Keep</span> <span class="w">the</span> <span class="w">ones</span> <span class="w">you</span> <span class="w serif">like.</span>
+          </div>
+          <div id="ai-status">
+            <span class="gen"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" /></svg>AI is drafting 3 cards…</span>
+            <span class="counts"><b>0</b> approved · <b>0</b> discarded · <b>3</b> total</span>
+          </div>
           <div id="ai-field">
             <div class="ai-field-in">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -995,7 +1031,11 @@
         // deck. The master clock runs through the gap; scenes before it read master time, scenes
         // after it read classic time (master minus the gap).
         const AI_AT = 4.4;
-        const AI_LEN = 4.3;
+        // The scene opens on an intro slide ("Write your own cards. / Or let AI draft them."),
+        // then plays the UI a touch slower than real time so the new idea has room to land.
+        const AI_INTRO = 2.65;
+        const AI_SLOW = 1.15;
+        const AI_LEN = AI_INTRO + 4.3 * AI_SLOW;
         const RESUME = 5.0;
         const GAP = AI ? AI_AT + AI_LEN - RESUME : 0;
         const MASTER = CHOREO + GAP;
@@ -1018,7 +1058,8 @@
         ];
         const PACING = CLASSIC_PACING.map(([a, b, speed]) => (a >= RESUME ? [a + GAP, b + GAP, speed] : [a, b, speed]));
         if (AI) {
-          PACING.push([AI_AT + 2.6, AI_AT + 2.85, 0.5]); // read the drafts before they are judged
+          const ui = (u) => AI_AT + AI_INTRO + u * AI_SLOW;
+          PACING.push([ui(2.6), ui(2.85), 0.5]); // read the drafts before they are judged
           PACING.sort((x, y) => x[0] - y[0]);
         }
         const KNOTS = [[0, 0]]; // [real seconds, master seconds]
@@ -1334,9 +1375,15 @@
         // rows fold into flashcards that become the next scene's study deck.
         const sA = (() => {
           const el = $("#sA");
-          const title = $("#ai-title");
-          const titleEyebrow = $(".eyebrow", title);
-          const titleWords = $$("h2 .w", title);
+          const eyebrow = $("#ai-eyebrow");
+          const line1Words = $$("#ai-line1 .w");
+          const line2 = $("#ai-line2");
+          const line2Words = $$(".w", line2);
+          const aiWord = $(".ai-word", line2);
+          const spark = $(".ai-spark", line2);
+          const keepWords = $$("#ai-keep .w");
+          // Where "Or let AI draft them." settles as the heading.
+          const HEADING = PORTRAIT ? { dy: 222 - 620, s: 100 / 96 } : { dy: 196 - 520, s: 86 / 120 };
           const field = $("#ai-field");
           const fieldIn = $(".ai-field-in", field);
           const placeholder = $(".ai-ph", field);
@@ -1346,7 +1393,9 @@
           const optItems = [...opts.children];
           const go = $(".ai-btn", opts);
           const status = $("#ai-status");
-          const [approvedCount, discardedCount] = $$("b", status);
+          const [approvedCount, discardedCount] = $$(".counts b", status);
+          const generating = $(".gen", status);
+          const counts = $(".counts", status);
           const save = $("#ai-save");
           const saveBtn = $(".ai-btn", save);
           const TOPIC = "Graph algorithms for coding interviews";
@@ -1368,6 +1417,7 @@
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
             approve:
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+            spark: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" /></svg>',
           };
           $(".ai-btn", save).insertAdjacentHTML("afterbegin", ICON.approve);
 
@@ -1411,7 +1461,7 @@
                 <div class="q"></div>
                 <div class="a"></div>
                 <div class="foot">
-                  <span>${i + 1} of 3</span>
+                  <span class="ai-draft">${ICON.spark}AI draft · ${i + 1} of 3</span>
                   <span class="ai-acts">
                     <span class="ai-act">${ICON.regen}Regenerate</span>
                     <span class="ai-act discard">${ICON.discard}Discard</span>
@@ -1460,11 +1510,32 @@
             from: AI ? AI_AT : Number.POSITIVE_INFINITY,
             to: AI_AT + AI_LEN,
             update(m) {
-              const a = m - AI_AT;
+              const s = m - AI_AT; // scene clock
+              const a = (s - AI_INTRO) / AI_SLOW; // the UI's clock, a touch slower than real time
               const frame = Math.floor(m * 30);
 
-              blurUp(titleEyebrow, a, 0.15, 3.55, { dist: 24, blur: 10 });
-              titleWords.forEach((w, i) => blurUp(w, a, 0.22 + i * 0.05, 3.55 + i * 0.02, { dist: 50, blur: 16 }));
+              // Intro: "Write your own cards." dims as "Or let AI draft them." arrives, then the
+              // second line rises into the heading, keeping "AI" in view through the UI.
+              const dim = lerp(1, 0.28, P(s, 0.95, 1.3, E.inOutCubic));
+              line1Words.forEach((w, i) => {
+                blurUp(w, s, 0.05 + i * 0.06, 2.15 + i * 0.03, { dist: 60, blur: 18 });
+                w.style.opacity = Number(w.style.opacity) * dim;
+              });
+              line2Words.forEach((w, i) => {
+                const pop = w === aiWord ? lerp(1.35, 1, E.outBack(P(s, 1.14, 1.74))) : 1;
+                blurUp(w, s, 1.0 + i * 0.07, AI_INTRO + (2.62 + i * 0.03) * AI_SLOW, {
+                  dist: 60,
+                  blur: 18,
+                  extra: `scale(${pop})`,
+                });
+              });
+              spark.style.opacity = P(s, 1.35, 1.45);
+              spark.style.transform = `scale(${E.outBack(P(s, 1.35, 1.75), 2.5)}) rotate(${lerp(-90, 0, P(s, 1.35, 1.85, E.outCubic))}deg)`;
+              const rise = P(s, 2.25, 2.8, E.inOutCubic);
+              line2.style.transform = `translateY(${rise * HEADING.dy}px) scale(${lerp(1, HEADING.s, rise)})`;
+              blurUp(eyebrow, s, 2.55, AI_INTRO + 3.55 * AI_SLOW, { dist: 24, blur: 10 });
+              // Once the drafts are in: "Keep the ones you like."
+              keepWords.forEach((w, i) => blurUp(w, a, 2.72 + i * 0.05, 3.55 + i * 0.02, { dist: 50, blur: 16 }));
 
               // The field: an ember line that opens into the topic box.
               const grow = P(a, 0.05, 0.42, E.outExpo);
@@ -1490,7 +1561,9 @@
               go.style.background = mixHex("#ededed", "#ff8a5c", press);
 
               // The review list: three drafts split out of the field, then stream in.
-              blurUp(status, a, 2.0, 3.55, { dist: 12, blur: 6, dur: 0.5, exitDist: 20 });
+              blurUp(status, a, 1.5, 3.55, { dist: 12, blur: 6, dur: 0.5, exitDist: 20 });
+              generating.style.opacity = (1 - P(a, 2.1, 2.25)) * (0.75 + 0.25 * Math.sin(m * 9));
+              counts.style.opacity = P(a, 2.15, 2.3);
               const approved = APPROVE_AT.filter((at) => a >= at).length;
               approvedCount.textContent = approved;
               discardedCount.textContent = a >= DISCARD_AT ? 1 : 0;
