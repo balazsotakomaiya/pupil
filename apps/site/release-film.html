@@ -2333,7 +2333,8 @@
             at(AI_AT + 1.92, "whoosh", { dur: 0.5, dir: "up", gain: 0.5 });
             at(ui(0.05), "zip", { end: until(ui(0.42)) });
             at(ui(0.3), "pop", { note: 57, gain: 0.7 });
-            for (let i = 0; i < sA.topicLength; i++) {
+            // The topic types faster than anyone could; sound every third key, at a human pace.
+            for (let i = 2; i < sA.topicLength; i += 3) {
               at(ui(0.72 + ((i + 1) / sA.topicLength) * 0.6), "key", { seed: i + 1 });
             }
             for (let i = 0; i < 4; i++) at(ui(0.9 + i * 0.06), "tick", { gain: 0.6 });
@@ -2367,8 +2368,8 @@
 
           // 04 · Schedule: each review lands a note higher, as the memory strengthens.
           atC(7.98, "pop", { note: 64, gain: 0.6 });
-          const REVIEW_NOTES = [50, 52, 54, 57, 59];
-          s4.reviewTimes.forEach((w, i) => atC(w, "pluck", { note: REVIEW_NOTES[i] }));
+          const REVIEW_NOTES = [62, 64, 66, 69, 71];
+          s4.reviewTimes.forEach((w, i) => atC(w, "review", { note: REVIEW_NOTES[i] }));
           atC(9.98, "whip");
 
           // 05 · Features: one hit per cut.

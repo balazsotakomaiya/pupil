@@ -187,28 +187,6 @@ function burst(dur, freq, { seed = 3, type = "hp", q = 0.9 } = {}) {
   return out;
 }
 
-/** Karplus–Strong plucked string, rounded by a low-pass at `tone` Hz. */
-function pluck(freq, { dur = 1.8, decay = 0.9965, seed = 11, tone = 1000 } = {}) {
-  const out = new Float32Array(samples(dur));
-  const period = Math.max(2, Math.round(SR / freq));
-  const line = new Float32Array(period);
-  const rnd = random(seed);
-  let soft = 0;
-  for (let i = 0; i < period; i++) {
-    soft = soft * 0.7 + (rnd() * 2 - 1) * 0.3;
-    line[i] = soft;
-  }
-  const lp = new Filter("lp", tone);
-  let k = 0;
-  for (let i = 0; i < out.length; i++) {
-    const cur = line[k];
-    line[k] = decay * 0.5 * (cur + line[(k + 1) % period]);
-    out[i] = lp.run(cur * Math.min(1, i / 48));
-    k = (k + 1) % period;
-  }
-  return out;
-}
-
 /** Sums voices (each `[offsetSeconds, signal, gain]`) into one signal. */
 function layer(parts) {
   const length = Math.max(...parts.map(([at, sig]) => samples(at) + sig.length));
@@ -358,7 +336,7 @@ function effect(cue) {
       return [
         layer([
           [0, burst(0.012, 900, { seed, type: "bp", q: 1.5 })],
-          [0, blip(380, { decay: 0.014 }), 0.5],
+          [0, blip(mtof(66), { decay: 0.014 }), 0.5],
         ]),
         -24,
         0,
@@ -370,8 +348,8 @@ function effect(cue) {
       return [
         layer([
           [0, normalize(sweep(0.9, 3200, 800, { attack: 0.02, q: 0.7, seed, curve: 2.5 })), 0.5],
-          [0, normalize(thump(40, { from: 2.5, decay: 0.6 }))],
-          [0, taiko(62, { decay: 0.45, seed }), 0.6],
+          [0, normalize(thump(mtof(26), { from: 2.5, decay: 0.6 }))],
+          [0, taiko(mtof(38), { decay: 0.45, seed }), 0.6],
           [0, braam(mtof(38), { dur: 1.8, open: 1200 }), 0.5],
         ]),
         -9,
@@ -384,7 +362,7 @@ function effect(cue) {
     case "tap":
       return [
         layer([
-          [0, blip(300, { decay: 0.05, from: 1.4, drop: 0.01 })],
+          [0, blip(mtof(62), { decay: 0.05, from: 1.4, drop: 0.01 })],
           [0, burst(0.006, 1500, { seed, type: "bp" }), 0.4],
         ]),
         -17 + 20 * Math.log10(g),
@@ -445,30 +423,35 @@ function effect(cue) {
         0.2,
       ];
     case "key": {
+      // No pitch at all: a soft switch click over the dull thock of the keycap bottoming out.
       const rnd = random(cue.seed * 97 + 3);
-      const vel = 0.55 + rnd() * 0.45;
+      const vel = 0.6 + rnd() * 0.4;
       const sig = layer([
-        [0, burst(0.008, 1200 + rnd() * 600, { seed: cue.seed, type: "bp", q: 1.2 })],
-        [0, blip(600 + rnd() * 300, { decay: 0.008 }), 0.35],
+        [
+          0,
+          normalize(burst(0.004, 1800 + rnd() * 600, { seed: cue.seed, type: "bp", q: 0.8 })),
+          0.5,
+        ],
+        [0.002, normalize(burst(0.03, 240 + rnd() * 120, { seed: cue.seed + 50, type: "lp" }))],
       ]);
-      return [sig, -26 + 20 * Math.log10(vel), rnd() * 0.4 - 0.2, 0.08];
+      return [sig, -21 + 20 * Math.log10(vel), rnd() * 0.4 - 0.2, 0.05];
     }
     case "tick":
       return [
         layer([
-          [0, burst(0.006, 1000, { seed, type: "bp", q: 1.2 })],
-          [0, blip(420, { decay: 0.01 }), 0.6],
+          [0, normalize(burst(0.004, 2000, { seed, type: "bp", q: 0.8 })), 0.6],
+          [0, normalize(burst(0.02, 400, { seed: seed + 1, type: "lp" }))],
         ]),
-        -25 + 20 * Math.log10(g),
+        -24 + 20 * Math.log10(g),
         0,
-        0.1,
+        0.08,
       ];
     case "click":
       return [
         layer([
-          [0, thump(150, { from: 1.4, decay: 0.035 })],
+          [0, thump(mtof(50), { from: 1.4, decay: 0.035 })],
           [0, burst(0.004, 1800, { seed, type: "bp" }), 0.5],
-          [0, blip(480, { decay: 0.012 }), 0.4],
+          [0, blip(mtof(69), { decay: 0.012 }), 0.4],
         ]),
         -15,
         0,
@@ -514,7 +497,7 @@ function effect(cue) {
     case "land":
       return [
         layer([
-          [0, thump(cue.soft ? 70 : 60, { from: 2, decay: 0.22 })],
+          [0, thump(mtof(cue.soft ? 38 : 33), { from: 2, decay: 0.22 })],
           [0, burst(0.06, 380, { type: "lp", seed }), 0.35],
         ]),
         cue.soft ? -16 : -13,
@@ -537,7 +520,7 @@ function effect(cue) {
     case "thock":
       return [
         layer([
-          [0, thump(210, { from: 1.3, decay: 0.05 })],
+          [0, thump(mtof(57), { from: 1.3, decay: 0.05 })],
           [0, burst(0.006, 1400, { seed, type: "bp" }), 0.45],
         ]),
         -13,
@@ -548,7 +531,7 @@ function effect(cue) {
       return [
         layer([
           [0, sweep(0.34, 600, 2400, { q: 0.8, attack: 0.45, seed })],
-          [0.1, thump(90, { decay: 0.12 }), 0.25],
+          [0.1, thump(mtof(42), { decay: 0.12 }), 0.25],
         ]),
         -15,
         (p) => 0.3 - p * 0.6,
@@ -561,14 +544,15 @@ function effect(cue) {
         0,
         0.2,
       ];
-    case "pluck":
+    case "review":
       return [
         layer([
-          [0, normalize(pluck(mtof(cue.note), { seed, dur: 1.2, decay: 0.993, tone: 700 }))],
-          [0, mallet(mtof(cue.note), { decay: 0.3, wood: 0.2 }), 0.6],
+          [0, mallet(mtof(cue.note), { decay: 0.32, wood: 0.25 })],
+          [0, mallet(mtof(cue.note - 12), { decay: 0.4, wood: 0 }), 0.45],
+          [0, taiko(mtof(38), { decay: 0.2, seed }), 0.25],
         ]),
-        -12,
-        (cue.note - 54) / 12,
+        -13,
+        (cue.note - 66) / 12,
         0.2,
       ];
     case "whip":
@@ -580,6 +564,7 @@ function effect(cue) {
       ];
     case "hit": {
       const f = mtof(cue.note);
+      const low = mtof(28 + ((cue.note - 28) % 12)); // the chord's root, between E1 and D#2
       const stab = new Float32Array(samples(0.6));
       for (let i = 0; i < stab.length; i++) {
         const t = i / SR;
@@ -595,8 +580,8 @@ function effect(cue) {
       }
       return [
         layer([
-          [0, normalize(thump(42, { from: 2.4, decay: 0.45 }))],
-          [0, taiko(cue.note < 47 ? 66 : 74, { decay: 0.3, seed }), 0.7],
+          [0, normalize(thump(low, { from: 2.4, decay: 0.45 }))],
+          [0, taiko(low, { decay: 0.3, seed }), 0.7],
           [0, braam(f / 2, { dur: 0.9, attack: 0.02, open: cue.bright ? 1800 : 1200 }), 0.55],
           [0, burst(0.04, cue.bright ? 2400 : 1400, { seed }), 0.6],
           [0, normalize(stab), 0.35],
@@ -610,8 +595,8 @@ function effect(cue) {
     case "impact":
       return [
         layer([
-          [0, normalize(thump(36, { from: 3, decay: 0.9 }))],
-          [0, taiko(58, { decay: 0.6, seed }), 0.7],
+          [0, normalize(thump(mtof(26), { from: 3, decay: 0.9 }))],
+          [0, taiko(mtof(38), { decay: 0.6, seed }), 0.7],
           [0, braam(mtof(38), { dur: 3.2, attack: 0.03, open: 1500 }), 0.6],
           [0, normalize(sweep(1.4, 2400, 300, { attack: 0.01, q: 0.7, seed, curve: 2.2 })), 0.3],
         ]),
@@ -700,6 +685,12 @@ function renderBed(cues, duration, bus, send) {
       level: resolve ? -19 : -21,
     });
   });
+  // The review notes carry the rhythm while they play, off the beat grid, so the arpeggio and
+  // drums step aside for them.
+  const reviews = cues.filter((c) => c.type === "review");
+  const [hushFrom, hushTo] = reviews.length
+    ? [reviews[0].t - 0.15, reviews.at(-1).t + 0.3]
+    : [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
   // The arpeggio: a soft, low pluck on 8th notes through the current chord's upper tones.
   const on = cues.find((c) => c.type === "pulse" && c.on);
   const off = cues.find((c) => c.type === "pulse" && !c.on);
@@ -707,6 +698,7 @@ function renderBed(cues, duration, bus, send) {
     const step = 60 / BPM / 2;
     const pattern = [0, 2, 1, 3, 2, 1, 3, 2];
     for (let k = 0, t = on.t; t < (off ? off.t : duration); k++, t = on.t + k * step) {
+      if (t > hushFrom && t < hushTo) continue;
       const chord = [...chords].reverse().find((c) => c.t <= t + 1e-6) ?? chords[0];
       const tones = CHORDS[chord.name].slice(-4);
       const note = tones[pattern[k % pattern.length] % tones.length];
@@ -717,19 +709,23 @@ function renderBed(cues, duration, bus, send) {
       send.add(t, sig, db(-25) * accent * fade * 0.5, k % 2 ? 0.3 : -0.3);
     }
   }
-  // Drums: a taiko pulse on the beat grid that builds from the aperture to the features' whip,
-  // from one hit a bar to a roll of 16ths.
+  // Drums: a taiko pulse on the beat grid that builds from the aperture (one hit a bar, then
+  // two, then four), rests under the review notes, and rolls in 16ths into the features' whip.
   const whip = cues.find((c) => c.type === "whip");
   if (on) {
     const step = 60 / BPM / 4;
     const end = whip ? whip.t - 0.04 : off ? off.t : duration;
+    const buildTo = Math.min(hushFrom, end - 0.6);
+    const rollFrom = Math.max(buildTo, Math.min(hushTo, end - 0.3));
     for (let k = 0, t = on.t; t < end; k++, t = on.t + k * step) {
-      const p = (t - on.t) / (end - on.t);
-      const every = p < 0.3 ? 16 : p < 0.6 ? 8 : p < 0.82 ? 4 : p < 0.94 ? 2 : 1;
+      const roll = t >= rollFrom;
+      if (!roll && t >= buildTo) continue;
+      const p = roll ? (t - rollFrom) / (end - rollFrom) : (t - on.t) / (buildTo - on.t);
+      const every = roll ? 1 : p < 0.35 ? 16 : p < 0.7 ? 8 : 4;
       if (k % every) continue;
-      const down = k % 16 === 0;
-      const vel = (down ? 1 : k % 8 === 0 ? 0.8 : k % 4 === 0 ? 0.65 : 0.5) * (0.5 + 0.5 * p);
-      const sig = taiko(down ? 60 : k % 8 === 0 ? 68 : 80, {
+      const down = !roll && k % 16 === 0;
+      const vel = roll ? 0.45 + 0.55 * p : (down ? 1 : k % 8 === 0 ? 0.8 : 0.65) * (0.5 + 0.5 * p);
+      const sig = taiko(mtof(down ? 33 : roll || k % 8 ? 40 : 38), {
         decay: down ? 0.4 : 0.22,
         seed: k + 1,
       });
