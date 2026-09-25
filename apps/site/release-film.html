@@ -18,6 +18,8 @@
         ?t=<seconds>      start at a time          ?version=<semver>  override the version shown
         ?render           no playback (renderer)   ?loop              fade out so the film loops
         ?hud=0            hide the frame overlay (for stills)
+        ?cut=ai or #ai    experimental cut: the AI generate flow as its own scene, with
+                          "Opens in a blink" taking its place among the feature words
 
       Keys: Space play/pause · ←/→ step a frame (Shift: 1s) · Home restart.
     -->
@@ -454,6 +456,43 @@
       #grain { mix-blend-mode: overlay; opacity: 0.5; background-size: 640px 640px; }
       #fade { background: #000; opacity: 0; }
 
+      /* ─── AI generation (experimental ?cut=ai) ────────────────────────── */
+      #ai-title { position: absolute; left: 200px; top: 150px; }
+      #ai-title h2 { margin-top: 24px; font-size: 86px; font-weight: 600; line-height: 1; letter-spacing: -0.04em; white-space: nowrap; }
+      #ai-title .serif { font-size: 1.12em; letter-spacing: -0.01em; }
+      #ai-field { position: absolute; overflow: hidden; border: 1px solid #2a2a2a; background: #111; }
+      .ai-field-in { position: absolute; left: 0; top: 0; display: flex; gap: 18px; padding: 30px 32px; font-size: 30px; letter-spacing: -0.01em; white-space: nowrap; }
+      .ai-field-in svg { width: 30px; height: 30px; flex: none; margin-top: 4px; color: #8a8a8a; }
+      .ai-ph { color: #555; }
+      .ai-caret { display: inline-block; width: 3px; height: 1.1em; margin-left: 3px; background: #ededed; vertical-align: -0.2em; }
+      #ai-opts { position: absolute; display: flex; align-items: center; gap: 12px; font-size: 19px; }
+      .ai-chip { display: flex; align-items: center; gap: 10px; padding: 10px 18px; border: 1px solid #2a2a2a; border-radius: 999px; color: #8a8a8a; }
+      .ai-chip.on { border-color: #3a3a3a; background: #171717; color: #ededed; }
+      .ai-toggle { position: relative; width: 36px; height: 20px; border-radius: 999px; background: rgba(16, 185, 129, 0.25); }
+      .ai-toggle::after { content: ""; position: absolute; right: 3px; top: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--success); }
+      .ai-btn { display: flex; align-items: center; gap: 10px; margin-left: auto; padding: 15px 26px; border-radius: 12px; background: #ededed; color: #0a0a0a; font-size: 20px; font-weight: 600; }
+      .ai-btn svg { width: 22px; height: 22px; }
+      #ai-status { position: absolute; font-family: var(--font-mono); font-size: 16px; letter-spacing: 0.04em; color: #5e5e5e; }
+      #ai-status b { font-weight: 500; color: #ededed; }
+      .ai-row {
+        position: absolute;
+        overflow: hidden;
+        border: 1px solid #2b2b2b;
+        background: linear-gradient(180deg, #1b1b1b 0%, #131313 100%);
+        box-shadow: 0 50px 100px -30px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      }
+      .row-in { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; padding: 22px 28px 18px; }
+      .row-in .q { font-size: 30px; font-weight: 600; letter-spacing: -0.015em; white-space: nowrap; }
+      .row-in .a { margin-top: 8px; font-size: 22px; line-height: 1.35; color: #8a8a8a; }
+      .row-in .foot { display: flex; align-items: center; justify-content: space-between; margin-top: auto; font-family: var(--font-mono); font-size: 15px; color: #555; }
+      .ai-acts { display: flex; gap: 10px; font-family: var(--font-sans); font-size: 16px; }
+      .ai-act { display: flex; align-items: center; gap: 7px; padding: 6px 12px; border: 1px solid #2a2a2a; border-radius: 8px; color: #8a8a8a; }
+      .ai-act svg { width: 15px; height: 15px; }
+      .ai-act.approve { border-color: rgba(16, 185, 129, 0.4); color: var(--success); }
+      .card-in { position: absolute; left: 50%; top: 50%; width: 880px; height: 500px; padding: 30px 36px; opacity: 0; }
+      #ai-save { position: absolute; display: flex; align-items: center; justify-content: space-between; font-size: 20px; color: #8a8a8a; }
+      #ai-save b { color: #ededed; font-weight: 600; }
+
       /* ─── Portrait 4:5 (1080×1350) ────────────────────────────────────── */
       /* Same film, recomposed for a tall frame rather than letterboxed. */
       .fmt-portrait #light { left: -600px; top: -180px; width: 2280px; height: 1500px; }
@@ -484,6 +523,14 @@
       .fmt-portrait .vchip { font-size: 22px; }
       .fmt-portrait .plat svg { width: 25px; height: 25px; }
       .fmt-portrait #s6-url { top: 1150px; font-size: 24px; }
+      .fmt-portrait #ai-title { left: 80px; top: 176px; width: 920px; }
+      .fmt-portrait #ai-title h2 { font-size: 100px; line-height: 1.02; white-space: normal; }
+      .fmt-portrait .ai-field-in { font-size: 32px; }
+      .fmt-portrait #ai-opts { flex-wrap: wrap; row-gap: 14px; font-size: 22px; }
+      .fmt-portrait .ai-btn { margin-left: 0; font-size: 22px; }
+      .fmt-portrait .row-in .q { font-size: 32px; }
+      .fmt-portrait .row-in .a { font-size: 25px; }
+      .fmt-portrait #ai-save { font-size: 22px; }
 
       /* ─── Thumbnail (480×480 loop) ────────────────────────────────────── */
       .fmt-thumb #light { left: -620px; top: -230px; width: 1500px; height: 950px; }
@@ -496,7 +543,8 @@
         position: fixed;
         left: 50%;
         bottom: 18px;
-        width: min(640px, calc(100vw - 32px));
+        width: min(820px, calc(100vw - 32px));
+        flex-wrap: wrap;
         transform: translateX(-50%);
         display: flex;
         align-items: center;
@@ -526,6 +574,15 @@
         cursor: pointer;
       }
       #ui input { flex: 1; accent-color: #ededed; }
+      #ui .ui-switch {
+        width: auto;
+        padding: 0 14px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 999px;
+        background: transparent;
+        color: #cfcfcf;
+        white-space: nowrap;
+      }
       #ui output { min-width: 96px; text-align: right; font-variant-numeric: tabular-nums; }
       body.render #ui { display: none; }
     </style>
@@ -580,6 +637,41 @@
               <span class="line"><span class="w">with</span> <span class="w">your</span> <span class="w">brain.</span></span>
             </h1>
           </div>
+        </section>
+
+        <!-- AI generation (experimental ?cut=ai): topic → drafts → approved → the study deck -->
+        <section class="layer scene" id="sA">
+          <div id="ai-title">
+            <div class="eyebrow w"><span class="dot"></span>AI generation</div>
+            <h2>
+              <span class="w">Describe</span> <span class="w">a</span> <span class="w">topic.</span>
+              <span class="w serif">Approve</span> <span class="w">the</span> <span class="w">cards.</span>
+            </h2>
+          </div>
+          <div id="ai-status"><b>0</b> approved · <b>0</b> discarded · <b>3</b> total</div>
+          <div id="ai-field">
+            <div class="ai-field-in">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" />
+                <path d="M19 15l.75 2.25L22 18l-2.25.75L19 21l-.75-2.25L16 18l2.25-.75L19 15z" />
+              </svg>
+              <span><span class="ai-ph">Describe what you want to learn…</span><span class="ai-typed"></span><i class="ai-caret"></i></span>
+            </div>
+          </div>
+          <div id="ai-opts">
+            <span class="ai-chip on">Intermediate</span>
+            <span class="ai-chip on">Q&amp;A</span>
+            <span class="ai-chip">Auto<i class="ai-toggle"></i></span>
+            <span class="ai-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" />
+                <path d="M19 15l.75 2.25L22 18l-2.25.75L19 21l-.75-2.25L16 18l2.25-.75L19 15z" />
+              </svg>
+              Generate cards
+            </span>
+          </div>
+          <div id="ai-rows"></div>
+          <div id="ai-save"><span><b>2</b> cards ready to save to DSA</span><span class="ai-btn">Save approved cards</span></div>
         </section>
 
         <!-- 03 · Recall: one card from the queue, question → answer → rated -->
@@ -813,6 +905,8 @@
 
     <div id="ui">
       <button id="ui-play" aria-label="Play or pause">❚❚</button>
+      <button id="ui-cut" class="ui-switch"></button>
+      <button id="ui-format" class="ui-switch"></button>
       <input id="ui-scrub" type="range" min="0" max="15" step="0.001" value="0" aria-label="Scrub" />
       <output id="ui-time">00.00 / 15.00</output>
     </div>
@@ -826,7 +920,11 @@
           portrait: { w: 1080, h: 1350, mx: 64, my: 72 },
           thumb: { w: 480, h: 480, mx: 0, my: 0 },
         };
-        const FORMAT = params.get("format") in FORMATS ? params.get("format") : "landscape";
+        // Settings come from the query string, or from hash tokens (#ai-portrait) where only a
+        // hash survives, as in shared previews.
+        const TOKENS = location.hash.slice(1).split("-");
+        const pick = (name, options) => [params.get(name), ...TOKENS].find((v) => options.includes(v));
+        const FORMAT = pick("format", Object.keys(FORMATS)) ?? "landscape";
         const { w: W, h: H, mx: MX, my: MY } = FORMATS[FORMAT];
         const CX = W / 2;
         const CY = H / 2;
@@ -835,6 +933,10 @@
         const FPS = 60;
         const RENDER = params.has("render");
         const LOOP = params.has("loop");
+        // Which edit to play. "ai" is the experimental cut with the AI generate scene.
+        const DEFAULT_CUT = "classic";
+        const CUT = pick("cut", ["ai", "classic"]) ?? DEFAULT_CUT;
+        const AI = CUT === "ai" && FORMAT !== "thumb";
         // The film announces the stable line, so prerelease suffixes (-alpha.10, -rc.1…) are dropped.
         const VERSION = (params.get("version") || "1.0.0").replace(/-.*$/, "");
         document.body.classList.add(`fmt-${FORMAT}`);
@@ -888,7 +990,19 @@
         // it slower in real time — where the eye moves, or a frame deserves reading time — so
         // transitions, whips and blinks keep their snap. [from, to, speed] in choreography seconds.
         const CHOREO = 15;
-        const PACING = [
+        // The AI cut opens a gap in the 15-second clock: it starts as the tagline leaves (4.4)
+        // and hands over to the study scene, which resumes at 5.0 with the approved cards as its
+        // deck. The master clock runs through the gap; scenes before it read master time, scenes
+        // after it read classic time (master minus the gap).
+        const AI_AT = 4.4;
+        const AI_LEN = 4.3;
+        const RESUME = 5.0;
+        const GAP = AI ? AI_AT + AI_LEN - RESUME : 0;
+        const MASTER = CHOREO + GAP;
+        /** Master → classic time. Inside the AI scene, classic time drifts 4.4 → 5.0 for the light. */
+        const classic = (m) =>
+          !AI || m < AI_AT ? m : m < AI_AT + AI_LEN ? lerp(AI_AT, RESUME, (m - AI_AT) / AI_LEN) : m - GAP;
+        const CLASSIC_PACING = [
           [1.28, 1.62, 0.5], // the opening glance
           [3.8, 4.3, 0.5], // read the tagline
           [6.62, 6.95, 0.5], // read the answer
@@ -902,20 +1016,25 @@
           [13.9, 14.02, 0.5],
           [14.3, CHOREO, 0.2912], // hold the end card after the blink (lands the film on 20.0s)
         ];
-        const KNOTS = [[0, 0]]; // [real seconds, choreography seconds]
+        const PACING = CLASSIC_PACING.map(([a, b, speed]) => (a >= RESUME ? [a + GAP, b + GAP, speed] : [a, b, speed]));
+        if (AI) {
+          PACING.push([AI_AT + 2.6, AI_AT + 2.85, 0.5]); // read the drafts before they are judged
+          PACING.sort((x, y) => x[0] - y[0]);
+        }
+        const KNOTS = [[0, 0]]; // [real seconds, master seconds]
         for (const [a, b, speed] of PACING) {
           const [T, t] = KNOTS.at(-1);
           KNOTS.push([T + a - t, a], [T + a - t + (b - a) / speed, b]);
         }
-        KNOTS.push([KNOTS.at(-1)[0] + CHOREO - KNOTS.at(-1)[1], CHOREO]);
-        /** Real time → choreography time. */
-        const choreo = (T) => {
+        KNOTS.push([KNOTS.at(-1)[0] + MASTER - KNOTS.at(-1)[1], MASTER]);
+        /** Real time → master time. */
+        const master = (T) => {
           for (let i = 1; i < KNOTS.length; i++) {
             const [T0, t0] = KNOTS[i - 1];
             const [T1, t1] = KNOTS[i];
             if (T <= T1 && T1 > T0) return lerp(t0, t1, (T - T0) / (T1 - T0));
           }
-          return CHOREO;
+          return MASTER;
         };
         const DURATION = THUMB ? 3 : KNOTS.at(-1)[0];
 
@@ -1209,6 +1328,211 @@
           };
         })();
 
+        // ─── AI generation (experimental ?cut=ai) ─────────────────────────
+        // An ember line grows into the topic field and a topic is typed. The field splits into
+        // three drafts in the review list; two are approved, one discarded, and the approved
+        // rows fold into flashcards that become the next scene's study deck.
+        const sA = (() => {
+          const el = $("#sA");
+          const title = $("#ai-title");
+          const titleEyebrow = $(".eyebrow", title);
+          const titleWords = $$("h2 .w", title);
+          const field = $("#ai-field");
+          const fieldIn = $(".ai-field-in", field);
+          const placeholder = $(".ai-ph", field);
+          const typed = $(".ai-typed", field);
+          const caret = $(".ai-caret", field);
+          const opts = $("#ai-opts");
+          const optItems = [...opts.children];
+          const go = $(".ai-btn", opts);
+          const status = $("#ai-status");
+          const [approvedCount, discardedCount] = $$("b", status);
+          const save = $("#ai-save");
+          const saveBtn = $(".ai-btn", save);
+          const TOPIC = "Graph algorithms for coding interviews";
+          const DRAFTS = [
+            {
+              q: "What problem does Prim’s algorithm solve?",
+              a: "Finds a minimum spanning tree — every vertex connected at the lowest total edge weight.",
+            },
+            {
+              q: "When does Dijkstra’s algorithm fail?",
+              a: "With negative edge weights: a settled vertex could later be reached more cheaply.",
+            },
+            { q: "What is a graph?", a: "A set of nodes connected by edges." },
+          ];
+          const ICON = {
+            regen:
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>',
+            discard:
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+            approve:
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+          };
+          $(".ai-btn", save).insertAdjacentHTML("afterbegin", ICON.approve);
+
+          // Geometry per format: the field, the review list, and where the stack hands over.
+          const G = PORTRAIT
+            ? { x: 80, w: 920, fieldY: 600, fieldH: 150, optsY: 776, rowY: 500, rowH: 214, gap: 18, deckY: 600 }
+            : { x: 410, w: 1100, fieldY: 440, fieldH: 132, optsY: 602, rowY: 356, rowH: 176, gap: 18, deckY: 470 };
+          const rowRect = (i) => ({ x: G.x, y: G.rowY + i * (G.rowH + G.gap), w: G.w, h: G.rowH, r: 18 });
+          const fieldRect = { x: G.x, y: G.fieldY, w: G.w, h: G.fieldH, r: 18 };
+          // The study card at 0.62 scale, centred where the next scene's deck sits.
+          const cardRect = { x: CX - 440 * 0.62, y: G.deckY - 250 * 0.62, w: 880 * 0.62, h: 500 * 0.62, r: 28 * 0.62 };
+          const mixRect = (a, b, k) => ({
+            x: lerp(a.x, b.x, k),
+            y: lerp(a.y, b.y, k),
+            w: lerp(a.w, b.w, k),
+            h: lerp(a.h, b.h, k),
+            r: lerp(a.r, b.r, k),
+          });
+          const place = (node, r) => {
+            node.style.left = `${r.x}px`;
+            node.style.top = `${r.y}px`;
+            node.style.width = `${r.w}px`;
+            node.style.height = `${r.h}px`;
+            node.style.borderRadius = `${r.r}px`;
+          };
+          opts.style.left = `${G.x}px`;
+          opts.style.top = `${G.optsY}px`;
+          opts.style.width = `${G.w}px`;
+          status.style.left = `${G.x}px`;
+          status.style.top = `${G.rowY - 40}px`;
+          save.style.left = `${G.x}px`;
+          save.style.width = `${G.w}px`;
+          save.style.top = `${rowRect(2).y + 40}px`;
+
+          const rows = DRAFTS.map((d, i) => {
+            const row = document.createElement("div");
+            row.className = "ai-row";
+            row.style.zIndex = 3 - i;
+            row.innerHTML = `
+              <div class="row-in" style="width:${G.w}px;height:${G.rowH}px">
+                <div class="q"></div>
+                <div class="a"></div>
+                <div class="foot">
+                  <span>${i + 1} of 3</span>
+                  <span class="ai-acts">
+                    <span class="ai-act">${ICON.regen}Regenerate</span>
+                    <span class="ai-act discard">${ICON.discard}Discard</span>
+                    <span class="ai-act approve">${ICON.approve}<span class="label">Approve</span></span>
+                  </span>
+                </div>
+              </div>
+              <div class="card-in">
+                <div class="face-top"><span>FRONT</span><span class="tag"><i></i>DSA</span></div>
+                <div class="face-q">${d.q}</div>
+                <div class="face-hint"><span class="kbd">Space</span>Show answer</div>
+              </div>`;
+            $("#ai-rows").append(row);
+            return {
+              ...d,
+              row,
+              rowIn: $(".row-in", row),
+              cardIn: $(".card-in", row),
+              q: $(".q", row),
+              a: $(".a", row),
+              foot: $(".foot", row),
+              approve: $(".approve", row),
+              approveLabel: $(".approve .label", row),
+              discard: $(".discard", row),
+              text: d,
+            };
+          });
+
+          /** Text arriving the way a model streams it: settled characters behind a band of noise. */
+          const GLYPH = "abcdefghijklmnopqrstuvwxyz";
+          const decode = (text, p, seed, frame) => {
+            const band = 7;
+            const shown = Math.floor(p * (text.length + band));
+            let out = "";
+            for (let i = 0; i < Math.min(shown, text.length); i++) {
+              const settled = i < shown - band || text[i] === " ";
+              out += settled ? text[i] : GLYPH[Math.floor(hash(seed * 131 + i * 17 + frame) * GLYPH.length)];
+            }
+            return out;
+          };
+          const APPROVE_AT = [2.85, 3.0];
+          const DISCARD_AT = 3.15;
+
+          return {
+            el,
+            from: AI ? AI_AT : Number.POSITIVE_INFINITY,
+            to: AI_AT + AI_LEN,
+            update(m) {
+              const a = m - AI_AT;
+              const frame = Math.floor(m * 30);
+
+              blurUp(titleEyebrow, a, 0.15, 3.55, { dist: 24, blur: 10 });
+              titleWords.forEach((w, i) => blurUp(w, a, 0.22 + i * 0.05, 3.55 + i * 0.02, { dist: 50, blur: 16 }));
+
+              // The field: an ember line that opens into the topic box.
+              const grow = P(a, 0.05, 0.42, E.outExpo);
+              const open = P(a, 0.3, 0.68, E.inOutCubic);
+              const fw = G.w * grow;
+              const fh = lerp(3, G.fieldH, open);
+              vis(field, a < 1.56);
+              place(field, { x: CX - fw / 2, y: G.fieldY + G.fieldH / 2 - fh / 2, w: fw, h: fh, r: lerp(2, 18, open) });
+              field.style.background = mixHex("#ff5b2e", "#111111", P(a, 0.28, 0.6));
+              field.style.borderColor = open > 0.5 ? "#2a2a2a" : "transparent";
+              fieldIn.style.opacity = P(a, 0.5, 0.7) * (1 - P(a, 1.5, 1.6));
+              const n = Math.floor(P(a, 0.72, 1.32) * TOPIC.length);
+              typed.textContent = TOPIC.slice(0, n);
+              placeholder.style.display = a < 0.72 ? "inline" : "none";
+              caret.style.opacity = n < TOPIC.length || Math.floor(m * 4) % 2 === 0 ? 1 : 0;
+
+              optItems.forEach((o, i) => {
+                blurUp(o, a, 0.9 + i * 0.06, null, { dist: 18, blur: 8, dur: 0.5 });
+                o.style.opacity *= 1 - P(a, 1.55, 1.72);
+              });
+              const press = bell(a, 1.42, 1.56);
+              go.style.transform = `scale(${1 - 0.06 * press})`;
+              go.style.background = mixHex("#ededed", "#ff8a5c", press);
+
+              // The review list: three drafts split out of the field, then stream in.
+              blurUp(status, a, 2.0, 3.55, { dist: 12, blur: 6, dur: 0.5, exitDist: 20 });
+              const approved = APPROVE_AT.filter((at) => a >= at).length;
+              approvedCount.textContent = approved;
+              discardedCount.textContent = a >= DISCARD_AT ? 1 : 0;
+              rows.forEach((r, i) => {
+                const split = P(a, 1.55 + i * 0.05, 2.1 + i * 0.05, E.inOutCubic);
+                let rect = mixRect(fieldRect, rowRect(i), split);
+                const fold = i < 2 ? P(a, 3.6 + i * 0.06, 4.18 + i * 0.06, E.inOutCubic) : 0;
+                rect = mixRect(rect, cardRect, fold);
+                place(r.row, rect);
+                vis(r.row, a >= 1.55);
+
+                r.q.textContent = decode(r.text.q, P(a, 1.95 + i * 0.12, 2.45 + i * 0.12), i, frame);
+                r.a.textContent = decode(r.text.a, P(a, 2.1 + i * 0.12, 2.75 + i * 0.12), i + 7, frame);
+                r.foot.style.opacity = P(a, 2.45 + i * 0.05, 2.65 + i * 0.05);
+                r.rowIn.style.opacity = 1 - P(a, 3.58, 3.74);
+
+                if (i < 2) {
+                  const k = P(a, APPROVE_AT[i], APPROVE_AT[i] + 0.12);
+                  r.approveLabel.textContent = k > 0 ? "Approved" : "Approve";
+                  r.approve.style.background = `rgba(16, 185, 129, ${0.16 * k})`;
+                  r.approve.style.borderColor = mixHex("#1b6a52", "#10b981", k);
+                  r.approve.style.transform = `scale(${1 + 0.12 * bell(a, APPROVE_AT[i], APPROVE_AT[i] + 0.22)})`;
+                  r.row.style.borderColor = mixHex("#2b2b2b", "#1f5a47", k * (1 - fold));
+                  // The folded row shows the study card's face, scaled to the row.
+                  r.cardIn.style.opacity = P(a, 3.85 + i * 0.06, 4.1 + i * 0.06);
+                  r.cardIn.style.transform = `translate(-50%, -50%) scale(${Math.min(rect.w / 880, rect.h / 500)})`;
+                } else {
+                  const d = P(a, DISCARD_AT + 0.05, DISCARD_AT + 0.35, E.inCubic);
+                  r.discard.style.color = mixHex("#8a8a8a", "#ef4444", bell(a, DISCARD_AT, DISCARD_AT + 0.3));
+                  r.discard.style.borderColor = mixHex("#2a2a2a", "#ef4444", bell(a, DISCARD_AT, DISCARD_AT + 0.3));
+                  r.row.style.opacity = 1 - d;
+                  r.row.style.transform = `translateY(${d * 40}px)`;
+                  r.row.style.filter = d > 0.01 ? `blur(${d * 8}px)` : "none";
+                }
+              });
+
+              blurUp(save, a, 3.3, 3.62, { dist: 20, blur: 8, dur: 0.5, exitDist: 20, exitDur: 0.25 });
+              saveBtn.style.transform = `scale(${1 - 0.06 * bell(a, 3.48, 3.62)})`;
+            },
+          };
+        })();
+
         // ─── 03 · Recall ───────────────────────────────────────────────────
         const s3 = (() => {
           const el = $("#s3");
@@ -1218,6 +1542,15 @@
           const heroBack = $(".face.back", hero);
           const shades = cards.map((c) => $(".shade", c));
           const questions = cards.map((c) => $(".face-q", c));
+          if (AI) {
+            // The second approved draft is the next card in the queue.
+            const relabel = (card, q, tag) => {
+              $(".face-q", card).textContent = q;
+              $(".tag", card).lastChild.textContent = tag;
+            };
+            relabel(cards[1], "When does Dijkstra’s algorithm fail?", "DSA");
+            relabel(cards[2], "Why do B-trees suit disk-based indexes?", "SYSTEMS");
+          }
           const space = $("#s3-space");
           const count = $("#s3-count");
           const roll = $(".roll", count);
@@ -1232,6 +1565,9 @@
           const table = (i) => ({ x: i * 16, y: 150 + i * 4, z: -160, rx: 60, ry: 0, rz: -20 + i * 3.5, lift: -i * 16 });
           const queue = (i) => ({ x: 0, y: -36 * i, z: -120 * i, rx: 0, ry: 0, rz: 0, lift: 0 });
           const below = (p) => ({ ...p, y: p.y + H + 20, rx: p.rx + 12 });
+          // AI cut: the approved drafts hand over as a face-on stack at 0.62 scale.
+          const Z_STACK = 2200 / 0.62 - 2200;
+          const stack = (i) => ({ x: 0, y: 0, z: -Z_STACK - 24 * i, rx: 0, ry: 0, rz: 0, lift: 0 });
           const mix = (a, b, k) => {
             const o = {};
             for (const key of Object.keys(a)) o[key] = lerp(a[key], b[key], k);
@@ -1248,14 +1584,18 @@
 
           return {
             el,
-            from: 4.5,
+            from: AI ? RESUME : 4.5,
             to: 8.3,
             target,
             update(t) {
               // Hero card: rise with the deck, lift to face us, flip, get rated, fly off.
-              const e0 = P(t, 4.56, 5.24, E.outExpo);
-              let hp = mix(below(table(0)), table(0), e0);
-              hp = mix(hp, ZERO, P(t, 5.02, 5.76, E.inOutCubic));
+              let hp;
+              if (AI) {
+                hp = mix(stack(0), ZERO, P(t, RESUME, RESUME + 0.7, E.inOutCubic));
+              } else {
+                hp = mix(below(table(0)), table(0), P(t, 4.56, 5.24, E.outExpo));
+                hp = mix(hp, ZERO, P(t, 5.02, 5.76, E.inOutCubic));
+              }
               hp.rx -= 7 * bell(t, 5.5, 6.0);
               const pf = P(t, 5.96, 6.58);
               hp.ry = 180 * E.inOutBack(pf, 1.1);
@@ -1274,9 +1614,12 @@
 
               // The queue behind it: fans on the table, stacks into depth, steps forward, falls away.
               for (let i = 1; i < cards.length; i++) {
-                const e = P(t, 4.56 + 0.04 * i, 5.24 + 0.04 * i, E.outExpo);
-                let p = mix(below(table(i)), table(i), e);
-                const q = P(t, 5.1 + 0.05 * i, 5.9 + 0.05 * i, E.inOutCubic);
+                let p = AI
+                  ? stack(i)
+                  : mix(below(table(i)), table(i), P(t, 4.56 + 0.04 * i, 5.24 + 0.04 * i, E.outExpo));
+                const q = AI
+                  ? P(t, RESUME + 0.05 + 0.05 * i, RESUME + 0.85 + 0.05 * i, E.inOutCubic)
+                  : P(t, 5.1 + 0.05 * i, 5.9 + 0.05 * i, E.inOutCubic);
                 p = mix(p, queue(i), q);
                 const a = P(t, 7.28 + 0.03 * (i - 1), 7.68 + 0.03 * (i - 1), E.outExpo);
                 p = mix(p, queue(i - 1), a);
@@ -1284,7 +1627,7 @@
                 p.y += (H + 20) * f;
                 p.rx += 40 * f;
                 cards[i].style.transform = css(p);
-                const shade = lerp(lerp(0.18 + 0.1 * i, 0.3 * i, q), 0.3 * (i - 1), a);
+                const shade = lerp(lerp(AI ? 0.3 * i : 0.18 + 0.1 * i, 0.3 * i, q), 0.3 * (i - 1), a);
                 shades[i].style.opacity = shade;
                 questions[i].style.opacity = i === 1 ? P(t, 7.3, 7.55) : 0;
               }
@@ -1548,6 +1891,20 @@
             text: b.dataset.cap,
           }));
           const period = $("#s5-period");
+          if (AI) {
+            const say = (b, big, serif, cap, icon) => {
+              const [first, second] = b.lines;
+              first.textContent = big;
+              second.textContent = serif;
+              b.text = cap;
+              $("svg", b.cap).innerHTML = icon;
+            };
+            const importIcon = $("svg", beats[1].cap).innerHTML;
+            const featherIcon =
+              '<path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z" /><line x1="16" y1="8" x2="2" y2="22" /><line x1="17.5" y1="15" x2="9" y2="15" />';
+            say(beats[0], "Import", "from Anki", "BRING YOUR .APKG DECKS HOME.", importIcon);
+            say(beats[1], "Opens", "in a blink", "UNDER 10 MB. LAUNCHES IN UNDER A SECOND.", featherIcon);
+          }
           return {
             el,
             from: 10.05,
@@ -1735,14 +2092,24 @@
           for (const h of [tl, tr]) h.style.top = `${MY - 48}px`;
           for (const h of [bl, br]) h.style.top = `${H - MY + 30}px`;
         }
-        const SCENES = [
-          [0, "01  APERTURE"],
-          [2.26, "02  PREMISE"],
-          [4.56, "03  RECALL"],
-          [7.6, "04  SCHEDULE"],
-          [10.1, "05  FEATURES"],
-          [12.3, "06  RELEASE"],
-        ];
+        const SCENES = AI
+          ? [
+              [0, "01  APERTURE"],
+              [2.26, "02  PREMISE"],
+              [AI_AT + 0.1, "03  GENERATE"],
+              [AI_AT + AI_LEN, "04  RECALL"],
+              [7.6 + GAP, "05  SCHEDULE"],
+              [10.1 + GAP, "06  FEATURES"],
+              [12.3 + GAP, "07  RELEASE"],
+            ]
+          : [
+              [0, "01  APERTURE"],
+              [2.26, "02  PREMISE"],
+              [4.56, "03  RECALL"],
+              [7.6, "04  SCHEDULE"],
+              [10.1, "05  FEATURES"],
+              [12.3, "06  RELEASE"],
+            ];
         const GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/#·";
         const pad = (n) => String(n).padStart(2, "0");
         const updateHud = (t, T) => {
@@ -1792,24 +2159,27 @@
 
         const fade = $("#fade");
         const vignette = $("#vignette");
-        const scenes = THUMB ? [sT] : [s1, s2, s3, s4, s5, s6];
-        if (THUMB) for (const s of [s1, s2, s3, s4, s5, s6]) vis(s.el, false);
+        const scenes = THUMB ? [sT] : [s1, s2, sA, s3, s4, s5, s6];
+        if (THUMB) for (const s of [s1, s2, sA, s3, s4, s5, s6]) vis(s.el, false);
+        for (const s of [s1, s2, sA]) s.clock = "master";
 
         // ─── Render ────────────────────────────────────────────────────────
         const render = (time) => {
           const T = clamp(time, 0, DURATION); // real time: grain, timecode, fade
-          const t = THUMB ? T : choreo(T); // choreography time: everything else
+          const m = THUMB ? T : master(T); // master time: scene labels, scenes before the AI gap
+          const t = classic(m); // classic 15s time: everything after the gap, light, impacts
           updateLight(t);
           updateWorld(t);
           for (const s of scenes) {
-            const on = t >= s.from && t < s.to;
+            const st = s.clock === "master" ? m : t;
+            const on = st >= s.from && st < s.to;
             vis(s.el, on);
-            if (on) s.update(t);
+            if (on) s.update(st);
           }
           if (!THUMB) {
             updateCover(t);
             updateTravel(t);
-            updateHud(t, T);
+            updateHud(m, T);
             updateGrain(T);
           }
           // Social cuts end on the lockup; ?loop fades to black so the film loops seamlessly.
@@ -1850,11 +2220,12 @@
           await img.decode().catch(() => {});
           fit();
 
-          // In portrait, shrink any feature word that would run past the frame.
-          if (PORTRAIT) {
+          // Shrink any feature word that would run past the frame.
+          {
+            const left = Number.parseFloat(getComputedStyle($("#s5 .beat-text")).left);
             for (const bl of $$("#s5 .bl")) {
               const word = $(".bw", bl);
-              const avail = W - MX - 24 - 80 - Number.parseFloat(getComputedStyle(bl).paddingLeft);
+              const avail = W - MX - 24 - left - Number.parseFloat(getComputedStyle(bl).paddingLeft);
               if (word.offsetWidth > avail) {
                 const size = Number.parseFloat(getComputedStyle(word).fontSize);
                 word.style.fontSize = `${Math.floor((size * avail) / word.offsetWidth)}px`;
@@ -1904,6 +2275,16 @@
         };
 
         playBtn.addEventListener("click", () => setPlaying(!playing));
+        const reopen = (cut, format) => {
+          location.hash = `${cut}-${format}`;
+          location.reload();
+        };
+        const cutBtn = $("#ui-cut");
+        const formatBtn = $("#ui-format");
+        cutBtn.textContent = AI ? "Show classic cut" : "Show AI cut";
+        formatBtn.textContent = PORTRAIT ? "Show 16:9" : "Show 4:5";
+        cutBtn.addEventListener("click", () => reopen(AI ? "classic" : "ai", FORMAT));
+        formatBtn.addEventListener("click", () => reopen(CUT, PORTRAIT ? "landscape" : "portrait"));
         scrub.addEventListener("input", () => {
           setPlaying(false);
           show(Number(scrub.value));
@@ -1926,6 +2307,7 @@
 
         window.__film = {
           duration: DURATION,
+          cut: CUT,
           width: W,
           height: H,
           fps: FPS,

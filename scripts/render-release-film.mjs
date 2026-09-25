@@ -7,7 +7,7 @@
  *   node scripts/render-release-film.mjs --format thumb --width 240 --out thumbnail.gif
  *   node scripts/render-release-film.mjs --stills 2.5,6.4,13.8 --no-hud [--out-dir stills/]
  *
- * Options: --format landscape|portrait|thumb, --fps, --crf, --width <px> (scale the output),
+ * Options: --format landscape|portrait|thumb, --cut classic|ai, --fps, --crf, --width <px>,
  * --loop (fade to black at the end so the film loops), --no-hud (hide the frame overlay),
  * --workers <n>. An output ending in .gif is encoded as a looping GIF; anything else is H.264
  * with a silent AAC track, which is what social platforms expect. Stills default to the OS tmpdir.
@@ -48,6 +48,7 @@ function parseArgs(argv) {
     fps: null,
     crf: 22,
     format: "landscape",
+    cut: "classic",
     width: null,
     loop: false,
     hud: true,
@@ -64,6 +65,7 @@ function parseArgs(argv) {
       const value = argv[++i];
       if (flag === "--out") opts.out = resolve(value);
       else if (flag === "--format") opts.format = value;
+      else if (flag === "--cut") opts.cut = value;
       else if (flag === "--fps") opts.fps = Number(value);
       else if (flag === "--crf") opts.crf = Number(value);
       else if (flag === "--width") opts.width = Number(value);
@@ -234,6 +236,7 @@ async function main() {
   const server = await serveSite();
   const query = new URLSearchParams({ render: "1", version, format: opts.format });
   if (opts.loop) query.set("loop", "1");
+  if (opts.cut !== "classic") query.set("cut", opts.cut);
   if (!opts.hud) query.set("hud", "0");
   const url = `http://127.0.0.1:${server.address().port}/${PAGE}?${query}`;
   const workers = opts.stills ? 1 : opts.workers;

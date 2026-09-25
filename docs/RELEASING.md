@@ -117,4 +117,4 @@ The renderer needs Playwright with Chromium and an ffmpeg build with libx264 on 
 | 240×240 looping GIF, for the Product Hunt thumbnail (limit 3MB) | `node scripts/render-release-film.mjs --format thumb --width 240 --out thumbnail.gif` |
 | Stills for covers and gallery images (Product Hunt gallery is 1270×760) | `node scripts/render-release-film.mjs --no-hud --stills 4.5,8.1,11.6,18.3` |
 
-Videos carry a silent AAC track because some upload pipelines expect one.
+Videos carry a silent AAC track because some upload pipelines expect one. `--cut ai` renders the experimental cut, which gives AI generation its own scene (topic → drafts → approved cards → the study deck) and puts "Opens in a blink" in its place among the feature words; preview it at `/release-film.html#ai`.
