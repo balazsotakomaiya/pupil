@@ -9,19 +9,36 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: var(--space-20);
+  color-scheme: dark;
+  scrollbar-color: #2a2a2a var(--bg);
 }
 
 body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
 }
 
-/* ─── Design tokens (from DESIGN.md) ────────────────────────────────────── */
+img,
+svg {
+  display: block;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* ─── Design tokens ─────────────────────────────────────────────────────── */
 :root {
   /* Fonts */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
+  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-logo: "Syne", var(--font-sans);
 
   /* Backgrounds */
   --bg: #0a0a0a;
@@ -37,15 +54,30 @@ body {
 
   /* Text */
   --text-primary: #ededed;
-  --text-secondary: #888;
-  --text-tertiary: #555;
+  --text-secondary: #8f8f8f;
+  --text-tertiary: #777; /* ≥4.5:1 on --bg; the lightest gray that still reads as text */
+  --text-faint: #444; /* rules, ticks, and non-text marks only */
 
-  /* Accent */
+  /* Accent — sampled from the ember streaks in the dither gradient.
+     Reserved for memory itself: the retention curve, a chosen rating,
+     the one live signal on a surface. Never for chrome. */
   --accent: #ededed;
+  --ember: #ff5a1f;
+  --ember-bright: #ff7a3d;
+  --ember-dim: rgba(255, 90, 31, 0.14);
+
+  /* Layout */
+  --content: 1120px;
+  --gutter: var(--space-8);
 
   /* Radii */
   --radius: 8px;
   --radius-lg: 12px;
+  --radius-xl: 18px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Spacing: a 4px base scale with 2px half-steps for compact controls. */
   --space-0: 0;
@@ -78,8 +110,48 @@ body {
   --space-40: 160px;
 }
 
+@media (max-width: 640px) {
+  :root {
+    --gutter: var(--space-5);
+  }
+}
+
 body {
   background: var(--bg);
   color: var(--text-primary);
   font-family: var(--font-sans);
+}
+
+/* ─── Browser surfaces ──────────────────────────────────────────────────── */
+::selection {
+  background: var(--ember);
+  color: #0a0a0a;
+}
+
+:focus-visible {
+  outline: 1.5px solid var(--ember-bright);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #232323;
+  border: 3px solid var(--bg);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #333;
+}
+
+kbd {
+  font-family: var(--font-mono);
 }

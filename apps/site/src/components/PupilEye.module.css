@@ -1,0 +1,98 @@
+.eye {
+  flex-shrink: 0;
+}
+
+.shape,
+.iris,
+.pupilGroup,
+.pupil {
+  transform-origin: 26px 26px;
+  animation-duration: 4s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.shape {
+  animation-name: blink;
+}
+
+.iris {
+  animation-name: iris;
+}
+
+.pupilGroup {
+  animation-name: hide;
+}
+
+.pupil {
+  animation-name: look;
+}
+
+@keyframes blink {
+  0%,
+  17%,
+  22%,
+  100% {
+    transform: scaleY(1);
+  }
+  18.5% {
+    transform: scaleY(0.05);
+  }
+  20% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes iris {
+  0%,
+  17%,
+  22%,
+  100% {
+    transform: scaleY(1);
+  }
+  18.5% {
+    transform: scaleY(0.1);
+  }
+  20% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes hide {
+  0%,
+  17%,
+  22%,
+  100% {
+    opacity: 1;
+  }
+  18.5% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+}
+
+@keyframes look {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(2px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shape,
+  .iris,
+  .pupilGroup,
+  .pupil {
+    animation: none;
+  }
+}

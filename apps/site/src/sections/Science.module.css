@@ -1,0 +1,224 @@
+.figure {
+  position: relative;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin-bottom: var(--space-5);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.legendKept,
+.legendDecayed {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.legendKept::before,
+.legendDecayed::before {
+  content: "";
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+}
+
+.legendKept {
+  color: var(--text-primary);
+}
+
+.legendKept::before {
+  background: var(--ember);
+}
+
+.legendDecayed::before {
+  background: repeating-linear-gradient(90deg, #6a6a6a 0 4px, transparent 4px 7px);
+}
+
+.readout {
+  margin-left: auto;
+  display: inline-flex;
+  gap: var(--space-4);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.readoutHint {
+  color: var(--text-tertiary);
+}
+
+.hintTouch {
+  display: none;
+}
+
+@media (hover: none) {
+  .hintHover {
+    display: none;
+  }
+
+  .hintTouch {
+    display: inline;
+  }
+}
+
+.readoutKept {
+  color: var(--ember-bright);
+}
+
+.readoutDecayed {
+  color: #9a9a9a;
+}
+
+.frame {
+  position: relative;
+  width: 100%;
+}
+
+.chart {
+  display: block;
+  max-width: 100%;
+  overflow: visible;
+  touch-action: pan-y;
+  cursor: crosshair;
+}
+
+.grid {
+  stroke: var(--ruler);
+  stroke-width: 1;
+  stroke-dasharray: 1 4;
+}
+
+.tick {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.target {
+  stroke: rgba(255, 122, 61, 0.45);
+  stroke-width: 1;
+  stroke-dasharray: 6 5;
+}
+
+.targetLabel {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--ember-bright);
+}
+
+.decayed,
+.kept {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.decayed {
+  stroke: #5e5e5e;
+  stroke-width: 1.75;
+  transition: stroke-dashoffset 1.4s var(--ease-out) 0.1s;
+}
+
+.kept {
+  stroke: var(--ember);
+  stroke-width: 2.25;
+  filter: drop-shadow(0 0 10px rgba(255, 90, 31, 0.45));
+  transition: stroke-dashoffset 2.2s cubic-bezier(0.45, 0, 0.2, 1) 0.5s;
+}
+
+.area {
+  opacity: 0;
+  transition: opacity 1.2s var(--ease-out) 1.6s;
+}
+
+.review {
+  opacity: 0;
+  transform: translateY(6px);
+  transform-box: fill-box;
+  transition:
+    opacity 0.5s var(--ease-out),
+    transform 0.5s var(--ease-out-expo);
+}
+
+.review circle {
+  fill: var(--bg);
+  stroke: var(--ember-bright);
+  stroke-width: 2;
+}
+
+.review text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: #d0d0d0;
+}
+
+.drawn .decayed,
+.drawn .kept {
+  stroke-dashoffset: 0;
+}
+
+.drawn .area {
+  opacity: 1;
+}
+
+.drawn .review {
+  opacity: 1;
+  transform: none;
+}
+
+.scrub line {
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 1;
+}
+
+.scrubKept {
+  fill: var(--ember-bright);
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+
+.scrubDecayed {
+  fill: #9a9a9a;
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+
+.caption {
+  margin-top: var(--space-5);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-tertiary);
+  max-width: 72ch;
+}
+
+.caption code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .readout {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .decayed,
+  .kept,
+  .area,
+  .review {
+    transition: none;
+  }
+}

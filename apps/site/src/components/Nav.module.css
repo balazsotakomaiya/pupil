@@ -2,16 +2,24 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(10, 10, 10, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid transparent;
+  transition:
+    background 0.3s var(--ease-out),
+    border-color 0.3s var(--ease-out);
+}
+
+/* Transparent over the ember gradient; frosts once the page moves under it. */
+.scrolled {
+  background: rgba(10, 10, 10, 0.72);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border-bottom-color: var(--border);
 }
 
 .navInner {
-  max-width: 960px;
+  max-width: calc(var(--content) + 2 * var(--gutter));
   margin: 0 auto;
-  padding: var(--space-4) var(--space-8);
+  padding: var(--space-3-5) var(--gutter);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -20,65 +28,111 @@
 .navLogo {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-1-5);
   text-decoration: none;
-  font-family: "Syne", var(--font-sans);
-  font-size: 26px;
+  font-family: var(--font-logo);
+  font-size: 25px;
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.5px;
+  border-radius: 6px;
 }
 
 .navLinks {
   display: flex;
   align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-1);
   list-style: none;
 }
 
-.navLinks a {
-  font-size: 13px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: color 0.15s;
-}
-
-.navLinks a:hover {
-  color: var(--text-primary);
-}
-
-.navLinkActive {
-  color: var(--text-primary) !important;
-}
-
-.navGithub {
+.navSection a {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1-5);
-  font-size: 13px;
-  color: var(--text-secondary);
+  height: 34px;
+  padding: 0 var(--space-3);
+  font-size: 13.5px;
+  color: #a3a3a3;
   text-decoration: none;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: var(--space-1-5) var(--space-3);
+  border-radius: 8px;
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+
+.navSection a:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.navGithubItem {
+  margin-left: var(--space-2);
+}
+
+.navGithub,
+.navDownload {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 34px;
+  padding: 0 var(--space-3-5);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: 8px;
   transition:
     color 0.15s,
     background 0.15s,
     border-color 0.15s;
 }
 
-.navGithub:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.04);
-  border-color: var(--border-hover);
+.navGithub {
+  color: #cfcfcf;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 10, 10, 0.3);
 }
 
-@media (max-width: 640px) {
-  .navInner {
-    padding: var(--space-3) var(--space-4);
+.navGithub:hover {
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.navDownload {
+  margin-left: var(--space-2);
+  color: #0a0a0a;
+  background: var(--text-primary);
+}
+
+.navDownload:hover {
+  background: #fff;
+}
+
+.navDownload svg {
+  width: 13px;
+  height: 13px;
+}
+
+@media (max-width: 760px) {
+  .navSection {
+    display: none;
   }
 
-  .navLinks li:not(:last-child) {
-    display: none;
+  .navGithubItem {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .navGithub {
+    padding: 0 var(--space-2-5);
+  }
+
+  .navGithubLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 }

@@ -66,10 +66,10 @@
   right: 0;
 }
 .rulerContentLeft {
-  left: max(var(--space-8), calc((100vw - 960px) / 2));
+  left: max(var(--gutter), calc((100vw - var(--content)) / 2));
 }
 .rulerContentRight {
-  right: max(var(--space-8), calc((100vw - 960px) / 2));
+  right: max(var(--gutter), calc((100vw - var(--content)) / 2));
 }
 .rulerTop {
   top: 0;

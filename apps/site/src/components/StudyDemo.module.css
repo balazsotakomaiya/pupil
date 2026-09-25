@@ -1,0 +1,404 @@
+.demo {
+  width: 100%;
+  max-width: 460px;
+}
+
+.stage {
+  position: relative;
+  height: 384px;
+  outline: none;
+}
+
+/* ─── Card surface ─────────────────────────────────────────────────────────
+   Smoked glass: translucent enough that the ember streaks behind the hero
+   light its top edge, dark enough that the text reads like the app. */
+.card,
+.ghost {
+  position: absolute;
+  inset: 0 0 var(--space-6);
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: linear-gradient(180deg, rgba(26, 23, 22, 0.8) 0%, rgba(14, 14, 14, 0.92) 100%);
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+}
+
+.card {
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5) var(--space-6) var(--space-6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 180, 140, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 24px 48px -12px rgba(0, 0, 0, 0.7),
+    0 48px 96px -24px rgba(0, 0, 0, 0.6);
+  animation: cardIn 0.55s var(--ease-out-expo) both;
+}
+
+.cardFront {
+  cursor: pointer;
+}
+
+.ghost {
+  z-index: calc(3 - var(--depth));
+  transform: translateY(calc(var(--depth) * 15px)) scale(calc(1 - var(--depth) * 0.05));
+  transform-origin: 50% 100%;
+  opacity: calc(1 - var(--depth) * 0.22);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.6);
+  transition:
+    transform 0.5s var(--ease-out-expo),
+    opacity 0.5s var(--ease-out-expo);
+}
+
+@keyframes cardIn {
+  from {
+    opacity: 0.4;
+    transform: translateY(12px) scale(0.955);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.leave {
+  animation: cardOut 0.42s var(--ease-out) forwards;
+}
+
+.leaveBack {
+  animation: cardBack 0.42s var(--ease-out) forwards;
+}
+
+@keyframes cardOut {
+  to {
+    opacity: 0;
+    transform: translate(-6%, -10%) rotate(-5deg) scale(0.98);
+    filter: blur(4px);
+  }
+}
+
+@keyframes cardBack {
+  to {
+    opacity: 0;
+    transform: translateY(8%) scale(0.92);
+    filter: blur(4px);
+  }
+}
+
+/* ─── Head ─────────────────────────────────────────────────────────────── */
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.chip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #b5b5b5;
+  padding: var(--space-0-5) var(--space-2-5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Body ─────────────────────────────────────────────────────────────── */
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 var(--space-2);
+  min-height: 0;
+}
+
+.front {
+  font-size: 21px;
+  line-height: 1.35;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  text-wrap: balance;
+  transition:
+    font-size 0.35s var(--ease-out),
+    color 0.35s var(--ease-out);
+}
+
+.bodyRevealed .front {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.rule {
+  width: 100%;
+  height: 1px;
+  margin: var(--space-4) 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: ruleIn 0.5s var(--ease-out-expo) both;
+}
+
+.back {
+  font-size: 17px;
+  line-height: 1.5;
+  color: #dcdcdc;
+  text-wrap: pretty;
+  animation: backIn 0.5s var(--ease-out-expo) 60ms both;
+}
+
+@keyframes ruleIn {
+  from {
+    transform: scaleX(0.2);
+    opacity: 0;
+  }
+}
+
+@keyframes backIn {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(6px);
+  }
+}
+
+/* ─── Controls ─────────────────────────────────────────────────────────── */
+.showAnswer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2-5);
+  width: 100%;
+  height: 46px;
+  margin-top: var(--space-4);
+  font-size: 14px;
+  font-weight: 500;
+  color: #0a0a0a;
+  background: var(--text-primary);
+  border: none;
+  border-radius: 11px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.showAnswer:hover {
+  background: #fff;
+}
+
+.showAnswer kbd {
+  font-size: 10.5px;
+  padding: 1px var(--space-1-5);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.08);
+  color: #555;
+}
+
+.ratings {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  animation: backIn 0.45s var(--ease-out-expo) 120ms both;
+}
+
+.rating {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-0-5);
+  padding: var(--space-2-5) 0 var(--space-2);
+  border-radius: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.025);
+  cursor: pointer;
+  transition:
+    border-color 0.2s var(--ease-out),
+    background 0.2s var(--ease-out),
+    opacity 0.3s var(--ease-out),
+    transform 0.2s var(--ease-out);
+}
+
+.rating:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-1px);
+}
+
+.rating:disabled {
+  cursor: default;
+}
+
+.ratingLabel {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #d9d9d9;
+}
+
+.ratingInterval {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.ratingKey {
+  position: absolute;
+  top: var(--space-1-5);
+  right: var(--space-2);
+  font-size: 9.5px;
+  color: #555;
+}
+
+.ratingChosen {
+  border-color: var(--ember);
+  background: var(--ember-dim);
+  box-shadow: 0 0 0 3px rgba(255, 90, 31, 0.12);
+}
+
+.ratingChosen .ratingInterval,
+.ratingChosen .ratingKey {
+  color: var(--ember-bright);
+}
+
+.ratingMuted {
+  opacity: 0.35;
+}
+
+/* ─── Summary ──────────────────────────────────────────────────────────── */
+.summaryTitle {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  margin-bottom: var(--space-3);
+}
+
+.schedule {
+  list-style: none;
+  flex: 1;
+}
+
+.schedule li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  animation: backIn 0.5s var(--ease-out-expo) both;
+}
+
+.schedule li:nth-child(2) {
+  animation-delay: 60ms;
+}
+.schedule li:nth-child(3) {
+  animation-delay: 120ms;
+}
+.schedule li:nth-child(4) {
+  animation-delay: 180ms;
+}
+
+.scheduleFront {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scheduleWhen {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ember-bright);
+}
+
+/* ─── Caption ──────────────────────────────────────────────────────────── */
+.caption {
+  min-height: 20px;
+  font-size: 12.5px;
+  color: #a8a8a8;
+  text-align: center;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+}
+
+.caption kbd {
+  font-size: 11px;
+  padding: 0 var(--space-1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+  background: rgba(10, 10, 10, 0.5);
+  color: #d0d0d0;
+}
+
+.scheduled {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--ember-bright);
+  animation: backIn 0.4s var(--ease-out-expo) both;
+}
+
+.pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ember);
+  box-shadow: 0 0 0 0 rgba(255, 90, 31, 0.6);
+  animation: pulse 1s var(--ease-out) infinite;
+}
+
+@keyframes pulse {
+  to {
+    box-shadow: 0 0 0 8px rgba(255, 90, 31, 0);
+  }
+}
+
+@media (max-width: 480px) {
+  .stage {
+    height: 400px;
+  }
+
+  .card {
+    padding: var(--space-4) var(--space-4) var(--space-5);
+  }
+
+  .front {
+    font-size: 19px;
+  }
+
+  .back {
+    font-size: 16px;
+  }
+
+  .ratingKey {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .leave,
+  .leaveBack,
+  .back,
+  .rule,
+  .ratings,
+  .schedule li,
+  .scheduled {
+    animation-duration: 0.01ms;
+  }
+
+  .pulse {
+    animation: none;
+  }
+}

@@ -5,8 +5,7 @@ import Features from "./sections/Features";
 import FinalCta from "./sections/FinalCta";
 import Hero from "./sections/Hero";
 import HowItWorks from "./sections/HowItWorks";
-import PlatformBar from "./sections/PlatformBar";
-import ProductTour from "./sections/ProductTour";
+import Science from "./sections/Science";
 import shared from "./styles/shared.module.css";
 
 export default function App() {
@@ -15,27 +14,25 @@ export default function App() {
       <Rulers />
       <Nav />
 
-      <Hero />
+      <main>
+        <Hero />
 
-      <div className={shared.rulerDivider} />
+        <div className={shared.rulerDivider} />
 
-      <PlatformBar />
+        <HowItWorks />
 
-      <div className={shared.rulerDivider} />
+        <div className={shared.rulerDivider} />
 
-      <ProductTour />
+        <Science />
 
-      <div className={shared.rulerDivider} />
+        <div className={shared.rulerDivider} />
 
-      <Features />
+        <Features />
 
-      <div className={shared.rulerDivider} />
+        <div className={shared.rulerDivider} />
 
-      <HowItWorks />
-
-      <div className={shared.rulerDivider} />
-
-      <FinalCta />
+        <FinalCta />
+      </main>
 
       <div className={shared.rulerDivider} />
 

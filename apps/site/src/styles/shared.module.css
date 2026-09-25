@@ -13,38 +13,57 @@
 
 /* ─── Section layout primitives ──────────────────────────────────────────── */
 .section {
-  padding: var(--space-20) var(--space-8);
-  max-width: 960px;
+  padding: var(--space-30) var(--gutter);
+  max-width: calc(var(--content) + 2 * var(--gutter));
   margin: 0 auto;
 }
 
-.sectionLabel {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-  color: var(--text-tertiary);
-  margin-bottom: var(--space-3);
+.sectionHead {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: end;
+  gap: var(--space-8) var(--space-16);
+  margin-bottom: var(--space-16);
 }
 
 .sectionTitle {
-  font-size: clamp(24px, 3vw, 36px);
+  font-size: clamp(34px, 4.4vw, 56px);
   font-weight: 600;
-  letter-spacing: -0.8px;
-  margin-bottom: var(--space-3);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.sectionTitle em {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  font-size: 1.08em;
+  line-height: 0.9;
 }
 
 .sectionDesc {
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1.6;
   color: var(--text-secondary);
-  max-width: 480px;
-  margin-bottom: var(--space-12);
+  max-width: 44ch;
+  text-wrap: pretty;
+}
+
+@media (max-width: 860px) {
+  .sectionHead {
+    grid-template-columns: 1fr;
+    margin-bottom: var(--space-12);
+  }
 }
 
 @media (max-width: 640px) {
   .section {
-    padding: var(--space-14) var(--space-5);
+    padding: var(--space-20) var(--gutter);
+  }
+
+  .sectionDesc {
+    font-size: 16px;
   }
 }

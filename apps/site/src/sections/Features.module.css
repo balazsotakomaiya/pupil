@@ -1,49 +1,201 @@
-.featuresGrid {
+/* ─── Spec sheet ────────────────────────────────────────────────────────── */
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+}
+
+.group {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: var(--space-8);
+  align-items: start;
+}
+
+.groupName {
+  position: sticky;
+  top: var(--space-24);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  padding-top: var(--space-4);
+}
+
+.rows {
+  list-style: none;
+  border-bottom: 1px solid var(--border);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr) 112px;
+  gap: var(--space-8);
+  align-items: baseline;
+  padding: var(--space-5) 0 var(--space-5-5);
+  border-top: 1px solid var(--border);
+  transition: border-color 0.3s var(--ease-out);
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  color: var(--text-primary);
+}
+
+.desc {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 52ch;
+  text-wrap: pretty;
+}
+
+.spec {
+  justify-self: end;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  white-space: nowrap;
+  color: var(--text-tertiary);
+  transition: color 0.3s var(--ease-out);
+}
+
+.row:hover .spec {
+  color: var(--ember-bright);
+}
+
+/* ─── Detail crops ──────────────────────────────────────────────────────── */
+.details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-6);
+  margin-top: var(--space-24);
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-4);
 }
 
-.featureCard {
-  background: var(--bg-subtle);
+/* Zoomed crop of a full-window screenshot: --fx/--fy is the point kept at
+   the center, --z the zoom. 96.935% = image height / tile height at 4:3. */
+.crop {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  padding: 0;
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-6);
-  transition: border-color 0.2s;
+  border-radius: 14px;
+  background: #0b0b0b;
+  cursor: zoom-in;
+  transition: border-color 0.3s var(--ease-out);
 }
 
-.featureCard:hover {
+.crop img {
+  position: absolute;
+  width: calc(var(--z) * 100%);
+  max-width: none;
+  height: auto;
+  left: calc(50% - var(--fx) * var(--z) * 100%);
+  top: calc(50% - var(--fy) * var(--z) * 96.935%);
+  transform-origin: calc(var(--fx) * 100%) calc(var(--fy) * 100%);
+  transition: transform 0.7s var(--ease-out-expo);
+}
+
+.crop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 28px 2px rgba(10, 10, 10, 0.7);
+  pointer-events: none;
+}
+
+.crop:hover {
   border-color: var(--border-hover);
 }
 
-.featureIcon {
-  width: 40px;
-  height: 40px;
-  color: var(--text-primary);
-  margin-bottom: var(--space-4);
+.crop:hover img {
+  transform: scale(1.04);
 }
 
-.featureTitle {
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: var(--space-1-5);
+.enlarge {
+  position: absolute;
+  z-index: 1;
+  bottom: var(--space-3);
+  right: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(10, 10, 10, 0.72);
+  color: var(--text-primary);
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.2s var(--ease-out),
+    transform 0.2s var(--ease-out);
+}
+
+.crop:hover .enlarge,
+.crop:focus-visible .enlarge {
+  opacity: 1;
+  transform: none;
+}
+
+.detail figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 0 var(--space-0-5);
+}
+
+.detailTitle {
+  font-size: 14.5px;
+  font-weight: 500;
   color: var(--text-primary);
 }
 
-.featureDesc {
-  font-size: 13px;
-  line-height: 1.5;
+.detailCaption {
+  font-size: 13.5px;
+  line-height: 1.55;
   color: var(--text-secondary);
 }
 
-@media (max-width: 768px) {
-  .featuresGrid {
-    grid-template-columns: 1fr 1fr;
+@media (max-width: 960px) {
+  .group {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .groupName {
+    position: static;
+    font-size: 30px;
+  }
+
+  .row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-2) var(--space-6);
+  }
+
+  .desc {
+    grid-column: 1 / -1;
+    grid-row: 2;
   }
 }
 
-@media (max-width: 640px) {
-  .featuresGrid {
+@media (max-width: 760px) {
+  .details {
     grid-template-columns: 1fr;
+    gap: var(--space-10);
+    margin-top: var(--space-16);
   }
 }
