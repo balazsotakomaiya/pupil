@@ -108,7 +108,7 @@ This recovery path is meant for “the release failed, fix it and republish” s
 
 A 15-second announcement film lives at [`apps/site/release-film.html`](../apps/site/release-film.html). It is one deterministic timeline: every frame is a pure function of time, so the page plays live in a browser (`bun run --cwd apps/site dev`, then open `/release-film.html`; Space pauses, arrow keys step frames, `?format=portrait` previews the tall cut) and renders frame-perfect to video.
 
-The renderer needs Playwright with Chromium and an ffmpeg build with libx264 on `PATH` (or `FFMPEG=/path/to/ffmpeg`). The version on screen comes from `apps/app/package.json`, so re-render after `release:version`. Films end on the logo lockup, which is what LinkedIn and YouTube show once playback stops; add `--loop` for a fade-to-black cut that loops seamlessly.
+The renderer needs Playwright with Chromium and an ffmpeg build with libx264 on `PATH` (or `FFMPEG=/path/to/ffmpeg`). The version on screen comes from `apps/app/package.json` without its prerelease suffix (`1.0.0-alpha.10` shows as `v1.0.0`, since the film announces the stable line), so re-render after `release:version`. Films end on the logo lockup, which is what LinkedIn and YouTube show once playback stops; add `--loop` for a fade-to-black cut that loops seamlessly.
 
 | Asset | Command |
 | --- | --- |

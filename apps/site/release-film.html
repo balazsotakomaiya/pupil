@@ -132,15 +132,7 @@
         transform-origin: 234px 234px;
       }
       .eye { overflow: visible; }
-      .eye .stroke {
-        fill: none;
-        stroke: #ededed;
-        stroke-linecap: round;
-        stroke-dasharray: 1;
-        stroke-dashoffset: 1;
-      }
-      .eye g, .eye circle { transform-box: fill-box; transform-origin: center; }
-      .eye .pupil { fill: #ededed; }
+      .eye .iris { transform-box: fill-box; transform-origin: center; }
 
       #cover {
         position: absolute;
@@ -570,14 +562,7 @@
             <g id="s1-ticks"></g>
           </svg>
           <div id="s1-eyewrap">
-            <svg class="eye" viewBox="0 0 52 52" width="468" height="468">
-              <g class="shape">
-                <path class="stroke" pathLength="1" stroke-width="1.25" d="M3 26 C7 17 15 13 26 13 C37 13 45 17 49 26" />
-                <path class="stroke" pathLength="1" stroke-width="1.25" d="M3 26 C7 35 15 39 26 39 C37 39 45 35 49 26" />
-              </g>
-              <g class="irisg"><circle class="stroke iris" pathLength="1" stroke-width="1.25" cx="26" cy="26" r="8" /></g>
-              <g class="pupilg"><circle class="pupil" cx="26" cy="26" r="4" /></g>
-            </svg>
+            <svg class="eye" width="468" height="468"></svg>
           </div>
         </section>
 
@@ -771,21 +756,13 @@
 
         <!-- 06 · Release: the period becomes the pupil; lockup -->
         <section class="layer scene" id="s6">
-          <svg class="eye" id="s6-eye" viewBox="0 0 52 52">
-            <circle class="echo" cx="26" cy="26" r="4" fill="none" stroke="#ededed" stroke-width="0.6" />
-            <g class="shape">
-              <path class="stroke" pathLength="1" stroke-width="1.5" d="M3 26 C7 17 15 13 26 13 C37 13 45 17 49 26" />
-              <path class="stroke" pathLength="1" stroke-width="1.5" d="M3 26 C7 35 15 39 26 39 C37 39 45 35 49 26" />
-            </g>
-            <g class="irisg"><circle class="stroke iris" pathLength="1" stroke-width="1.5" cx="26" cy="26" r="8" /></g>
-            <g class="pupilg"><circle class="pupil" cx="26" cy="26" r="4" /></g>
-          </svg>
+          <svg class="eye" id="s6-eye"></svg>
           <div id="s6-word"><span class="lm"><span>p</span></span><span class="lm"><span>u</span></span><span class="lm"><span>p</span></span><span class="lm"><span>i</span></span><span class="lm"><span>l</span></span></div>
           <p id="s6-tag">
             <span class="w">Flashcards that <em>actually</em> work with your brain.</span>
           </p>
           <div id="s6-meta">
-            <span class="vchip" id="s6-version">v1.0.0-alpha.10</span>
+            <span class="vchip" id="s6-version">v1.0.0</span>
             <span class="avail"><i></i>Available now</span>
             <span class="sep"></span>
             <span class="plat">
@@ -806,13 +783,7 @@
 
         <!-- Thumbnail: the logo eye glancing and blinking, as a seamless 3s loop -->
         <section class="layer scene" id="sT">
-          <svg class="eye" id="sT-eye" viewBox="0 0 52 52">
-            <g class="shape">
-              <path fill="none" stroke="#ededed" stroke-width="1.5" d="M3 26 C7 17 15 13 26 13 C37 13 45 17 49 26 C45 35 37 39 26 39 C15 39 7 35 3 26Z" />
-            </g>
-            <g class="irisg"><circle fill="none" stroke="#ededed" stroke-width="1.5" cx="26" cy="26" r="8" /></g>
-            <g class="pupilg"><circle class="pupil" cx="26" cy="26" r="4" /></g>
-          </svg>
+          <svg class="eye" id="sT-eye"></svg>
         </section>
 
         <div id="travel"></div>
@@ -832,7 +803,7 @@
         <i class="plus"></i>
         <i class="plus"></i>
         <div class="ht tl"><b>PUPIL</b>  RELEASE FILM</div>
-        <div class="ht tr" id="hud-version">APP-V1.0.0-ALPHA.10</div>
+        <div class="ht tr" id="hud-version">APP-V1.0.0</div>
         <div class="ht bl" id="hud-scene"></div>
         <div class="ht br" id="hud-tc"></div>
       </div>
@@ -865,7 +836,8 @@
         const FPS = 60;
         const RENDER = params.has("render");
         const LOOP = params.has("loop");
-        const VERSION = params.get("version") || "1.0.0-alpha.10";
+        // The film announces the stable line, so prerelease suffixes (-alpha.10, -rc.1…) are dropped.
+        const VERSION = (params.get("version") || "1.0.0").replace(/-.*$/, "");
         document.body.classList.add(`fmt-${FORMAT}`);
         if (RENDER) document.body.classList.add("render");
         if (params.get("hud") === "0") document.body.classList.add("hud-off");
@@ -979,6 +951,71 @@
           light.style.transform = `translate(${k("x")}px, ${k("y")}px) scale(${k("s")}) rotate(${k("r")}deg)`;
         };
 
+        // ─── Eye rig ───────────────────────────────────────────────────────
+        // The logo eye, built to move like one. The lids are one closed path with the logo's
+        // exact geometry (so the corners keep their mitred points) and they close for a blink,
+        // the upper lid travelling further than the lower. Iris and pupil move together and are
+        // clipped by the lids, so a blink covers them. Stroke weight never changes.
+        const lidPath = (closed) => {
+          const t1 = lerp(17, 29, closed);
+          const t2 = lerp(13, 31, closed);
+          const b1 = lerp(35, 29, closed);
+          const b2 = lerp(39, 31, closed);
+          return `M3 26 C7 ${t1} 15 ${t2} 26 ${t2} C37 ${t2} 45 ${t1} 49 26 C45 ${b1} 37 ${b2} 26 ${b2} C15 ${b2} 7 ${b1} 3 26Z`;
+        };
+        /** Lid closure for a blink starting at t0: shut fast, a beat closed, open slower. */
+        const blinkAt = (t, t0) =>
+          P(t, t0, t0 + 0.08, E.inQuad) * (1 - P(t, t0 + 0.11, t0 + 0.27, E.outCubic));
+        let eyeCount = 0;
+        const mountEye = (svg, stroke = 1.5) => {
+          const id = `eye-${eyeCount++}`;
+          svg.setAttribute("viewBox", "0 0 52 52");
+          svg.innerHTML = `
+            <defs>
+              <clipPath id="${id}-lens"><path class="lens" /></clipPath>
+              <linearGradient id="${id}-wipe" gradientUnits="userSpaceOnUse" x1="0" x2="3" y1="0" y2="0">
+                <stop offset="0" stop-color="#fff" /><stop offset="1" stop-color="#fff" stop-opacity="0" />
+              </linearGradient>
+              <mask id="${id}-draw" maskUnits="userSpaceOnUse" x="-4" y="-4" width="60" height="60">
+                <rect x="-4" y="-4" width="60" height="60" fill="url(#${id}-wipe)" />
+              </mask>
+            </defs>
+            <circle class="echo" cx="26" cy="26" r="4" fill="none" stroke="#ededed" stroke-width="0.6" opacity="0" />
+            <g clip-path="url(#${id}-lens)">
+              <g class="gaze">
+                <circle class="iris" pathLength="1" cx="26" cy="26" r="8" fill="none" stroke="#ededed"
+                  stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="1 1" />
+                <circle class="pupil" cx="26" cy="26" r="4" fill="#ededed" />
+              </g>
+            </g>
+            <path class="lids" mask="url(#${id}-draw)" fill="none" stroke="#ededed" stroke-width="${stroke}" />`;
+          const [lens, lids, iris, pupil, gaze, echo] = [".lens", ".lids", ".iris", ".pupil", ".gaze", ".echo"].map(
+            (sel) => $(sel, svg),
+          );
+          const wipe = $("linearGradient", svg);
+          return {
+            echo,
+            /**
+             * lids/iris: draw-on progress 0→1 · pupil: radius in viewBox units ·
+             * gaze: horizontal look offset · blink: lid closure 0 (open) → 1 (shut).
+             */
+            set({ lids: drawn = 1, iris: ring = 1, pupil: r = 4, gaze: dx = 0, blink = 0 }) {
+              const d = lidPath(blink);
+              lids.setAttribute("d", d);
+              lens.setAttribute("d", d);
+              const x = lerp(-4, 56, drawn);
+              wipe.setAttribute("x1", x - 3);
+              wipe.setAttribute("x2", x);
+              lids.style.opacity = drawn > 0 ? 1 : 0;
+              iris.style.strokeDashoffset = 1 - ring;
+              iris.style.opacity = Math.min(1, ring * 10);
+              iris.style.transform = `rotate(${-90 - (1 - ring) * 160}deg)`;
+              pupil.setAttribute("r", Math.max(0, r));
+              gaze.setAttribute("transform", `translate(${dx} 0)`);
+            },
+          };
+        };
+
         // ─── 01 · Aperture ─────────────────────────────────────────────────
         const s1 = (() => {
           const el = $("#s1");
@@ -1004,12 +1041,7 @@
             );
           }
           const wrap = $("#s1-eyewrap");
-          const [top, bot] = $$(".shape path", el);
-          const shape = $(".shape", el);
-          const irisG = $(".irisg", el);
-          const iris = $(".iris", el);
-          const pupilG = $(".pupilg", el);
-          const pupil = $(".pupil", el);
+          const eye = mountEye($(".eye", wrap));
           return {
             el,
             from: 0,
@@ -1033,26 +1065,15 @@
               ticks.style.opacity = P(t, 0.5, 0.85) * (1 - P(t, 1.25, 1.55)) * 0.5;
               ticks.setAttribute("transform", `rotate(${lerp(-50, 0, tk)} ${CX} ${CY})`);
 
-              // The pupil pops, the iris sweeps round, the lids draw from the corners.
-              const pp = P(t, 0.14, 0.62, (p) => E.outBack(p, 2.4));
-              pupil.setAttribute("r", Math.max(0, 4 * pp));
-              const ip = P(t, 0.4, 1.02, E.inOutCubic);
-              iris.style.strokeDashoffset = 1 - ip;
-              iris.style.opacity = Math.min(1, ip * 10);
-              iris.style.transform = `rotate(${-90 - (1 - ip) * 160}deg)`;
-              const ap = P(t, 0.66, 1.34, E.inOutCubic);
-              for (const lid of [top, bot]) {
-                lid.style.strokeDashoffset = 1 - ap;
-                lid.style.opacity = ap > 0 ? 1 : 0;
-              }
-
-              // A glance right, back, then the signature blink.
-              const look = V(t, 1.3, 1.44, 0, 2.4, E.inOutCubic) - V(t, 1.46, 1.62, 0, 2.4, E.inOutCubic);
-              pupil.setAttribute("cx", 26 + look);
-              const blink = bell(t, 1.64, 1.88);
-              shape.style.transform = `scaleY(${1 - 0.95 * blink})`;
-              irisG.style.transform = `scaleY(${1 - 0.9 * blink})`;
-              pupilG.style.opacity = 1 - blink;
+              // The pupil pops, the iris sweeps round, the lids wipe in from the corner;
+              // then a glance right and back, and the signature blink.
+              eye.set({
+                pupil: 4 * P(t, 0.14, 0.62, (p) => E.outBack(p, 2.4)),
+                iris: P(t, 0.4, 1.02, E.inOutCubic),
+                lids: P(t, 0.66, 1.34, E.inOutCubic),
+                gaze: V(t, 1.3, 1.44, 0, 2.6, E.inOutCubic) - V(t, 1.46, 1.62, 0, 2.6, E.inOutCubic),
+                blink: blinkAt(t, 1.6),
+              });
 
               // Dive through the pupil: it swells until it is the whole frame.
               const push = V(t, 0, 1.9, 0.94, 1.02, E.outCubic);
@@ -1512,14 +1533,8 @@
         // ─── 06 · Release ──────────────────────────────────────────────────
         const s6 = (() => {
           const el = $("#s6");
-          const eye = $("#s6-eye");
-          const [top, bot] = $$(".shape path", eye);
-          const shape = $(".shape", eye);
-          const irisG = $(".irisg", eye);
-          const iris = $(".iris", eye);
-          const pupilG = $(".pupilg", eye);
-          const pupil = $(".pupil", eye);
-          const echo = $(".echo", eye);
+          const eyeEl = $("#s6-eye");
+          const eye = mountEye(eyeEl);
           const word = $("#s6-word");
           const letters = $$(".lm > span", word);
           const tag = $("#s6-tag .w");
@@ -1546,31 +1561,21 @@
             update(t) {
               const slide = P(t, 12.62, 13.22, E.inOutCubic);
               const ex = lerp(CX, layout.eyeFinal, slide);
-              eye.style.transform = `translate(${ex - EYE_BOX / 2}px, ${EYE_Y - EYE_BOX / 2}px)`;
+              eyeEl.style.transform = `translate(${ex - EYE_BOX / 2}px, ${EYE_Y - EYE_BOX / 2}px)`;
 
+              // The travelling dot lands as the pupil (with a little squash), sends out an echo,
+              // and the iris and lids draw round it. Later: a glance, and the blink.
               const land = t >= 12.5;
-              pupil.style.opacity = land ? 1 : 0;
-              pupilG.style.transform = `scale(${1 + 0.3 * bell(t, 12.5, 12.68)})`;
               const ep = P(t, 12.5, 13.1, E.outCubic);
-              echo.setAttribute("r", 4 + ep * 30);
-              echo.style.opacity = land && ep < 1 ? (1 - ep) * 0.6 : 0;
-
-              const ip = P(t, 12.5, 12.86, E.inOutCubic);
-              iris.style.strokeDashoffset = 1 - ip;
-              iris.style.opacity = Math.min(1, ip * 10);
-              iris.style.transform = `rotate(${-90 - (1 - ip) * 160}deg)`;
-              const ap = P(t, 12.56, 12.98, E.inOutCubic);
-              for (const lid of [top, bot]) {
-                lid.style.strokeDashoffset = 1 - ap;
-                lid.style.opacity = ap > 0 ? 1 : 0;
-              }
-
-              const look = V(t, 13.56, 13.7, 0, 2, E.inOutCubic) - V(t, 13.74, 13.9, 0, 2, E.inOutCubic);
-              pupil.setAttribute("cx", 26 + look);
-              const blink = bell(t, 14.02, 14.26);
-              shape.style.transform = `scaleY(${1 - 0.95 * blink})`;
-              irisG.style.transform = `scaleY(${1 - 0.9 * blink})`;
-              pupilG.style.opacity = 1 - blink;
+              eye.echo.setAttribute("r", 4 + ep * 30);
+              eye.echo.setAttribute("opacity", land && ep < 1 ? (1 - ep) * 0.6 : 0);
+              eye.set({
+                pupil: land ? 4 * (1 + 0.3 * bell(t, 12.5, 12.68)) : 0,
+                iris: P(t, 12.5, 12.86, E.inOutCubic),
+                lids: P(t, 12.56, 12.98, E.inOutCubic),
+                gaze: V(t, 13.56, 13.7, 0, 2.2, E.inOutCubic) - V(t, 13.74, 13.9, 0, 2.2, E.inOutCubic),
+                blink: blinkAt(t, 14.02),
+              });
 
               // The wordmark slides out from behind the lens, clipped at its right edge.
               const wx = layout.wordLeft - (1 - slide) * 180;
@@ -1593,25 +1598,19 @@
         // Glance right, glance left, settle, blink: frame 0 and frame N match, so it loops.
         const sT = (() => {
           const el = $("#sT");
-          const eye = $("#sT-eye");
-          const shape = $(".shape", eye);
-          const irisG = $(".irisg", eye);
-          const pupilG = $(".pupilg", eye);
-          const pupil = $(".pupil", eye);
+          const eye = mountEye($("#sT-eye"));
           return {
             el,
             from: 0,
             to: DURATION + 1,
             update(t) {
-              const look =
-                V(t, 0.45, 0.72, 0, 2.2, E.inOutCubic) -
-                V(t, 1.2, 1.6, 0, 4.4, E.inOutCubic) +
-                V(t, 1.95, 2.22, 0, 2.2, E.inOutCubic);
-              pupil.setAttribute("cx", 26 + look);
-              const blink = bell(t, 2.45, 2.7);
-              shape.style.transform = `scaleY(${1 - 0.95 * blink})`;
-              irisG.style.transform = `scaleY(${1 - 0.9 * blink})`;
-              pupilG.style.opacity = 1 - blink;
+              eye.set({
+                gaze:
+                  V(t, 0.45, 0.72, 0, 2.6, E.inOutCubic) -
+                  V(t, 1.2, 1.6, 0, 5.2, E.inOutCubic) +
+                  V(t, 1.95, 2.22, 0, 2.6, E.inOutCubic),
+                blink: blinkAt(t, 2.45),
+              });
             },
           };
         })();
