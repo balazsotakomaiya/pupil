@@ -3,8 +3,14 @@
  * Renders the release film (apps/site/release-film.html) to video, frame by frame.
  *
  *   node scripts/render-release-film.mjs                       → docs/assets/release-film.mp4
- *   node scripts/render-release-film.mjs --out film.mp4 --fps 30 --crf 20 --workers 2
- *   node scripts/render-release-film.mjs --stills 2.5,6.4,13.8 [--out-dir stills/]  (default: OS tmpdir)
+ *   node scripts/render-release-film.mjs --format portrait --fps 30 --out linkedin.mp4
+ *   node scripts/render-release-film.mjs --format thumb --width 240 --out thumbnail.gif
+ *   node scripts/render-release-film.mjs --stills 2.5,6.4,13.8 --no-hud [--out-dir stills/]
+ *
+ * Options: --format landscape|portrait|thumb, --fps, --crf, --width <px> (scale the output),
+ * --loop (fade to black at the end so the film loops), --no-hud (hide the frame overlay),
+ * --workers <n>. An output ending in .gif is encoded as a looping GIF; anything else is H.264
+ * with a silent AAC track, which is what social platforms expect. Stills default to the OS tmpdir.
  *
  * The page exposes window.__film.seek(t); every frame is seeked and screenshotted, so the output
  * is identical no matter how fast the machine is. The version shown on screen is read from
@@ -23,8 +29,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = join(ROOT, "apps/site");
 const PAGE = "release-film.html";
-const WIDTH = 1920;
-const HEIGHT = 1080;
+// Big enough for every format; captures are clipped to the film's own size.
+const VIEWPORT = { width: 1920, height: 1350 };
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -39,24 +45,37 @@ const MIME = {
 function parseArgs(argv) {
   const opts = {
     out: join(ROOT, "docs/assets/release-film.mp4"),
-    fps: 60,
+    fps: null,
     crf: 22,
+    format: "landscape",
+    width: null,
+    loop: false,
+    hud: true,
     stills: null,
     outDir: join(tmpdir(), "pupil-release-film-stills"),
     // Each worker is its own headless browser; leave a core for the encoder.
     workers: Math.max(1, Math.min(4, availableParallelism() - 1)),
   };
   for (let i = 0; i < argv.length; i++) {
-    const [flag, value] = [argv[i], argv[i + 1]];
-    if (flag === "--out") opts.out = resolve(value);
-    else if (flag === "--fps") opts.fps = Number(value);
-    else if (flag === "--crf") opts.crf = Number(value);
-    else if (flag === "--stills") opts.stills = value.split(",").map(Number);
-    else if (flag === "--out-dir") opts.outDir = resolve(value);
-    else if (flag === "--workers") opts.workers = Math.max(1, Number(value));
-    else throw new Error(`Unknown argument: ${flag}`);
-    i++;
+    const flag = argv[i];
+    if (flag === "--loop") opts.loop = true;
+    else if (flag === "--no-hud") opts.hud = false;
+    else {
+      const value = argv[++i];
+      if (flag === "--out") opts.out = resolve(value);
+      else if (flag === "--format") opts.format = value;
+      else if (flag === "--fps") opts.fps = Number(value);
+      else if (flag === "--crf") opts.crf = Number(value);
+      else if (flag === "--width") opts.width = Number(value);
+      else if (flag === "--stills") opts.stills = value.split(",").map(Number);
+      else if (flag === "--out-dir") opts.outDir = resolve(value);
+      else if (flag === "--workers") opts.workers = Math.max(1, Number(value));
+      else throw new Error(`Unknown argument: ${flag}`);
+    }
   }
+  opts.gif = extname(opts.out) === ".gif";
+  // GIF frame delays are in centiseconds, so 25fps (4cs) is the smoothest exact rate.
+  opts.fps ??= opts.gif ? 25 : 60;
   return opts;
 }
 
@@ -88,24 +107,30 @@ function serveSite() {
   });
 }
 
-function startEncoder(opts) {
-  const ffmpeg = process.env.FFMPEG ?? "ffmpeg";
-  mkdirSync(dirname(opts.out), { recursive: true });
-  // PNG frames in, BT.709 H.264 out; faststart so the file streams on the web.
-  const args = [
-    "-y",
-    "-loglevel",
-    "error",
+function encoderArgs(opts) {
+  const input = ["-y", "-loglevel", "error"];
+  input.push("-f", "image2pipe", "-framerate", String(opts.fps), "-c:v", "png", "-i", "-");
+  const resize = opts.width ? `scale=${opts.width}:-2:flags=lanczos,` : "";
+  if (opts.gif) {
+    // One palette for the whole loop, with ordered dithering so the gradients stay smooth.
+    const palette = "split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer";
+    return [...input, "-vf", `${resize}${palette}`, "-loop", "0", opts.out];
+  }
+  // PNG frames in, BT.709 H.264 out, plus the silent AAC track many upload pipelines expect;
+  // faststart so the file streams on the web.
+  return [
+    ...input,
     "-f",
-    "image2pipe",
-    "-framerate",
-    String(opts.fps),
-    "-c:v",
-    "png",
+    "lavfi",
     "-i",
-    "-",
+    "anullsrc=channel_layout=stereo:sample_rate=48000",
+    "-shortest",
     "-vf",
-    "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p",
+    `${resize}scale=out_color_matrix=bt709:out_range=tv,format=yuv420p`,
+    "-c:a",
+    "aac",
+    "-b:a",
+    "128k",
     "-c:v",
     "libx264",
     "-preset",
@@ -122,7 +147,12 @@ function startEncoder(opts) {
     "+faststart",
     opts.out,
   ];
-  const proc = spawn(ffmpeg, args, { stdio: ["pipe", "inherit", "inherit"] });
+}
+
+function startEncoder(opts) {
+  const ffmpeg = process.env.FFMPEG ?? "ffmpeg";
+  mkdirSync(dirname(opts.out), { recursive: true });
+  const proc = spawn(ffmpeg, encoderArgs(opts), { stdio: ["pipe", "inherit", "inherit"] });
   const finished = new Promise((done, fail) => {
     proc.on("error", fail);
     proc.on("close", (code) => (code === 0 ? done() : fail(new Error(`ffmpeg exited ${code}`))));
@@ -140,10 +170,7 @@ async function openFilm(chromium, url) {
   const browser = await chromium.launch({
     args: ["--force-color-profile=srgb", "--font-render-hinting=none", "--hide-scrollbars"],
   });
-  const page = await browser.newPage({
-    viewport: { width: WIDTH, height: HEIGHT },
-    deviceScaleFactor: 1,
-  });
+  const page = await browser.newPage({ viewport: VIEWPORT, deviceScaleFactor: 1 });
   page.on("pageerror", (error) => console.error(`page error: ${error.message}`));
   page.on("console", (msg) => msg.type() === "error" && console.error(`console: ${msg.text()}`));
   // Fetch web fonts from Node rather than the browser, so the render honours the host's
@@ -152,10 +179,11 @@ async function openFilm(chromium, url) {
     await route.fulfill({ response: await route.fetch() });
   });
   await page.goto(url, { waitUntil: "networkidle" });
-  const duration = await page.evaluate(async () => {
+  const { duration, width, height } = await page.evaluate(async () => {
     await window.__film.ready;
-    return window.__film.duration;
+    return window.__film;
   });
+  const clip = { x: 0, y: 0, width, height, scale: 1 };
   // CDP capture with optimizeForSpeed is still lossless PNG, but several times faster than
   // page.screenshot(), which spends most of its time in zlib.
   const cdp = await page.context().newCDPSession(page);
@@ -163,11 +191,13 @@ async function openFilm(chromium, url) {
     browser,
     page,
     duration,
+    clip,
     seek: (t) => page.evaluate((time) => window.__film.seek(time), t),
     capture: async () => {
       const shot = await cdp.send("Page.captureScreenshot", {
         format: "png",
         optimizeForSpeed: true,
+        clip,
       });
       return Buffer.from(shot.data, "base64");
     },
@@ -202,7 +232,9 @@ async function main() {
   const version = JSON.parse(readFileSync(join(ROOT, "apps/app/package.json"), "utf8")).version;
   const { chromium } = await loadPlaywright();
   const server = await serveSite();
-  const query = new URLSearchParams({ render: "1", version });
+  const query = new URLSearchParams({ render: "1", version, format: opts.format });
+  if (opts.loop) query.set("loop", "1");
+  if (!opts.hud) query.set("hud", "0");
   const url = `http://127.0.0.1:${server.address().port}/${PAGE}?${query}`;
   const workers = opts.stills ? 1 : opts.workers;
   const films = await Promise.all(Array.from({ length: workers }, () => openFilm(chromium, url)));
@@ -214,7 +246,7 @@ async function main() {
       for (const t of opts.stills) {
         await film.seek(t);
         const file = join(opts.outDir, `still-${t.toFixed(2)}.jpg`);
-        await film.page.screenshot({ path: file, type: "jpeg", quality: 92 });
+        await film.page.screenshot({ path: file, type: "jpeg", quality: 92, clip: film.clip });
         console.log(file);
       }
     } else {
