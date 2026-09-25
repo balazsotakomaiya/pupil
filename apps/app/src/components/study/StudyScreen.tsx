@@ -539,7 +539,9 @@ export function StudyScreen({
         />
       ) : displayCard ? (
         <div className={styles.sessionArea}>
-          <div className={styles.sessionCardWrap}>
+          {/* Keyed per turn so every card arrives fresh instead of flipping
+              back and briefly showing the previous answer. */}
+          <div className={styles.sessionCardWrap} key={`${displayCard.id}:${reviewedCount}`}>
             <StudyReviewCard
               card={displayCard}
               isAnswerVisible={isAnswerVisible}

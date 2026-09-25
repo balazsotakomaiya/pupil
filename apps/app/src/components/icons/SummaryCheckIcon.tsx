@@ -1,6 +1,7 @@
 export function SummaryCheckIcon() {
   return (
     <svg
+      aria-hidden="true"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -8,7 +9,7 @@ export function SummaryCheckIcon() {
       strokeLinejoin="round"
       strokeWidth="2.5"
     >
-      <path d="M5 12l5 5L20 7" />
+      <path d="M5 12l5 5L20 7" pathLength={1} />
     </svg>
   );
 }

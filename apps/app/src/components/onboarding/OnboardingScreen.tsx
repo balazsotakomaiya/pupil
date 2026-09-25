@@ -1,4 +1,4 @@
-import { EyeLogo } from "../dashboard/EyeLogo";
+import { EyeLogo } from "../brand";
 import { AiGenerateIcon, CreateSpaceIcon, ImportDeckIcon } from "../icons/OnboardingIcons";
 import styles from "./Onboarding.module.css";
 import { OnboardingPathCard } from "./OnboardingPathCard";
@@ -21,7 +21,7 @@ export function OnboardingScreen({
 }: OnboardingScreenProps) {
   return (
     <>
-      <div className={styles.welcomeTitlebar} />
+      <div className={styles.welcomeTitlebar} data-window-drag />
 
       <div className={styles.welcomePage}>
         <div className={styles.welcomeHero}>

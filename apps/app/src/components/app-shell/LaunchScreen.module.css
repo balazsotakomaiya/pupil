@@ -1,0 +1,86 @@
+/* ── Launch screen ──
+   Timeline (ms): rulers measure out 0–1020 · lid traces closed 60–520 ·
+   eye opens 460–940 · iris 640 · pupil 740 · wordmark 600 · glance
+   960–1420. Keyframes live in styles/animations.css. */
+
+.launch {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(
+      circle at 50% 44%,
+      color-mix(in srgb, var(--text-primary) 4%, transparent),
+      transparent 46%
+    ),
+    var(--bg);
+  color: var(--text-primary);
+  cursor: default;
+  user-select: none;
+}
+
+.mark {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  /* Optical centre: the eye, not the eye plus wordmark, sits on the midline. */
+  transform: translateY(calc(var(--space-6) * -1));
+}
+
+.eye {
+  display: block;
+  width: 84px;
+  height: 84px;
+  overflow: visible;
+}
+
+/* Closed, the lids are the open outline squashed to a hairline; opening is
+   one transform, so it runs the same in every webview. */
+.lids {
+  transform-origin: 26px 26px;
+  animation: global(launchLidsOpen) 480ms cubic-bezier(0.3, 1.4, 0.5, 1) 460ms both;
+}
+
+.outline {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: global(launchTrace) 460ms cubic-bezier(0.65, 0, 0.35, 1) 60ms forwards;
+}
+
+.iris {
+  transform-origin: 26px 26px;
+  animation: global(launchIris) 480ms cubic-bezier(0.22, 1, 0.36, 1) 640ms both;
+}
+
+.gaze {
+  animation: global(launchGlance) 460ms cubic-bezier(0.45, 0, 0.25, 1) 960ms both;
+}
+
+.pupil {
+  transform-origin: 26px 26px;
+  animation: global(launchPupil) 380ms cubic-bezier(0.34, 1.56, 0.64, 1) 740ms both;
+}
+
+.wordmark {
+  font-family: "Syne", var(--font-sans);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  animation: global(launchWordmark) 700ms cubic-bezier(0.22, 1, 0.36, 1) 600ms both;
+}
+
+/* Exit: the mark leans in as the veil lifts, so the app arrives from behind it. */
+.exiting {
+  pointer-events: none;
+  animation: global(launchVeil) 480ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.exiting .mark {
+  animation: global(launchMarkOut) 480ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}

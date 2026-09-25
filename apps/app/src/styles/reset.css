@@ -41,3 +41,30 @@ select {
 button {
   color: inherit;
 }
+
+::selection {
+  background: color-mix(in srgb, var(--text-primary) 22%, transparent);
+  color: var(--text-primary);
+}
+
+/* One focus language everywhere: a quiet ring offset from the control.
+   Components with their own :focus-visible treatment override this. */
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--text-primary) 55%, transparent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -59,3 +59,29 @@
 .rulerH.bottom {
   bottom: 0;
 }
+
+/* Launch: the frame measures itself out before the app settles into it. */
+.drawIn .rulerV {
+  transform-origin: top;
+  animation: global(rulerDrawY) 900ms cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+.drawIn .rulerH {
+  transform-origin: left;
+  animation: global(rulerDrawX) 900ms cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+
+.drawIn .rulerV.right,
+.drawIn .rulerH.bottom {
+  transform-origin: bottom right;
+}
+
+.drawIn .contentLeft,
+.drawIn .contentRight {
+  animation-delay: 120ms;
+}
+
+.drawIn .rulerH.bottom,
+.drawIn .rulerV.right {
+  animation-delay: 60ms;
+}

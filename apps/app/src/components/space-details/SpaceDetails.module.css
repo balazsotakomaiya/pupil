@@ -107,7 +107,6 @@
 
 .barChart {
   display: flex;
-  align-items: flex-end;
   gap: 3px;
   height: 100px;
 }
@@ -119,16 +118,29 @@
   align-items: center;
 }
 
+/* Gives each bar a definite height to be a percentage of; without it the
+   bars resolve against an auto-height column and collapse to min-height. */
+.barTrack {
+  display: flex;
+  flex: 1;
+  align-items: flex-end;
+  width: 100%;
+  min-height: 0;
+}
+
 .bar {
   width: 100%;
   min-height: 2px;
   border-radius: 2px 2px 0 0;
-  background: #ededed18;
+  background: color-mix(in srgb, var(--text-primary) 9%, transparent);
+  transform-origin: bottom;
   transition: background 0.15s ease;
+  animation: global(rulerDrawY) 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--bar-index, 0) * 40ms);
 }
 
 .bar:hover {
-  background: #ededed30;
+  background: color-mix(in srgb, var(--text-primary) 19%, transparent);
 }
 
 .bar.today {
@@ -141,7 +153,7 @@
   margin-top: var(--space-1-5);
   color: var(--text-tertiary);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: 0.3px;
 }
 
@@ -325,7 +337,7 @@
 }
 
 .reviewGrade.stateLearning {
-  color: #fbbf24;
+  color: var(--state-learning);
 }
 
 .reviewGrade.stateReview {
@@ -333,7 +345,7 @@
 }
 
 .reviewGrade.stateRelearning {
-  color: #fca5a5;
+  color: var(--state-relearning);
 }
 
 .reviewInterval,

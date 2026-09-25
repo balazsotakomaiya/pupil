@@ -129,11 +129,11 @@
 
 @keyframes studyActionGlow {
   0% {
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--text-primary) 50%, transparent);
   }
 
   100% {
-    box-shadow: 0 0 0 12px rgba(255, 255, 255, 0);
+    box-shadow: 0 0 0 12px color-mix(in srgb, var(--text-primary) 0%, transparent);
   }
 }
 
@@ -191,5 +191,136 @@
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
+  }
+}
+
+/* ── Launch screen (components/app-shell/LaunchScreen) ── */
+
+@keyframes launchTrace {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes launchLidsOpen {
+  from {
+    transform: scaleY(0.1875);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes launchIris {
+  from {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes launchPupil {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes launchGlance {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  35%,
+  60% {
+    transform: translateX(2.6px);
+  }
+}
+
+@keyframes launchWordmark {
+  from {
+    opacity: 0;
+    letter-spacing: 0.12em;
+    transform: translateY(8px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    letter-spacing: -0.03em;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes launchVeil {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes launchMarkOut {
+  from {
+    transform: translateY(calc(var(--space-6) * -1)) scale(1);
+    filter: blur(0);
+  }
+  to {
+    transform: translateY(calc(var(--space-6) * -1)) scale(1.08);
+    filter: blur(4px);
+  }
+}
+
+@keyframes rulerDrawY {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes rulerDrawX {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes studyCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes summaryRingIn {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes summaryRingPulse {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 28%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 16px color-mix(in srgb, var(--success) 0%, transparent);
   }
 }

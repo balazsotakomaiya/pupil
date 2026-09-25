@@ -1,6 +1,7 @@
 import type { SpaceSummary } from "@pupil/core";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Button } from "../Button";
+import { Menu, MenuItem } from "../Menu";
 import styles from "./Dashboard.module.css";
 import type { StudySummary } from "./types";
 
@@ -19,22 +20,7 @@ export function StudySection({
   spaces,
   summary,
 }: StudySectionProps) {
-  const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [tapped, setTapped] = useState(false);
-  const pickerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isPickerOpen) return;
-
-    function handleClickOutside(event: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
-        setIsPickerOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isPickerOpen]);
 
   const studyableSpaces = spaces
     .filter((space) => space.cardCount > 0)
@@ -66,38 +52,35 @@ export function StudySection({
         </div>
 
         <div className="study-right">
-          <div className="more-menu-wrap" ref={pickerRef}>
-            <Button
-              disabled={!hasStudyableSpaces || !onSelectSpaceForStudy}
-              onClick={() => setIsPickerOpen((open) => !open)}
-              variant="outline"
-            >
-              {summary.secondaryActionLabel}
-            </Button>
-            {isPickerOpen && hasStudyableSpaces && (
-              <div className={`more-menu ${styles.spacePickerMenu}`}>
-                {studyableSpaces.map((space) => (
-                  <button
-                    className={`more-menu-item ${styles.spacePickerItem}`}
-                    key={space.id}
-                    onClick={() => {
-                      setIsPickerOpen(false);
-                      onSelectSpaceForStudy?.(space.id);
-                    }}
-                    type="button"
-                  >
-                    <span className={styles.spacePickerName}>{space.name}</span>
-                    <span className={styles.spacePickerStats}>
-                      {space.dueTodayCount > 0 && (
-                        <span className={styles.spacePickerDue}>{space.dueTodayCount} due</span>
-                      )}
-                      <span>{space.cardCount} cards</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
+          <Menu
+            label="Choose a space to study"
+            panelClassName={styles.spacePickerMenu}
+            trigger={(props) => (
+              <Button
+                {...props}
+                disabled={!hasStudyableSpaces || !onSelectSpaceForStudy}
+                variant="outline"
+              >
+                {summary.secondaryActionLabel}
+              </Button>
             )}
-          </div>
+          >
+            {studyableSpaces.map((space) => (
+              <MenuItem
+                className={styles.spacePickerItem}
+                key={space.id}
+                onSelect={() => onSelectSpaceForStudy?.(space.id)}
+              >
+                <span className={styles.spacePickerName}>{space.name}</span>
+                <span className={styles.spacePickerStats}>
+                  {space.dueTodayCount > 0 && (
+                    <span className={styles.spacePickerDue}>{space.dueTodayCount} due</span>
+                  )}
+                  <span>{space.cardCount} cards</span>
+                </span>
+              </MenuItem>
+            ))}
+          </Menu>
           <Button
             className={`${styles.studyPrimaryAction}${tapped ? ` ${styles.studyPrimaryActionGlow}` : ""}`}
             onClick={() => {

@@ -1,6 +1,5 @@
 export { Dashboard } from "./Dashboard";
 export { NewSpaceDialog } from "./NewSpaceDialog";
-export { RulersOverlay } from "./RulersOverlay";
 export type {
   ActivityItem,
   SpaceCardData,

@@ -1,6 +1,6 @@
 import type { CardRecord, SpaceStats, SpaceSummary } from "@pupil/core";
 import { buildDueQueue } from "@pupil/core";
-import { type SyntheticEvent, useEffect, useRef, useState } from "react";
+import { type CSSProperties, type SyntheticEvent, useEffect, useRef, useState } from "react";
 import { SpaceDetailsTitlebar } from "../app-shell";
 import { Button } from "../Button";
 import { CardFormPanel } from "../cards/CardFormPanel";
@@ -442,13 +442,15 @@ export function SpaceDetailsScreen({
               </div>
 
               <div className={styles.barChart}>
-                {activityBars.map((bar) => (
-                  <div className={styles.barCol} key={bar.label}>
-                    <div
-                      className={`${styles.bar}${bar.isToday ? ` ${styles.today}` : ""}`}
-                      style={{ height: `${bar.height}%` }}
-                      title={`${bar.count} reviews`}
-                    />
+                {activityBars.map((bar, index) => (
+                  <div className={styles.barCol} key={bar.key}>
+                    <div className={styles.barTrack}>
+                      <div
+                        className={`${styles.bar}${bar.isToday ? ` ${styles.today}` : ""}`}
+                        style={{ height: `${bar.height}%`, "--bar-index": index } as CSSProperties}
+                        title={`${bar.count} review${bar.count === 1 ? "" : "s"} · ${bar.isToday ? "today" : bar.dayName}`}
+                      />
+                    </div>
                     <span className={styles.barLabel}>{bar.label}</span>
                   </div>
                 ))}
@@ -692,7 +694,9 @@ function buildActivityBars(counts: number[], now: number) {
 
     return {
       count,
+      dayName: day.toLocaleDateString("en-US", { weekday: "long" }),
       isToday: index === 6,
+      key: day.toDateString(),
       label: day.toLocaleDateString("en-US", { weekday: "short" }).slice(0, 1),
     };
   });

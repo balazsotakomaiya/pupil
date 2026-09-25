@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
 import { Button } from "../Button";
-import { EyeLogo } from "../dashboard/EyeLogo";
+import { EyeLogo } from "../brand";
 import { BackIcon } from "../icons/BackIcon";
 import { DeleteIcon } from "../icons/DeleteIcon";
 import { EditIcon } from "../icons/EditIcon";
@@ -8,6 +7,7 @@ import { ImportIcon } from "../icons/ImportIcon";
 import { MoreVerticalIcon } from "../icons/MoreVerticalIcon";
 import { PlusIcon } from "../icons/PlusIcon";
 import { SparklesIcon } from "../icons/SparklesIcon";
+import { Menu, MenuItem } from "../Menu";
 import styles from "./AppTitlebar.module.css";
 
 type SpaceDetailsTitlebarProps = {
@@ -29,24 +29,8 @@ export function SpaceDetailsTitlebar({
   onOpenRenameDialog,
   spaceName,
 }: SpaceDetailsTitlebarProps) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isMenuOpen) return;
-
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsMenuOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isMenuOpen]);
-
   return (
-    <div className={styles.titlebar}>
+    <div className={styles.titlebar} data-window-drag>
       <div className={styles.titlebarLeft}>
         <div className={styles.titlebarLogo}>
           <EyeLogo />
@@ -78,44 +62,27 @@ export function SpaceDetailsTitlebar({
           <ImportIcon />
           Import
         </Button>
-        <div className="more-menu-wrap" ref={menuRef}>
-          <Button
-            aria-expanded={isMenuOpen}
-            aria-label="More actions"
-            className={isMenuOpen ? styles.titlebarActionActive : undefined}
-            onClick={() => setIsMenuOpen((open) => !open)}
-            size="iconCompact"
-            variant="outline"
-          >
-            <MoreVerticalIcon />
-          </Button>
-          {isMenuOpen && (
-            <div className="more-menu">
-              <button
-                className="more-menu-item"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  onOpenRenameDialog();
-                }}
-                type="button"
-              >
-                <EditIcon />
-                Rename space
-              </button>
-              <button
-                className="more-menu-item danger"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  onOpenDeleteDialog();
-                }}
-                type="button"
-              >
-                <DeleteIcon />
-                Delete space
-              </button>
-            </div>
+        <Menu
+          label="Space actions"
+          trigger={(props, { isOpen }) => (
+            <Button
+              {...props}
+              aria-label="More actions"
+              className={isOpen ? styles.titlebarActionActive : undefined}
+              size="iconCompact"
+              variant="outline"
+            >
+              <MoreVerticalIcon />
+            </Button>
           )}
-        </div>
+        >
+          <MenuItem icon={<EditIcon />} onSelect={onOpenRenameDialog}>
+            Rename space
+          </MenuItem>
+          <MenuItem icon={<DeleteIcon />} onSelect={onOpenDeleteDialog} tone="danger">
+            Delete space
+          </MenuItem>
+        </Menu>
       </div>
     </div>
   );

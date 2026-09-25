@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { getUpdateActionLabel, getUpdateHint, isUpdateBusy } from "../../lib/app-update";
 import { useAppUpdateStore } from "../../lib/app-update-store";
 import { APP_VERSION_FALLBACK, formatAppVersion, getAppVersion } from "../../lib/app-version";
-import { EyeLogo } from "../dashboard/EyeLogo";
+import { EyeLogo } from "../brand";
 import { ExternalLinkIcon } from "../icons/SettingsIcons";
 import styles from "./Settings.module.css";
 

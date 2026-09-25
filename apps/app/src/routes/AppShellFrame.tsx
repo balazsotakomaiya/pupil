@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { AppTitlebar, NotificationsViewport } from "../components/app-shell";
 import type { AppTab } from "../components/app-shell/AppTitlebar";
-import { RulersOverlay } from "../components/dashboard";
+import { RulersOverlay } from "../components/brand";
 import { getUpdatePromptLabel, isUpdateBusy } from "../lib/app-update";
 import { useAppUpdateStore } from "../lib/app-update-store";
 import shellStyles from "./AppShell.module.css";

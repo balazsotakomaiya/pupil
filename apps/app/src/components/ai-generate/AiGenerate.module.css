@@ -740,7 +740,7 @@
   justify-content: space-between;
   padding: var(--space-2-5) var(--space-6);
   border-top: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.01);
+  background: color-mix(in srgb, var(--text-primary) 1%, transparent);
 }
 
 .aiGenReviewCardNum {
@@ -775,7 +775,7 @@
 
 .aiGenRcBtn:hover {
   border-color: var(--border-hover);
-  background: rgba(255, 255, 255, 0.02);
+  background: color-mix(in srgb, var(--text-primary) 2%, transparent);
   color: var(--text-secondary);
 }
 

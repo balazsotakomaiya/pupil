@@ -1,6 +1,6 @@
 import styles from "../app-shell/AppTitlebar.module.css";
 import { Button } from "../Button";
-import { EyeLogo } from "../dashboard/EyeLogo";
+import { EyeLogo } from "../brand";
 import { BackIcon } from "../icons/AiGenerateIcons";
 
 type AiGenerateTitlebarProps = {
@@ -10,7 +10,7 @@ type AiGenerateTitlebarProps = {
 
 export function AiGenerateTitlebar({ backLabel, onBack }: AiGenerateTitlebarProps) {
   return (
-    <div className={styles.titlebar}>
+    <div className={styles.titlebar} data-window-drag>
       <div className={styles.titlebarLeft}>
         <div className={styles.titlebarLogo}>
           <EyeLogo />

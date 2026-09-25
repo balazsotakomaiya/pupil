@@ -1,3 +1,4 @@
+import { CountUp } from "../CountUp";
 import { SummaryCheckIcon } from "../icons/SummaryCheckIcon";
 import styles from "./Study.module.css";
 
@@ -36,19 +37,21 @@ export function StudySummary({
 
       <div className={styles.sessionSummaryStats}>
         <div className={styles.sessionSummaryStat}>
-          <div className={styles.sessionSummaryStatValue}>{reviewedCount}</div>
+          <div className={styles.sessionSummaryStatValue}>
+            <CountUp delayMs={320} value={reviewedCount} />
+          </div>
           <div className={styles.sessionSummaryStatLabel}>Reviewed</div>
         </div>
         <div className={styles.sessionSummaryStat}>
           <div className={styles.sessionSummaryStatValue}>
-            {retention}
+            <CountUp delayMs={380} value={retention} />
             <span className="unit">%</span>
           </div>
           <div className={styles.sessionSummaryStatLabel}>Retention</div>
         </div>
         <div className={styles.sessionSummaryStat}>
           <div className={styles.sessionSummaryStatValue}>
-            {totalMinutes}
+            <CountUp delayMs={440} value={totalMinutes} />
             <span className="unit">m</span>
           </div>
           <div className={styles.sessionSummaryStatLabel}>Duration</div>

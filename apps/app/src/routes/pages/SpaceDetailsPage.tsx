@@ -6,6 +6,7 @@ import type {
 } from "@pupil/core";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
+import { Button } from "../../components/Button";
 import { ScreenErrorBoundary } from "../../components/ErrorBoundary";
 import { StatusPanel } from "../../components/StatusPanel";
 import { SpaceDetailsScreen } from "../../components/space-details";
@@ -99,7 +100,14 @@ export function SpaceDetailsPage() {
   });
 
   if (!space) {
-    return <StatusPanel message="That space no longer exists." title="Space not found" />;
+    return (
+      <StatusPanel
+        actions={<Button onClick={() => void navigate({ to: "/" })}>Back to dashboard</Button>}
+        fill="content"
+        message="That space no longer exists."
+        title="Space not found"
+      />
+    );
   }
 
   return (

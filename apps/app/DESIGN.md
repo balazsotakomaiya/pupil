@@ -8,7 +8,7 @@ Use these files when implementing or inspecting visual details:
 
 - [Design tokens](./src/styles/tokens.css) for themes, color roles, spacing, radii, and font stacks.
 - [Global foundations](./src/styles/reset.css), [shared UI](./src/styles/shared.css), and [animations](./src/styles/animations.css) for application-wide behavior.
-- [Titlebar styles](./src/components/app-shell/AppTitlebar.module.css), [ruler overlay](./src/components/dashboard/RulersOverlay.module.css), and [eye logo](./src/components/dashboard/EyeLogo.tsx) for the core shell identity.
+- [Titlebar styles](./src/components/app-shell/AppTitlebar.module.css), [ruler overlay](./src/components/brand/RulersOverlay.module.css), and [eye logo](./src/components/brand/EyeLogo.tsx) for the core shell identity.
 - The collocated module next to a component for its component-specific layout and state styles.
 
 When a visual value changes, update its source file. Update this document only when the underlying design intent or reusable pattern changes.
@@ -73,7 +73,7 @@ This pattern is useful for dashboards, settings, and data-heavy pages. Focused s
 
 Dotted rulers are the app’s visual signature. The dashboard overlay frames the window, while the shared divider separates major sections. They are structural punctuation rather than mandatory decoration: use them to clarify a hierarchy, and omit them when they would distract from a focused task.
 
-The implementation is split between [RulersOverlay](./src/components/dashboard/RulersOverlay.tsx), its module, and the shared divider style.
+The implementation is split between [RulersOverlay](./src/components/brand/RulersOverlay.tsx), its module, and the shared divider style.
 
 ---
 
@@ -89,7 +89,7 @@ Keep navigation flat and quickly scannable. The active tab should be identifiabl
 
 The eye is a small, expressive part of the product identity. It blinks periodically and the pupil drifts subtly, without competing with active work. It is always rendered with the current foreground color; do not hard-code a theme-specific logo color.
 
-The SVG structure is in [EyeLogo.tsx](./src/components/dashboard/EyeLogo.tsx), and its motion is defined by [EyeLogo.module.css](./src/components/dashboard/EyeLogo.module.css) and the shared animation stylesheet.
+The SVG structure is in [EyeLogo.tsx](./src/components/brand/EyeLogo.tsx), and its motion is defined by [EyeLogo.module.css](./src/components/brand/EyeLogo.module.css) and the shared animation stylesheet.
 
 ---
 

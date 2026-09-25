@@ -54,32 +54,6 @@
   text-transform: uppercase;
 }
 
-/* ─────────────────────── Status panel ─────────────────────── */
-
-.status-panel {
-  display: grid;
-  align-content: center;
-  justify-items: start;
-  gap: 0.5rem;
-  min-height: 100vh;
-  padding: var(--space-8);
-}
-
-.status-panel strong {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.status-panel p {
-  max-width: 32rem;
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.5;
-}
-
 /* ─────────────────────── Study widget (Dashboard + SpaceDetails) ─────────────────────── */
 
 .study-card,
@@ -325,65 +299,6 @@
   margin: 0;
   color: var(--text-secondary);
   font-size: 14px;
-}
-
-/* ─────────────────── More-menu (shared by titlebar + dashboard) ─────────────────── */
-
-.more-menu-wrap {
-  position: relative;
-}
-
-.more-menu {
-  position: absolute;
-  top: calc(100% + var(--space-1-5));
-  right: 0;
-  z-index: 20;
-  min-width: 148px;
-  padding: var(--space-1);
-  border: 1px solid var(--border-hover);
-  border-radius: 8px;
-  background: var(--bg-elevated);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-
-.more-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  width: 100%;
-  padding: 7px var(--space-2-5);
-  border: none;
-  border-radius: 5px;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  transition:
-    background 0.12s ease,
-    color 0.12s ease;
-  text-align: left;
-  white-space: nowrap;
-}
-
-.more-menu-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary);
-}
-
-.more-menu-item.danger {
-  color: var(--error);
-}
-
-.more-menu-item.danger:hover {
-  background: var(--error-dim);
-  color: var(--error);
-}
-
-.more-menu-item svg {
-  width: 12px;
-  height: 12px;
-  flex-shrink: 0;
-  opacity: 0.9;
 }
 
 /* ─────────────────── Scrollbars ─────────────────── */

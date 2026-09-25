@@ -3,7 +3,8 @@ import { Component } from "react";
 import { type AppError, toAppError } from "../lib/errors";
 import { log } from "../lib/log";
 import { notifyError } from "../lib/notifications";
-import styles from "./ErrorBoundary.module.css";
+import { Button } from "./Button";
+import { StatusPanel } from "./StatusPanel";
 
 type ErrorBoundaryProps = {
   children: ReactNode;
@@ -50,25 +51,22 @@ class BaseErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState
     }
 
     return (
-      <section className={styles.panel} role="alert">
-        <span className={styles.eyebrow}>{this.props.screen}</span>
-        <h1 className={styles.title}>{this.props.title ?? "Something went wrong"}</h1>
-        <p className={styles.message}>{this.state.error.message}</p>
-        <div className={styles.actions}>
-          {this.props.onReset ? (
-            <button
-              className={`${styles.button} ${styles.buttonPrimary}`}
-              onClick={this.handleReset}
-              type="button"
-            >
-              {this.props.resetLabel ?? "Go back"}
-            </button>
-          ) : null}
-          <button className={styles.button} onClick={() => window.location.reload()} type="button">
-            Reload app
-          </button>
-        </div>
-      </section>
+      <StatusPanel
+        actions={
+          <>
+            {this.props.onReset ? (
+              <Button onClick={this.handleReset}>{this.props.resetLabel ?? "Go back"}</Button>
+            ) : null}
+            <Button onClick={() => window.location.reload()} variant="outline">
+              Reload app
+            </Button>
+          </>
+        }
+        fill={this.props.screen === "app" ? "screen" : "content"}
+        message={this.state.error.message}
+        role="alert"
+        title={this.props.title ?? "Something went wrong"}
+      />
     );
   }
 }

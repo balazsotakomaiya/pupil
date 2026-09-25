@@ -3,15 +3,14 @@
   z-index: 10;
   display: flex;
   justify-content: flex-end;
-  height: 52px;
+  height: var(--titlebar-height);
   padding: 0 var(--space-5);
   user-select: none;
-  -webkit-app-region: drag;
 }
 
 .welcomePage {
   display: flex;
-  min-height: calc(100vh - 52px);
+  min-height: calc(100vh - var(--titlebar-height));
   flex-direction: column;
   align-items: center;
   padding: 0 var(--space-8) var(--space-6);
@@ -28,7 +27,7 @@
 
 .welcomeHeroEye {
   margin-bottom: var(--space-4);
-  animation: eyeEntrance 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s backwards;
+  animation: global(eyeEntrance) 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s backwards;
 }
 
 .welcomeEyeLogo {
@@ -41,7 +40,7 @@
 .welcomeOrRow,
 .welcomeQuickstart,
 .welcomeBottom {
-  animation: textUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: global(textUp) 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 .welcomeHeroWordmark {

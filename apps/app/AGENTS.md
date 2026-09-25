@@ -192,7 +192,7 @@ Global CSS lives in `src/styles/`:
 | `reset.css` | Base reset — box-sizing, body, font inheritance |
 | `utilities.css` | Single-purpose utility classes |
 | `animations.css` | Named `@keyframes` used across multiple components |
-| `shared.css` | Global classes shared by multiple features (`.page`, `.section`, `.dialog-*`, `.field-*`, `.more-menu-*`, etc.), scrollbars, responsive overrides |
+| `shared.css` | Global classes shared by multiple features (`.page`, `.section`, `.dialog-*`, `.field-*`, etc.), scrollbars, responsive overrides |
 
 Rules:
 - **New component styles → collocated `.module.css` file.** Never add to `shared.css` unless the class is genuinely used in multiple unrelated components.
@@ -200,7 +200,7 @@ Rules:
 - **Use spacing tokens for layout.** For `gap`, `margin`, `padding`, offsets, and scroll margins, use the `--space-*` scale from `tokens.css` instead of new raw pixel values. The scale is based on 4px steps with named 2px half-steps for compact controls; retain raw values only for deliberate optical adjustments (for example, 1px borders or a 3px icon gap).
 - **Class names in modules use camelCase** (`.cardState`, not `.card-state`). Access via `styles.cardState` in JSX.
 - **Compound state selectors**: `.cardState.stateLearning {}` → both classes scoped. JSX: `` `${styles.cardState} ${styles.stateLearning}` ``.
-- **`@keyframes` names**: Define in `animations.css`. Reference by name from any module (Vite resolves them globally).
+- **`@keyframes` names**: Define shared ones in `animations.css`. CSS Modules localise animation names, so reference a shared keyframe from a module as `animation: global(name) …` — a bare name silently resolves to a hashed keyframe that does not exist.
 - **`dangerouslySetInnerHTML` targets**: Use `:global(.class-name)` in the module.
 - **Do not re-add a `style.css` root file.** The old monolith has been fully migrated.
 

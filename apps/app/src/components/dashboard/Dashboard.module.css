@@ -17,7 +17,7 @@
 }
 
 .studyPrimaryActionGlow {
-  animation: studyActionGlow 0.5s ease-out both;
+  animation: global(studyActionGlow) 0.5s ease-out both;
 }
 
 /* ── Spaces grid ── */
@@ -191,8 +191,8 @@
 }
 
 .streakCell.studied {
-  border-color: #ededed25;
-  background: #ededed18;
+  border-color: color-mix(in srgb, var(--text-primary) 15%, transparent);
+  background: color-mix(in srgb, var(--text-primary) 9%, transparent);
 }
 
 .streakCell.today {
@@ -230,8 +230,8 @@
 }
 
 .streakLegendSwatchStudied {
-  border: 1px solid #ededed25;
-  background: #ededed18;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 15%, transparent);
+  background: color-mix(in srgb, var(--text-primary) 9%, transparent);
 }
 
 .streakLegendSwatchToday {
@@ -317,9 +317,10 @@
 
 /* ── Space picker dropdown ── */
 
-.spacePickerMenu {
-  min-width: 220px;
-  max-width: 320px;
+/* Attribute selector outranks the Menu panel's own min-width. */
+.spacePickerMenu[role="menu"] {
+  min-width: 280px;
+  max-width: 340px;
 }
 
 .spacePickerItem {

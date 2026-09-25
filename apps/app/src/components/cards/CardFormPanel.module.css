@@ -263,7 +263,7 @@
 }
 
 .newCardWordCount.warn {
-  color: #f59e0b;
+  color: var(--state-learning);
 }
 
 .newCardWordCount.over {

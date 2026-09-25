@@ -242,6 +242,12 @@
   text-align: right;
 }
 
+/* Header cells reuse the column classes for responsive hiding only. */
+.cardListHeader > span {
+  color: inherit;
+  font: inherit;
+}
+
 .cardRow {
   border-bottom: 1px solid var(--border);
   transition: background 0.15s ease;
@@ -252,7 +258,7 @@
 }
 
 .cardRow:hover {
-  background: rgba(255, 255, 255, 0.015);
+  background: color-mix(in srgb, var(--text-primary) 1.5%, transparent);
 }
 
 .cardRow.suspended {
@@ -312,7 +318,7 @@
 }
 
 .cardState.stateLearning {
-  color: #fbbf24;
+  color: var(--state-learning);
 }
 
 .cardState.stateReview {
@@ -320,7 +326,7 @@
 }
 
 .cardState.stateRelearning {
-  color: #fca5a5;
+  color: var(--state-relearning);
 }
 
 .cardDue {

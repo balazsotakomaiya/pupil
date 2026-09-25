@@ -1,6 +1,8 @@
 import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
 import type { AppTab } from "../components/app-shell/AppTitlebar";
+import { LaunchScreen } from "../components/app-shell/LaunchScreen";
+import { Button } from "../components/Button";
 import { StatusPanel } from "../components/StatusPanel";
 import {
   useBootstrapQuery,
@@ -80,31 +82,40 @@ function RootShellContent() {
     onToggleCommandPalette: shellActions.toggleCommandPalette,
   });
 
-  if (bootstrapQuery.error) {
-    return (
-      <StatusPanel message={toAppError(bootstrapQuery.error).message} title="Bootstrap failed" />
-    );
-  }
-
-  if (bootstrapQuery.isPending) {
-    return <StatusPanel message="Preparing the app shell." title="Loading" />;
-  }
-
   return (
-    <AppShellFrame
-      activeTab={mainTab ? (APP_TABS.find((tab) => tab.id === mainTab) ?? null) : null}
-      globalStreak={globalStreak}
-      onOpenCommandPalette={shellActions.openCommandPalette}
-      onOpenCreateDialog={shellActions.openCreateDialog}
-      onOpenNewCard={() => {
-        shellActions.requestNewCardEditor?.();
-        void navigate({ to: "/cards" });
-      }}
-      onSelectTab={selectMainTab}
-      pathname={location.pathname}
-      tabs={APP_TABS}
-    >
-      <Outlet />
-    </AppShellFrame>
+    <>
+      {bootstrapQuery.error ? (
+        <StatusPanel
+          actions={
+            <Button
+              disabled={bootstrapQuery.isFetching}
+              onClick={() => void bootstrapQuery.refetch()}
+            >
+              {bootstrapQuery.isFetching ? "Trying again…" : "Try again"}
+            </Button>
+          }
+          message={toAppError(bootstrapQuery.error).message}
+          role="alert"
+          title="Pupil couldn’t start"
+        />
+      ) : bootstrapQuery.isPending ? null : (
+        <AppShellFrame
+          activeTab={mainTab ? (APP_TABS.find((tab) => tab.id === mainTab) ?? null) : null}
+          globalStreak={globalStreak}
+          onOpenCommandPalette={shellActions.openCommandPalette}
+          onOpenCreateDialog={shellActions.openCreateDialog}
+          onOpenNewCard={() => {
+            shellActions.requestNewCardEditor?.();
+            void navigate({ to: "/cards" });
+          }}
+          onSelectTab={selectMainTab}
+          pathname={location.pathname}
+          tabs={APP_TABS}
+        >
+          <Outlet />
+        </AppShellFrame>
+      )}
+      <LaunchScreen ready={!bootstrapQuery.isPending} />
+    </>
   );
 }

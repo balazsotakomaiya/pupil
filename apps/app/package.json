@@ -15,6 +15,9 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/syne": "^5.3.0",
     "@pupil/core": "workspace:*",
     "@tanstack/react-query": "^5.99.2",
     "@tanstack/react-router": "^1.168.23",

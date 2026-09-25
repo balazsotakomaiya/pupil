@@ -1,0 +1,74 @@
+.menu {
+  position: relative;
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + var(--space-1-5));
+  z-index: 100;
+  min-width: 160px;
+  padding: var(--space-1);
+  border: 1px solid var(--border-hover);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-popover);
+  animation: global(menuIn) 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.end {
+  right: 0;
+  transform-origin: top right;
+}
+
+.start {
+  left: 0;
+  transform-origin: top left;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 7px var(--space-2-5);
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.item:hover:not(:disabled),
+.item:focus-visible {
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.item:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.item svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.danger,
+.danger:hover:not(:disabled),
+.danger:focus-visible {
+  color: var(--error);
+}
+
+.danger:hover:not(:disabled),
+.danger:focus-visible {
+  background: var(--error-dim);
+}

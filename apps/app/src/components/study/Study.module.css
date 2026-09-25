@@ -12,11 +12,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 48px;
-  padding: 0 var(--space-5);
+  height: var(--titlebar-height);
+  padding: 0 var(--space-5) 0 calc(var(--space-5) + var(--window-controls-inset));
   background: transparent;
   user-select: none;
-  -webkit-app-region: drag;
 }
 
 .sessionBarLeft,
@@ -24,7 +23,6 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  -webkit-app-region: no-drag;
 }
 
 .sessionExitBtn {
@@ -65,7 +63,6 @@
     background 0.15s ease,
     color 0.15s ease,
     opacity 0.15s ease;
-  -webkit-app-region: no-drag;
 }
 
 .sessionUndoBtn:hover:not(:disabled) {
@@ -111,7 +108,6 @@
 
 .sessionQuickActions {
   position: relative;
-  -webkit-app-region: no-drag;
 }
 
 .sessionOverflowBtn {
@@ -138,59 +134,6 @@
 .sessionOverflowBtn svg {
   width: 14px;
   height: 14px;
-}
-
-.sessionOverflowMenu {
-  position: absolute;
-  top: calc(100% + var(--space-1-5));
-  right: 0;
-  z-index: 100;
-  min-width: 156px;
-  padding: var(--space-1);
-  border: 1px solid var(--border-hover);
-  border-radius: var(--radius);
-  background: var(--bg-elevated);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
-  animation: menuIn 0.14s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.sessionOverflowItem {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  padding: 7px var(--space-2-5);
-  border: none;
-  border-radius: 5px;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  text-align: left;
-  transition:
-    background 0.1s ease,
-    color 0.1s ease;
-}
-
-.sessionOverflowItem:hover {
-  background: var(--bg-subtle);
-  color: var(--text-primary);
-}
-
-.sessionOverflowItem svg {
-  width: 12px;
-  height: 12px;
-  opacity: 0.55;
-  flex-shrink: 0;
-}
-
-.sessionOverflowItem.danger:hover {
-  color: var(--error);
-  background: rgba(239, 68, 68, 0.07);
-}
-
-.sessionOverflowItem.danger:hover svg {
-  opacity: 0.8;
 }
 
 .sessionProgressTrack {
@@ -228,6 +171,7 @@
   max-width: 560px;
   flex-shrink: 0;
   perspective: 1200px;
+  animation: global(studyCardEnter) 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .sessionCard {
@@ -283,12 +227,15 @@
 .sessionCardSpace {
   position: absolute;
   top: var(--space-4-5);
+  max-width: 45%;
+  overflow: hidden;
   color: var(--text-tertiary);
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 500;
-  opacity: 0.5;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .sessionCardLabel {
@@ -298,7 +245,6 @@
 
 .sessionCardSpace {
   right: var(--space-6);
-  opacity: 0.4;
   letter-spacing: 0.8px;
 }
 
@@ -374,9 +320,8 @@
   background: var(--bg-hover);
   color: var(--text-tertiary);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 500;
-  opacity: 0.6;
 }
 
 .sessionActions {
@@ -401,7 +346,7 @@
 
 .sessionSuspendedLabel {
   margin: 0;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.08em;
@@ -433,7 +378,7 @@
 }
 
 .sessionUnsuspendBtn {
-  border-color: rgba(255, 255, 255, 0.28);
+  border-color: color-mix(in srgb, var(--text-primary) 28%, transparent);
   background: transparent;
   color: var(--text-secondary);
 }
@@ -444,12 +389,12 @@
 }
 
 .sessionSkipBtn {
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
   color: var(--text-secondary);
 }
 
 .sessionSkipBtn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: color-mix(in srgb, var(--text-primary) 12%, transparent);
   color: var(--text-primary);
 }
 
@@ -517,12 +462,19 @@
   text-align: center;
   transition:
     border-color 0.15s ease,
-    background 0.15s ease;
+    background 0.15s ease,
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.sessionRatingBtn:hover {
+.sessionRatingBtn:hover:not(:disabled) {
   border-color: var(--border-hover);
   background: var(--bg-elevated);
+  transform: translateY(-1px);
+}
+
+.sessionRatingBtn:active:not(:disabled) {
+  transform: scale(0.97);
+  transition-duration: 0.08s;
 }
 
 .sessionRatingLabel {
@@ -532,7 +484,7 @@
 }
 
 .sessionRatingInterval {
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 500;
@@ -548,42 +500,39 @@
   color: var(--text-tertiary);
   font-family: var(--font-mono);
   font-size: 9px;
-  opacity: 0.4;
 }
 
-.sessionRatingBtn.again .sessionRatingLabel,
-.sessionRatingBtn.hard .sessionRatingLabel {
-  color: var(--text-tertiary);
-}
-
-.sessionRatingBtn.good .sessionRatingLabel {
-  color: var(--text-secondary);
-}
-
-.sessionRatingBtn.easy .sessionRatingLabel {
+/* Every grade is an honest answer, so all four read at the same weight;
+   only the hover border steps up from Again to Easy. */
+.sessionRatingLabel {
   color: var(--text-primary);
 }
 
-.sessionRatingBtn.again:hover {
-  border-color: #555555;
+.sessionRatingBtn.again:hover:not(:disabled) {
+  border-color: var(--border-hover);
 }
 
-.sessionRatingBtn.good:hover {
+.sessionRatingBtn.hard:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--text-secondary) 70%, transparent);
+}
+
+.sessionRatingBtn.good:hover:not(:disabled) {
   border-color: var(--text-secondary);
 }
 
-.sessionRatingBtn.easy:hover {
+.sessionRatingBtn.easy:hover:not(:disabled) {
   border-color: var(--text-primary);
 }
 
 .sessionRatingBtn.pressed {
   border-color: var(--text-secondary);
   background: var(--bg-elevated);
+  transform: scale(0.97);
   transition: none;
 }
 
 .sessionErrorText {
-  color: #ef8b8b;
+  color: var(--error);
   font-size: 12px;
 }
 
@@ -592,13 +541,11 @@
   color: var(--text-tertiary);
   font-family: var(--font-mono);
   font-size: 10px;
-  opacity: 0.4;
 }
 
 .sessionSummaryNextDue {
   margin-top: var(--space-5);
   font-size: 11px;
-  opacity: 1;
 }
 
 .sessionSummaryScreen {
@@ -629,6 +576,53 @@
   width: 24px;
   height: 24px;
   color: var(--success);
+}
+
+/* Finishing a session is the one moment study earns a little ceremony:
+   the ring lands, the check draws, the numbers count, the rest follows. */
+.sessionSummaryCheck {
+  animation:
+    global(summaryRingIn) 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    global(summaryRingPulse) 900ms ease-out 480ms both;
+}
+
+.sessionSummaryCheck svg path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: global(launchTrace) 380ms cubic-bezier(0.65, 0, 0.35, 1) 240ms forwards;
+}
+
+.sessionSummaryTitle,
+.sessionSummarySub,
+.sessionSummaryStats,
+.sessionSummaryStreak,
+.sessionSummaryActions,
+.sessionSummaryNextDue {
+  animation: global(textUp) 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sessionSummaryTitle {
+  animation-delay: 140ms;
+}
+
+.sessionSummarySub {
+  animation-delay: 200ms;
+}
+
+.sessionSummaryStats {
+  animation-delay: 280ms;
+}
+
+.sessionSummaryStreak {
+  animation-delay: 360ms;
+}
+
+.sessionSummaryActions {
+  animation-delay: 420ms;
+}
+
+.sessionSummaryNextDue {
+  animation-delay: 480ms;
 }
 
 .sessionSummaryTitle {

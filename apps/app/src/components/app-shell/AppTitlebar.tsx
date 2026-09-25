@@ -1,6 +1,6 @@
 import { type CSSProperties, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "../Button";
-import { EyeLogo } from "../dashboard/EyeLogo";
+import { EyeLogo } from "../brand";
 import { PlusIcon } from "../icons/PlusIcon";
 import { SearchIcon } from "../icons/SearchIcon";
 import styles from "./AppTitlebar.module.css";
@@ -79,7 +79,7 @@ export function AppTitlebar({
   }, [activeTab]);
 
   return (
-    <div className={styles.titlebar}>
+    <div className={styles.titlebar} data-window-drag>
       <div className={styles.titlebarLeft}>
         <div className={styles.titlebarLogo}>
           <EyeLogo />

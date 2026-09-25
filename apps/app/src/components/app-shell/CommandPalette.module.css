@@ -24,7 +24,7 @@
   display: flex;
   flex-direction: column;
   max-height: min(480px, 70vh);
-  animation: paletteIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: global(paletteIn) 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .paletteInputWrap {
@@ -270,7 +270,7 @@
   padding: var(--space-2) var(--space-3-5);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.01);
+  background: color-mix(in srgb, var(--text-primary) 1%, transparent);
 }
 
 .paletteFooterHints {

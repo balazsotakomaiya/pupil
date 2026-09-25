@@ -1,0 +1,24 @@
+/* ── Eye logo ── */
+
+.eyeLogo {
+  display: block;
+  flex-shrink: 0;
+}
+
+.eyeShape {
+  animation: global(blink) 4s ease-in-out infinite;
+}
+
+.eyeIris {
+  transform-origin: 26px 26px;
+  animation: global(iris-blink) 4s ease-in-out infinite;
+}
+
+.eyePupilG {
+  transform-origin: 26px 26px;
+  animation: global(pupil-hide) 4s ease-in-out infinite;
+}
+
+.eyePupil {
+  animation: global(look) 4s ease-in-out infinite;
+}

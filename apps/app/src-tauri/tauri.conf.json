@@ -18,15 +18,19 @@
         "height": 900,
         "minWidth": 980,
         "minHeight": 720,
-        "resizable": true
+        "resizable": true,
+        "backgroundColor": "#0a0a0a",
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": { "x": 18, "y": 28 }
       }
     ],
     "security": {
       "csp": {
         "default-src": "'self'",
         "script-src": "'self' 'wasm-unsafe-eval'",
-        "style-src": "'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "font-src": "'self' data: https://fonts.gstatic.com",
+        "style-src": "'self' 'unsafe-inline'",
+        "font-src": "'self' data:",
         "img-src": "'self' data: blob:",
         "connect-src": "'self' ipc: http://ipc.localhost",
         "object-src": "'none'",
@@ -37,8 +41,8 @@
       "devCsp": {
         "default-src": "'self'",
         "script-src": "'self' 'unsafe-inline' 'wasm-unsafe-eval'",
-        "style-src": "'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "font-src": "'self' data: https://fonts.gstatic.com",
+        "style-src": "'self' 'unsafe-inline'",
+        "font-src": "'self' data:",
         "img-src": "'self' data: blob:",
         "connect-src": "'self' ipc: http://ipc.localhost ws://localhost:1420",
         "object-src": "'none'",
