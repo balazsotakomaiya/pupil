@@ -2309,8 +2309,8 @@
 
           // 01 · Aperture
           at(0, "drone", { end: until(2.25) });
-          at(0.15, "ting", { note: 86 });
-          [0.3, 0.47, 0.64].forEach((m, i) => at(m, "ping", { note: 81, gain: 1 - i * 0.3 }));
+          at(0.15, "ting", { note: 62 });
+          [0.3, 0.47, 0.64].forEach((m, i) => at(m, "ping", { note: 57, gain: 1 - i * 0.3 }));
           at(0.4, "sweep", { dur: 0.62, gain: 0.8 });
           at(0.66, "sweep", { dur: 0.7 });
           at(1.6, "blink");
@@ -2332,7 +2332,7 @@
             at(AI_AT + 1.16, "sparkle", { bright: true });
             at(AI_AT + 1.92, "whoosh", { dur: 0.5, dir: "up", gain: 0.5 });
             at(ui(0.05), "zip", { end: until(ui(0.42)) });
-            at(ui(0.3), "pop", { note: 69, gain: 0.7 });
+            at(ui(0.3), "pop", { note: 57, gain: 0.7 });
             for (let i = 0; i < sA.topicLength; i++) {
               at(ui(0.72 + ((i + 1) / sA.topicLength) * 0.6), "key", { seed: i + 1 });
             }
@@ -2360,14 +2360,14 @@
           atC(5.96, "flip");
           for (let i = 0; i < 4; i++) atC(6.36 + i * 0.05, "tick", { gain: 0.45 });
           atC(6.98, "click");
-          atC(7.04, "pop", { note: 81 });
+          atC(7.04, "pop", { note: 62 });
           atC(7.16, "whoosh", { dur: 0.45, dir: "right" });
           atC(7.46, "whoosh", { dur: 0.5, dir: "up", high: true, gain: 0.5 });
           atC(7.56, "whoosh", { dur: 0.5, dir: "down", low: true, gain: 0.7 });
 
           // 04 · Schedule: each review lands a note higher, as the memory strengthens.
-          atC(7.98, "pop", { note: 88, gain: 0.6 });
-          const REVIEW_NOTES = [74, 76, 78, 81, 83];
+          atC(7.98, "pop", { note: 64, gain: 0.6 });
+          const REVIEW_NOTES = [50, 52, 54, 57, 59];
           s4.reviewTimes.forEach((w, i) => atC(w, "pluck", { note: REVIEW_NOTES[i] }));
           atC(9.98, "whip");
 
@@ -2378,7 +2378,7 @@
           // 06 · Release: the dot lands as the pupil; the final blink.
           atC(12.12, "swoosh", { end: until(masterOf(12.5)) });
           atC(12.5, "land", { soft: true });
-          atC(12.5, "ting", { note: 86 });
+          atC(12.5, "ting", { note: 50 });
           atC(12.5, "sweep", { dur: 0.5, gain: 0.6 });
           atC(14.02, "blink");
           CUES.sort((x, y) => x.t - y.t);

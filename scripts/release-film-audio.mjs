@@ -109,16 +109,35 @@ class Bus {
 
 // ─── Voices ─────────────────────────────────────────────────────────────────
 
-/** FM bell: a clean strike with a metallic shimmer that falls away fast. */
-function bell(freq, { decay = 1.1, index = 2.2, ratio = 3.5 } = {}) {
-  const out = new Float32Array(samples(decay * 3.5));
+/** Felt mallet: a round strike whose woody overtone is gone in a few milliseconds, so it never rings. */
+function mallet(freq, { decay = 0.22, wood = 0.35 } = {}) {
+  const out = new Float32Array(samples(decay * 5));
   for (let i = 0; i < out.length; i++) {
     const t = i / SR;
-    const env = Math.min(1, t / 0.002) * Math.exp(-t / decay);
-    const mod = index * Math.exp(-t / 0.25) * sin(freq * ratio * t);
+    const env = Math.min(1, t / 0.003) * Math.exp(-t / decay);
     out[i] =
       env *
-      (sin(freq * t + mod / TAU) + 0.28 * Math.exp(-t / (decay * 0.35)) * sin(2.76 * freq * t));
+      (sin(freq * t) +
+        0.3 * Math.exp(-t / (decay * 0.5)) * sin(2 * freq * t) +
+        wood * Math.exp(-t / 0.02) * sin(4 * freq * t));
+  }
+  return out;
+}
+
+/** A low swell of warm partials through a closing low-pass: the weight of a bell without its ring. */
+function bloom(freq, { attack = 0.03, decay = 0.7 } = {}) {
+  const out = new Float32Array(samples(attack + decay * 4));
+  const lp = new Filter("lp", 1200, 0.8);
+  for (let i = 0; i < out.length; i++) {
+    const t = i / SR;
+    if (i % 32 === 0) lp.set(300 + 900 * Math.exp(-t / 0.15), 0.8);
+    const env = Math.min(1, t / attack) ** 2 * Math.exp(-Math.max(0, t - attack) / decay);
+    const tone =
+      sin(freq * t) +
+      0.5 * sin(2 * freq * t) +
+      0.25 * sin(3 * freq * t) +
+      0.5 * sin(0.5 * freq * t);
+    out[i] = lp.run(tone * env);
   }
   return out;
 }
@@ -168,22 +187,23 @@ function burst(dur, freq, { seed = 3, type = "hp", q = 0.9 } = {}) {
   return out;
 }
 
-/** Karplus–Strong plucked string. */
-function pluck(freq, { dur = 1.8, decay = 0.9965, seed = 11 } = {}) {
+/** Karplus–Strong plucked string, rounded by a low-pass at `tone` Hz. */
+function pluck(freq, { dur = 1.8, decay = 0.9965, seed = 11, tone = 1000 } = {}) {
   const out = new Float32Array(samples(dur));
   const period = Math.max(2, Math.round(SR / freq));
   const line = new Float32Array(period);
   const rnd = random(seed);
   let soft = 0;
   for (let i = 0; i < period; i++) {
-    soft = soft * 0.55 + (rnd() * 2 - 1) * 0.45;
+    soft = soft * 0.7 + (rnd() * 2 - 1) * 0.3;
     line[i] = soft;
   }
+  const lp = new Filter("lp", tone);
   let k = 0;
   for (let i = 0; i < out.length; i++) {
     const cur = line[k];
     line[k] = decay * 0.5 * (cur + line[(k + 1) % period]);
-    out[i] = cur * Math.min(1, i / 48);
+    out[i] = lp.run(cur * Math.min(1, i / 48));
     k = (k + 1) % period;
   }
   return out;
@@ -207,12 +227,12 @@ function thump(freq = 55, { from = 2, decay = 0.25 } = {}) {
 
 /** A swell of rising noise and tone that stops dead at its end. */
 function riser(dur) {
-  const noise = sweep(dur, 400, 6000, { attack: 0.97, type: "hp", q: 0.8, seed: 21 });
+  const noise = sweep(dur, 300, 3500, { attack: 0.97, q: 0.8, seed: 21 });
   const tone = new Float32Array(noise.length);
   let phase = 0;
   for (let i = 0; i < tone.length; i++) {
     const p = i / tone.length;
-    phase += (220 * 5 ** p) / SR;
+    phase += (110 * 5 ** p) / SR;
     tone[i] = sin(phase) * p ** 3;
   }
   return layer([
@@ -221,15 +241,23 @@ function riser(dur) {
   ]);
 }
 
-/** Granular sparkle: many tiny high sine grains, scattered. */
-function grains(dur, { seed = 5, density = 55, notes = [86, 90, 93, 98, 102, 105] } = {}) {
+/** A granular murmur: soft sine grains from a low chord, scattered across the stereo field. */
+function grains(
+  dur,
+  {
+    seed = 5,
+    density = 26,
+    notes = [50, 55, 57, 62, 64, 66, 69],
+    len: [short, long] = [0.06, 0.12],
+  } = {},
+) {
   const out = { l: new Float32Array(samples(dur)), r: new Float32Array(samples(dur)) };
   const rnd = random(seed);
   const count = Math.round(dur * density);
   for (let g = 0; g < count; g++) {
     const start = rnd() * dur * SR;
     const f = mtof(notes[Math.floor(rnd() * notes.length)]);
-    const len = samples(0.03 + rnd() * 0.05);
+    const len = samples(short + rnd() * (long - short));
     const pan = rnd() * 2 - 1;
     const gain = 0.4 + rnd() * 0.6;
     for (let i = 0; i < len; i++) {
@@ -274,17 +302,17 @@ function effect(cue) {
       return [out, -21, 0, 0.2];
     }
     case "ting":
-      return [bell(mtof(cue.note), { decay: 1.2 }), -13 + 20 * Math.log10(g), 0, 0.45];
+      return [bloom(mtof(cue.note), { decay: 0.8 }), -13 + 20 * Math.log10(g), 0, 0.25];
     case "ping":
       return [
-        blip(mtof(cue.note), { decay: 0.35, harmonics: 0.05 }),
-        -22 + 20 * Math.log10(g),
+        blip(mtof(cue.note), { decay: 0.3, harmonics: 0.2 }),
+        -20 + 20 * Math.log10(g),
         0,
-        0.7,
+        0.5,
       ];
     case "sweep":
       return [
-        sweep(dur, 500, 3200, { q: 0.9, seed, attack: 0.6 }),
+        sweep(dur, 300, 1600, { q: 0.9, seed, attack: 0.6 }),
         -24 + 20 * Math.log10(g),
         (p) => p * 0.6 - 0.3,
         0.3,
@@ -292,10 +320,10 @@ function effect(cue) {
     case "blink":
       return [
         layer([
-          [0, burst(0.012, 2400, { seed, type: "bp", q: 1.5 })],
-          [0, blip(1300, { decay: 0.012 }), 0.5],
+          [0, burst(0.012, 900, { seed, type: "bp", q: 1.5 })],
+          [0, blip(380, { decay: 0.014 }), 0.5],
         ]),
-        -26,
+        -24,
         0,
         0.1,
       ];
@@ -304,47 +332,45 @@ function effect(cue) {
     case "flash":
       return [
         layer([
-          [0, normalize(sweep(0.9, 9000, 3000, { type: "hp", attack: 0.02, seed, curve: 2.5 }))],
-          [0, bell(mtof(86), { decay: 0.8 }), 0.5],
+          [0, normalize(sweep(0.9, 3200, 800, { attack: 0.02, q: 0.7, seed, curve: 2.5 })), 0.6],
+          [0, normalize(thump(45, { from: 2.5, decay: 0.5 }))],
         ]),
-        -12,
+        -11,
         0,
-        0.5,
+        0.35,
       ];
     case "bloom":
-      return [sweep(0.9, 3000, 400, { q: 0.8, attack: 0.25, seed }), -18, 0, 0.5];
+      return [sweep(0.9, 1800, 250, { q: 0.8, attack: 0.25, seed }), -18, 0, 0.4];
     case "tap":
       return [
         layer([
-          [0, blip(520, { decay: 0.05, from: 1.4, drop: 0.01 })],
-          [0, burst(0.006, 3000, { seed }), 0.4],
+          [0, blip(300, { decay: 0.05, from: 1.4, drop: 0.01 })],
+          [0, burst(0.006, 1500, { seed, type: "bp" }), 0.4],
         ]),
-        -18 + 20 * Math.log10(g),
+        -17 + 20 * Math.log10(g),
         0,
         0.15,
       ];
     case "sparkle": {
-      const notes = cue.bright ? [86, 90, 93, 98] : [81, 86, 90];
+      const notes = cue.bright ? [50, 57, 62] : [50, 57];
       return [
-        layer(
-          notes.map((n, i) => [i * 0.035, bell(mtof(n), { decay: 0.4, index: 1.2 }), 1 - i * 0.12]),
-        ),
-        (cue.bright ? -13 : -19) + 20 * Math.log10(g),
+        layer(notes.map((n, i) => [i * 0.04, bloom(mtof(n), { decay: 0.5 }), 1 - i * 0.15])),
+        (cue.bright ? -14 : -19) + 20 * Math.log10(g),
         0.1,
-        0.5,
+        0.3,
       ];
     }
     case "stroke":
-      return [sweep(dur, 1400, 2800, { q: 0.7, attack: 0.3, seed }), -22, (p) => p - 0.5, 0.2];
+      return [sweep(dur, 700, 1800, { q: 0.7, attack: 0.3, seed }), -22, (p) => p - 0.5, 0.2];
     case "whoosh": {
       const [f0, f1] =
         cue.dir === "down"
-          ? [2600, 350]
+          ? [1800, 250]
           : cue.low
-            ? [180, 900]
+            ? [120, 600]
             : cue.high
-              ? [1500, 6000]
-              : [350, 2600];
+              ? [800, 3000]
+              : [250, 1800];
       const pan = cue.dir === "right" ? (p) => p * 1.2 - 0.6 : 0;
       return [
         sweep(dur, f0, f1, { q: 0.9, seed, attack: 0.6 }),
@@ -358,15 +384,15 @@ function effect(cue) {
       let phase = 0;
       for (let i = 0; i < out.length; i++) {
         const p = i / out.length;
-        phase += (500 * 3 ** p) / SR;
+        phase += (120 * 3 ** p) / SR;
         out[i] = sin(phase) * Math.sin(Math.PI * p) ** 1.5;
       }
       return [
         layer([
           [0, out],
-          [0, normalize(sweep(dur, 800, 5000, { seed, attack: 0.7 })), 0.5],
+          [0, normalize(sweep(dur, 300, 2000, { seed, attack: 0.7 })), 0.5],
         ]),
-        -22,
+        -20,
         (p) => p - 0.5,
         0.3,
       ];
@@ -374,27 +400,35 @@ function effect(cue) {
     case "pop":
       return [
         blip(mtof(cue.note), { decay: 0.07, from: 1.6, drop: 0.012 }),
-        -17 + 20 * Math.log10(g),
+        -16 + 20 * Math.log10(g),
         0,
-        0.25,
+        0.2,
       ];
     case "key": {
       const rnd = random(cue.seed * 97 + 3);
       const vel = 0.55 + rnd() * 0.45;
       const sig = layer([
-        [0, burst(0.008, 2600 + rnd() * 1400, { seed: cue.seed })],
-        [0, blip(1700 + rnd() * 900, { decay: 0.008 }), 0.35],
+        [0, burst(0.008, 1200 + rnd() * 600, { seed: cue.seed, type: "bp", q: 1.2 })],
+        [0, blip(600 + rnd() * 300, { decay: 0.008 }), 0.35],
       ]);
-      return [sig, -27 + 20 * Math.log10(vel), rnd() * 0.4 - 0.2, 0.08];
+      return [sig, -26 + 20 * Math.log10(vel), rnd() * 0.4 - 0.2, 0.08];
     }
     case "tick":
-      return [blip(1800, { decay: 0.015 }), -26 + 20 * Math.log10(g), 0, 0.1];
+      return [
+        layer([
+          [0, burst(0.006, 1000, { seed, type: "bp", q: 1.2 })],
+          [0, blip(420, { decay: 0.01 }), 0.6],
+        ]),
+        -25 + 20 * Math.log10(g),
+        0,
+        0.1,
+      ];
     case "click":
       return [
         layer([
-          [0, thump(170, { from: 1.4, decay: 0.035 })],
-          [0, burst(0.004, 3500, { seed }), 0.5],
-          [0, blip(950, { decay: 0.012 }), 0.4],
+          [0, thump(150, { from: 1.4, decay: 0.035 })],
+          [0, burst(0.004, 1800, { seed, type: "bp" }), 0.5],
+          [0, blip(480, { decay: 0.012 }), 0.4],
         ]),
         -15,
         0,
@@ -402,39 +436,40 @@ function effect(cue) {
       ];
     case "shimmer": {
       const st = grains(dur, { seed });
-      return { l: st.l, r: st.r, level: -23, send: 0.6 };
+      return { l: st.l, r: st.r, level: -22, send: 0.35 };
     }
     case "approve": {
-      const [a, b] = cue.step ? [83, 88] : [81, 86];
+      const [a, b] = cue.step ? [52, 59] : [50, 57];
       return [
         layer([
-          [0, blip(mtof(a), { decay: 0.06 })],
-          [0.07, blip(mtof(b), { decay: 0.1 })],
+          [0, mallet(mtof(a), { decay: 0.14 })],
+          [0.07, mallet(mtof(b), { decay: 0.2 })],
         ]),
-        -18,
+        -16,
         0.1,
-        0.35,
+        0.15,
       ];
     }
     case "discard":
       return [
         layer([
-          [0, blip(620, { decay: 0.1, from: 0.45, drop: 0.08 })],
-          [0, burst(0.05, 700, { type: "lp", seed }), 0.3],
+          [0, blip(400, { decay: 0.1, from: 0.45, drop: 0.08 })],
+          [0, burst(0.05, 500, { type: "lp", seed }), 0.3],
         ]),
-        -21,
+        -20,
         -0.1,
-        0.2,
+        0.15,
       ];
     case "chime":
       return [
         layer([
-          [0, bell(mtof(86), { decay: 0.9, index: 1.5 })],
-          [0.09, bell(mtof(90), { decay: 1.1, index: 1.5 }), 0.9],
+          [0, mallet(mtof(50), { decay: 0.3 })],
+          [0.08, mallet(mtof(54), { decay: 0.3 }), 0.85],
+          [0.16, mallet(mtof(57), { decay: 0.45 }), 0.8],
         ]),
         -14,
         0,
-        0.45,
+        0.2,
       ];
     case "land":
       return [
@@ -451,7 +486,7 @@ function effect(cue) {
         layer(
           Array.from({ length: 9 }, (_, i) => [
             i * 0.028,
-            burst(0.01, 1800 + i * 90, { seed: seed + i, type: "bp", q: 1.2 }),
+            burst(0.01, 900 + i * 50, { seed: seed + i, type: "bp", q: 1.2 }),
             1 - i * 0.06,
           ]),
         ),
@@ -463,7 +498,7 @@ function effect(cue) {
       return [
         layer([
           [0, thump(210, { from: 1.3, decay: 0.05 })],
-          [0, burst(0.006, 2200, { seed }), 0.45],
+          [0, burst(0.006, 1400, { seed, type: "bp" }), 0.45],
         ]),
         -13,
         0,
@@ -472,7 +507,7 @@ function effect(cue) {
     case "flip":
       return [
         layer([
-          [0, sweep(0.34, 900, 3600, { q: 0.8, attack: 0.45, seed })],
+          [0, sweep(0.34, 600, 2400, { q: 0.8, attack: 0.45, seed })],
           [0.1, thump(90, { decay: 0.12 }), 0.25],
         ]),
         -15,
@@ -481,16 +516,24 @@ function effect(cue) {
       ];
     case "swish":
       return [
-        sweep(0.4, 700, 2400, { q: 0.8, attack: 0.5, seed }),
+        sweep(0.4, 500, 1800, { q: 0.8, attack: 0.5, seed }),
         -19 + 20 * Math.log10(g),
         0,
         0.2,
       ];
     case "pluck":
-      return [pluck(mtof(cue.note), { seed }), -11, (cue.note - 78) / 12, 0.4];
+      return [
+        layer([
+          [0, normalize(pluck(mtof(cue.note), { seed, dur: 1.2, decay: 0.993, tone: 700 }))],
+          [0, mallet(mtof(cue.note), { decay: 0.3, wood: 0.2 }), 0.6],
+        ]),
+        -12,
+        (cue.note - 54) / 12,
+        0.2,
+      ];
     case "whip":
       return [
-        sweep(0.34, 500, 6500, { q: 0.7, attack: 0.72, seed, curve: 2.4 }),
+        sweep(0.34, 400, 4000, { q: 0.7, attack: 0.72, seed, curve: 2.4 }),
         -10,
         (p) => 0.6 - p * 1.2,
         0.2,
@@ -513,7 +556,7 @@ function effect(cue) {
       return [
         layer([
           [0, thump(55, { from: 2.2, decay: 0.3 })],
-          [0, burst(0.04, cue.bright ? 3500 : 2000, { seed })],
+          [0, burst(0.04, cue.bright ? 2400 : 1400, { seed })],
           [0, normalize(stab), 0.55],
         ]),
         -7,
@@ -522,7 +565,7 @@ function effect(cue) {
       ];
     }
     case "swoosh":
-      return [sweep(dur, 600, 2000, { q: 0.9, attack: 0.5, seed }), -21, 0, 0.3];
+      return [sweep(dur, 400, 1400, { q: 0.9, attack: 0.5, seed }), -21, 0, 0.3];
     default:
       return null;
   }
@@ -566,7 +609,7 @@ function pad(bus, send, notes, t0, t1, { attack = 0.7, release = 1.1, level = -2
           (t > t1 - t0 ? Math.exp(-(t - (t1 - t0)) / (release / 3)) : 1);
         let v = 0;
         for (let k = 1; k <= harmonics; k++)
-          v += (sin(fd * k * t + n * 0.13) / k) * Math.exp(-(k - 1) * 0.55);
+          v += (sin(fd * k * t + n * 0.13) / k) * Math.exp(-(k - 1) * 0.7);
         const breathe = 1 + 0.08 * Math.sin(TAU * 0.21 * t + n);
         const s = v * env * breathe * gain * weight;
         const j = start + i;
@@ -601,7 +644,7 @@ function renderBed(cues, duration, bus, send) {
       level: resolve ? -19 : -21,
     });
   });
-  // The arpeggio: a soft pluck on 8th notes through the current chord's upper tones.
+  // The arpeggio: a soft, low pluck on 8th notes through the current chord's upper tones.
   const on = cues.find((c) => c.type === "pulse" && c.on);
   const off = cues.find((c) => c.type === "pulse" && !c.on);
   if (on) {
@@ -609,28 +652,26 @@ function renderBed(cues, duration, bus, send) {
     const pattern = [0, 2, 1, 3, 2, 1, 3, 2];
     for (let k = 0, t = on.t; t < (off ? off.t : duration); k++, t = on.t + k * step) {
       const chord = [...chords].reverse().find((c) => c.t <= t + 1e-6) ?? chords[0];
-      const tones = CHORDS[chord.name].slice(-4).map((n) => n + 12);
+      const tones = CHORDS[chord.name].slice(-4);
       const note = tones[pattern[k % pattern.length] % tones.length];
       const accent = k % 4 === 0 ? 1 : 0.7;
-      const sig = blip(mtof(note), { decay: 0.18, harmonics: 0.3 });
+      const sig = blip(mtof(note), { decay: 0.16, harmonics: 0.15 });
       const fade = Math.min(1, (t - on.t) / 1.2); // eases in from the aperture
-      bus.add(t, sig, db(-27) * accent * fade, k % 2 ? 0.3 : -0.3);
-      send.add(t, sig, db(-27) * accent * fade * 0.6, k % 2 ? 0.3 : -0.3);
+      bus.add(t, sig, db(-25) * accent * fade, k % 2 ? 0.3 : -0.3);
+      send.add(t, sig, db(-25) * accent * fade * 0.5, k % 2 ? 0.3 : -0.3);
     }
   }
-  // At the resolve: sparse high bells over the final chord.
+  // At the resolve: a deep swell under the final chord.
   const resolve = chords.find((c) => c.name === "Dresolve");
   if (resolve) {
-    [
-      [0.15, 93],
-      [0.6, 88],
-      [1.25, 97],
-      [2.1, 90],
-    ].forEach(([dt, note]) => {
-      const sig = bell(mtof(note), { decay: 1.4, index: 1 });
-      bus.add(resolve.t + dt, sig, db(-30), 0.2);
-      send.add(resolve.t + dt, sig, db(-26), 0.2);
-    });
+    for (const [dt, note, level] of [
+      [0.1, 38, -24],
+      [0.35, 45, -27],
+    ]) {
+      const sig = normalize(bloom(mtof(note), { attack: 0.6, decay: 1.6 }));
+      bus.add(resolve.t + dt, sig, db(level));
+      send.add(resolve.t + dt, sig, db(level - 4));
+    }
   }
 }
 
@@ -729,13 +770,18 @@ export function renderSoundtrack(cues, duration) {
   renderBed(cues, duration, bed, bedSend);
 
   for (const [dry, send, opts] of [
-    [sfx, sfxSend, { room: 0.78, damp: 0.35 }],
-    [bed, bedSend, { room: 0.9, damp: 0.25 }],
+    [sfx, sfxSend, { room: 0.72, damp: 0.55 }],
+    [bed, bedSend, { room: 0.88, damp: 0.5 }],
   ]) {
     const wet = freeverb(send, opts);
     for (let i = 0; i < length; i++) {
       dry.l[i] += wet.l[i];
       dry.r[i] += wet.r[i];
+    }
+    // Round off the top: everything here is meant to sound felt, not glassy.
+    for (const side of [dry.l, dry.r]) {
+      const lp = new Filter("lp", 9000);
+      for (let i = 0; i < length; i++) side[i] = lp.run(side[i]);
     }
   }
   return { sfx: { l: sfx.l, r: sfx.r }, bed: { l: bed.l, r: bed.r } };
