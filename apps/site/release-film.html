@@ -952,23 +952,33 @@
         };
 
         // ─── Eye rig ───────────────────────────────────────────────────────
-        // The logo eye, built to move like one. The lids are one closed path with the logo's
-        // exact geometry (so the corners keep their mitred points) and they close for a blink,
-        // the upper lid travelling further than the lower. Iris and pupil move together and are
-        // clipped by the lids, so a blink covers them. Stroke weight never changes.
-        const lidPath = (closed) => {
-          const t1 = lerp(17, 29, closed);
-          const t2 = lerp(13, 31, closed);
-          const b1 = lerp(35, 29, closed);
-          const b2 = lerp(39, 31, closed);
-          return `M3 26 C7 ${t1} 15 ${t2} 26 ${t2} C37 ${t2} 45 ${t1} 49 26 C45 ${b1} 37 ${b2} 26 ${b2} C15 ${b2} 7 ${b1} 3 26Z`;
-        };
+        // The logo eye, built to move like one. The lids follow the logo's exact almond and close
+        // for a blink, the upper lid travelling further than the lower. Iris and pupil move
+        // together and are clipped by the lids, so a blink covers them. Line weight never changes.
+        //
+        // Two lid styles: the logo's stroke (one closed path, mitred corners), and the film's
+        // "ink" lids, drawn as tapered bands that are full weight at the centre and come to a
+        // point at each corner, with a lighter lower lid.
+        const lidLines = (closed) => ({
+          t1: lerp(17, 29, closed),
+          t2: lerp(13, 31, closed),
+          b1: lerp(35, 29, closed),
+          b2: lerp(39, 31, closed),
+        });
+        /** The closed almond through both lid centrelines. */
+        const almond = (g) =>
+          `M3 26 C7 ${g.t1} 15 ${g.t2} 26 ${g.t2} C37 ${g.t2} 45 ${g.t1} 49 26 C45 ${g.b1} 37 ${g.b2} 26 ${g.b2} C15 ${g.b2} 7 ${g.b1} 3 26Z`;
+        /** An ink lid: a band around its centreline, w thick at the middle, a point at each corner. */
+        const inkLid = (y1, y2, w) =>
+          almond({ t1: y1 - w * 0.42, t2: y2 - w / 2, b1: y1 + w * 0.42, b2: y2 + w / 2 });
+        const INK = { top: 2.6, bottom: 1.5, iris: 1.3 };
         /** Lid closure for a blink starting at t0: shut fast, a beat closed, open slower. */
         const blinkAt = (t, t0) =>
           P(t, t0, t0 + 0.08, E.inQuad) * (1 - P(t, t0 + 0.11, t0 + 0.27, E.outCubic));
         let eyeCount = 0;
-        const mountEye = (svg, stroke = 1.5) => {
+        const mountEye = (svg, { ink = false } = {}) => {
           const id = `eye-${eyeCount++}`;
+          const irisWeight = ink ? INK.iris : 1.5;
           svg.setAttribute("viewBox", "0 0 52 52");
           svg.innerHTML = `
             <defs>
@@ -984,14 +994,19 @@
             <g clip-path="url(#${id}-lens)">
               <g class="gaze">
                 <circle class="iris" pathLength="1" cx="26" cy="26" r="8" fill="none" stroke="#ededed"
-                  stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="1 1" />
+                  stroke-width="${irisWeight}" stroke-linecap="round" stroke-dasharray="1 1" />
                 <circle class="pupil" cx="26" cy="26" r="4" fill="#ededed" />
               </g>
             </g>
-            <path class="lids" mask="url(#${id}-draw)" fill="none" stroke="#ededed" stroke-width="${stroke}" />`;
+            <g class="lids" mask="url(#${id}-draw)">${
+              ink
+                ? `<path class="lid-top" fill="#ededed" /><path class="lid-bottom" fill="#ededed" />`
+                : `<path class="lid" fill="none" stroke="#ededed" stroke-width="1.5" />`
+            }</g>`;
           const [lens, lids, iris, pupil, gaze, echo] = [".lens", ".lids", ".iris", ".pupil", ".gaze", ".echo"].map(
             (sel) => $(sel, svg),
           );
+          const [lid, lidTop, lidBottom] = [".lid", ".lid-top", ".lid-bottom"].map((sel) => $(sel, svg));
           const wipe = $("linearGradient", svg);
           return {
             echo,
@@ -1000,9 +1015,15 @@
              * gaze: horizontal look offset · blink: lid closure 0 (open) → 1 (shut).
              */
             set({ lids: drawn = 1, iris: ring = 1, pupil: r = 4, gaze: dx = 0, blink = 0 }) {
-              const d = lidPath(blink);
-              lids.setAttribute("d", d);
+              const g = lidLines(blink);
+              const d = almond(g);
               lens.setAttribute("d", d);
+              if (ink) {
+                lidTop.setAttribute("d", inkLid(g.t1, g.t2, INK.top));
+                lidBottom.setAttribute("d", inkLid(g.b1, g.b2, INK.bottom));
+              } else {
+                lid.setAttribute("d", d);
+              }
               const x = lerp(-4, 56, drawn);
               wipe.setAttribute("x1", x - 3);
               wipe.setAttribute("x2", x);
@@ -1041,7 +1062,7 @@
             );
           }
           const wrap = $("#s1-eyewrap");
-          const eye = mountEye($(".eye", wrap));
+          const eye = mountEye($(".eye", wrap), { ink: true });
           return {
             el,
             from: 0,
@@ -1534,7 +1555,7 @@
         const s6 = (() => {
           const el = $("#s6");
           const eyeEl = $("#s6-eye");
-          const eye = mountEye(eyeEl);
+          const eye = mountEye(eyeEl, { ink: true });
           const word = $("#s6-word");
           const letters = $$(".lm > span", word);
           const tag = $("#s6-tag .w");
@@ -1598,6 +1619,7 @@
         // Glance right, glance left, settle, blink: frame 0 and frame N match, so it loops.
         const sT = (() => {
           const el = $("#sT");
+          // The thumbnail stands in for the product icon, so it keeps the logo's own lids.
           const eye = mountEye($("#sT-eye"));
           return {
             el,
