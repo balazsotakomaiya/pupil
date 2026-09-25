@@ -515,6 +515,7 @@
       .ai-act svg { width: 15px; height: 15px; }
       .ai-act.approve { border-color: rgba(16, 185, 129, 0.4); color: var(--success); }
       .card-in { position: absolute; left: 50%; top: 50%; width: 880px; height: 500px; padding: 30px 36px; opacity: 0; }
+      .row-shade { position: absolute; inset: 0; background: #050505; opacity: 0; }
       #ai-save { position: absolute; display: flex; align-items: center; justify-content: space-between; font-size: 20px; color: #8a8a8a; }
       #ai-save b { color: #ededed; font-weight: 600; }
 
@@ -707,7 +708,10 @@
             </span>
           </div>
           <div id="ai-rows"></div>
-          <div id="ai-save"><span><b>2</b> cards ready to save to DSA</span><span class="ai-btn">Save approved cards</span></div>
+          <div id="ai-save">
+            <span class="ready"><b>2</b> cards ready to save to DSA</span>
+            <span class="ai-btn"><span class="lbl">Save approved cards</span></span>
+          </div>
         </section>
 
         <!-- 03 · Recall: one card from the queue, question → answer → rated -->
@@ -1027,24 +1031,23 @@
         // transitions, whips and blinks keep their snap. [from, to, speed] in choreography seconds.
         const CHOREO = 15;
         // The AI cut opens a gap in the 15-second clock: it starts as the tagline leaves (4.4)
-        // and hands over to the study scene, which resumes at 5.0 with the approved cards as its
-        // deck. The master clock runs through the gap; scenes before it read master time, scenes
+        // and hands over to the study scene, which resumes at 5.4 (where the classic card has
+        // finished lifting) with the saved cards already face-on as its deck. The master clock runs through the gap; scenes before it read master time, scenes
         // after it read classic time (master minus the gap).
         const AI_AT = 4.4;
         // The scene opens on an intro slide ("Write your own cards. / Or let AI draft them."),
         // then plays the UI a touch slower than real time so the new idea has room to land.
-        const AI_INTRO = 2.65;
+        const AI_INTRO = 2.32;
         const AI_SLOW = 1.15;
         const AI_LEN = AI_INTRO + 4.3 * AI_SLOW;
-        const RESUME = 5.0;
+        const RESUME = 5.4;
         const GAP = AI ? AI_AT + AI_LEN - RESUME : 0;
         const MASTER = CHOREO + GAP;
-        /** Master → classic time. Inside the AI scene, classic time drifts 4.4 → 5.0 for the light. */
+        /** Master → classic time. Inside the AI scene, classic time drifts 4.4 → 5.4 for the light. */
         const classic = (m) =>
           !AI || m < AI_AT ? m : m < AI_AT + AI_LEN ? lerp(AI_AT, RESUME, (m - AI_AT) / AI_LEN) : m - GAP;
         const CLASSIC_PACING = [
           [1.28, 1.62, 0.5], // the opening glance
-          [3.8, 4.3, 0.5], // read the tagline
           [6.62, 6.95, 0.5], // read the answer
           [9.75, 9.98, 0.3], // take in the finished curve
           [10.55, 10.75, 0.5], // each feature word…
@@ -1056,6 +1059,9 @@
           [13.9, 14.02, 0.5],
           [14.3, CHOREO, 0.2912], // hold the end card after the blink (lands the film on 20.0s)
         ];
+        // The classic cut holds the tagline; the AI cut keeps it brisk, as its intro slide
+        // follows straight after with the next thing to read.
+        if (!AI) CLASSIC_PACING.splice(1, 0, [3.8, 4.3, 0.5]);
         const PACING = CLASSIC_PACING.map(([a, b, speed]) => (a >= RESUME ? [a + GAP, b + GAP, speed] : [a, b, speed]));
         if (AI) {
           const ui = (u) => AI_AT + AI_INTRO + u * AI_SLOW;
@@ -1347,14 +1353,16 @@
             update(t) {
               const push = V(t, 2.3, 4.9, 1, 1.055, E.lin);
               inner.style.transform = `translateX(${V(t, 2.3, 4.9, 0, -24)}px) scale(${push})`;
-              blurUp(eyebrow, t, 2.36, 4.34, { dist: 24, blur: 10 });
+              // The AI cut clears the tagline a beat sooner, so its intro slide has a clean stage.
+              const out = AI ? 4.18 : 4.38;
+              blurUp(eyebrow, t, 2.36, out - 0.04, { dist: 24, blur: 10 });
               words.forEach((w, i) => {
-                blurUp(w, t, enters[i], 4.38 + i * 0.03, { dist: 70, blur: 20 });
+                blurUp(w, t, enters[i], out + i * 0.03, { dist: 70, blur: 20 });
               });
               letters.forEach((l, i) => {
                 const s = 2.6 + i * 0.03;
                 const p = P(t, s, s + 0.75, E.outExpo);
-                blurUp(l, t, s, 4.4 + 0.08 + i * 0.01, {
+                blurUp(l, t, s, out + 0.1 + i * 0.01, {
                   dist: 100,
                   blur: 16,
                   dur: 0.75,
@@ -1362,7 +1370,7 @@
                 });
               });
               const u = P(t, 3.28, 3.8, E.inOutCubic);
-              const ux = P(t, 4.36, 4.62, E.inCubic);
+              const ux = P(t, out - 0.02, out + 0.24, E.inCubic);
               underline.style.strokeDashoffset = 1 - u - ux;
               underline.style.opacity = u > 0 && ux < 1 ? 1 : 0;
             },
@@ -1398,6 +1406,8 @@
           const counts = $(".counts", status);
           const save = $("#ai-save");
           const saveBtn = $(".ai-btn", save);
+          const saveLabel = $(".lbl", saveBtn);
+          const saveReady = $(".ready", save);
           const TOPIC = "Graph algorithms for coding interviews";
           const DRAFTS = [
             {
@@ -1427,8 +1437,14 @@
             : { x: 410, w: 1100, fieldY: 440, fieldH: 132, optsY: 602, rowY: 356, rowH: 176, gap: 18, deckY: 470 };
           const rowRect = (i) => ({ x: G.x, y: G.rowY + i * (G.rowH + G.gap), w: G.w, h: G.rowH, r: 18 });
           const fieldRect = { x: G.x, y: G.fieldY, w: G.w, h: G.fieldH, r: 18 };
-          // The study card at 0.62 scale, centred where the next scene's deck sits.
-          const cardRect = { x: CX - 440 * 0.62, y: G.deckY - 250 * 0.62, w: 880 * 0.62, h: 500 * 0.62, r: 28 * 0.62 };
+          // Where a study card at (y, z) in the next scene's 3D deck appears on screen
+          // (perspective 2200, centred on the deck), so the rows can land on it exactly.
+          const deckRect = (y, z) => {
+            const k = 2200 / (2200 - z);
+            const cy = G.deckY + y * k;
+            return { x: CX - 440 * k, y: cy - 250 * k, w: 880 * k, h: 500 * k, r: 28 * k };
+          };
+          const LANDING = [deckRect(0, 0), deckRect(-36, -120)]; // the card to study, and the next one
           const mixRect = (a, b, k) => ({
             x: lerp(a.x, b.x, k),
             y: lerp(a.y, b.y, k),
@@ -1471,9 +1487,9 @@
               </div>
               <div class="card-in">
                 <div class="face-top"><span>FRONT</span><span class="tag"><i></i>DSA</span></div>
-                <div class="face-q">${d.q}</div>
-                <div class="face-hint"><span class="kbd">Space</span>Show answer</div>
-              </div>`;
+                ${i === 0 ? `<div class="face-q">${d.q}</div><div class="face-hint"><span class="kbd">Space</span>Show answer</div>` : ""}
+              </div>
+              <div class="row-shade"></div>`;
             $("#ai-rows").append(row);
             return {
               ...d,
@@ -1486,6 +1502,7 @@
               approve: $(".approve", row),
               approveLabel: $(".approve .label", row),
               discard: $(".discard", row),
+              shade: $(".row-shade", row),
               text: d,
             };
           });
@@ -1516,24 +1533,24 @@
 
               // Intro: "Write your own cards." dims as "Or let AI draft them." arrives, then the
               // second line rises into the heading, keeping "AI" in view through the UI.
-              const dim = lerp(1, 0.28, P(s, 0.95, 1.3, E.inOutCubic));
+              const dim = lerp(1, 0.28, P(s, 0.98, 1.25, E.inOutCubic));
               line1Words.forEach((w, i) => {
-                blurUp(w, s, 0.05 + i * 0.06, 2.15 + i * 0.03, { dist: 60, blur: 18 });
+                blurUp(w, s, 0.33 + i * 0.05, 1.82 + i * 0.03, { dist: 60, blur: 18 });
                 w.style.opacity = Number(w.style.opacity) * dim;
               });
               line2Words.forEach((w, i) => {
-                const pop = w === aiWord ? lerp(1.35, 1, E.outBack(P(s, 1.14, 1.74))) : 1;
-                blurUp(w, s, 1.0 + i * 0.07, AI_INTRO + (2.62 + i * 0.03) * AI_SLOW, {
+                const pop = w === aiWord ? lerp(1.35, 1, E.outBack(P(s, 1.16, 1.76))) : 1;
+                blurUp(w, s, 1.02 + i * 0.07, AI_INTRO + (2.62 + i * 0.03) * AI_SLOW, {
                   dist: 60,
                   blur: 18,
                   extra: `scale(${pop})`,
                 });
               });
-              spark.style.opacity = P(s, 1.35, 1.45);
-              spark.style.transform = `scale(${E.outBack(P(s, 1.35, 1.75), 2.5)}) rotate(${lerp(-90, 0, P(s, 1.35, 1.85, E.outCubic))}deg)`;
-              const rise = P(s, 2.25, 2.8, E.inOutCubic);
+              spark.style.opacity = P(s, 1.36, 1.46);
+              spark.style.transform = `scale(${E.outBack(P(s, 1.36, 1.76), 2.5)}) rotate(${lerp(-90, 0, P(s, 1.36, 1.86, E.outCubic))}deg)`;
+              const rise = P(s, 1.92, 2.42, E.inOutCubic);
               line2.style.transform = `translateY(${rise * HEADING.dy}px) scale(${lerp(1, HEADING.s, rise)})`;
-              blurUp(eyebrow, s, 2.55, AI_INTRO + 3.55 * AI_SLOW, { dist: 24, blur: 10 });
+              blurUp(eyebrow, s, 2.22, AI_INTRO + 3.55 * AI_SLOW, { dist: 24, blur: 10 });
               // Once the drafts are in: "Keep the ones you like."
               keepWords.forEach((w, i) => blurUp(w, a, 2.72 + i * 0.05, 3.55 + i * 0.02, { dist: 50, blur: 16 }));
 
@@ -1570,15 +1587,17 @@
               rows.forEach((r, i) => {
                 const split = P(a, 1.55 + i * 0.05, 2.1 + i * 0.05, E.inOutCubic);
                 let rect = mixRect(fieldRect, rowRect(i), split);
-                const fold = i < 2 ? P(a, 3.6 + i * 0.06, 4.18 + i * 0.06, E.inOutCubic) : 0;
-                rect = mixRect(rect, cardRect, fold);
+                // Saved: the approved rows lift and tilt back, then spring into flashcards.
+                const morph = i < 2 ? P(a, 3.68 + i * 0.05, 4.22 + i * 0.03) : 0;
+                const fold = E.outBack(morph, 1.35);
+                if (i < 2) rect = mixRect(rect, LANDING[i], fold);
                 place(r.row, rect);
                 vis(r.row, a >= 1.55);
 
                 r.q.textContent = decode(r.text.q, P(a, 1.95 + i * 0.12, 2.45 + i * 0.12), i, frame);
                 r.a.textContent = decode(r.text.a, P(a, 2.1 + i * 0.12, 2.75 + i * 0.12), i + 7, frame);
                 r.foot.style.opacity = P(a, 2.45 + i * 0.05, 2.65 + i * 0.05);
-                r.rowIn.style.opacity = 1 - P(a, 3.58, 3.74);
+                r.rowIn.style.opacity = 1 - P(a, 3.62, 3.76);
 
                 if (i < 2) {
                   const k = P(a, APPROVE_AT[i], APPROVE_AT[i] + 0.12);
@@ -1586,9 +1605,16 @@
                   r.approve.style.background = `rgba(16, 185, 129, ${0.16 * k})`;
                   r.approve.style.borderColor = mixHex("#1b6a52", "#10b981", k);
                   r.approve.style.transform = `scale(${1 + 0.12 * bell(a, APPROVE_AT[i], APPROVE_AT[i] + 0.22)})`;
-                  r.row.style.borderColor = mixHex("#2b2b2b", "#1f5a47", k * (1 - fold));
-                  // The folded row shows the study card's face, scaled to the row.
-                  r.cardIn.style.opacity = P(a, 3.85 + i * 0.06, 4.1 + i * 0.06);
+                  r.row.style.borderColor = mixHex("#2b2b2b", "#1f5a47", k * (1 - morph));
+                  const lift = P(a, 3.52, 3.7, E.outCubic) * (1 - morph);
+                  const tilt = (i === 0 ? -14 : -9) * Math.sin(Math.PI * morph);
+                  r.row.style.transform = `perspective(1600px) rotateX(${tilt}deg) scale(${1 + 0.03 * lift})`;
+                  // The next card travels up behind the first, with a little motion blur.
+                  const smear = i === 1 ? 4 * Math.sin(Math.PI * morph) : 0;
+                  r.row.style.filter = smear > 0.05 ? `blur(${smear}px)` : "none";
+                  r.shade.style.opacity = i === 1 ? 0.3 * P(a, 3.8, 4.2) : 0;
+                  // The morphing row shows the study card's face, scaled to fit.
+                  r.cardIn.style.opacity = P(a, 3.84 + i * 0.05, 4.08 + i * 0.05);
                   r.cardIn.style.transform = `translate(-50%, -50%) scale(${Math.min(rect.w / 880, rect.h / 500)})`;
                 } else {
                   const d = P(a, DISCARD_AT + 0.05, DISCARD_AT + 0.35, E.inCubic);
@@ -1600,8 +1626,13 @@
                 }
               });
 
-              blurUp(save, a, 3.3, 3.62, { dist: 20, blur: 8, dur: 0.5, exitDist: 20, exitDur: 0.25 });
-              saveBtn.style.transform = `scale(${1 - 0.06 * bell(a, 3.48, 3.62)})`;
+              // Save → "Saved to DSA": the button confirms, then the bar clears for the cards.
+              blurUp(save, a, 3.3, 3.74, { dist: 20, blur: 8, dur: 0.5, exitDist: 24, exitDur: 0.22 });
+              const saved = a >= 3.55;
+              saveBtn.style.transform = `scale(${1 - 0.07 * bell(a, 3.48, 3.62) + 0.05 * bell(a, 3.55, 3.72)})`;
+              saveBtn.style.background = mixHex("#ededed", "#10b981", P(a, 3.54, 3.62));
+              saveLabel.textContent = saved ? "Saved to DSA" : "Save approved cards";
+              saveReady.style.opacity = 1 - P(a, 3.52, 3.62);
             },
           };
         })();
@@ -1638,9 +1669,7 @@
           const table = (i) => ({ x: i * 16, y: 150 + i * 4, z: -160, rx: 60, ry: 0, rz: -20 + i * 3.5, lift: -i * 16 });
           const queue = (i) => ({ x: 0, y: -36 * i, z: -120 * i, rx: 0, ry: 0, rz: 0, lift: 0 });
           const below = (p) => ({ ...p, y: p.y + H + 20, rx: p.rx + 12 });
-          // AI cut: the approved drafts hand over as a face-on stack at 0.62 scale.
-          const Z_STACK = 2200 / 0.62 - 2200;
-          const stack = (i) => ({ x: 0, y: 0, z: -Z_STACK - 24 * i, rx: 0, ry: 0, rz: 0, lift: 0 });
+
           const mix = (a, b, k) => {
             const o = {};
             for (const key of Object.keys(a)) o[key] = lerp(a[key], b[key], k);
@@ -1664,12 +1693,12 @@
               // Hero card: rise with the deck, lift to face us, flip, get rated, fly off.
               let hp;
               if (AI) {
-                hp = mix(stack(0), ZERO, P(t, RESUME, RESUME + 0.7, E.inOutCubic));
+                hp = { ...ZERO }; // it arrives face-on from the review list
               } else {
                 hp = mix(below(table(0)), table(0), P(t, 4.56, 5.24, E.outExpo));
                 hp = mix(hp, ZERO, P(t, 5.02, 5.76, E.inOutCubic));
+                hp.rx -= 7 * bell(t, 5.5, 6.0);
               }
-              hp.rx -= 7 * bell(t, 5.5, 6.0);
               const pf = P(t, 5.96, 6.58);
               hp.ry = 180 * E.inOutBack(pf, 1.1);
               hp.lift += 150 * Math.sin(Math.PI * pf);
@@ -1687,20 +1716,24 @@
 
               // The queue behind it: fans on the table, stacks into depth, steps forward, falls away.
               for (let i = 1; i < cards.length; i++) {
-                let p = AI
-                  ? stack(i)
-                  : mix(below(table(i)), table(i), P(t, 4.56 + 0.04 * i, 5.24 + 0.04 * i, E.outExpo));
-                const q = AI
-                  ? P(t, RESUME + 0.05 + 0.05 * i, RESUME + 0.85 + 0.05 * i, E.inOutCubic)
-                  : P(t, 5.1 + 0.05 * i, 5.9 + 0.05 * i, E.inOutCubic);
-                p = mix(p, queue(i), q);
+                let p;
+                let q;
+                if (AI) {
+                  // The second saved card is already in place; the rest peel out from behind it.
+                  q = i === 1 ? 1 : P(t, RESUME + 0.04 * (i - 2), RESUME + 0.55 + 0.04 * (i - 2), E.outExpo);
+                  p = mix({ ...queue(1), z: queue(1).z - 4 * i }, queue(i), q);
+                } else {
+                  p = mix(below(table(i)), table(i), P(t, 4.56 + 0.04 * i, 5.24 + 0.04 * i, E.outExpo));
+                  q = P(t, 5.1 + 0.05 * i, 5.9 + 0.05 * i, E.inOutCubic);
+                  p = mix(p, queue(i), q);
+                }
                 const a = P(t, 7.28 + 0.03 * (i - 1), 7.68 + 0.03 * (i - 1), E.outExpo);
                 p = mix(p, queue(i - 1), a);
                 const f = P(t, 7.56 + 0.03 * i, 7.9 + 0.03 * i, E.inQuad);
                 p.y += (H + 20) * f;
                 p.rx += 40 * f;
                 cards[i].style.transform = css(p);
-                const shade = lerp(lerp(AI ? 0.3 * i : 0.18 + 0.1 * i, 0.3 * i, q), 0.3 * (i - 1), a);
+                const shade = lerp(lerp(AI ? 0.3 : 0.18 + 0.1 * i, 0.3 * i, q), 0.3 * (i - 1), a);
                 shades[i].style.opacity = shade;
                 questions[i].style.opacity = i === 1 ? P(t, 7.3, 7.55) : 0;
               }
@@ -1712,7 +1745,7 @@
               heroFront.style.filter = "none";
 
               // Counter 1 / 22 → 2 / 22.
-              blurUp(count, t, 5.2, 7.62, { dist: 16, blur: 8, exitDist: 20 });
+              blurUp(count, t, AI ? RESUME + 0.1 : 5.2, 7.62, { dist: 16, blur: 8, exitDist: 20 });
               rolls.forEach((r) => {
                 r.style.transform = `translateY(${-100 * P(t, 7.34, 7.62, E.outExpo)}%)`;
               });
