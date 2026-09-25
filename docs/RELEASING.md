@@ -106,7 +106,7 @@ This recovery path is meant for “the release failed, fix it and republish” s
 
 ## Release film
 
-A 15-second announcement film lives at [`apps/site/release-film.html`](../apps/site/release-film.html). It is one deterministic timeline: every frame is a pure function of time, so the page plays live in a browser (`bun run --cwd apps/site dev`, then open `/release-film.html`; Space pauses, arrow keys step frames, `?format=portrait` previews the tall cut) and renders frame-perfect to video.
+A 20-second announcement film lives at [`apps/site/release-film.html`](../apps/site/release-film.html). It is one deterministic timeline: every frame is a pure function of time, so the page plays live in a browser (`bun run --cwd apps/site dev`, then open `/release-film.html`; Space pauses, arrow keys step frames, `?format=portrait` previews the tall cut) and renders frame-perfect to video.
 
 The renderer needs Playwright with Chromium and an ffmpeg build with libx264 on `PATH` (or `FFMPEG=/path/to/ffmpeg`). The version on screen comes from `apps/app/package.json` without its prerelease suffix (`1.0.0-alpha.10` shows as `v1.0.0`, since the film announces the stable line), so re-render after `release:version`. Films end on the logo lockup, which is what LinkedIn and YouTube show once playback stops; add `--loop` for a fade-to-black cut that loops seamlessly.
 
@@ -115,6 +115,6 @@ The renderer needs Playwright with Chromium and an ffmpeg build with libx264 on 
 | 16:9 1080p60, for YouTube (Product Hunt only takes YouTube links) and the GitHub release | `bun run release:film` → `docs/assets/release-film.mp4` |
 | 4:5 1080×1350 at 30fps, for the LinkedIn feed | `node scripts/render-release-film.mjs --format portrait --fps 30 --crf 20 --out linkedin.mp4` |
 | 240×240 looping GIF, for the Product Hunt thumbnail (limit 3MB) | `node scripts/render-release-film.mjs --format thumb --width 240 --out thumbnail.gif` |
-| Stills for covers and gallery images (Product Hunt gallery is 1270×760) | `node scripts/render-release-film.mjs --no-hud --stills 3.9,6.95,9.95,14.5` |
+| Stills for covers and gallery images (Product Hunt gallery is 1270×760) | `node scripts/render-release-film.mjs --no-hud --stills 4.5,8.1,11.6,18.3` |
 
-Videos carry a silent AAC track because some upload pipelines expect one. Scene cuts sit on a 120 BPM grid if you want to score the film.
+Videos carry a silent AAC track because some upload pipelines expect one.

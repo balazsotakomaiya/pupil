@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Pupil — Release film</title>
     <!--
-      A 15-second release film for Pupil, authored as one deterministic timeline.
+      A 20-second release film for Pupil, authored as one deterministic timeline.
 
       Everything on screen is a pure function of time: render(t) sets every style, and nothing
       uses CSS animations or transitions. That means the page can play live in a browser and be
@@ -20,7 +20,6 @@
         ?hud=0            hide the frame overlay (for stills)
 
       Keys: Space play/pause · ←/→ step a frame (Shift: 1s) · Home restart.
-      Scene cuts land on a 120 BPM grid (every 0.5s) for scoring.
     -->
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Syne:wght@700&family=Instrument+Serif:ital@1&display=block"
@@ -823,12 +822,12 @@
         const params = new URLSearchParams(location.search);
         // Stage size, duration, and the frame margin the rulers sit on, per format.
         const FORMATS = {
-          landscape: { w: 1920, h: 1080, duration: 15, mx: 120, my: 90 },
-          portrait: { w: 1080, h: 1350, duration: 15, mx: 64, my: 72 },
-          thumb: { w: 480, h: 480, duration: 3, mx: 0, my: 0 },
+          landscape: { w: 1920, h: 1080, mx: 120, my: 90 },
+          portrait: { w: 1080, h: 1350, mx: 64, my: 72 },
+          thumb: { w: 480, h: 480, mx: 0, my: 0 },
         };
         const FORMAT = params.get("format") in FORMATS ? params.get("format") : "landscape";
-        const { w: W, h: H, duration: DURATION, mx: MX, my: MY } = FORMATS[FORMAT];
+        const { w: W, h: H, mx: MX, my: MY } = FORMATS[FORMAT];
         const CX = W / 2;
         const CY = H / 2;
         const PORTRAIT = FORMAT === "portrait";
@@ -883,6 +882,42 @@
           const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
           return x - Math.floor(x);
         };
+
+        // ─── Pacing ────────────────────────────────────────────────────────
+        // The choreography is authored on a 15-second clock. PACING plays chosen stretches of
+        // it slower in real time — where the eye moves, or a frame deserves reading time — so
+        // transitions, whips and blinks keep their snap. [from, to, speed] in choreography seconds.
+        const CHOREO = 15;
+        const PACING = [
+          [1.28, 1.62, 0.5], // the opening glance
+          [3.8, 4.3, 0.5], // read the tagline
+          [6.62, 6.95, 0.5], // read the answer
+          [9.75, 9.98, 0.3], // take in the finished curve
+          [10.55, 10.75, 0.5], // each feature word…
+          [11.05, 11.25, 0.5],
+          [11.55, 11.75, 0.5],
+          [11.95, 12.06, 0.5],
+          [12.98, 13.56, 0.7], // the lockup settling
+          [13.56, 13.9, 0.4], // its glance
+          [13.9, 14.02, 0.5],
+          [14.3, CHOREO, 0.2912], // hold the end card after the blink (lands the film on 20.0s)
+        ];
+        const KNOTS = [[0, 0]]; // [real seconds, choreography seconds]
+        for (const [a, b, speed] of PACING) {
+          const [T, t] = KNOTS.at(-1);
+          KNOTS.push([T + a - t, a], [T + a - t + (b - a) / speed, b]);
+        }
+        KNOTS.push([KNOTS.at(-1)[0] + CHOREO - KNOTS.at(-1)[1], CHOREO]);
+        /** Real time → choreography time. */
+        const choreo = (T) => {
+          for (let i = 1; i < KNOTS.length; i++) {
+            const [T0, t0] = KNOTS[i - 1];
+            const [T1, t1] = KNOTS[i];
+            if (T <= T1 && T1 > T0) return lerp(t0, t1, (T - T0) / (T1 - T0));
+          }
+          return CHOREO;
+        };
+        const DURATION = THUMB ? 3 : KNOTS.at(-1)[0];
 
         const $ = (s, r = document) => r.querySelector(s);
         const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -1710,8 +1745,8 @@
         ];
         const GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/#·";
         const pad = (n) => String(n).padStart(2, "0");
-        const updateHud = (t) => {
-          const frame = Math.floor(t * FPS + 1e-6);
+        const updateHud = (t, T) => {
+          const frame = Math.floor(T * FPS + 1e-6);
           rulers.forEach((r, i) => {
             const p = P(t, 0.02 + i * 0.05, 0.95 + i * 0.05, E.outExpo);
             r.style.transform = r.classList.contains("v") ? `scaleY(${p})` : `scaleX(${p})`;
@@ -1730,7 +1765,7 @@
             out += ch === " " || dt > 0.03 + i * 0.018 ? ch : GLYPHS[Math.floor(hash(frame * 31 + i) * GLYPHS.length)];
           }
           hudScene.textContent = out;
-          hudTc.textContent = `00:00:${pad(Math.floor(t))}:${pad(frame % FPS)}`;
+          hudTc.textContent = `00:00:${pad(Math.floor(T))}:${pad(frame % FPS)}`;
         };
 
         const grain = $("#grain");
@@ -1762,7 +1797,8 @@
 
         // ─── Render ────────────────────────────────────────────────────────
         const render = (time) => {
-          const t = clamp(time, 0, DURATION);
+          const T = clamp(time, 0, DURATION); // real time: grain, timecode, fade
+          const t = THUMB ? T : choreo(T); // choreography time: everything else
           updateLight(t);
           updateWorld(t);
           for (const s of scenes) {
@@ -1773,11 +1809,11 @@
           if (!THUMB) {
             updateCover(t);
             updateTravel(t);
-            updateHud(t);
-            updateGrain(t);
+            updateHud(t, T);
+            updateGrain(T);
           }
           // Social cuts end on the lockup; ?loop fades to black so the film loops seamlessly.
-          fade.style.opacity = LOOP ? P(t, DURATION - 0.24, DURATION, E.inOutCubic) : 0;
+          fade.style.opacity = LOOP ? P(T, DURATION - 0.24, DURATION, E.inOutCubic) : 0;
           // The light-mode beat gets a softer vignette and grain so white stays white.
           const lightBeat = (t >= 11.25 && t < 11.75) || (t >= 2.2 && t < 2.5);
           vignette.style.opacity = lightBeat ? 0.3 : 1;
