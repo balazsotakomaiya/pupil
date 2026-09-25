@@ -121,4 +121,4 @@ The renderer needs Playwright with Chromium and an ffmpeg build with libx264 on 
 
 - `--music track.mp3` replaces the placeholder bed with a licensed track, balanced automatically; `--music-gain 2` nudges it in dB.
 - `--stems dir/` also writes `sfx.wav`, `music.wav` and `mix.wav` for editing elsewhere.
-- `--silent` renders a silent AAC track instead. `--cut ai` renders the experimental cut, which gives AI generation its own scene ("Write your own cards. / Or let AI draft them.", then topic → drafts → approved cards → the study deck) and puts "Opens in a blink" in its place among the feature words; preview it at `/release-film.html#ai`.
+- `--silent` renders a silent AAC track instead. `--cut ai` renders the experimental cut, which gives AI generation its own scene ("Write your own cards. / Or let AI draft them.", then topic → drafts → approved cards → the study deck) and puts "Cross platform" in its place among the feature words; preview it at `/release-film.html#ai`.
