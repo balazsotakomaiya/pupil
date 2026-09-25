@@ -103,3 +103,14 @@ This recovery path is meant for “the release failed, fix it and republish” s
 - Desktop installers are intentionally unsigned in this first phase.
 - macOS users should expect Gatekeeper friction until notarization is added.
 - Windows users should expect SmartScreen friction until code signing is added.
+
+## Release film
+
+A 15-second announcement film lives at [`apps/site/release-film.html`](../apps/site/release-film.html). It is one deterministic timeline: every frame is a pure function of time, so the page plays live in a browser (`bun run --cwd apps/site dev`, then open `/release-film.html`; Space pauses, arrow keys step frames) and renders frame-perfect to video.
+
+```bash
+bun run release:film                                    # → docs/assets/release-film.mp4 (1080p60)
+node scripts/render-release-film.mjs --stills 3.6,14    # JPEG stills for posters and review
+```
+
+The renderer needs Playwright with Chromium and an ffmpeg build with libx264 on `PATH` (or `FFMPEG=/path/to/ffmpeg`). The version on screen comes from `apps/app/package.json`, so re-render after `release:version` and attach the MP4 to the GitHub release. Scene cuts sit on a 120 BPM grid if you want to score it.

@@ -24,7 +24,8 @@
     "test:coverage": "bun run test:coverage:ts && bun run test:coverage:rust",
     "prepare": "lefthook install",
     "release:check": "bun ./scripts/desktop-release.mjs check",
-    "release:version": "bun ./scripts/desktop-release.mjs version"
+    "release:version": "bun ./scripts/desktop-release.mjs version",
+    "release:film": "node ./scripts/render-release-film.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.12",
