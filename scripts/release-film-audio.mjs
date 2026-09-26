@@ -255,47 +255,10 @@ function riser(dur) {
   ]);
 }
 
-/** A granular murmur: soft sine grains from a low chord, scattered across the stereo field. */
-function grains(
-  dur,
-  {
-    seed = 5,
-    density = 26,
-    notes = [50, 55, 57, 62, 64, 66, 69],
-    len: [short, long] = [0.06, 0.12],
-  } = {},
-) {
-  const out = { l: new Float32Array(samples(dur)), r: new Float32Array(samples(dur)) };
-  const rnd = random(seed);
-  const count = Math.round(dur * density);
-  for (let g = 0; g < count; g++) {
-    const start = rnd() * dur * SR;
-    const f = mtof(notes[Math.floor(rnd() * notes.length)]);
-    const len = samples(short + rnd() * (long - short));
-    const pan = rnd() * 2 - 1;
-    const gain = 0.4 + rnd() * 0.6;
-    for (let i = 0; i < len; i++) {
-      const j = Math.round(start) + i;
-      if (j >= out.l.length) break;
-      const w = Math.sin((Math.PI * i) / len) ** 2 * gain * sin((f * i) / SR);
-      out.l[j] += w * (1 - pan) * 0.5;
-      out.r[j] += w * (1 + pan) * 0.5;
-    }
-  }
-  const fade = (p) => Math.min(1, p / 0.15) * Math.min(1, (1 - p) / 0.3);
-  for (let i = 0; i < out.l.length; i++) {
-    const f = fade(i / out.l.length);
-    out.l[i] *= f;
-    out.r[i] *= f;
-  }
-  return out;
-}
-
 // ─── Sound effects ──────────────────────────────────────────────────────────
 
 /**
- * Renders one cue. Returns `[signal, levelDb, pan, reverbSend, hallSend]`, or a stereo pair
- * `{ l, r, level, send }` for voices with their own stereo image. The hall is a long, dark
+ * Renders one cue as `[signal, levelDb, pan, reverbSend, hallSend]`. The hall is a long, dark
  * reverb kept for the big moments.
  */
 function effect(cue) {
@@ -303,28 +266,8 @@ function effect(cue) {
   const seed = Math.round(cue.t * 1000) + 17;
   const dur = cue.end != null ? cue.end - cue.t : cue.dur;
   switch (cue.type) {
-    case "drone": {
-      const out = new Float32Array(samples(dur + 0.1));
-      const air = new Filter("lp", 900);
-      const rnd = random(seed);
-      for (let i = 0; i < out.length; i++) {
-        const t = i / SR;
-        const p = t / dur;
-        const swell = Math.min(1, p * 1.6) ** 2 * Math.min(1, (1.02 - p) * 30);
-        const tone = 0.6 * sin(73.42 * t) + 0.5 * sin(146.83 * t) + 0.35 * sin(220 * t);
-        out[i] = swell * (tone + 0.3 * air.run(rnd() * 2 - 1));
-      }
-      return [out, -21, 0, 0.2];
-    }
     case "ting":
       return [bloom(mtof(cue.note), { decay: 0.8 }), -13 + 20 * Math.log10(g), 0, 0.25];
-    case "ping":
-      return [
-        blip(mtof(cue.note), { decay: 0.3, harmonics: 0.2 }),
-        -20 + 20 * Math.log10(g),
-        0,
-        0.5,
-      ];
     case "sweep":
       return [
         sweep(dur, 300, 1600, { q: 0.9, seed, attack: 0.6 }),
@@ -369,21 +312,12 @@ function effect(cue) {
         0,
         0.15,
       ];
-    case "sparkle": {
-      const notes = cue.bright ? [50, 57, 62] : [50, 57];
-      return [
-        layer(notes.map((n, i) => [i * 0.04, bloom(mtof(n), { decay: 0.5 }), 1 - i * 0.15])),
-        (cue.bright ? -14 : -19) + 20 * Math.log10(g),
-        0.1,
-        0.3,
-      ];
-    }
     case "stroke":
       return [
-        sweep(dur, 700, 1800, { q: 0.7, attack: 0.3, seed }),
-        -22 + 20 * Math.log10(g),
+        sweep(dur, 600, 1500, { q: 0.6, attack: 0.3, seed }),
+        -29 + 20 * Math.log10(g),
         (p) => p - 0.5,
-        0.2,
+        0.15,
       ];
     case "whoosh": {
       const [f0, f1] =
@@ -402,24 +336,8 @@ function effect(cue) {
         0.25,
       ];
     }
-    case "zip": {
-      const out = new Float32Array(samples(dur));
-      let phase = 0;
-      for (let i = 0; i < out.length; i++) {
-        const p = i / out.length;
-        phase += (120 * 3 ** p) / SR;
-        out[i] = sin(phase) * Math.sin(Math.PI * p) ** 1.5;
-      }
-      return [
-        layer([
-          [0, out],
-          [0, normalize(sweep(dur, 300, 2000, { seed, attack: 0.7 })), 0.5],
-        ]),
-        -20,
-        (p) => p - 0.5,
-        0.3,
-      ];
-    }
+    case "zip":
+      return [sweep(dur, 300, 2000, { seed, attack: 0.7 }), -22, (p) => p - 0.5, 0.3];
     case "pop":
       return [
         blip(mtof(cue.note), { decay: 0.07, from: 1.6, drop: 0.012 }),
@@ -452,53 +370,45 @@ function effect(cue) {
         0.08,
       ];
     case "click":
+      // A sci-fi interface press: a tight tick, a low thud and a short resonant zap falling away.
+      // big: a heavier press, for the one that saves.
       return [
         layer([
-          [0, thump(mtof(50), { from: 1.4, decay: 0.035 })],
-          [0, burst(0.004, 1800, { seed, type: "bp" }), 0.5],
-          [0, blip(mtof(69), { decay: 0.012 }), 0.4],
+          [0, normalize(burst(0.004, 2400, { seed, type: "bp", q: 1.2 })), 0.5],
+          [0, normalize(thump(mtof(cue.big ? 26 : 33), { from: 3, decay: cue.big ? 0.16 : 0.09 }))],
+          [
+            0.002,
+            normalize(sweep(0.09, 2800, 450, { q: 6, attack: 0.05, seed: seed + 1, curve: 1.4 })),
+            0.45,
+          ],
         ]),
-        -15,
+        (cue.big ? -11 : -13) + 20 * Math.log10(g),
         0,
+        0.1,
+        cue.big ? 0.25 : 0.1,
+      ];
+    case "approve":
+    case "discard": {
+      // The click's tick and thud, with its zap rising (approve) or falling (discard).
+      const up = cue.type === "approve";
+      const [f0, f1] = up ? (cue.step ? [560, 2600] : [480, 2200]) : [1800, 320];
+      return [
+        layer([
+          [0, normalize(burst(0.004, 2200, { seed, type: "bp", q: 1.2 })), 0.45],
+          [0, normalize(thump(mtof(33), { from: 2.5, decay: 0.07 })), 0.8],
+          [
+            0.004,
+            normalize(
+              sweep(0.13, f0, f1, { q: 5, attack: up ? 0.7 : 0.1, seed: seed + 1, curve: 1.6 }),
+            ),
+            0.5,
+          ],
+        ]),
+        -17,
+        up ? 0.1 : -0.1,
         0.12,
       ];
-    case "shimmer": {
-      const st = grains(dur, { seed });
-      return { l: st.l, r: st.r, level: -22, send: 0.35 };
     }
-    case "approve": {
-      const [a, b] = cue.step ? [52, 59] : [50, 57];
-      return [
-        layer([
-          [0, mallet(mtof(a), { decay: 0.14 })],
-          [0.07, mallet(mtof(b), { decay: 0.2 })],
-        ]),
-        -16,
-        0.1,
-        0.15,
-      ];
-    }
-    case "discard":
-      return [
-        layer([
-          [0, blip(400, { decay: 0.1, from: 0.45, drop: 0.08 })],
-          [0, burst(0.05, 500, { type: "lp", seed }), 0.3],
-        ]),
-        -20,
-        -0.1,
-        0.15,
-      ];
-    case "chime":
-      return [
-        layer([
-          [0, mallet(mtof(50), { decay: 0.3 })],
-          [0.08, mallet(mtof(54), { decay: 0.3 }), 0.85],
-          [0.16, mallet(mtof(57), { decay: 0.45 }), 0.8],
-        ]),
-        -14,
-        0,
-        0.2,
-      ];
     case "land":
       return [
         layer([
@@ -549,17 +459,19 @@ function effect(cue) {
         0,
         0.2,
       ];
-    case "review":
+    case "review": {
+      // Each review on the curve: a quiet tick over a low pulse, a shade brighter each time.
+      const i = cue.index ?? 0;
       return [
         layer([
-          [0, mallet(mtof(cue.note), { decay: 0.32, wood: 0.25 })],
-          [0, mallet(mtof(cue.note - 12), { decay: 0.4, wood: 0 }), 0.45],
-          [0, taiko(mtof(38), { decay: 0.2, seed }), 0.25],
+          [0, normalize(burst(0.003, 1300 + i * 260, { seed, type: "bp", q: 1.4 })), 0.55],
+          [0, normalize(thump(mtof(38), { from: 1.6, decay: 0.1 }))],
         ]),
-        -13,
-        (cue.note - 66) / 12,
-        0.2,
+        -21,
+        (i - 2) * 0.12,
+        0.15,
       ];
+    }
     case "whip":
       return [
         sweep(0.34, 400, 4000, { q: 0.7, attack: 0.72, seed, curve: 2.4 }),
@@ -841,29 +753,11 @@ export function renderSoundtrack(cues, duration) {
   for (const cue of cues) {
     const fx = effect(cue);
     if (!fx) continue;
-    if (Array.isArray(fx)) {
-      const [sig, level, pan, send, hall] = fx;
-      normalize(sig);
-      sfx.add(cue.t, sig, db(level), pan);
-      if (send) sfxSend.add(cue.t, sig, db(level) * send, pan);
-      if (hall) sfxHall.add(cue.t, sig, db(level) * hall, pan);
-    } else {
-      let peak = 0;
-      for (let i = 0; i < fx.l.length; i++)
-        peak = Math.max(peak, Math.abs(fx.l[i]), Math.abs(fx.r[i]));
-      peak ||= 1;
-      for (const [side, bus] of [
-        ["l", sfx],
-        ["r", sfx],
-      ]) {
-        const s = samples(cue.t);
-        for (let i = 0; i < fx[side].length && s + i < length; i++) {
-          const v = (fx[side][i] / peak) * db(fx.level);
-          bus[side][s + i] += v;
-          sfxSend[side][s + i] += v * fx.send;
-        }
-      }
-    }
+    const [sig, level, pan, send, hall] = fx;
+    normalize(sig);
+    sfx.add(cue.t, sig, db(level), pan);
+    if (send) sfxSend.add(cue.t, sig, db(level) * send, pan);
+    if (hall) sfxHall.add(cue.t, sig, db(level) * hall, pan);
   }
   renderBed(cues, duration, bed, bedSend);
 
@@ -927,7 +821,9 @@ export function mixSoundtrack({ sfx, bed }, cues, { bedGain = 1 } = {}) {
     const hp = new Filter("hp", 45);
     for (let i = 0; i < n; i++) side[i] = hp.run(side[i]);
   }
-  const balance = db(loudness(sfx) - MUSIC_UNDER_SFX - loudness(bed)) * bedGain;
+  const bedLoudness = loudness(bed);
+  const balance =
+    bedLoudness > -100 ? db(loudness(sfx) - MUSIC_UNDER_SFX - bedLoudness) * bedGain : 0;
   const duck = new Float32Array(n).fill(1);
   for (const cue of cues) {
     if (!["hit", "flash", "impact"].includes(cue.type)) continue;

@@ -18,7 +18,8 @@
  * Sound: the soundtrack is synthesised from the film's own cue list (release-film-audio.mjs):
  * sound effects on the picture's events and a placeholder music bed, normalised to -14 LUFS.
  * --music <file> replaces the bed with a licensed track (--music-gain <dB> to balance it),
- * --stems <dir> also writes sfx.wav, music.wav and mix.wav, and --silent renders a silent track.
+ * --stems <dir> also writes sfx.wav, music.wav and mix.wav, --no-music leaves the music out (effects
+ * only, peaking at -1.5 dBFS, ready for a song to go under them), and --silent renders a silent track.
  *
  * The page exposes window.__film.seek(t); every frame is seeked and screenshotted, so the output
  * is identical no matter how fast the machine is. The version shown on screen is read from
@@ -70,6 +71,7 @@ function parseArgs(argv) {
     loop: false,
     hud: true,
     silent: false,
+    noMusic: false,
     music: null,
     musicGain: 0,
     stems: null,
@@ -83,6 +85,7 @@ function parseArgs(argv) {
     if (flag === "--loop") opts.loop = true;
     else if (flag === "--no-hud") opts.hud = false;
     else if (flag === "--silent") opts.silent = true;
+    else if (flag === "--no-music") opts.noMusic = true;
     else {
       const value = argv[++i];
       if (flag === "--out") opts.out = resolve(value);
@@ -104,6 +107,7 @@ function parseArgs(argv) {
   }
   const name = opts.page.replace(/\.html$/, "") + (opts.snippet ? `-${opts.snippet}` : "");
   opts.out ??= join(ROOT, "docs/assets", `${name}.mp4`);
+  if (opts.noMusic && opts.music) throw new Error("--no-music and --music are exclusive");
   opts.gif = extname(opts.out) === ".gif";
   // GIF frame delays are in centiseconds, so 25fps (4cs) is the smoothest exact rate.
   opts.fps ??= opts.gif ? 25 : 60;
@@ -195,6 +199,11 @@ const LOUDNESS = "I=-14:TP=-1.5:LRA=11"; // YouTube's target, with true-peak hea
 function buildSoundtrack(film, opts) {
   const ffmpeg = process.env.FFMPEG ?? "ffmpeg";
   const stems = renderSoundtrack(film.cues, film.duration);
+  if (opts.noMusic)
+    stems.bed = {
+      l: new Float32Array(stems.sfx.l.length),
+      r: new Float32Array(stems.sfx.l.length),
+    };
   if (opts.music) {
     const args = ["-v", "error", "-i", opts.music, "-f", "f32le", "-ac", "2"];
     const raw = execFileSync(ffmpeg, [...args, "-ar", String(SAMPLE_RATE), "-"], {
@@ -210,6 +219,12 @@ function buildSoundtrack(film, opts) {
   if (opts.stems) {
     writeWav(join(dir, "sfx.wav"), stems.sfx);
     writeWav(join(dir, "music.wav"), stems.bed);
+  }
+  if (opts.noMusic) {
+    // Effects alone are sparse, so normalising them to -14 LUFS would only squash them. The
+    // mix already peaks at -1 dBFS; leave headroom for the AAC encode.
+    console.log(`soundtrack: ${film.cues.length} cues, effects only (no music)`);
+    return { wav, filter: "volume=-0.5dB" };
   }
   const probe = spawnSync(
     ffmpeg,

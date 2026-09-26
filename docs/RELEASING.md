@@ -120,6 +120,7 @@ The renderer needs Playwright with Chromium and an ffmpeg build with libx264 on 
 **Sound.** Videos get a soundtrack synthesised from the film's own cue list ([`scripts/release-film-audio.mjs`](../scripts/release-film-audio.mjs)): sound effects on the picture's events (the blink, typing, approvals, the flip, each review on the curve, the feature hits) and a placeholder D-major music bed, mixed with the music 2 dB under the effects and normalised to -14 LUFS. Because the cues come from the same timeline as the picture, re-pacing the film moves the sound with it. Options:
 
 - `--music track.mp3` replaces the placeholder bed with a licensed track, balanced automatically; `--music-gain 2` nudges it in dB.
+- `--no-music` leaves the music out: the effects alone, peaking at -1.5 dBFS rather than normalised, so a song can go under them later in an editor.
 - `--stems dir/` also writes `sfx.wav`, `music.wav` and `mix.wav` for editing elsewhere.
 - `--silent` renders a silent AAC track instead. `--cut ai` renders the experimental cut, which gives AI generation its own scene ("Write your own cards. / Or let AI draft them.", then topic → drafts → approved cards → the study deck) and puts "Cross platform" in its place among the feature words; preview it at `/release-film.html#ai`.
 
