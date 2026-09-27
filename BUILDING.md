@@ -13,6 +13,10 @@ Install Rust via [rustup](https://rustup.rs). Install Bun via [bun.sh](https://b
 
 ## Linux
 
+Release binaries are **x86_64**, built on Ubuntu 22.04 (**glibc 2.35**). That is the support floor: Ubuntu 22.04, Debian 12, Fedora, Arch, and other glibc desktops of that vintage. Alpine, older Ubuntu/Debian, and ARM Linux are not supported. The site download is the AppImage; GitHub Releases also include `.deb` and `.rpm`.
+
+If an AppImage fails to mount (common on Ubuntu 24.04+ when FUSE isn't available), run it with `--appimage-extract-and-run`. Storing an AI API key needs a working Secret Service (GNOME Keyring, KWallet, or equivalent).
+
 Install the system libraries that Tauri's WebView requires before building:
 
 **Ubuntu / Debian:**

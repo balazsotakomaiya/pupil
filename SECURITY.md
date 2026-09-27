@@ -32,6 +32,7 @@ Understanding the threat model helps to judge what is worth reporting.
 
 These are documented tradeoffs rather than vulnerabilities. Reporting them is not necessary.
 
-- **Installers are unsigned.** macOS Gatekeeper and Windows SmartScreen will warn on install. Code signing and notarization are not yet in place.
+- **Windows installers are unsigned.** Microsoft's signing service is not available to EU individuals, and Pupil will not form a legal entity for a free open-source project. SmartScreen will warn on first install. That is expected, not a vulnerability.
+- **macOS installers are not notarized yet.** Gatekeeper will warn until signing and notarization land. That work is tracked separately and is not a vulnerability.
 - **The base URL is user-controlled by design.** Pupil talks to whatever OpenAI-compatible endpoint you point it at, including a local one. That means it can be pointed at an internal address; this is the intended feature.
 - **The MCP bridge development plugin** grants arbitrary JS and command execution, and is deliberately excluded from release builds. If you ever find it reachable in a distributed build, that *is* a vulnerability worth reporting.

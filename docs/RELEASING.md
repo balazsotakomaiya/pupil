@@ -4,6 +4,8 @@ Desktop releases are versioned from `apps/app/package.json`. That file is the ca
 
 ## One-time setup
 
+### Updater signing
+
 Before you tag the first release, configure these GitHub Actions secrets in the repository:
 
 - `TAURI_SIGNING_PRIVATE_KEY` — the full contents of the updater private key.
@@ -12,6 +14,49 @@ Before you tag the first release, configure these GitHub Actions secrets in the 
 The updater public key is committed in `apps/app/src-tauri/tauri.conf.json`. The matching private key is intentionally not tracked in git.
 
 Updater signing is separate from Apple notarization or Windows code signing. Losing the updater private key or its password will prevent future updates from being trusted by already-installed copies of the app.
+
+### macOS signing and notarization
+
+Unsigned `.dmg` downloads hit Gatekeeper ("cannot be opened because the developer cannot be verified"). Signing and notarization are what remove that. This is independent of updater signing above.
+
+PR and CI builds stay unsigned (`--no-sign`). Only the `Publish` workflow signs, and only when the Apple secrets below are present. Until they are, macOS artifacts keep shipping unsigned.
+
+1. Enroll in the [Apple Developer Program](https://developer.apple.com/programs/) ($99/year).
+2. In [Certificates, Identifiers & Profiles](https://developer.apple.com/account/resources/certificates/list), create a **Developer ID Application** certificate. Only the Account Holder can create this type. It is the certificate for apps shipped outside the App Store; do not use Apple Distribution.
+3. Install the `.cer` on a Mac, then in Keychain Access export the private key as a `.p12` with a password.
+4. Base64-encode the `.p12`:
+
+   ```bash
+   openssl base64 -A -in certificate.p12
+   ```
+
+5. Add these GitHub Actions secrets:
+
+   | Secret | Value |
+   | --- | --- |
+   | `APPLE_CERTIFICATE` | Output of the `openssl` command above |
+   | `APPLE_CERTIFICATE_PASSWORD` | Password used when exporting the `.p12` |
+   | `APPLE_SIGNING_IDENTITY` | Optional. Common Name from `security find-identity -v -p codesigning`, usually `Developer ID Application: Name (TEAMID)` |
+
+6. Add notarization credentials. Prefer an [App Store Connect API key](https://appstoreconnect.apple.com/access/integrations/api) with Developer access:
+
+   | Secret | Value |
+   | --- | --- |
+   | `APPLE_API_KEY` | Key ID |
+   | `APPLE_API_ISSUER` | Issuer ID shown above the keys table |
+   | `APPLE_API_KEY_CONTENT` | Full contents of the downloaded `.p8` file |
+
+   Fallback if you would rather use an Apple ID: `APPLE_ID` (account email), `APPLE_PASSWORD` (an [app-specific password](https://support.apple.com/en-us/102654), not the account password), `APPLE_TEAM_ID` (from the [membership page](https://developer.apple.com/account)).
+
+After the next `app-v*` publish, download both macOS `.dmg` files on a Mac that has never opened Pupil and confirm the app launches without a Gatekeeper warning. `SECURITY.md` should be updated only after that check passes.
+
+### Windows code signing
+
+Windows installers stay unsigned. Microsoft's Artifact Signing Public Trust path is limited to individuals in the US and Canada; an EU individual would need a company, a paid Authenticode cert, or the Store. Pupil will not form a legal entity for this. The Store MSIX route (Microsoft signs the package) is off the table because Tauri does not generate MSIX.
+
+SmartScreen "Unknown publisher" on first install is expected; the workaround is More info → Run anyway.
+
+Longer-term, [SignPath Foundation](https://signpath.org/apply) may sign qualifying OSS without a company. That is tracked in [#40](https://github.com/balazsotakomaiya/pupil/issues/40), not a 1.0 blocker.
 
 ## Release flow
 
@@ -63,6 +108,7 @@ Updater signing is separate from Apple notarization or Windows code signing. Los
    - the release title is `Pupil v0.0.2`
    - assets exist for Linux x86_64, Windows x86_64, macOS Intel, and macOS Apple Silicon
    - updater signatures are present
+   - if Apple signing secrets are configured, both macOS `.dmg` files open on a clean Mac without a Gatekeeper warning
    - `latest.json` is available at:
 
      `https://github.com/balazsotakomaiya/pupil/releases/latest/download/latest.json`
@@ -100,6 +146,5 @@ This recovery path is meant for “the release failed, fix it and republish” s
 
 - GitHub Releases support both stable releases and semver prereleases.
 - The built-in app updater still follows the stable release channel only.
-- Desktop installers are intentionally unsigned in this first phase.
-- macOS users should expect Gatekeeper friction until notarization is added.
-- Windows users should expect SmartScreen friction until code signing is added.
+- macOS `.dmg` files are signed and notarized on tagged publishes once the Apple secrets in *One-time setup* are set. Until then they ship unsigned, and Gatekeeper friction is expected.
+- Windows installers stay unsigned. Microsoft's signing service is not available to EU individuals, and we will not form a company for this. SmartScreen friction is expected. SignPath is a possible later option ([#40](https://github.com/balazsotakomaiya/pupil/issues/40)).

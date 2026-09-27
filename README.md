@@ -112,6 +112,16 @@ Drag an `.apkg` file in; each Anki deck can become its own Pupil space with fres
 
 Download the latest installer for macOS, Windows, or Linux from [GitHub Releases](https://github.com/balazsotakomaiya/pupil/releases/latest). No account is required.
 
+| Platform | What we ship |
+| --- | --- |
+| macOS | Apple Silicon and Intel `.dmg` |
+| Windows | x64 `.exe` (Windows 10/11) |
+| Linux | x64 AppImage, plus `.deb` and `.rpm` on the release |
+
+Windows installers are unsigned. Microsoft's own signing service is not available to EU individuals, and Pupil will not form a legal entity for a free open-source project. SmartScreen will say Unknown publisher — choose More info, then Run anyway. [SignPath](https://signpath.org/apply) is a possible later path for OSS signing.
+
+Linux needs glibc 2.35+ (Ubuntu 22.04, Debian 12, Fedora, Arch, and similar). Alpine, ARM, and older Ubuntu/Debian are not supported. If an AppImage fails to mount, run it with `--appimage-extract-and-run`.
+
 Your cards, review history, and settings stay on your device. If you use AI generation, add your own OpenAI-compatible or Anthropic API key in Settings; it is stored securely on your machine.
 
 ## Why Pupil
