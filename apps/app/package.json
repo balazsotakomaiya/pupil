@@ -1,6 +1,6 @@
 {
   "name": "@pupil/app",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "license": "MIT",
   "private": true,
   "type": "module",
