@@ -986,17 +986,17 @@
             cap: "STUDY · EXPLAIN IN DETAIL",
             tag: "The <em>why</em> behind every answer.",
             meta: '<span class="vchip">DETAILS 03</span><span>Explain in detail</span>',
-            end: 15.9,
+            end: 13.1,
           },
           menubar: {
-            n: "03",
+            n: "04",
             name: "Menu bar",
-            kicker: "Pupil details — 03",
+            kicker: "Pupil details — 04",
             l1: "Quietly",
             l2: "keeping count.",
             cap: "THE MENU BAR · MACOS",
             tag: "The nudge that <em>never</em> nags.",
-            meta: '<span class="vchip">DETAILS 03</span><span>Menu bar</span>',
+            meta: '<span class="vchip">DETAILS 04</span><span>Menu bar</span>',
             end: 15.5,
           },
         };
@@ -1957,7 +1957,7 @@
         };
 
 
-        // ─── Study session (shared by 03 Explain and 03 Menu bar) ──────────
+        // ─── Study session (shared by 03 Explain and 04 Menu bar) ──────────
         const ICON = {
           back: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 3L5 8l5 5" /></svg>',
           undo: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3L2 6l3 3" /><path d="M2 6h7a4 4 0 010 8H6" /></svg>',
@@ -2110,13 +2110,8 @@
             scroll: 8.25,
             nodes: 8.55,
             expand: 10.6,
-            esc: 13.0,
-            open2: 13.85,
           };
-          const keys = makeKeys([
-            { keys: ["space"], presses: [[K.reveal, 0]] },
-            { keys: ["esc"], presses: [[K.esc, 0]] },
-          ]);
+          const keys = makeKeys([{ keys: ["space"], presses: [[K.reveal, 0]] }]);
           const captionY = H - MY - (PORTRAIT ? 170 : 120);
           const panelLeft = () => onStage(panel.aside).x;
           const notes = makeNotes([
@@ -2140,17 +2135,6 @@
                   at: [0.5, 0],
                   label: "Expand it, and it <b>re-flows</b>",
                   pos: (tx, ty) => [tx - 40, ty - 120],
-                  align: "right",
-                },
-            PORTRAIT
-              ? { from: 14.35, to: 15.75, caption: captionY, label: "Opened again: <b>instant</b>, from cache." }
-              : {
-                  from: 14.35,
-                  to: 15.75,
-                  target: () => panel.src,
-                  at: [0, 0.5],
-                  label: "Opened again: <b>instant</b>, from cache",
-                  pos: (tx, ty) => [panelLeft() - 60, ty],
                   align: "right",
                 },
           ]);
@@ -2195,8 +2179,8 @@
               path.style.opacity = E.outCubic(clamp(nodesIn(i + 1)));
             });
           };
-          /** Draws the panel: slide 0→1 in, loading or content, expansion, scroll, cache footer. */
-          const drawPanel = (t, { slide, loading, content, expand, morph, scroll, cached, nodesIn }) => {
+          /** Draws the panel: slide 0→1 in, loading or content, expansion, scroll. */
+          const drawPanel = (t, { slide, loading, content, expand, morph, scroll, nodesIn }) => {
             vis(panel.aside, slide > 0);
             panel.backdrop.style.opacity = slide;
             if (slide <= 0) return;
@@ -2216,7 +2200,7 @@
             panel.canvas.style.height = `${lerp(300, 432, expand)}px`;
             panel.scroll.style.transform = `translateY(${-scroll}px)`;
             panel.expand.setAttribute("d", expand > 0.5 ? "M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" : "M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5");
-            panel.src.textContent = loading ? "" : cached ? "From cache" : "Just generated";
+            panel.src.textContent = loading ? "" : "Just generated";
             panel.time.textContent = loading ? "" : "Just now";
             if (!loading) drawGraph(t, morph, nodesIn);
           };
@@ -2229,17 +2213,16 @@
               [K.open1, "03  EXPLAIN"],
               [K.nodes, "04  VISUAL AID"],
               [K.expand, "05  EXPAND"],
-              [K.esc, "06  FROM CACHE"],
-              [END, "07  PUPIL"],
+              [END, "06  PUPIL"],
             ],
             measure() {
               vis(root, true);
               study.set({ card: CARD, revealed: true, current: 7, progress: 0.5 });
-              drawPanel(9, { slide: 1, loading: false, content: 1, expand: 0, morph: 0, scroll: 0, cached: false, nodesIn: () => 1 });
+              drawPanel(9, { slide: 1, loading: false, content: 1, expand: 0, morph: 0, scroll: 0, nodesIn: () => 1 });
               panel.nodes.forEach((n, i) => {
                 nodeH[i] = n.offsetHeight;
               });
-              for (const [k, el] of Object.entries({ trigger: study.el.explain, cardwrap: $(".ss-cardwrap", root), rates: study.el.rates, expandBtn: panel.expandBtn, canvas: panel.canvas, foot: $(".xp-foot", root) }))
+              for (const [k, el] of Object.entries({ trigger: study.el.explain, cardwrap: $(".ss-cardwrap", root), rates: study.el.rates, expandBtn: panel.expandBtn, canvas: panel.canvas }))
                 targets[k] = measure(el);
               vis(panel.aside, false);
             },
@@ -2249,35 +2232,29 @@
               const flip = P(t, K.reveal + 0.02, K.reveal + 0.5, appEase);
               const revealed = t >= K.reveal + 0.05;
               const loading1 = t >= K.open1 && t < K.content;
-              const hover = P(t, K.hover, K.hover + 0.15) * (1 - P(t, 6.2, 6.4)) + P(t, 13.6, 13.75) * (1 - P(t, 14.3, 14.5));
+              const hover = P(t, K.hover, K.hover + 0.15) * (1 - P(t, 6.2, 6.4));
               study.set({ card: CARD, flip, revealed, current: 7, progress: 0.5, loading: loading1, hover });
 
-              // First open: slide in, think, answer. Esc: slide out. Second open: from cache.
-              const slide1 = P(t, K.open1 + 0.04, K.open1 + 0.44, appEase) * (1 - P(t, K.esc + 0.02, K.esc + 0.32, E.inCubic));
-              const slide2 = P(t, K.open2 + 0.04, K.open2 + 0.44, appEase);
-              const second = t >= K.open2;
-              const expand = second ? 0 : P(t, K.expand + 0.02, K.expand + 0.5, E.inOutCubic);
-              const morph = second ? 0 : P(t, K.expand + 0.18, K.expand + 0.7, E.inOutCubic);
+              // The panel slides in, thinks, answers, and expands.
+              const expand = P(t, K.expand + 0.02, K.expand + 0.5, E.inOutCubic);
               drawPanel(t, {
-                slide: second ? slide2 : slide1,
-                loading: !second && t < K.content,
-                content: second ? 1 : P(t, K.content, K.content + 0.8),
+                slide: P(t, K.open1 + 0.04, K.open1 + 0.44, appEase),
+                loading: t < K.content,
+                content: P(t, K.content, K.content + 0.8),
                 expand,
-                morph,
-                scroll: second ? 0 : V(t, K.scroll, K.scroll + 0.7, 0, 64, E.inOutCubic) * (1 - expand),
-                cached: second,
-                nodesIn: (i) => (second ? 1 : (t - (K.nodes + i * 0.08)) / 0.35),
+                morph: P(t, K.expand + 0.18, K.expand + 0.7, E.inOutCubic),
+                scroll: V(t, K.scroll, K.scroll + 0.7, 0, 64, E.inOutCubic) * (1 - expand),
+                nodesIn: (i) => (t - (K.nodes + i * 0.08)) / 0.35,
               });
 
               // Camera: the session; the card and its answer; the panel; its diagram; the
-              // expanded canvas; back to the card; the panel's footer.
+              // expanded canvas.
               const wide = frame(WIN, 0.96);
               const cw = targets.cardwrap;
               const cardShot = frame({ x: cw.x, y: cw.y - 20, w: cw.w, h: targets.rates.y + targets.rates.h - cw.y + 40 }, 0.92);
               const panelTop = frame({ x: 840, y: 0, w: 440, h: 440 }, 0.92);
               const panelVisual = frame({ x: 840, y: targets.canvas.y - 150, w: 440, h: 470 }, 0.92);
               const expanded = frame({ x: 320, y: targets.canvas.y - 200, w: 960, h: 560 }, 0.96);
-              const foot = frame({ x: 840, y: 420, w: 440, h: 400 }, 0.92);
               applyCam(
                 camAt(t, [
                   [0, wide],
@@ -2289,11 +2266,7 @@
                   [K.scroll + 0.8, panelVisual],
                   [K.expand, panelVisual],
                   [K.expand + 0.8, expanded],
-                  [K.esc, expanded],
-                  [K.esc + 0.6, cardShot],
-                  [K.open2 + 0.1, cardShot],
-                  [K.open2 + 0.8, foot],
-                  [END, { ...foot, s: foot.s * 1.03 }],
+                  [END, { ...expanded, s: expanded.s * 1.03 }],
                 ]),
               );
 
@@ -2308,12 +2281,8 @@
                 [10.45, ex.x, ex.y],
                 [11.4, ex.x, ex.y],
                 [12.2, ex.x + 30, ex.y - 150],
-                [13.0, tr.x + 140, tr.y + 150],
-                [13.7, tr.x, tr.y],
-                [14.3, tr.x, tr.y],
-                [15.0, tr.x + 90, tr.y + 160],
               ];
-              updateCursor(t, path, [K.open1, K.expand, K.open2], 4.4, END - 0.2);
+              updateCursor(t, path, [K.open1, K.expand], 4.4, END - 0.2);
               updateKeys(t, keys);
               updateNotes(t, notes);
             },
@@ -2329,16 +2298,12 @@
               for (let i = 0; i < 4; i++) at(K.nodes + i * 0.08, "tick", { gain: 0.35 });
               at(K.expand, "click");
               at(K.expand + 0.05, "whoosh", { dur: 0.45, dir: "right", gain: 0.35 });
-              at(K.esc, "key", { seed: 9 });
-              at(K.esc + 0.03, "swish", { gain: 0.3 });
-              at(K.open2, "click");
-              at(K.open2 + 0.05, "swish", { gain: 0.3 });
-              for (const n of [9.15, 11.55, 14.35]) at(n + 0.1, "stroke", { dur: 0.35, gain: 0.4 });
+              for (const n of [9.15, 11.55]) at(n + 0.1, "stroke", { dur: 0.35, gain: 0.4 });
             },
           };
         };
 
-        // ─── 03 · Menu bar ──────────────────────────────────────────────────
+        // ─── 04 · Menu bar ──────────────────────────────────────────────────
         // tray.rs: an eye in the status colour (amber due, red 3+ days overdue, green caught up,
         // grey with no cards), "N cards to study" beside it while anything is due, and a menu
         // with the live status and "Study N Cards →".
