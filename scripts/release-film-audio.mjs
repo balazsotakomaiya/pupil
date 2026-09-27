@@ -109,21 +109,6 @@ class Bus {
 
 // ─── Voices ─────────────────────────────────────────────────────────────────
 
-/** Felt mallet: a round strike whose woody overtone is gone in a few milliseconds, so it never rings. */
-function mallet(freq, { decay = 0.22, wood = 0.35 } = {}) {
-  const out = new Float32Array(samples(decay * 5));
-  for (let i = 0; i < out.length; i++) {
-    const t = i / SR;
-    const env = Math.min(1, t / 0.003) * Math.exp(-t / decay);
-    out[i] =
-      env *
-      (sin(freq * t) +
-        0.3 * Math.exp(-t / (decay * 0.5)) * sin(2 * freq * t) +
-        wood * Math.exp(-t / 0.02) * sin(4 * freq * t));
-  }
-  return out;
-}
-
 /** A low swell of warm partials through a closing low-pass: the weight of a bell without its ring. */
 function bloom(freq, { attack = 0.03, decay = 0.7 } = {}) {
   const out = new Float32Array(samples(attack + decay * 4));
@@ -266,8 +251,6 @@ function effect(cue) {
   const seed = Math.round(cue.t * 1000) + 17;
   const dur = cue.end != null ? cue.end - cue.t : cue.dur;
   switch (cue.type) {
-    case "ting":
-      return [bloom(mtof(cue.note), { decay: 0.8 }), -13 + 20 * Math.log10(g), 0, 0.25];
     case "sweep":
       return [
         sweep(dur, 300, 1600, { q: 0.9, seed, attack: 0.6 }),
@@ -302,16 +285,6 @@ function effect(cue) {
       ];
     case "bloom":
       return [sweep(0.9, 1800, 250, { q: 0.8, attack: 0.25, seed }), -18, 0, 0.4];
-    case "tap":
-      return [
-        layer([
-          [0, blip(mtof(62), { decay: 0.05, from: 1.4, drop: 0.01 })],
-          [0, burst(0.006, 1500, { seed, type: "bp" }), 0.4],
-        ]),
-        -17 + 20 * Math.log10(g),
-        0,
-        0.15,
-      ];
     case "stroke":
       return [
         sweep(dur, 600, 1500, { q: 0.6, attack: 0.3, seed }),
@@ -338,13 +311,6 @@ function effect(cue) {
     }
     case "zip":
       return [sweep(dur, 300, 2000, { seed, attack: 0.7 }), -22, (p) => p - 0.5, 0.3];
-    case "pop":
-      return [
-        blip(mtof(cue.note), { decay: 0.07, from: 1.6, drop: 0.012 }),
-        -16 + 20 * Math.log10(g),
-        0,
-        0.2,
-      ];
     case "key": {
       // No pitch at all: a soft switch click over the dull thock of the keycap bottoming out.
       const rnd = random(cue.seed * 97 + 3);
@@ -524,15 +490,19 @@ function effect(cue) {
         0.6,
       ];
     case "toggle": {
-      // A switch: a tiny click, then two felt taps rising (on) or falling (off).
-      const [a, b] = cue.on ? [57, 62] : [62, 57];
+      // A switch: the click's tick and thud, lighter, with a quick zap up (on) or down (off).
+      const [f0, f1] = cue.on ? [520, 2400] : [2200, 480];
       return [
         layer([
-          [0, normalize(burst(0.004, 1600, { seed, type: "bp", q: 0.8 })), 0.35],
-          [0.004, mallet(mtof(a), { decay: 0.05, wood: 0.1 }), 0.6],
-          [0.06, mallet(mtof(b), { decay: 0.09, wood: 0.1 })],
+          [0, normalize(burst(0.003, 2400, { seed, type: "bp", q: 1.2 })), 0.45],
+          [0, normalize(thump(mtof(38), { from: 2.5, decay: 0.05 })), 0.7],
+          [
+            0.003,
+            normalize(sweep(0.08, f0, f1, { q: 5, attack: cue.on ? 0.7 : 0.1, seed: seed + 1 })),
+            0.5,
+          ],
         ]),
-        -17,
+        -18,
         0,
         0.1,
       ];

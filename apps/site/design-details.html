@@ -137,7 +137,7 @@
         background: var(--bg);
         box-shadow: 0 60px 160px -20px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(0, 0, 0, 0.6);
       }
-      #app { position: absolute; inset: 0; }
+      #app { position: absolute; inset: 0; z-index: 0; } /* its titlebar stays under the overlays */
       #scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.55); opacity: 0; }
 
       /* App titlebar (AppTitlebar.module.css) */
@@ -386,6 +386,114 @@
       .nc-area .ph .i-caret { position: absolute; left: -2px; top: 3px; margin: 0; }
       .nc-guide { margin-top: 6px; color: var(--text-tertiary); font-size: 11px; line-height: 1.4; font-style: italic; }
 
+
+      /* ─── Study session (Study.module.css) ────────────────────────────── */
+      .ss { position: absolute; inset: 0; z-index: 3; overflow: hidden; background: var(--bg); visibility: hidden; }
+      .ss-bar { position: absolute; left: 0; right: 0; top: 0; height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+      .ss-left, .ss-right { display: flex; align-items: center; gap: 12px; }
+      .ss-exit { display: inline-flex; align-items: center; gap: 5px; color: var(--text-tertiary); font-size: 12px; font-weight: 500; }
+      .ss-exit svg, .ss-icon svg { width: 14px; height: 14px; }
+      .ss-scope { padding: 3px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-subtle); color: var(--text-tertiary); font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.3px; }
+      .ss-counter { color: var(--text-tertiary); font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.3px; }
+      .ss-counter b { color: var(--text-secondary); font-weight: 600; }
+      .ss-icon { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; color: var(--text-tertiary); opacity: 0.7; }
+      .ss-track { position: absolute; top: 48px; left: 0; right: 0; height: 2px; background: var(--border); }
+      .ss-fill { height: 100%; border-radius: 0 1px 1px 0; background: var(--text-tertiary); }
+      .ss-area { position: absolute; top: 50px; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 32px 32px; }
+      .ss-cardwrap { width: 100%; max-width: 560px; flex-shrink: 0; perspective: 1200px; }
+      .ss-card { display: grid; transform-style: preserve-3d; }
+      .ss-face { grid-area: 1 / 1; position: relative; display: flex; min-height: 280px; flex-direction: column; align-items: center; justify-content: center; padding: 48px 52px; border: 1px solid var(--border); border-radius: 20px; background: var(--bg-subtle); text-align: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+      .ss-face.back { transform: rotateY(180deg); border-color: var(--border-hover); background: var(--bg-elevated); }
+      .ss-tag { position: absolute; top: 18px; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 8px; font-weight: 500; opacity: 0.5; text-transform: uppercase; letter-spacing: 1.2px; }
+      .ss-tag.l { left: 24px; }
+      .ss-tag.r { right: 24px; opacity: 0.4; letter-spacing: 0.8px; }
+      .ss-text { max-width: 460px; margin: 0 auto; font-size: 20px; font-weight: 500; line-height: 1.5; letter-spacing: -0.3px; }
+      .ss-text code, .xp-text code { padding: 2px 7px; border: 1px solid var(--border); border-radius: 5px; background: var(--bg-elevated); font-family: var(--font-mono); font-size: 0.75em; }
+      .ss-face.back .ss-text { color: var(--text-secondary); font-size: 17px; font-weight: 400; line-height: 1.65; }
+      .ss-echo { width: 100%; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border); color: var(--text-tertiary); font-size: 13px; font-weight: 500; line-height: 1.5; letter-spacing: -0.1px; }
+      .ss-explain { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-tertiary); font-size: 12px; font-weight: 500; }
+      .ss-explain svg { width: 12px; height: 12px; opacity: 0.7; }
+      .ss-actions { display: flex; width: 100%; max-width: 560px; flex-direction: column; align-items: center; gap: 12px; margin-top: 32px; }
+      .ss-explain + .ss-actions { margin-top: 16px; }
+      .ss-reveal { display: inline-flex; height: 44px; width: 100%; max-width: 320px; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; background: var(--text-primary); color: var(--bg); font-size: 14px; font-weight: 600; letter-spacing: -0.2px; }
+      .ss-reveal kbd { margin-left: 4px; padding: 2px 7px; border-radius: 4px; background: rgba(0, 0, 0, 0.15); opacity: 0.6; font-family: var(--font-mono); font-size: 10px; font-weight: 500; }
+      .ss-rates { display: grid; width: 100%; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+      .ss-rate { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 8px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-subtle); }
+      .ss-rate b { font-size: 13px; font-weight: 600; letter-spacing: -0.1px; color: var(--text-tertiary); }
+      .ss-rate.good b { color: var(--text-secondary); }
+      .ss-rate.easy b { color: var(--text-primary); }
+      .ss-rate i { font-style: normal; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 10px; font-weight: 500; letter-spacing: 0.2px; }
+      .ss-rate kbd { margin-top: 2px; padding: 1px 5px; border: 1px solid var(--border); border-radius: 3px; background: var(--bg-elevated); color: var(--text-tertiary); font-family: var(--font-mono); font-size: 9px; opacity: 0.4; }
+
+      /* ─── Explain panel (StudyExplainPanel, StudyExplainVisual) ───────── */
+      .xp-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.32); opacity: 0; }
+      .xp { position: absolute; top: 0; right: 0; bottom: 0; width: 440px; display: flex; flex-direction: column; border-top: 1px solid var(--border); border-left: 1px solid var(--border); background: var(--bg); box-shadow: -16px 0 48px rgba(0, 0, 0, 0.4); visibility: hidden; }
+      .xp-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px 12px; border-bottom: 1px solid var(--border); }
+      .xp-title { font-size: 14px; font-weight: 600; letter-spacing: -0.2px; }
+      .xp-sub { margin-top: 2px; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 10px; font-weight: 500; letter-spacing: 0.4px; text-transform: uppercase; white-space: nowrap; }
+      .xp-actions { display: flex; align-items: center; gap: 4px; }
+      .xp-btn { display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text-tertiary); font-size: 11px; font-weight: 500; }
+      .xp-close { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; color: var(--text-tertiary); font-size: 16px; }
+      .xp-body { position: relative; flex: 1; min-height: 0; overflow: hidden; padding: 20px; }
+      .xp-loading { display: flex; flex-direction: column; gap: 12px; }
+      .xp-skel { height: 12px; border-radius: 4px; background: linear-gradient(90deg, #111111 0%, #161616 50%, #111111 100%); background-size: 200% 100%; }
+      .xp-note { margin-top: 8px; color: var(--text-tertiary); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.4px; text-transform: uppercase; }
+      .xp-text { color: var(--text-secondary); font-size: 14px; line-height: 1.65; letter-spacing: -0.1px; }
+      .xp-text p { margin: 0 0 14px; }
+      .xv { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); }
+      .xv-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+      .xv-head h3 { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+      .xv-head p { margin-top: 5px; color: var(--text-tertiary); font-size: 11px; line-height: 1.4; }
+      .xv-actions { display: flex; align-items: center; flex-shrink: 0; gap: 8px; }
+      .xv-actions > span, .xv-node em { color: var(--text-tertiary); font-family: var(--font-mono); font-size: 9px; font-style: normal; letter-spacing: 0.5px; text-transform: uppercase; }
+      .xv-expand { display: inline-flex; width: 24px; height: 24px; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 8px; color: var(--text-tertiary); }
+      .xv-expand svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5; }
+      .xv-canvas { position: relative; height: 300px; margin-top: 14px; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background-color: var(--bg-subtle); background-image: radial-gradient(circle, #1e1e1e 1px, transparent 1.3px); background-size: 18px 18px; }
+      .xv-view { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+      .xv-view svg { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; }
+      .xv-view path { fill: none; stroke: var(--text-tertiary); stroke-width: 1.5; }
+      .xv-node { position: absolute; left: 0; top: 0; width: 138px; min-height: 58px; display: flex; flex-direction: column; justify-content: center; gap: 3px; padding: 9px 10px; border: 1px solid var(--border-hover); border-radius: 7px; background: var(--bg-elevated); font-size: 11px; line-height: 1.3; }
+      .xv-node.process, .xv-node.state { border-color: color-mix(in srgb, var(--success) 50%, transparent); }
+      .xv-node b { font-weight: 600; }
+      .xv-node small { color: var(--text-secondary); font-size: 10px; }
+      .xv-controls { position: absolute; left: 15px; bottom: 15px; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; }
+      .xv-controls span { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-bottom: 1px solid var(--border); background: var(--bg-elevated); color: var(--text-secondary); }
+      .xv-controls span:last-child { border-bottom: none; }
+      .xv-controls svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+      .xp-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 20px; border-top: 1px solid var(--border); color: var(--text-tertiary); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.4px; text-transform: uppercase; }
+
+      /* ─── macOS desktop and the menu bar item (tray.rs) ───────────────── */
+      #desk { position: absolute; inset: 0; visibility: hidden; background: radial-gradient(120% 90% at 70% 0%, #2a2522 0%, #151414 45%, #0c0c0c 100%); }
+      .mb { position: absolute; left: 0; right: 0; top: 0; height: 26px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; background: rgba(28, 28, 28, 0.62); font-size: 13px; color: rgba(255, 255, 255, 0.9); white-space: nowrap; }
+      .mb-left, .mb-right { display: flex; align-items: center; height: 100%; }
+      .mb-left > span { padding: 0 9px; }
+      .mb-left b { font-weight: 700; }
+      .mb-left svg { width: 13px; height: 15px; margin: 0 4px 0 6px; fill: rgba(255, 255, 255, 0.9); }
+      .mb-item { display: flex; align-items: center; gap: 5px; height: 22px; padding: 0 7px; border-radius: 5px; }
+      .mb-item svg { width: 16px; height: 16px; fill: none; stroke: rgba(255, 255, 255, 0.9); stroke-width: 1.5; }
+      .mb-tray svg { width: 22px; height: 22px; stroke: none; }
+      .mb-clock { padding: 0 8px 0 10px; font-variant-numeric: tabular-nums; }
+      .mb-menu { position: absolute; left: 0; top: 30px; min-width: 196px; padding: 5px; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 10px; background: rgba(38, 38, 40, 0.94); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5); font-size: 13px; color: rgba(255, 255, 255, 0.9); visibility: hidden; transform-origin: 20% 0; }
+      .mb-menu div { position: relative; height: 22px; padding: 0 10px; line-height: 22px; border-radius: 5px; white-space: nowrap; }
+      .mb-menu .off { color: rgba(255, 255, 255, 0.38); }
+      .mb-menu hr { height: 1px; margin: 5px 10px; border: 0; background: rgba(255, 255, 255, 0.1); }
+      .mb-menu .hl { position: absolute; inset: 0; border-radius: 5px; background: #5c5c62; opacity: 0; }
+      .mb-menu span { position: relative; }
+      .desk-win { position: absolute; left: 330px; top: 118px; width: 900px; height: 560px; overflow: hidden; border: 1px solid #2c2c2c; border-radius: 12px; box-shadow: 0 40px 100px rgba(0, 0, 0, 0.65); visibility: hidden; }
+      .desk-win .chrome { position: absolute; left: 0; right: 0; top: 0; height: 28px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: #141414; border-bottom: 1px solid #1e1e1e; }
+      .desk-win .chrome i { width: 12px; height: 12px; border-radius: 50%; background: #3a3a3c; }
+      .desk-win .ss { top: 28px; }
+
+      /* The icon states, laid out like a spec sheet. */
+      #states { visibility: hidden; }
+      .st-row { position: absolute; left: 0; right: 0; display: flex; justify-content: center; gap: 70px; }
+      .st { display: flex; flex-direction: column; align-items: center; gap: 22px; font-family: var(--font-mono); font-size: 16px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: #8a8a8a; white-space: nowrap; }
+      .st svg { width: 132px; height: 132px; }
+      .st b { color: #ededed; font-weight: 500; }
+      .st small { font-size: 12px; letter-spacing: 0.14em; color: #5e5e5e; }
+      .fmt-portrait .st-row { flex-wrap: wrap; gap: 80px 150px; padding: 0 190px; }
+      .fmt-portrait .st svg { width: 150px; height: 150px; }
+
       /* ─── Frame overlays: cursor, keycast, callouts ───────────────────── */
       #cursor { position: absolute; left: 0; top: 0; width: 26px; height: 38px; visibility: hidden; transform-origin: 3px 3px; }
       #cursor svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5)); }
@@ -598,6 +706,7 @@
               </div>
             </div>
             <div id="scrim"></div>
+            <div class="ss" id="study-main"></div>
 
             <!-- Command palette -->
             <div id="palette" role="dialog">
@@ -672,8 +781,34 @@
                 </div>
               </div>
             </div>
+
+            <!-- A macOS desktop: the menu bar with Pupil's item, and the app's window -->
+            <div id="desk">
+              <div class="desk-win" id="desk-win">
+                <div class="chrome"><i></i><i></i><i></i></div>
+                <div class="ss" id="study-mini"></div>
+              </div>
+              <div class="mb">
+                <div class="mb-left">
+                  <svg viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" /></svg>
+                  <span><b>Finder</b></span><span>File</span><span>Edit</span><span>View</span><span>Go</span><span>Window</span><span>Help</span>
+                </div>
+                <div class="mb-right">
+                  <span class="mb-item mb-tray" id="mb-tray"><svg viewBox="0 0 22 22" id="mb-eye"></svg><span id="mb-title"></span></span>
+                  <span class="mb-item"><svg viewBox="0 0 16 16"><path d="M1.5 6.2a9.2 9.2 0 0 1 13 0M3.8 8.6a5.9 5.9 0 0 1 8.4 0M6.1 11a2.6 2.6 0 0 1 3.8 0" stroke-linecap="round" /><circle cx="8" cy="13.1" r="0.6" fill="#fff" /></svg></span>
+                  <span class="mb-item"><svg viewBox="0 0 20 16"><rect x="1.5" y="4.5" width="15" height="7" rx="2" /><rect x="3.2" y="6.2" width="9" height="3.6" rx="0.8" fill="rgba(255,255,255,0.9)" stroke="none" /><path d="M18 7v2" stroke-linecap="round" /></svg></span>
+                  <span class="mb-item"><svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.2" /><path d="M10.2 10.2L14 14" stroke-linecap="round" /></svg></span>
+                  <span class="mb-item"><svg viewBox="0 0 16 16"><rect x="1.5" y="3" width="13" height="4" rx="2" /><rect x="1.5" y="9" width="13" height="4" rx="2" /><circle cx="11" cy="5" r="1" fill="#fff" /><circle cx="5" cy="11" r="1" fill="#fff" /></svg></span>
+                  <span class="mb-clock" id="mb-clock"></span>
+                </div>
+              </div>
+              <div class="mb-menu" id="mb-menu"></div>
+            </div>
           </div>
         </div>
+
+        <!-- The menu bar item's four states, as a spec sheet -->
+        <section class="layer" id="states"><div class="st-row"></div></section>
 
         <!-- End card: the eye and wordmark, the episode's line -->
         <section class="layer" id="end">
@@ -728,7 +863,7 @@
           landscape: { w: 1920, h: 1080, mx: 120, my: 90 },
           portrait: { w: 1080, h: 1350, mx: 64, my: 72 },
         };
-        const SNIPPETS = ["palette", "another"];
+        const SNIPPETS = ["palette", "another", "explain", "menubar"];
         const TOKENS = location.hash.slice(1).split("-");
         const pick = (name, options) => [params.get(name), ...TOKENS].find((v) => options.includes(v));
         const FORMAT = pick("format", Object.keys(FORMATS)) ?? "landscape";
@@ -841,6 +976,28 @@
             tag: "Card after card, <em>without</em> breaking stride.",
             meta: '<span class="vchip">DETAILS 02</span><span>Make another</span>',
             end: 16.9,
+          },
+          explain: {
+            n: "03",
+            name: "Explain in detail",
+            kicker: "Pupil details — 03",
+            l1: "Know why,",
+            l2: "not just what.",
+            cap: "STUDY · EXPLAIN IN DETAIL",
+            tag: "The <em>why</em> behind every answer.",
+            meta: '<span class="vchip">DETAILS 03</span><span>Explain in detail</span>',
+            end: 15.9,
+          },
+          menubar: {
+            n: "03",
+            name: "Menu bar",
+            kicker: "Pupil details — 03",
+            l1: "Quietly",
+            l2: "keeping count.",
+            cap: "THE MENU BAR · MACOS",
+            tag: "The nudge that <em>never</em> nags.",
+            meta: '<span class="vchip">DETAILS 03</span><span>Menu bar</span>',
+            end: 15.5,
           },
         };
         const EP = EPISODES[SNIPPET];
@@ -1532,7 +1689,6 @@
             },
             cues(at) {
               at(0, "chord", { name: "Dmaj9" });
-              at(0.2, "ting", { note: 62, gain: 0.6 });
               at(0.3, "sweep", { dur: 0.7, gain: 0.5 });
               at(2.2, "whoosh", { dur: 0.5, dir: "up", gain: 0.45 });
               at(2.4, "chord", { name: "Bm11" });
@@ -1540,11 +1696,10 @@
               at(2.85, "land", { soft: true, gain: 0.6 });
               at(K.cmd, "key", { seed: 3 });
               at(K.k, "key", { seed: 7 });
-              at(K.open, "pop", { note: 62, gain: 0.6 });
               at(K.open, "swish", { gain: 0.35 });
               K.tabs.forEach((kt, i) => {
                 at(kt, "key", { seed: 11 + i });
-                at(kt + 0.02, "tap", { gain: 0.45 });
+                at(kt + 0.02, "tick", { gain: 0.45 });
               });
               at(6.8, "chord", { name: "Gmaj9" });
               K.type.forEach((kt, i) => at(kt, "key", { seed: 21 + i }));
@@ -1766,14 +1921,12 @@
             },
             cues(at) {
               at(0, "chord", { name: "Dmaj9" });
-              at(0.2, "ting", { note: 62, gain: 0.6 });
               at(0.3, "sweep", { dur: 0.7, gain: 0.5 });
               at(2.2, "whoosh", { dur: 0.5, dir: "up", gain: 0.45 });
               at(2.4, "chord", { name: "Gmaj9" });
               at(2.4, "pulse", { on: true, rate: 1, drums: false });
               at(2.85, "land", { soft: true, gain: 0.6 });
               at(3.75, "click");
-              at(OPEN, "pop", { note: 57, gain: 0.6 });
               at(OPEN, "swish", { gain: 0.35 });
               at(5.2, "chord", { name: "Bm11" });
               at(TOGGLE[0], "click");
@@ -1803,7 +1956,588 @@
           };
         };
 
-        const episode = SNIPPET === "another" ? episodeAnother() : episodePalette();
+
+        // ─── Study session (shared by 03 Explain and 03 Menu bar) ──────────
+        const ICON = {
+          back: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 3L5 8l5 5" /></svg>',
+          undo: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3L2 6l3 3" /><path d="M2 6h7a4 4 0 010 8H6" /></svg>',
+          more: '<svg viewBox="0 0 16 16" fill="currentColor"><circle cx="3.5" cy="8" r="1.2" /><circle cx="8" cy="8" r="1.2" /><circle cx="12.5" cy="8" r="1.2" /></svg>',
+          spark: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1.5l1.4 3.6L13 6.5l-3.6 1.4L8 11.5 6.6 7.9 3 6.5l3.6-1.4z" stroke-linejoin="round" /><path d="M12.5 11l.6 1.4L14.5 13l-1.4.6L12.5 15l-.6-1.4L10.5 13l1.4-.6z" stroke-linejoin="round" /></svg>',
+        };
+        const RATES = [
+          ["again", "Again", "10m", "1"],
+          ["hard", "Hard", "2d", "2"],
+          ["good", "Good", "5d", "3"],
+          ["easy", "Easy", "12d", "4"],
+        ];
+        /** Renders the app's study session into root; set() draws one moment of it. */
+        const mountStudy = (root, { scope, space, total }) => {
+          root.innerHTML = `
+            <div class="ss-bar">
+              <div class="ss-left"><span class="ss-exit">${ICON.back}End</span><span class="ss-scope">${scope}</span></div>
+              <div class="ss-right"><span class="ss-counter"><b class="ss-cur">1</b> / ${total}</span><span class="ss-icon">${ICON.undo}</span><span class="ss-icon">${ICON.more}</span></div>
+            </div>
+            <div class="ss-track"><div class="ss-fill"></div></div>
+            <div class="ss-area">
+              <div class="ss-cardwrap"><div class="ss-card">
+                <div class="ss-face front"><span class="ss-tag l">front</span><span class="ss-tag r">${space}</span><div class="ss-text ss-front"></div></div>
+                <div class="ss-face back"><span class="ss-tag l">back</span><span class="ss-tag r">${space}</span><div><div class="ss-echo"></div><div class="ss-text ss-back"></div></div></div>
+              </div></div>
+              <span class="ss-explain">${ICON.spark}<span class="ss-explain-label">Explain in detail</span></span>
+              <div class="ss-actions">
+                <span class="ss-reveal">Show answer<kbd>Space</kbd></span>
+                <div class="ss-rates">${RATES.map(([c, l, iv, k]) => `<span class="ss-rate ${c}"><b>${l}</b><i>${iv}</i><kbd>${k}</kbd></span>`).join("")}</div>
+              </div>
+            </div>`;
+          const q = (sel) => $(sel, root);
+          const el = {
+            card: q(".ss-card"),
+            front: q(".ss-front"),
+            back: q(".ss-back"),
+            echo: q(".ss-echo"),
+            cur: q(".ss-cur"),
+            fill: q(".ss-fill"),
+            explain: q(".ss-explain"),
+            explainLabel: q(".ss-explain-label"),
+            reveal: q(".ss-reveal"),
+            rates: q(".ss-rates"),
+            rateEls: $$(".ss-rate", root),
+          };
+          return {
+            root,
+            el,
+            /** card: { front, back } · flip 0→1 · revealed: answer shown (rating row) · press: rating index. */
+            set({ card, flip = 0, current = 1, progress = 0, revealed = false, explain = true, loading = false, hover = 0, press = -1, fade = 1 }) {
+              setHTML(el.front, card.front);
+              setHTML(el.echo, card.front);
+              setHTML(el.back, card.back);
+              el.front.style.opacity = fade;
+              el.back.style.opacity = fade;
+              el.echo.style.opacity = fade;
+              el.card.style.transform = `rotateY(${180 * flip}deg)`;
+              el.cur.textContent = current;
+              el.fill.style.width = `${progress * 100}%`;
+              el.reveal.style.display = revealed ? "none" : "inline-flex";
+              el.rates.style.display = revealed ? "grid" : "none";
+              el.explain.style.display = revealed && explain ? "inline-flex" : "none";
+              el.explainLabel.textContent = loading ? "Thinking…" : "Explain in detail";
+              el.explain.style.opacity = loading ? 0.55 : 1;
+              el.explain.style.borderColor = mixHex("#1e1e1e", "#333333", hover);
+              el.explain.style.color = mixHex("#555555", "#888888", hover);
+              el.explain.style.background = `rgba(237,237,237,${0.03 * hover})`;
+              el.rateEls.forEach((r, i) => {
+                r.style.borderColor = i === press ? "#888888" : "#1e1e1e";
+                r.style.background = i === press ? "#161616" : "#111111";
+              });
+            },
+          };
+        };
+
+        // ─── 03 · Explain in detail ─────────────────────────────────────────
+        const episodeExplain = () => {
+          const root = $("#study-main");
+          const study = mountStudy(root, { scope: "SYSTEMS DESIGN", space: "Systems Design", total: 12 });
+          const CARD = {
+            front: "Why is a hash map lookup <code>O(1)</code> on average?",
+            back: "The key's hash points straight at its bucket, so nothing is searched.",
+          };
+          const PARAS = [
+            "A hash map keeps its values in an array of buckets. To find one, it doesn't search the array. It works out exactly where the value has to be.",
+            "The key goes through a hash function, which turns it into a number. That number, modulo the array's size, is the index of the bucket.",
+            "Reading an array slot by index takes the same time however large the array is, so a lookup is constant time, as long as few keys share a bucket.",
+          ];
+          const NODES = [
+            { role: "value", label: "Key", detail: "“user:42”" },
+            { role: "process", label: "Hash function", detail: "hash(key) = 7391" },
+            { role: "value", label: "Bucket index", detail: "7391 % 16 = 15" },
+            { role: "concept", label: "Stored value", detail: "read in one step" },
+          ];
+          root.insertAdjacentHTML(
+            "beforeend",
+            `<div class="xp-backdrop"></div>
+            <aside class="xp">
+              <header class="xp-head">
+                <div><div class="xp-title">Explanation</div><div class="xp-sub">Why is a hash map lookup O(1) on average?</div></div>
+                <div class="xp-actions"><span class="xp-btn">Regenerate</span><span class="xp-close">✕</span></div>
+              </header>
+              <div class="xp-body"><div class="xp-scroll">
+                <div class="xp-loading"><div class="xp-skel"></div><div class="xp-skel" style="width: 92%"></div><div class="xp-skel" style="width: 78%"></div><div class="xp-skel" style="width: 86%"></div><span class="xp-note">Asking your model…</span></div>
+                <div class="xp-text">
+                  ${PARAS.map((t) => `<p>${t}</p>`).join("")}
+                  <section class="xv">
+                    <div class="xv-head">
+                      <div><h3>How a lookup finds its value</h3><p>The hash is the address: no searching involved.</p></div>
+                      <div class="xv-actions"><span>Visual aid</span><span class="xv-expand"><svg viewBox="0 0 24 24"><path /></svg></span></div>
+                    </div>
+                    <div class="xv-canvas">
+                      <div class="xv-view"><svg>${NODES.slice(1).map(() => "<path />").join("")}</svg>${NODES.map(
+                        (n) => `<div class="xv-node ${n.role}"><em>${n.role}</em><b>${n.label}</b><small>${n.detail}</small></div>`,
+                      ).join("")}</div>
+                      <div class="xv-controls"><span><svg viewBox="0 0 12 12"><path d="M6 2v8M2 6h8" /></svg></span><span><svg viewBox="0 0 12 12"><path d="M2 6h8" /></svg></span><span><svg viewBox="0 0 12 12"><path d="M1.5 4V1.5H4M8 1.5h2.5V4M10.5 8v2.5H8M4 10.5H1.5V8" /></svg></span></div>
+                    </div>
+                  </section>
+                </div>
+              </div></div>
+              <footer class="xp-foot"><span class="xp-src"></span><span class="xp-time"></span></footer>
+            </aside>`,
+          );
+          const q = (sel) => $(sel, root);
+          const panel = {
+            backdrop: q(".xp-backdrop"),
+            aside: q(".xp"),
+            regen: q(".xp-btn"),
+            scroll: q(".xp-scroll"),
+            loading: q(".xp-loading"),
+            skels: $$(".xp-skel", root),
+            text: q(".xp-text"),
+            paras: $$(".xp-text > p", root),
+            visual: q(".xv"),
+            canvas: q(".xv-canvas"),
+            view: q(".xv-view"),
+            edges: $$(".xv-view path", root),
+            nodes: $$(".xv-node", root),
+            expand: q(".xv-expand path"),
+            expandBtn: q(".xv-expand"),
+            src: q(".xp-src"),
+            time: q(".xp-time"),
+          };
+
+          const K = {
+            reveal: 3.5,
+            hover: 5.12,
+            open1: 5.45,
+            content: 7.2,
+            scroll: 8.25,
+            nodes: 8.55,
+            expand: 10.6,
+            esc: 13.0,
+            open2: 13.85,
+          };
+          const keys = makeKeys([
+            { keys: ["space"], presses: [[K.reveal, 0]] },
+            { keys: ["esc"], presses: [[K.esc, 0]] },
+          ]);
+          const captionY = H - MY - (PORTRAIT ? 170 : 120);
+          const panelLeft = () => onStage(panel.aside).x;
+          const notes = makeNotes([
+            PORTRAIT
+              ? { from: 9.15, to: 10.5, caption: captionY, label: "A diagram, <b>drawn for this card</b>." }
+              : {
+                  from: 9.15,
+                  to: 10.5,
+                  target: () => panel.nodes[1],
+                  at: [0, 0.5],
+                  label: "A diagram, <b>drawn for this card</b>",
+                  pos: (tx, ty) => [panelLeft() - 60, ty],
+                  align: "right",
+                },
+            PORTRAIT
+              ? { from: 11.55, to: 12.9, caption: captionY, label: "Expand it, and it <b>re-flows</b>." }
+              : {
+                  from: 11.55,
+                  to: 12.9,
+                  target: () => panel.nodes[3],
+                  at: [0.5, 0],
+                  label: "Expand it, and it <b>re-flows</b>",
+                  pos: (tx, ty) => [tx - 40, ty - 120],
+                  align: "right",
+                },
+            PORTRAIT
+              ? { from: 14.35, to: 15.75, caption: captionY, label: "Opened again: <b>instant</b>, from cache." }
+              : {
+                  from: 14.35,
+                  to: 15.75,
+                  target: () => panel.src,
+                  at: [0, 0.5],
+                  label: "Opened again: <b>instant</b>, from cache",
+                  pos: (tx, ty) => [panelLeft() - 60, ty],
+                  align: "right",
+                },
+          ]);
+
+          // Layout of the diagram: the app's top-to-bottom stack (levels 98px apart), and the
+          // left-to-right row it switches to when the visual is expanded (levels 180px apart).
+          const nodeH = NODES.map(() => 64); // measured once the panel has laid out
+          const layoutAt = (m) =>
+            NODES.map((_, i) => ({ x: lerp(0, i * 180, m), y: lerp(i * 98, 0, m) }));
+          const drawGraph = (t, m, nodesIn) => {
+            const pos = layoutAt(m);
+            const cw = panel.canvas.clientWidth;
+            const ch = panel.canvas.clientHeight;
+            const minX = Math.min(...pos.map((p) => p.x));
+            const minY = Math.min(...pos.map((p) => p.y));
+            const maxX = Math.max(...pos.map((p) => p.x + 138));
+            const maxY = Math.max(...pos.map((p, i) => p.y + nodeH[i]));
+            // fitView with the app's 0.16 padding.
+            const zoom = clamp(Math.min(cw / (maxX - minX), ch / (maxY - minY)) / 1.32, 0.35, 2);
+            const ox = (cw - (maxX - minX) * zoom) / 2 - minX * zoom;
+            const oy = (ch - (maxY - minY) * zoom) / 2 - minY * zoom;
+            panel.view.style.transform = `translate(${ox}px, ${oy}px) scale(${zoom})`;
+            panel.nodes.forEach((n, i) => {
+              const k = E.outCubic(clamp(nodesIn(i)));
+              n.style.transform = `translate(${pos[i].x}px, ${pos[i].y + (1 - k) * 10}px)`;
+              n.style.opacity = k;
+            });
+            panel.edges.forEach((path, i) => {
+              const a = pos[i];
+              const b = pos[i + 1];
+              const h = nodeH[i];
+              // Top-to-bottom: bottom centre to top centre. Left-to-right: right to left side.
+              const tb = { sx: a.x + 69, sy: a.y + h, tx: b.x + 69, ty: b.y };
+              const lr = { sx: a.x + 138, sy: a.y + h / 2, tx: b.x, ty: b.y + nodeH[i + 1] / 2 };
+              const L = (k) => lerp(tb[k], lr[k], m);
+              const [sx, sy, tx, ty] = [L("sx"), L("sy"), L("tx"), L("ty")];
+              const my = (sy + ty) / 2;
+              const mx = (sx + tx) / 2;
+              const c1 = [lerp(sx, mx, m), lerp(my, sy, m)];
+              const c2 = [lerp(tx, mx, m), lerp(my, ty, m)];
+              path.setAttribute("d", `M${sx} ${sy} C${c1[0]} ${c1[1]} ${c2[0]} ${c2[1]} ${tx} ${ty}`);
+              path.style.opacity = E.outCubic(clamp(nodesIn(i + 1)));
+            });
+          };
+          /** Draws the panel: slide 0→1 in, loading or content, expansion, scroll, cache footer. */
+          const drawPanel = (t, { slide, loading, content, expand, morph, scroll, cached, nodesIn }) => {
+            vis(panel.aside, slide > 0);
+            panel.backdrop.style.opacity = slide;
+            if (slide <= 0) return;
+            panel.aside.style.transform = `translateX(${(1 - slide) * 102}%)`;
+            panel.aside.style.width = `${lerp(440, 960, expand)}px`;
+            panel.regen.style.display = loading ? "none" : "inline-flex";
+            panel.loading.style.display = loading ? "flex" : "none";
+            panel.text.style.display = loading ? "none" : "block";
+            // The skeleton shimmer runs a 1.4s cycle across the bars.
+            for (const sk of panel.skels) sk.style.backgroundPosition = `${200 - ((t % 1.4) / 1.4) * 400}% 0`;
+            panel.paras.forEach((p, i) => {
+              const k = E.outCubic(clamp((content - i * 0.12) / 0.4));
+              p.style.opacity = k;
+              p.style.transform = `translateY(${(1 - k) * 6}px)`;
+            });
+            panel.visual.style.opacity = E.outCubic(clamp((content - 0.36) / 0.4));
+            panel.canvas.style.height = `${lerp(300, 432, expand)}px`;
+            panel.scroll.style.transform = `translateY(${-scroll}px)`;
+            panel.expand.setAttribute("d", expand > 0.5 ? "M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" : "M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5");
+            panel.src.textContent = loading ? "" : cached ? "From cache" : "Just generated";
+            panel.time.textContent = loading ? "" : "Just now";
+            if (!loading) drawGraph(t, morph, nodesIn);
+          };
+
+          const targets = {};
+          return {
+            scenes: [
+              [0, "01  THE IDEA"],
+              [3.3, "02  REVEAL"],
+              [K.open1, "03  EXPLAIN"],
+              [K.nodes, "04  VISUAL AID"],
+              [K.expand, "05  EXPAND"],
+              [K.esc, "06  FROM CACHE"],
+              [END, "07  PUPIL"],
+            ],
+            measure() {
+              vis(root, true);
+              study.set({ card: CARD, revealed: true, current: 7, progress: 0.5 });
+              drawPanel(9, { slide: 1, loading: false, content: 1, expand: 0, morph: 0, scroll: 0, cached: false, nodesIn: () => 1 });
+              panel.nodes.forEach((n, i) => {
+                nodeH[i] = n.offsetHeight;
+              });
+              for (const [k, el] of Object.entries({ trigger: study.el.explain, cardwrap: $(".ss-cardwrap", root), rates: study.el.rates, expandBtn: panel.expandBtn, canvas: panel.canvas, foot: $(".xp-foot", root) }))
+                targets[k] = measure(el);
+              vis(panel.aside, false);
+            },
+            update(t) {
+              vis(root, true);
+              showScreen("dash");
+              const flip = P(t, K.reveal + 0.02, K.reveal + 0.5, appEase);
+              const revealed = t >= K.reveal + 0.05;
+              const loading1 = t >= K.open1 && t < K.content;
+              const hover = P(t, K.hover, K.hover + 0.15) * (1 - P(t, 6.2, 6.4)) + P(t, 13.6, 13.75) * (1 - P(t, 14.3, 14.5));
+              study.set({ card: CARD, flip, revealed, current: 7, progress: 0.5, loading: loading1, hover });
+
+              // First open: slide in, think, answer. Esc: slide out. Second open: from cache.
+              const slide1 = P(t, K.open1 + 0.04, K.open1 + 0.44, appEase) * (1 - P(t, K.esc + 0.02, K.esc + 0.32, E.inCubic));
+              const slide2 = P(t, K.open2 + 0.04, K.open2 + 0.44, appEase);
+              const second = t >= K.open2;
+              const expand = second ? 0 : P(t, K.expand + 0.02, K.expand + 0.5, E.inOutCubic);
+              const morph = second ? 0 : P(t, K.expand + 0.18, K.expand + 0.7, E.inOutCubic);
+              drawPanel(t, {
+                slide: second ? slide2 : slide1,
+                loading: !second && t < K.content,
+                content: second ? 1 : P(t, K.content, K.content + 0.8),
+                expand,
+                morph,
+                scroll: second ? 0 : V(t, K.scroll, K.scroll + 0.7, 0, 64, E.inOutCubic) * (1 - expand),
+                cached: second,
+                nodesIn: (i) => (second ? 1 : (t - (K.nodes + i * 0.08)) / 0.35),
+              });
+
+              // Camera: the session; the card and its answer; the panel; its diagram; the
+              // expanded canvas; back to the card; the panel's footer.
+              const wide = frame(WIN, 0.96);
+              const cw = targets.cardwrap;
+              const cardShot = frame({ x: cw.x, y: cw.y - 20, w: cw.w, h: targets.rates.y + targets.rates.h - cw.y + 40 }, 0.92);
+              const panelTop = frame({ x: 840, y: 0, w: 440, h: 440 }, 0.92);
+              const panelVisual = frame({ x: 840, y: targets.canvas.y - 150, w: 440, h: 470 }, 0.92);
+              const expanded = frame({ x: 320, y: targets.canvas.y - 200, w: 960, h: 560 }, 0.96);
+              const foot = frame({ x: 840, y: 420, w: 440, h: 400 }, 0.92);
+              applyCam(
+                camAt(t, [
+                  [0, wide],
+                  [3.2, wide],
+                  [4.1, cardShot],
+                  [K.open1, cardShot],
+                  [K.open1 + 0.9, panelTop],
+                  [K.scroll, panelTop],
+                  [K.scroll + 0.8, panelVisual],
+                  [K.expand, panelVisual],
+                  [K.expand + 0.8, expanded],
+                  [K.esc, expanded],
+                  [K.esc + 0.6, cardShot],
+                  [K.open2 + 0.1, cardShot],
+                  [K.open2 + 0.8, foot],
+                  [END, { ...foot, s: foot.s * 1.03 }],
+                ]),
+              );
+
+              const tr = { x: targets.trigger.x + targets.trigger.w * 0.6, y: targets.trigger.y + targets.trigger.h * 0.6 };
+              const ex = { x: targets.expandBtn.x + 12, y: targets.expandBtn.y + 13 };
+              const path = [
+                [4.4, tr.x + 160, tr.y + 180],
+                [5.1, tr.x, tr.y],
+                [5.6, tr.x, tr.y],
+                [6.2, tr.x + 120, tr.y + 120],
+                [9.6, tr.x + 120, tr.y + 120],
+                [10.45, ex.x, ex.y],
+                [11.4, ex.x, ex.y],
+                [12.2, ex.x + 30, ex.y - 150],
+                [13.0, tr.x + 140, tr.y + 150],
+                [13.7, tr.x, tr.y],
+                [14.3, tr.x, tr.y],
+                [15.0, tr.x + 90, tr.y + 160],
+              ];
+              updateCursor(t, path, [K.open1, K.expand, K.open2], 4.4, END - 0.2);
+              updateKeys(t, keys);
+              updateNotes(t, notes);
+            },
+            cues(at) {
+              at(0.3, "sweep", { dur: 0.7, gain: 0.5 });
+              at(2.2, "whoosh", { dur: 0.5, dir: "up", gain: 0.45 });
+              at(2.85, "land", { soft: true, gain: 0.6 });
+              at(K.reveal, "key", { seed: 5 });
+              at(K.reveal + 0.02, "flip");
+              at(K.open1, "click");
+              at(K.open1 + 0.05, "swish", { gain: 0.35 });
+              at(K.content, "stroke", { dur: 0.35, gain: 0.45 });
+              for (let i = 0; i < 4; i++) at(K.nodes + i * 0.08, "tick", { gain: 0.35 });
+              at(K.expand, "click");
+              at(K.expand + 0.05, "whoosh", { dur: 0.45, dir: "right", gain: 0.35 });
+              at(K.esc, "key", { seed: 9 });
+              at(K.esc + 0.03, "swish", { gain: 0.3 });
+              at(K.open2, "click");
+              at(K.open2 + 0.05, "swish", { gain: 0.3 });
+              for (const n of [9.15, 11.55, 14.35]) at(n + 0.1, "stroke", { dur: 0.35, gain: 0.4 });
+            },
+          };
+        };
+
+        // ─── 03 · Menu bar ──────────────────────────────────────────────────
+        // tray.rs: an eye in the status colour (amber due, red 3+ days overdue, green caught up,
+        // grey with no cards), "N cards to study" beside it while anything is due, and a menu
+        // with the live status and "Study N Cards →".
+        const TRAY = { empty: "#6b7280", due: "#f59e0b", overdue: "#ef4444", caught: "#10b981" };
+        const trayEye = (color) =>
+          `<ellipse cx="11" cy="11" rx="9.5" ry="5.5" fill="${color}" /><circle cx="11" cy="11" r="2.4" fill="#121216" fill-opacity="0.9" />`;
+        const episodeMenubar = () => {
+          const desk = $("#desk");
+          const deskWin = $("#desk-win");
+          const eye = $("#mb-eye");
+          const title = $("#mb-title");
+          const tray = $("#mb-tray");
+          const clock = $("#mb-clock");
+          const menu = $("#mb-menu");
+          const study = mountStudy($("#study-mini"), { scope: "ALL SPACES", space: "Japanese N4", total: 12 });
+          vis(study.root, true);
+          const CARDS = [
+            ["How do you say ‘library’ in Japanese?", "図書館 (としょかん)"],
+            ["What does 〜ながら express?", "Doing two things at the same time."],
+            ["Read: 地下鉄", "ちかてつ: subway"],
+            ["What does 〜てしまう add?", "Completion, often with regret."],
+            ["Read: 旅行", "りょこう: travel"],
+            ["How do you say ‘to borrow’?", "借りる (かりる)"],
+          ].map(([front, back]) => ({ front, back }));
+          const TOTAL = 12;
+          const M = { push: 3.3, tray: 6.25, study: 7.45, montage: 8.4, step: 0.225, states: 13.5 };
+          const done = M.montage + TOTAL * M.step; // the last review lands here
+          const menuHTML = (n) =>
+            `<div class="off"><span>${n} cards ready now</span></div><hr /><div><i class="hl"></i><span>Study ${n} Cards →</span></div><div><i class="hl"></i><span>Open Pupil</span></div><hr /><div><i class="hl"></i><span>Quit</span></div>`;
+          setHTML(menu, menuHTML(TOTAL));
+          const states = $("#states");
+          const stRow = $(".st-row", states);
+          stRow.innerHTML = [
+            ["empty", "No cards yet", "#6B7280"],
+            ["due", "Due today", "#F59E0B"],
+            ["overdue", "3+ days overdue", "#EF4444"],
+            ["caught", "All caught up", "#10B981"],
+          ]
+            .map(([k, label, hex]) => `<div class="st"><svg viewBox="0 0 22 22">${trayEye(TRAY[k])}</svg><b>${label}</b><small>${hex}</small></div>`)
+            .join("");
+          const stEls = $$(".st", stRow);
+          stRow.style.top = `${H / 2 - (PORTRAIT ? 250 : 110)}px`;
+          const captionY = H - MY - (PORTRAIT ? 170 : 120);
+          const notes = makeNotes([
+            {
+              from: 4.5,
+              to: 5.95,
+              target: () => eye,
+              at: [0.5, 1],
+              label: "<b>Amber</b>: cards due today",
+              pos: (tx, ty) => [tx - 30, ty + 150],
+              align: "right",
+            },
+            PORTRAIT
+              ? { from: 8.9, to: 10.9, caption: captionY, label: "Counts down <b>as you study</b>." }
+              : {
+                  from: 8.9,
+                  to: 10.9,
+                  target: () => title,
+                  at: [0.5, 1],
+                  label: "Counts down <b>as you study</b>",
+                  pos: (tx, ty) => [tx - 60, ty + 110],
+                  align: "right",
+                },
+            {
+              from: 11.95,
+              to: 13.35,
+              target: () => eye,
+              at: [0.5, 1],
+              label: "<b>Green</b>: all caught up",
+              pos: (tx, ty) => [tx - 30, ty + 150],
+              align: "right",
+            },
+          ]);
+          const targets = {};
+          return {
+            scenes: [
+              [0, "01  THE IDEA"],
+              [M.push, "02  AT A GLANCE"],
+              [M.tray, "03  THE MENU"],
+              [M.montage, "04  STUDYING"],
+              [done, "05  CAUGHT UP"],
+              [M.states, "06  FOUR STATES"],
+              [END, "07  PUPIL"],
+            ],
+            measure() {
+              vis(desk, true);
+              vis(menu, true);
+              vis(deskWin, true);
+              setHTML(title, `${TOTAL} cards to study`);
+              const tr = measure(tray);
+              menu.style.left = `${tr.x}px`;
+              for (const [k, el] of Object.entries({ tray, title, eye, menu, win: deskWin, studyItem: $$("div", menu)[1] })) targets[k] = measure(el);
+              vis(menu, false);
+              vis(deskWin, false);
+            },
+            update(t) {
+              showScreen("dash");
+              vis(desk, true);
+              // Reviews land one every M.step seconds once the session starts.
+              const reviewed = clamp(Math.floor((t - M.montage) / M.step) + 1, 0, TOTAL);
+              const left = TOTAL - reviewed;
+              const caught = P(t, done - M.step, done - M.step + 0.3);
+              eye.innerHTML = trayEye(mixHex(TRAY.due, TRAY.caught, caught));
+              setHTML(title, left > 0 ? `${left} ${left === 1 ? "card" : "cards"} to study` : "");
+              title.style.display = left > 0 ? "inline" : "none";
+              // The clock runs through the session: 9:41 to 9:52.
+              const minute = 41 + Math.floor(11 * P(t, M.montage, done));
+              clock.textContent = `Sat 27 Sep  9:${String(minute).padStart(2, "0")}`;
+              // The menu: open on the click, the highlight follows the pointer, gone on the second click.
+              const open = P(t, M.tray, M.tray + 0.12);
+              const shut = P(t, M.study + 0.02, M.study + 0.16);
+              vis(menu, open > 0 && shut < 1);
+              menu.style.opacity = open * (1 - shut);
+              const items = $$("div", menu);
+              const hl = (i) => $(".hl", items[i]);
+              for (const i of [1, 2, 4]) if (hl(i)) hl(i).style.opacity = 0;
+              if (t >= 6.82 && t < M.study + 0.02) hl(1).style.opacity = 1;
+              tray.style.background = open > 0 && shut < 1 ? "rgba(255,255,255,0.16)" : "transparent";
+              // The app's window comes forward and the reviews go by, fast.
+              const win = P(t, M.study + 0.1, M.study + 0.45, appEase);
+              vis(deskWin, win > 0);
+              deskWin.style.opacity = win;
+              deskWin.style.transform = `scale(${lerp(0.96, 1, win)})`;
+              const k = clamp(Math.floor((t - M.montage) / M.step), 0, TOTAL - 1);
+              const inStep = ((t - M.montage) % M.step) / M.step;
+              study.set({
+                card: CARDS[(k + (t >= M.montage ? 1 : 0)) % CARDS.length],
+                flip: 1,
+                revealed: true,
+                explain: false,
+                current: Math.min(TOTAL, reviewed + 1),
+                progress: reviewed / TOTAL,
+                press: t >= M.montage && t < done && inStep < 0.35 ? 2 : -1,
+                fade: t >= M.montage && t < done ? P(inStep, 0, 0.3) : 1,
+              });
+              // The four icon states, laid out like a spec sheet, while the desktop steps back.
+              const st = P(t, M.states, M.states + 0.5, E.inOutCubic);
+              vis(states, t >= M.states && t < END + 0.1);
+              desk.style.filter = st > 0.01 ? `blur(${st * 10}px) brightness(${1 - st * 0.7})` : "none";
+              stEls.forEach((el, i) => blurUp(el, t, M.states + 0.25 + i * 0.1, END - 0.35, { dist: 30, blur: 10, dur: 0.7 }));
+
+              // Camera: the desktop, into the menu bar item, its menu, the session in the
+              // window beside the count, back to the item.
+              const wide = frame(WIN, 0.96);
+              const tr = targets.tray;
+              const close = frame({ x: tr.x - 60, y: -30, w: tr.w + 120, h: 90 }, 0.9, PORTRAIT ? 3.2 : 3.6);
+              const m = targets.menu;
+              const menuShot = frame({ x: tr.x - 60, y: -10, w: Math.max(m.w, tr.w) + 120, h: m.y + m.h + 30 }, 0.9, PORTRAIT ? 3.0 : 3.2);
+              const w = targets.win;
+              const session = frame({ x: w.x + w.w * 0.3, y: -10, w: 1280 - (w.x + w.w * 0.3) + 10, h: w.y + 330 }, 0.95);
+              applyCam(
+                camAt(t, [
+                  [0, wide],
+                  [M.push, wide],
+                  [M.push + 1.0, close],
+                  [M.tray, close],
+                  [M.tray + 0.35, menuShot],
+                  [M.study, menuShot],
+                  [M.study + 0.8, session],
+                  [done - 0.2, session],
+                  [done + 0.6, close],
+                  [M.states, close],
+                  [END, { ...close, s: close.s * 1.02 }],
+                ]),
+              );
+
+              const tc = { x: tr.x + 12, y: tr.y + tr.h / 2 + 2 };
+              const si = targets.studyItem;
+              const path = [
+                [5.6, tc.x - 120, tc.y + 90],
+                [6.15, tc.x, tc.y],
+                [6.55, tc.x, tc.y],
+                [6.9, si.x + 60, si.y + si.h / 2],
+                [7.6, si.x + 60, si.y + si.h / 2],
+                [8.2, si.x - 40, si.y + 200],
+              ];
+              updateCursor(t, path, [M.tray, M.study], 5.6, 8.3);
+              updateKeys(t, []);
+              updateNotes(t, notes);
+            },
+            cues(at) {
+              at(0.3, "sweep", { dur: 0.7, gain: 0.5 });
+              at(2.2, "whoosh", { dur: 0.5, dir: "up", gain: 0.45 });
+              at(2.85, "land", { soft: true, gain: 0.6 });
+              at(M.push, "whoosh", { dur: 0.9, dir: "up", low: true, gain: 0.35 });
+              at(M.tray, "click");
+              at(M.tray + 0.02, "swish", { gain: 0.3 });
+              at(M.study, "click");
+              at(M.study + 0.1, "whoosh", { dur: 0.45, dir: "up", gain: 0.4 });
+              for (let i = 0; i < TOTAL; i++) at(M.montage + i * M.step, "tick", { gain: 0.5 });
+              at(done - M.step + 0.02, "review", { index: 4 });
+              for (let i = 0; i < 4; i++) at(M.states + 0.25 + i * 0.1, "tick", { gain: 0.45 });
+              for (const n of [4.5, 8.9, 11.95]) at(n + 0.1, "stroke", { dur: 0.35, gain: 0.4 });
+            },
+          };
+        };
+
+        const episode = { palette: episodePalette, another: episodeAnother, explain: episodeExplain, menubar: episodeMenubar }[SNIPPET]();
 
         // ─── End card ──────────────────────────────────────────────────────
         const endCard = (() => {
@@ -1952,7 +2686,6 @@
           at(END + 0.1, "pulse", { on: false });
           at(END + 0.1, "land", { soft: true });
           at(END + 0.1, "impact", { soft: true });
-          at(END + 0.1, "ting", { note: 50 });
           at(END + 0.1 + 14.9 - 12.5, "blink");
           CUES.sort((x, y) => x.t - y.t);
         }
