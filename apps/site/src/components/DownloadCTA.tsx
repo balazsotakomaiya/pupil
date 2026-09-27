@@ -3,41 +3,34 @@ import { AppleIcon, DownloadIcon, LinuxIcon, WindowsIcon } from "../icons";
 import { DESKTOP_APP_VERSION, DOWNLOAD_BASE, RELEASES_URL, REPO_URL } from "../lib/constants";
 import { cx } from "../lib/cx";
 import { detectOS, type OS } from "../lib/detectOS";
+import { type LatestRelease, useLatestRelease } from "../lib/latestRelease";
 import styles from "./DownloadCTA.module.css";
 
 type DownloadTarget = { label: string; shortLabel: string; icon: ReactNode; downloadUrl: string };
 
-const OS_CONFIG: Record<OS, DownloadTarget> = {
-  // Default to Apple Silicon — most Macs since 2020 are arm64.
-  // Intel Mac users can use "All platforms" to get the x64 build.
-  mac: {
-    label: "Download for Mac",
-    shortLabel: "Download",
-    icon: <AppleIcon />,
-    downloadUrl: `${DOWNLOAD_BASE}/Pupil_${DESKTOP_APP_VERSION}_aarch64.dmg`,
-  },
-  windows: {
-    label: "Download for Windows",
-    shortLabel: "Download",
-    icon: <WindowsIcon />,
-    downloadUrl: `${DOWNLOAD_BASE}/Pupil_${DESKTOP_APP_VERSION}_x64-setup.exe`,
-  },
-  linux: {
-    label: "Download for Linux",
-    shortLabel: "Download",
-    icon: <LinuxIcon />,
-    downloadUrl: `${DOWNLOAD_BASE}/Pupil_${DESKTOP_APP_VERSION}_amd64.AppImage`,
-  },
-  unknown: {
-    label: "Download",
-    shortLabel: "Download",
-    icon: <DownloadIcon />,
-    downloadUrl: RELEASES_URL,
-  },
+const FALLBACK_DOWNLOADS = {
+  mac: `${DOWNLOAD_BASE}/Pupil_${DESKTOP_APP_VERSION}_aarch64.dmg`,
+  windows: `${DOWNLOAD_BASE}/Pupil_${DESKTOP_APP_VERSION}_x64-setup.exe`,
+  linux: `${DOWNLOAD_BASE}/Pupil_${DESKTOP_APP_VERSION}_amd64.AppImage`,
 };
 
-export function getDownloadTarget(): DownloadTarget {
-  return OS_CONFIG[detectOS()];
+function downloadUrlFor(os: OS, release: LatestRelease | null): string {
+  if (os === "unknown") return RELEASES_URL;
+  return release?.downloads[os] ?? FALLBACK_DOWNLOADS[os];
+}
+
+export function getDownloadTarget(release: LatestRelease | null): DownloadTarget {
+  const os = detectOS();
+  const targets: Record<OS, Omit<DownloadTarget, "downloadUrl">> = {
+    // Default to Apple Silicon — most Macs since 2020 are arm64.
+    // Intel Mac users can use "All platforms" to get the x64 build.
+    mac: { label: "Download for Mac", shortLabel: "Download", icon: <AppleIcon /> },
+    windows: { label: "Download for Windows", shortLabel: "Download", icon: <WindowsIcon /> },
+    linux: { label: "Download for Linux", shortLabel: "Download", icon: <LinuxIcon /> },
+    unknown: { label: "Download", shortLabel: "Download", icon: <DownloadIcon /> },
+  };
+
+  return { ...targets[os], downloadUrl: downloadUrlFor(os, release) };
 }
 
 export default function DownloadCTA({
@@ -47,7 +40,9 @@ export default function DownloadCTA({
   onBackdrop?: boolean;
   align?: "start" | "center";
 }) {
-  const { label, icon, downloadUrl } = getDownloadTarget();
+  const release = useLatestRelease();
+  const version = release?.version ?? DESKTOP_APP_VERSION;
+  const { label, icon, downloadUrl } = getDownloadTarget(release);
   return (
     <div
       className={cx(
@@ -76,7 +71,7 @@ export default function DownloadCTA({
         </a>
       </div>
       <p className={styles.meta}>
-        <span className={styles.version}>v{DESKTOP_APP_VERSION}</span>
+        <span className={styles.version}>v{version}</span>
         <span>macOS · Windows · Linux</span>
         <a href={RELEASES_URL} target="_blank" rel="noopener noreferrer">
           All downloads ↗

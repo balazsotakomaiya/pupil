@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { REPO_URL } from "../lib/constants";
 import { cx } from "../lib/cx";
+import { useLatestRelease } from "../lib/latestRelease";
 import { getDownloadTarget } from "./DownloadCTA";
 import styles from "./Nav.module.css";
 import PupilEye from "./PupilEye";
 
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
-  const { icon, shortLabel, downloadUrl } = getDownloadTarget();
+  const release = useLatestRelease();
+  const { icon, shortLabel, downloadUrl } = getDownloadTarget(release);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
