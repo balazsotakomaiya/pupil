@@ -2,6 +2,7 @@ name: Desktop E2E
 
 # Launches the real Pupil desktop binary, clicks through the main flows, quits,
 # relaunches it against the same data and kills it abruptly. See apps/app/e2e/smoke.mjs.
+# Linux is driven through tauri-driver + WebKitWebDriver, Windows through WebView2's DevTools port.
 #
 # It only runs when the e2e harness or this workflow changes, or on demand, because a
 # cold release build on every push would be expensive.
@@ -73,6 +74,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Cache tauri-driver
+        if: matrix.platform == 'linux'
         id: tauri-driver-cache
         uses: actions/cache@v4
         with:
@@ -80,36 +82,8 @@ jobs:
           key: tauri-driver-2.1.0-${{ runner.os }}
 
       - name: Install tauri-driver
-        if: steps.tauri-driver-cache.outputs.cache-hit != 'true'
+        if: matrix.platform == 'linux' && steps.tauri-driver-cache.outputs.cache-hit != 'true'
         run: cargo install tauri-driver --version 2.1.0 --locked
-
-      # msedgedriver must match the installed WebView2 runtime exactly.
-      - name: Install msedgedriver for the WebView2 runtime
-        if: matrix.platform == 'windows'
-        shell: pwsh
-        run: |
-          $key = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
-          $version = (Get-ItemProperty -Path $key -ErrorAction SilentlyContinue).pv
-          if (-not $version) {
-            Write-Host 'WebView2 runtime not found, installing it'
-            Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile "$env:RUNNER_TEMP\MicrosoftEdgeWebview2Setup.exe"
-            Start-Process "$env:RUNNER_TEMP\MicrosoftEdgeWebview2Setup.exe" -ArgumentList '/silent', '/install' -Wait
-            $version = (Get-ItemProperty -Path $key).pv
-          }
-          Write-Host "WebView2 runtime $version"
-
-          $zip = "$env:RUNNER_TEMP\edgedriver.zip"
-          try {
-            Invoke-WebRequest "https://msedgedriver.microsoft.com/$version/edgedriver_win64.zip" -OutFile $zip
-          } catch {
-            $major = $version.Split('.')[0]
-            $latest = (Invoke-WebRequest "https://msedgedriver.microsoft.com/LATEST_RELEASE_${major}_WINDOWS").Content
-            $latest = ($latest -replace '[^\d\.]', '')
-            Write-Host "No driver for $version, falling back to $latest"
-            Invoke-WebRequest "https://msedgedriver.microsoft.com/$latest/edgedriver_win64.zip" -OutFile $zip
-          }
-          Expand-Archive $zip -DestinationPath "$env:RUNNER_TEMP\edgedriver" -Force
-          "NATIVE_DRIVER=$env:RUNNER_TEMP\edgedriver\msedgedriver.exe" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
 
       - name: Build the app
         run: bun run --cwd apps/app tauri build --no-bundle
@@ -135,8 +109,9 @@ jobs:
           New-Item -ItemType Directory -Force diagnostics | Out-Null
           $key = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
           Write-Host "WebView2 runtime: $((Get-ItemProperty $key).pv)"
-          Write-Host "msedgedriver: $(& $env:NATIVE_DRIVER --version)"
 
+          # WebView2 exposes a DevTools endpoint when asked; the E2E drives the window through it.
+          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222'
           $app = Start-Process $env:PUPIL_BIN -PassThru
           Start-Sleep -Seconds 15
           $app.Refresh()
@@ -146,6 +121,12 @@ jobs:
             Write-Host "APP RUNNING pid=$($app.Id) window='$($app.MainWindowTitle)' handle=$($app.MainWindowHandle)"
           }
           Write-Host "WebView2 processes: $((Get-Process msedgewebview2 -ErrorAction SilentlyContinue | Measure-Object).Count)"
+          try {
+            $targets = Invoke-RestMethod http://127.0.0.1:9222/json/list
+            $targets | ForEach-Object { Write-Host "DevTools target: type=$($_.type) title='$($_.title)' url=$($_.url)" }
+          } catch {
+            Write-Host "DevTools endpoint not reachable: $($_.Exception.Message)"
+          }
 
           Add-Type -AssemblyName System.Windows.Forms, System.Drawing
           $screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
@@ -170,6 +151,7 @@ jobs:
         env:
           PUPIL_BIN: ${{ github.workspace }}\apps\app\src-tauri\target\release\pupil-app.exe
           E2E_OUT: ${{ github.workspace }}\e2e-out
+          E2E_BACKEND: cdp
         run: node apps/app/e2e/smoke.mjs
 
       - name: Collect app logs

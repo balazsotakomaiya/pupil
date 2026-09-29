@@ -2,21 +2,28 @@
 //
 //   PUPIL_BIN=/path/to/pupil-app node e2e/smoke.mjs
 //
-// It launches the built binary through `tauri-driver`, clicks through the main
+// It launches the built binary, clicks through the main
 // flows (first run, create space, add cards, browse, study, settings, export),
 // quits the app, relaunches it against the same data, and checks that
 // everything survived - including after the process is killed abruptly.
 //
+// Two backends drive the window, both through ./webdriver.mjs-shaped sessions:
+//   webdriver (default)  tauri-driver + the platform WebDriver; used on Linux (WebKitWebDriver)
+//   cdp                  Chrome DevTools Protocol straight into WebView2; used on Windows
+//
 // Environment:
 //   PUPIL_BIN        path to the built app binary (required)
+//   E2E_BACKEND      "webdriver" (default) or "cdp"
 //   E2E_OUT          directory for screenshots and report.json (default ./e2e-out)
 //   TAURI_DRIVER     tauri-driver executable (default "tauri-driver")
-//   NATIVE_DRIVER    WebDriver the tauri-driver should wrap (msedgedriver on Windows)
+//   NATIVE_DRIVER    WebDriver the tauri-driver should wrap, if it cannot find one itself
 
 import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { startSession, waitFor } from "./webdriver.mjs";
+
+const useDriverProcess = process.env.E2E_BACKEND !== "cdp";
+const { startSession, waitFor } = await import(useDriverProcess ? "./webdriver.mjs" : "./cdp.mjs");
 
 const binary = process.env.PUPIL_BIN;
 if (!binary) {
@@ -114,6 +121,7 @@ async function stopDriver() {
 }
 
 async function startDriver() {
+  if (!useDriverProcess) return;
   const args = process.env.NATIVE_DRIVER ? ["--native-driver", process.env.NATIVE_DRIVER] : [];
   driver = spawn(process.env.TAURI_DRIVER ?? "tauri-driver", args, {
     stdio: ["ignore", "inherit", "inherit"],
