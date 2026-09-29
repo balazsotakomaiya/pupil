@@ -56,8 +56,8 @@ export const FEATURE_GROUPS: { name: string; features: Feature[] }[] = [
       },
       {
         title: "Tiny footprint",
-        desc: "Under 10 MB to download. Launches in under a second. Won't hog your RAM while you're doing real work.",
-        spec: "< 10 MB",
+        desc: "Installers start at around 6 MB. Launches in under a second. Won't hog your RAM while you're doing real work.",
+        spec: "~6 MB",
       },
     ],
   },
