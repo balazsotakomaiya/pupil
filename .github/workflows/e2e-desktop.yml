@@ -258,7 +258,9 @@ jobs:
           retention-days: 3
           if-no-files-found: error
 
-  # Starts that AppImage on Fedora with the distro's own Mesa and Wayland libraries.
+  # Starts that AppImage on Fedora with the distro's own Mesa and Wayland libraries. Without the
+  # libwayland-client patch this fails with "Could not create default EGL display" (verified against
+  # the published beta.2 AppImage, which predates the fix).
   fedora:
     name: AppImage on Fedora 44
     needs: appimage
@@ -291,27 +293,10 @@ jobs:
           E2E_OUT: ${{ github.workspace }}/e2e-out
         run: apps/app/e2e/appimage-launch-check.sh appimage/*.AppImage
 
-      # Temporary: proves this job can see the bug. The published beta.2 AppImage predates the fix and
-      # must fail here, otherwise a passing run above would prove nothing.
-      - name: Control (the published beta.2 AppImage must crash)
-        if: always()
-        env:
-          E2E_OUT: ${{ github.workspace }}/e2e-out-control
-        run: |
-          curl --fail --location --retry 5 --retry-all-errors --retry-delay 5 --output stock.AppImage \
-            "https://github.com/balazsotakomaiya/pupil/releases/download/app-v1.0.0-beta.2/Pupil_1.0.0-beta.2_amd64.AppImage"
-          if apps/app/e2e/appimage-launch-check.sh stock.AppImage; then
-            echo "::error::the control AppImage started, so this job cannot reproduce the crash"
-            exit 1
-          fi
-          echo "control failed as expected"
-
       - name: Upload screenshots and logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: e2e-fedora
-          path: |
-            e2e-out
-            e2e-out-control
+          path: e2e-out
           if-no-files-found: warn
