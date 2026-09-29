@@ -97,8 +97,9 @@ jobs:
           RUN_KEYRING: "1"
         run: apps/app/e2e/run-linux.sh
 
-      # Starts the exe on its own, without the driver, so a crash at launch is told apart from a
-      # WebDriver setup problem. It also wipes the app data again so the E2E starts from a fresh profile.
+      # Starts the exe on its own, without any driver, so a crash at launch is told apart from a
+      # automation problem. It also tries the ways of opening WebView2's DevTools port and wipes the
+      # app data after each attempt so the E2E starts from a fresh profile.
       - name: Launch check (Windows)
         if: matrix.platform == 'windows'
         shell: pwsh
@@ -110,40 +111,55 @@ jobs:
           $key = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
           Write-Host "WebView2 runtime: $((Get-ItemProperty $key).pv)"
 
-          # WebView2 exposes a DevTools endpoint when asked; the E2E drives the window through it.
+          function Probe($label, [switch]$Capture) {
+            Write-Host "=== $label"
+            $app = Start-Process $env:PUPIL_BIN -PassThru
+            Start-Sleep -Seconds 14
+            $app.Refresh()
+            if ($app.HasExited) {
+              Write-Host "APP EXITED EARLY with code $($app.ExitCode)"
+            } else {
+              Write-Host "APP RUNNING pid=$($app.Id) window='$($app.MainWindowTitle)' handle=$($app.MainWindowHandle)"
+            }
+            $webview = Get-CimInstance Win32_Process -Filter "Name='msedgewebview2.exe'"
+            Write-Host "WebView2 processes: $(($webview | Measure-Object).Count)"
+            $browser = $webview | Where-Object { $_.CommandLine -notmatch '--type=' } | Select-Object -First 1
+            if ($browser) { Write-Host "WebView2 browser cmdline: $($browser.CommandLine)" }
+            $ports = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |
+              Where-Object { $webview.ProcessId -contains $_.OwningProcess } | ForEach-Object { $_.LocalPort }
+            Write-Host "ports WebView2 listens on: $($ports -join ',')"
+            try {
+              $version = Invoke-RestMethod http://127.0.0.1:9222/json/version
+              Write-Host "DevTools on 9222: OK ($($version.Browser))"
+            } catch {
+              Write-Host "DevTools on 9222: unreachable"
+            }
+            if ($Capture) {
+              Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+              $screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
+              $bitmap = New-Object System.Drawing.Bitmap $screen.Width, $screen.Height
+              [System.Drawing.Graphics]::FromImage($bitmap).CopyFromScreen($screen.Location, [System.Drawing.Point]::Empty, $screen.Size)
+              $bitmap.Save("diagnostics\launch-check.png")
+              $data = "$env:APPDATA\com.pupil.desktop"
+              Write-Host "--- app data: $((Get-ChildItem $data -ErrorAction SilentlyContinue | ForEach-Object Name) -join ', ')"
+              Write-Host "--- app log"
+              Get-Content "$data\logs\*" -Tail 40 -ErrorAction SilentlyContinue
+              Copy-Item "$data\logs" diagnostics\app-logs -Recurse -ErrorAction SilentlyContinue
+            }
+            Get-Process pupil-app, msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force
+            Start-Sleep -Seconds 3
+            Remove-Item -Recurse -Force "$env:APPDATA\com.pupil.desktop", "$env:LOCALAPPDATA\com.pupil.desktop" -ErrorAction SilentlyContinue
+          }
+
           $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222'
-          $app = Start-Process $env:PUPIL_BIN -PassThru
-          Start-Sleep -Seconds 15
-          $app.Refresh()
-          if ($app.HasExited) {
-            Write-Host "APP EXITED EARLY with code $($app.ExitCode)"
-          } else {
-            Write-Host "APP RUNNING pid=$($app.Id) window='$($app.MainWindowTitle)' handle=$($app.MainWindowHandle)"
-          }
-          Write-Host "WebView2 processes: $((Get-Process msedgewebview2 -ErrorAction SilentlyContinue | Measure-Object).Count)"
-          try {
-            $targets = Invoke-RestMethod http://127.0.0.1:9222/json/list
-            $targets | ForEach-Object { Write-Host "DevTools target: type=$($_.type) title='$($_.title)' url=$($_.url)" }
-          } catch {
-            Write-Host "DevTools endpoint not reachable: $($_.Exception.Message)"
-          }
+          Probe 'environment variable' -Capture
+          Remove-Item Env:\WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
 
-          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
-          $screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
-          $bitmap = New-Object System.Drawing.Bitmap $screen.Width, $screen.Height
-          [System.Drawing.Graphics]::FromImage($bitmap).CopyFromScreen($screen.Location, [System.Drawing.Point]::Empty, $screen.Size)
-          $bitmap.Save("diagnostics\launch-check.png")
-
-          $data = "$env:APPDATA\com.pupil.desktop"
-          Write-Host "--- app data"
-          Get-ChildItem $data -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.Name }
-          Write-Host "--- app log"
-          Get-Content "$data\logs\*" -Tail 40 -ErrorAction SilentlyContinue
-          Copy-Item "$data\logs" diagnostics\app-logs -Recurse -ErrorAction SilentlyContinue
-
-          Get-Process pupil-app, msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force
-          Start-Sleep -Seconds 2
-          Remove-Item -Recurse -Force $data, "$env:LOCALAPPDATA\com.pupil.desktop" -ErrorAction SilentlyContinue
+          $policy = 'HKCU:\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments'
+          New-Item -Path $policy -Force | Out-Null
+          New-ItemProperty -Path $policy -Name 'pupil-app.exe' -Value '--remote-debugging-port=9222' -Force | Out-Null
+          Probe 'registry policy'
+          Remove-Item -Path 'HKCU:\Software\Policies\Microsoft\Edge\WebView2' -Recurse -Force
 
       - name: Run E2E (Windows)
         if: matrix.platform == 'windows'
