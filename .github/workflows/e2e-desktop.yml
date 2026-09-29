@@ -1,0 +1,249 @@
+name: Desktop E2E
+
+# Launches the real Pupil desktop binary, clicks through the main flows, quits,
+# relaunches it against the same data and kills it abruptly. See apps/app/e2e/smoke.mjs.
+# Linux is driven through tauri-driver + WebKitWebDriver, Windows through WebView2's DevTools port.
+#
+# The `appimage` and `fedora` jobs check the packaged Linux AppImage: it borrows the host's graphics
+# stack, so it has to be started on a distro newer than the one it was built on (Fedora 44).
+#
+# It only runs when the e2e harness or this workflow changes, or on demand, because a
+# cold release build on every push would be expensive.
+
+on:
+  push:
+    paths:
+      - "apps/app/e2e/**"
+      - "scripts/patch-linuxdeploy-gtk-plugin.sh"
+      - ".github/workflows/e2e-desktop.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Linux x64
+            os: ubuntu-22.04
+            platform: linux
+          - label: Windows x64
+            os: windows-latest
+            platform: windows
+
+    runs-on: ${{ matrix.os }}
+    name: E2E (${{ matrix.label }})
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux system dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            webkit2gtk-driver \
+            xvfb \
+            openbox \
+            dbus-x11 \
+            gnome-keyring
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.93.0
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/app/src-tauri -> target
+          cache-on-failure: true
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install JS dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Cache tauri-driver
+        if: matrix.platform == 'linux'
+        id: tauri-driver-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/tauri-driver*
+          key: tauri-driver-2.1.0-${{ runner.os }}
+
+      - name: Install tauri-driver
+        if: matrix.platform == 'linux' && steps.tauri-driver-cache.outputs.cache-hit != 'true'
+        run: cargo install tauri-driver --version 2.1.0 --locked
+
+      - name: Build the app
+        if: matrix.platform == 'linux'
+        run: bun run --cwd apps/app tauri build --no-bundle
+
+      # The Windows build under test is the shipped app plus one extra WebView2 flag that opens the
+      # DevTools port the E2E drives (see apps/app/e2e/windows-config.mjs). It is never uploaded.
+      - name: Build the app (Windows, DevTools port open)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          node apps/app/e2e/windows-config.mjs "$env:RUNNER_TEMP\e2e-tauri.conf.json"
+          bun run --cwd apps/app tauri build --no-bundle --config "$env:RUNNER_TEMP\e2e-tauri.conf.json"
+
+      - name: Run E2E (Linux)
+        if: matrix.platform == 'linux'
+        env:
+          PUPIL_BIN: ${{ github.workspace }}/apps/app/src-tauri/target/release/pupil-app
+          E2E_OUT: ${{ github.workspace }}/e2e-out
+          RUN_WM: openbox
+          RUN_KEYRING: "1"
+        run: apps/app/e2e/run-linux.sh
+
+      - name: Run E2E (Windows)
+        if: matrix.platform == 'windows'
+        shell: bash
+        env:
+          PUPIL_BIN: ${{ github.workspace }}\apps\app\src-tauri\target\release\pupil-app.exe
+          E2E_OUT: ${{ github.workspace }}\e2e-out
+          E2E_BACKEND: cdp
+          # The hosted runner starts empty and is thrown away, so the test may reset the app's data.
+          E2E_ISOLATED_PROFILE: "1"
+        run: node apps/app/e2e/smoke.mjs
+
+      # On Linux, run-linux.sh copies the app's log into e2e-out itself before it deletes its sandbox.
+      - name: Collect app logs
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p e2e-out/app-logs
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            cp -r "$APPDATA/com.pupil.desktop/logs/." e2e-out/app-logs/ 2>/dev/null || true
+          fi
+
+      - name: Upload screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-${{ matrix.platform }}
+          path: e2e-out
+          if-no-files-found: warn
+
+  # Builds the AppImage the way the release does (patched linuxdeploy GTK plugin), on the oldest
+  # supported base, so the `fedora` job can start exactly what would ship.
+  appimage:
+    name: AppImage (Ubuntu 22.04)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.93.0
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/app/src-tauri -> target
+          cache-on-failure: true
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install JS dependencies
+        run: bun install --frozen-lockfile
+
+      # Only the GTK plugin needs fetching first, so it can be patched before Tauri uses it; Tauri
+      # downloads the other bundler tools itself.
+      - name: Fetch and patch the AppImage GTK plugin
+        run: |
+          mkdir -p "${HOME}/.cache/tauri"
+          # Pinned to a commit so an unrelated upstream edit cannot break a release. Bump it deliberately:
+          # scripts/patch-linuxdeploy-gtk-plugin.sh fails loudly if the plugin's shape changed.
+          curl --fail --location --retry 5 --retry-all-errors --retry-delay 5 \
+            --output "${HOME}/.cache/tauri/linuxdeploy-plugin-gtk.sh" \
+            "https://raw.githubusercontent.com/tauri-apps/linuxdeploy-plugin-gtk/dda522bce37387f1b853d9095713bfaa924c8423/linuxdeploy-plugin-gtk.sh"
+          chmod +x "${HOME}/.cache/tauri/linuxdeploy-plugin-gtk.sh"
+          scripts/patch-linuxdeploy-gtk-plugin.sh "${HOME}/.cache/tauri/linuxdeploy-plugin-gtk.sh"
+
+      # No signing key here, so skip the updater artifacts (they need one).
+      - name: Build the AppImage
+        run: bun run --cwd apps/app tauri build --bundles appimage --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+      - name: Upload the AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: apps/app/src-tauri/target/release/bundle/appimage/*.AppImage
+          retention-days: 3
+          if-no-files-found: error
+
+  # Starts that AppImage on Fedora with the distro's own Mesa and Wayland libraries. Without the
+  # libwayland-client patch this fails with "Could not create default EGL display" (verified against
+  # the published beta.2 AppImage, which predates the fix).
+  fedora:
+    name: AppImage on Fedora 44
+    needs: appimage
+    runs-on: ubuntu-latest
+    container: fedora:44
+    timeout-minutes: 20
+
+    steps:
+      - name: Install git (for checkout) and a minimal desktop stack
+        run: |
+          dnf -y install \
+            git tar gzip findutils procps-ng \
+            xorg-x11-server-Xvfb xorg-x11-xauth dbus-daemon dbus-tools ImageMagick \
+            mesa-dri-drivers mesa-libEGL mesa-libGL mesa-libgbm libglvnd-egl libglvnd-glx libglvnd-gles \
+            libX11 libXext libXrender libXcomposite libXdamage libXfixes libXi libXcursor libXrandr libXtst libxcb \
+            fontconfig dejavu-sans-fonts
+          rpm -q mesa-libEGL libwayland-client 2>/dev/null || true
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download the AppImage
+        uses: actions/download-artifact@v4
+        with:
+          name: appimage
+          path: appimage
+
+      - name: Launch the AppImage
+        env:
+          E2E_OUT: ${{ github.workspace }}/e2e-out
+        run: apps/app/e2e/appimage-launch-check.sh appimage/*.AppImage
+
+      - name: Upload screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-fedora
+          path: e2e-out
+          if-no-files-found: warn

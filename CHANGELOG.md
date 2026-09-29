@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- Linux AppImage: the app no longer aborts at startup ("Could not create default EGL display") on distros whose Mesa is newer than the Wayland library bundled in the AppImage, such as Fedora 44. The AppImage now prefers the system's `libwayland-client`.
+
 ## [1.0.0-beta.1] - 2026-09-25
 
 First beta. The feature set is settled; this cut is about polish.

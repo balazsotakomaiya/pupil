@@ -40,3 +40,6 @@ pnpm-lock.yaml
 coverage/
 
 .playwright-mcp
+# Desktop e2e screenshots and reports
+apps/app/e2e-out/
+e2e-out/
