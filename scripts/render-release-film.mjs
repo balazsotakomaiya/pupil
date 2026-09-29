@@ -10,7 +10,7 @@
  *   node scripts/render-release-film.mjs --page design-details.html --snippet another
  *
  * Options: --page <file in apps/site> (default release-film.html), --snippet <id> (the
- * design-details episode), --format landscape|portrait|thumb, --cut classic|ai, --fps, --crf, --width <px>,
+ * design-details episode), --format landscape|portrait|story|thumb, --cut classic|ai, --fps, --crf, --width <px>,
  * --loop (fade to black at the end so the film loops), --no-hud (hide the frame overlay),
  * --workers <n>. An output ending in .gif is encoded as a looping GIF; anything else is H.264
  * with AAC audio. Stills default to the OS tmpdir.
@@ -46,7 +46,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = join(ROOT, "apps/site");
 const DEFAULT_PAGE = "release-film.html";
 // Big enough for every format; captures are clipped to the film's own size.
-const VIEWPORT = { width: 1920, height: 1350 };
+const VIEWPORT = { width: 1920, height: 1920 };
 
 const MIME = {
   ".html": "text/html; charset=utf-8",

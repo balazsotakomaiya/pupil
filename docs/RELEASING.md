@@ -114,6 +114,7 @@ The renderer needs Playwright with Chromium and an ffmpeg build with libx264 on 
 | --- | --- |
 | 16:9 1080p60, for YouTube (Product Hunt only takes YouTube links) and the GitHub release | `bun run release:film` → `docs/assets/release-film.mp4` |
 | 4:5 1080×1350 at 30fps, for the LinkedIn feed | `node scripts/render-release-film.mjs --format portrait --fps 30 --crf 20 --out linkedin.mp4` |
+| 9:16 1080×1920 at 30fps, for Instagram and TikTok stories (the 4:5 film centred clear of the story UI) | `node scripts/render-release-film.mjs --format story --fps 30 --crf 20 --out story.mp4` |
 | 240×240 looping GIF, for the Product Hunt thumbnail (limit 3MB) | `node scripts/render-release-film.mjs --format thumb --width 240 --out thumbnail.gif` |
 | Stills for covers and gallery images (Product Hunt gallery is 1270×760) | `node scripts/render-release-film.mjs --no-hud --stills 4.5,8.1,11.6,18.3` |
 

@@ -13,8 +13,10 @@
 
       Open it via `bun run --cwd apps/site dev` → /release-film.html, or any static server rooted
       at apps/site. Query params:
-        ?format=landscape | portrait | thumb   16:9 1920×1080 (default), 4:5 1080×1350 for social
-                                              feeds, or a 480×480 looping eye for thumbnails
+        ?format=landscape | portrait | story | thumb   16:9 1920×1080 (default), 4:5 1080×1350
+                                              for social feeds, 9:16 1080×1920 for stories (the
+                                              4:5 film centred in the safe area), or a 480×480
+                                              looping eye for thumbnails
         ?t=<seconds>      start at a time          ?version=<semver>  override the version shown
         ?render           no playback (renderer)   ?loop              fade out so the film loops
         ?hud=0            hide the frame overlay (for stills)
@@ -522,6 +524,7 @@
       /* ─── Portrait 4:5 (1080×1350) ────────────────────────────────────── */
       /* Same film, recomposed for a tall frame rather than letterboxed. */
       .fmt-portrait #light { left: -600px; top: -180px; width: 2280px; height: 1500px; }
+      .fmt-story #light { top: -420px; height: 1740px; }
       .fmt-portrait .cross-h { left: 64px; right: 64px; top: 675px; }
       .fmt-portrait .cross-v { top: 72px; bottom: 72px; left: 540px; }
       .fmt-portrait #s1-eyewrap { left: 306px; top: 441px; }
@@ -955,9 +958,13 @@
       (() => {
         const params = new URLSearchParams(location.search);
         // Stage size, duration, and the frame margin the rulers sit on, per format.
+        // The story format plays the 4:5 composition in a 9:16 frame (stageH): Instagram and
+        // TikTok cover the top and bottom of a story, so the film sits in the middle and only
+        // the light, grain and rulers reach the edges.
         const FORMATS = {
           landscape: { w: 1920, h: 1080, mx: 120, my: 90 },
           portrait: { w: 1080, h: 1350, mx: 64, my: 72 },
+          story: { w: 1080, h: 1350, mx: 64, my: 72, stageH: 1920 },
           thumb: { w: 480, h: 480, mx: 0, my: 0 },
         };
         // Settings come from the query string, or from hash tokens (#ai-portrait) where only a
@@ -965,10 +972,11 @@
         const TOKENS = location.hash.slice(1).split("-");
         const pick = (name, options) => [params.get(name), ...TOKENS].find((v) => options.includes(v));
         const FORMAT = pick("format", Object.keys(FORMATS)) ?? "landscape";
-        const { w: W, h: H, mx: MX, my: MY } = FORMATS[FORMAT];
+        const { w: W, h: H, mx: MX, my: MY, stageH: STAGE_H = H } = FORMATS[FORMAT];
+        const OY = (STAGE_H - H) / 2; // where the composition sits in a taller stage
         const CX = W / 2;
         const CY = H / 2;
-        const PORTRAIT = FORMAT === "portrait";
+        const PORTRAIT = FORMAT === "portrait" || FORMAT === "story";
         const THUMB = FORMAT === "thumb";
         const FPS = 60;
         const RENDER = params.has("render");
@@ -980,6 +988,7 @@
         // The film announces the stable line, so prerelease suffixes (-alpha.10, -rc.1…) are dropped.
         const VERSION = (params.get("version") || "1.0.0").replace(/-.*$/, "");
         document.body.classList.add(`fmt-${FORMAT}`);
+        if (PORTRAIT) document.body.classList.add("fmt-portrait");
         if (RENDER) document.body.classList.add("render");
         if (params.get("hud") === "0") document.body.classList.add("hud-off");
 
@@ -1112,8 +1121,10 @@
 
         const stage = $("#stage");
         stage.style.width = `${W}px`;
-        stage.style.height = `${H}px`;
+        stage.style.height = `${STAGE_H}px`;
         const world = $("#world");
+        world.style.top = `${OY}px`;
+        world.style.height = `${H}px`;
         let stageScale = 1;
 
         // ─── Light ─────────────────────────────────────────────────────────
@@ -1314,12 +1325,12 @@
           vis(ring, on && t >= 2.27);
           if (!on) return;
           const p = P(t, 2.27, 2.92, E.outExpo);
-          const r = p * (Math.hypot(W, H) / 2 + 150);
-          const mask = `radial-gradient(circle at ${CX}px ${CY}px, transparent ${r}px, #000 ${r + 1}px)`;
+          const r = p * (Math.hypot(W, STAGE_H) / 2 + 150);
+          const mask = `radial-gradient(circle at ${CX}px ${CY + OY}px, transparent ${r}px, #000 ${r + 1}px)`;
           cover.style.webkitMaskImage = mask;
           cover.style.maskImage = mask;
           ring.style.left = `${CX - r}px`;
-          ring.style.top = `${CY - r}px`;
+          ring.style.top = `${CY + OY - r}px`;
           ring.style.width = `${r * 2}px`;
           ring.style.height = `${r * 2}px`;
           ring.style.opacity = (1 - P(t, 2.3, 2.85)) * P(t, 2.27, 2.31);
@@ -2182,13 +2193,13 @@
           const [left, right, top, bottom] = rulers;
           left.style.left = `${MX}px`;
           right.style.left = `${W - MX}px`;
-          top.style.top = `${MY}px`;
-          bottom.style.top = `${H - MY}px`;
+          top.style.top = `${OY + MY}px`;
+          bottom.style.top = `${OY + H - MY}px`;
           const corners = [
-            [MX, MY],
-            [W - MX, MY],
-            [MX, H - MY],
-            [W - MX, H - MY],
+            [MX, OY + MY],
+            [W - MX, OY + MY],
+            [MX, OY + H - MY],
+            [W - MX, OY + H - MY],
           ];
           pluses.forEach((p, i) => {
             p.style.left = `${corners[i][0]}px`;
@@ -2197,8 +2208,8 @@
           const [tl, tr, bl, br] = hudText;
           for (const h of [tl, bl]) h.style.left = `${MX}px`;
           for (const h of [tr, br]) h.style.right = `${MX}px`;
-          for (const h of [tl, tr]) h.style.top = `${MY - 48}px`;
-          for (const h of [bl, br]) h.style.top = `${H - MY + 30}px`;
+          for (const h of [tl, tr]) h.style.top = `${OY + MY - 48}px`;
+          for (const h of [bl, br]) h.style.top = `${OY + H - MY + 30}px`;
         }
         const SCENES = AI
           ? [
@@ -2409,9 +2420,9 @@
             stage.style.transform = "none";
             return;
           }
-          stageScale = Math.min(innerWidth / W, innerHeight / H);
+          stageScale = Math.min(innerWidth / W, innerHeight / STAGE_H);
           const x = (innerWidth - W * stageScale) / 2;
-          const y = (innerHeight - H * stageScale) / 2;
+          const y = (innerHeight - STAGE_H * stageScale) / 2;
           stage.style.transform = `translate(${x}px, ${y}px) scale(${stageScale})`;
         };
 
@@ -2446,13 +2457,13 @@
             }
           }
 
-          // Where the "source." period sits at rest, in stage pixels.
+          // Where the "source." period sits at rest, in the composition's pixels.
           const b4 = $$("#s5 .beat")[3];
           b4.style.transform = "none";
           const sr = stage.getBoundingClientRect();
           const pr = $("#s5-period").getBoundingClientRect();
           travelFrom.x = (pr.left + pr.width / 2 - sr.left) / stageScale;
-          travelFrom.y = (pr.top + pr.height / 2 - sr.top) / stageScale;
+          travelFrom.y = (pr.top + pr.height / 2 - sr.top) / stageScale - OY;
           travelFrom.size = pr.width / stageScale;
           s6.measure();
         })();
@@ -2523,7 +2534,7 @@
           cut: CUT,
           cues: CUES,
           width: W,
-          height: H,
+          height: STAGE_H,
           fps: FPS,
           ready,
           seek: (t) => render(t),
