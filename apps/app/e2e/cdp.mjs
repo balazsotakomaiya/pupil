@@ -141,7 +141,7 @@ export class Session {
   async evaluate(source, args = []) {
     const expression = `(() => { ${HELPERS}
       const args = ${JSON.stringify(args)};
-      return (function () { ${source} }).apply(null, args); })()`;
+      return (async function () { ${source} }).apply(null, args); })()`;
     const { result, exceptionDetails } = await this.connection.send("Runtime.evaluate", {
       expression,
       returnByValue: true,
@@ -252,26 +252,44 @@ export class Element {
   }
 
   async click() {
-    const point = await this.run(`
-      el.scrollIntoView({ block: "center", inline: "center" });
-      const r = el.getBoundingClientRect();
-      const x = r.left + r.width / 2, y = r.top + r.height / 2;
-      const hit = document.elementFromPoint(x, y);
-      if (!hit || !(el === hit || el.contains(hit) || hit.contains(el))) {
-        throw new Error("click intercepted by <" + (hit ? hit.tagName.toLowerCase() : "nothing") + ">");
-      }
-      return { x, y };`);
+    // Like a user, wait for the element to stop moving and to be the thing under the pointer;
+    // pages animate in, and a click that lands mid-transition would hit whatever is on top then.
+    const point = await waitFor(
+      "the element to be stable and able to receive the click",
+      async () => {
+        const probe = await this.run(`
+          el.scrollIntoView({ block: "center", inline: "center" });
+          const measure = () => { const r = el.getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; };
+          const before = measure();
+          await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          const after = measure();
+          if (before.some((value, index) => Math.abs(value - after[index]) > 0.5)) {
+            return { ready: false, reason: "element is still moving" };
+          }
+          const x = after[0] + after[2] / 2, y = after[1] + after[3] / 2;
+          const hit = document.elementFromPoint(x, y);
+          if (!hit || !(el === hit || el.contains(hit) || hit.contains(el))) {
+            const what = hit ? "<" + hit.tagName.toLowerCase() + (hit.className ? " class=" + hit.className : "") + "> " + JSON.stringify((hit.innerText || "").slice(0, 60)) : "nothing";
+            return { ready: false, reason: "click would be intercepted by " + what };
+          }
+          return { ready: true, x, y };`);
+        if (!probe.ready) throw new Error(probe.reason);
+        return probe;
+      },
+      { timeout: 5000, interval: 100 },
+    );
     const { connection } = this.session;
-    await connection.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...point });
+    const position = { x: point.x, y: point.y };
+    await connection.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...position });
     await connection.send("Input.dispatchMouseEvent", {
       type: "mousePressed",
-      ...point,
+      ...position,
       button: "left",
       clickCount: 1,
     });
     await connection.send("Input.dispatchMouseEvent", {
       type: "mouseReleased",
-      ...point,
+      ...position,
       button: "left",
       clickCount: 1,
     });
