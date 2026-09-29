@@ -86,7 +86,17 @@ jobs:
         run: cargo install tauri-driver --version 2.1.0 --locked
 
       - name: Build the app
+        if: matrix.platform == 'linux'
         run: bun run --cwd apps/app tauri build --no-bundle
+
+      # The Windows build under test is the shipped app plus one extra WebView2 flag that opens the
+      # DevTools port the E2E drives (see apps/app/e2e/windows-config.mjs). It is never uploaded.
+      - name: Build the app (Windows, DevTools port open)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          node apps/app/e2e/windows-config.mjs "$env:RUNNER_TEMP\e2e-tauri.conf.json"
+          bun run --cwd apps/app tauri build --no-bundle --config "$env:RUNNER_TEMP\e2e-tauri.conf.json"
 
       - name: Run E2E (Linux)
         if: matrix.platform == 'linux'
@@ -97,9 +107,9 @@ jobs:
           RUN_KEYRING: "1"
         run: apps/app/e2e/run-linux.sh
 
-      # Starts the exe on its own, without any driver, so a crash at launch is told apart from a
-      # automation problem. It also tries the ways of opening WebView2's DevTools port and wipes the
-      # app data after each attempt so the E2E starts from a fresh profile.
+      # Starts the exe on its own, without any driver, so a crash at launch is told apart from an
+      # automation problem, and confirms the DevTools port is open. It wipes the app data afterwards
+      # so the E2E starts from a fresh profile.
       - name: Launch check (Windows)
         if: matrix.platform == 'windows'
         shell: pwsh
@@ -151,15 +161,7 @@ jobs:
             Remove-Item -Recurse -Force "$env:APPDATA\com.pupil.desktop", "$env:LOCALAPPDATA\com.pupil.desktop" -ErrorAction SilentlyContinue
           }
 
-          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222'
-          Probe 'environment variable' -Capture
-          Remove-Item Env:\WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS
-
-          $policy = 'HKCU:\Software\Policies\Microsoft\Edge\WebView2\AdditionalBrowserArguments'
-          New-Item -Path $policy -Force | Out-Null
-          New-ItemProperty -Path $policy -Name 'pupil-app.exe' -Value '--remote-debugging-port=9222' -Force | Out-Null
-          Probe 'registry policy'
-          Remove-Item -Path 'HKCU:\Software\Policies\Microsoft\Edge\WebView2' -Recurse -Force
+          Probe 'as built' -Capture
 
       - name: Run E2E (Windows)
         if: matrix.platform == 'windows'

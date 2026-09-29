@@ -1,9 +1,10 @@
 // Chrome DevTools Protocol backend with the same surface as webdriver.mjs.
 //
-// WebView2 (the Windows webview) speaks CDP natively: launching the app with
-// WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=N exposes the real
-// window's page over HTTP + WebSocket. That drives the shipped binary directly, with no
-// msedgedriver/tauri-driver version handshake to keep in sync.
+// WebView2 (the Windows webview) speaks CDP natively, so a build that opens a remote debugging
+// port can be driven directly, with no msedgedriver/tauri-driver version handshake to keep in sync.
+// WebView2 will not accept the port from an environment variable or the registry when the host app
+// passes its own browser arguments, so the build under test must request it in its window config
+// (`additionalBrowserArgs`); e2e/windows-config.mjs generates that override.
 //
 // Input goes through Input.dispatch* so clicks and keystrokes are real browser input events,
 // and a click on something that is covered (for example by the launch overlay) fails
