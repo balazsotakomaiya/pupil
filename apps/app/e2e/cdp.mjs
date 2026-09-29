@@ -131,6 +131,18 @@ function killTree(child) {
   } catch {}
 }
 
+function requestClose(child) {
+  if (!child || child.exitCode !== null) return;
+  try {
+    if (process.platform === "win32") {
+      // Without /F, taskkill posts WM_CLOSE to the process's windows.
+      execFileSync("taskkill", ["/PID", String(child.pid)], { stdio: "ignore" });
+    } else {
+      child.kill("SIGTERM");
+    }
+  } catch {}
+}
+
 export class Session {
   constructor(connection, child) {
     this.connection = connection;
@@ -229,14 +241,19 @@ export class Session {
     for (const char of text) await this.pressKey(char);
   }
 
+  // Quits the way a user does (closing the window) so the webview can flush its storage,
+  // and only force-kills if the app has not exited after a grace period.
   async end() {
     try {
       this.connection.socket.close();
     } catch {}
-    if (this.child) {
-      const exited = new Promise((resolve) => this.child.once("exit", resolve));
+    if (!this.child) return;
+    const exited = new Promise((resolve) => this.child.once("exit", () => resolve(true)));
+    const pause = (ms) => new Promise((resolve) => setTimeout(() => resolve(false), ms));
+    requestClose(this.child);
+    if (!(await Promise.race([exited, pause(10_000)]))) {
       killTree(this.child);
-      await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 5000))]);
+      await Promise.race([exited, pause(5_000)]);
     }
   }
 }
