@@ -1,0 +1,148 @@
+name: Desktop E2E
+
+# Launches the real Pupil desktop binary, clicks through the main flows, quits,
+# relaunches it against the same data and kills it abruptly. See apps/app/e2e/smoke.mjs.
+#
+# It only runs when the e2e harness or this workflow changes, or on demand, because a
+# cold release build on every push would be expensive.
+
+on:
+  push:
+    paths:
+      - "apps/app/e2e/**"
+      - ".github/workflows/e2e-desktop.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Linux x64
+            os: ubuntu-22.04
+            platform: linux
+          - label: Windows x64
+            os: windows-latest
+            platform: windows
+
+    runs-on: ${{ matrix.os }}
+    name: E2E (${{ matrix.label }})
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux system dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            webkit2gtk-driver \
+            xvfb \
+            openbox \
+            dbus-x11 \
+            gnome-keyring
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.93.0
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/app/src-tauri -> target
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install JS dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Cache tauri-driver
+        id: tauri-driver-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/tauri-driver*
+          key: tauri-driver-2.1.0-${{ runner.os }}
+
+      - name: Install tauri-driver
+        if: steps.tauri-driver-cache.outputs.cache-hit != 'true'
+        run: cargo install tauri-driver --version 2.1.0 --locked
+
+      # msedgedriver must match the installed WebView2 runtime exactly.
+      - name: Install msedgedriver for the WebView2 runtime
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $key = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+          $version = (Get-ItemProperty -Path $key -ErrorAction SilentlyContinue).pv
+          if (-not $version) {
+            Write-Host 'WebView2 runtime not found, installing it'
+            Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile "$env:RUNNER_TEMP\MicrosoftEdgeWebview2Setup.exe"
+            Start-Process "$env:RUNNER_TEMP\MicrosoftEdgeWebview2Setup.exe" -ArgumentList '/silent', '/install' -Wait
+            $version = (Get-ItemProperty -Path $key).pv
+          }
+          Write-Host "WebView2 runtime $version"
+
+          $zip = "$env:RUNNER_TEMP\edgedriver.zip"
+          try {
+            Invoke-WebRequest "https://msedgedriver.microsoft.com/$version/edgedriver_win64.zip" -OutFile $zip
+          } catch {
+            $major = $version.Split('.')[0]
+            $latest = (Invoke-WebRequest "https://msedgedriver.microsoft.com/LATEST_RELEASE_${major}_WINDOWS").Content
+            $latest = ($latest -replace '[^\d\.]', '')
+            Write-Host "No driver for $version, falling back to $latest"
+            Invoke-WebRequest "https://msedgedriver.microsoft.com/$latest/edgedriver_win64.zip" -OutFile $zip
+          }
+          Expand-Archive $zip -DestinationPath "$env:RUNNER_TEMP\edgedriver" -Force
+          "NATIVE_DRIVER=$env:RUNNER_TEMP\edgedriver\msedgedriver.exe" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+
+      - name: Build the app
+        run: bun run --cwd apps/app tauri build --no-bundle
+
+      - name: Run E2E (Linux)
+        if: matrix.platform == 'linux'
+        env:
+          PUPIL_BIN: ${{ github.workspace }}/apps/app/src-tauri/target/release/pupil-app
+          E2E_OUT: ${{ github.workspace }}/e2e-out
+          RUN_WM: openbox
+          RUN_KEYRING: "1"
+        run: apps/app/e2e/run-linux.sh
+
+      - name: Run E2E (Windows)
+        if: matrix.platform == 'windows'
+        shell: bash
+        env:
+          PUPIL_BIN: ${{ github.workspace }}\apps\app\src-tauri\target\release\pupil-app.exe
+          E2E_OUT: ${{ github.workspace }}\e2e-out
+        run: node apps/app/e2e/smoke.mjs
+
+      - name: Collect app logs
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p e2e-out/app-logs
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            cp -r "$APPDATA/com.pupil.desktop/logs/." e2e-out/app-logs/ 2>/dev/null || true
+          fi
+
+      - name: Upload screenshots and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-${{ matrix.platform }}
+          path: e2e-out
+          if-no-files-found: warn
