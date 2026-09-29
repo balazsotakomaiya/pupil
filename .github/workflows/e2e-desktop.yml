@@ -62,6 +62,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/app/src-tauri -> target
+          cache-on-failure: true
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -122,6 +123,47 @@ jobs:
           RUN_KEYRING: "1"
         run: apps/app/e2e/run-linux.sh
 
+      # Starts the exe on its own, without the driver, so a crash at launch is told apart from a
+      # WebDriver setup problem. It also wipes the app data again so the E2E starts from a fresh profile.
+      - name: Launch check (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        continue-on-error: true
+        env:
+          PUPIL_BIN: ${{ github.workspace }}\apps\app\src-tauri\target\release\pupil-app.exe
+        run: |
+          New-Item -ItemType Directory -Force diagnostics | Out-Null
+          $key = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+          Write-Host "WebView2 runtime: $((Get-ItemProperty $key).pv)"
+          Write-Host "msedgedriver: $(& $env:NATIVE_DRIVER --version)"
+
+          $app = Start-Process $env:PUPIL_BIN -PassThru
+          Start-Sleep -Seconds 15
+          $app.Refresh()
+          if ($app.HasExited) {
+            Write-Host "APP EXITED EARLY with code $($app.ExitCode)"
+          } else {
+            Write-Host "APP RUNNING pid=$($app.Id) window='$($app.MainWindowTitle)' handle=$($app.MainWindowHandle)"
+          }
+          Write-Host "WebView2 processes: $((Get-Process msedgewebview2 -ErrorAction SilentlyContinue | Measure-Object).Count)"
+
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          $screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
+          $bitmap = New-Object System.Drawing.Bitmap $screen.Width, $screen.Height
+          [System.Drawing.Graphics]::FromImage($bitmap).CopyFromScreen($screen.Location, [System.Drawing.Point]::Empty, $screen.Size)
+          $bitmap.Save("diagnostics\launch-check.png")
+
+          $data = "$env:APPDATA\com.pupil.desktop"
+          Write-Host "--- app data"
+          Get-ChildItem $data -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.Name }
+          Write-Host "--- app log"
+          Get-Content "$data\logs\*" -Tail 40 -ErrorAction SilentlyContinue
+          Copy-Item "$data\logs" diagnostics\app-logs -Recurse -ErrorAction SilentlyContinue
+
+          Get-Process pupil-app, msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 2
+          Remove-Item -Recurse -Force $data, "$env:LOCALAPPDATA\com.pupil.desktop" -ErrorAction SilentlyContinue
+
       - name: Run E2E (Windows)
         if: matrix.platform == 'windows'
         shell: bash
@@ -144,5 +186,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-${{ matrix.platform }}
-          path: e2e-out
+          path: |
+            e2e-out
+            diagnostics
           if-no-files-found: warn
