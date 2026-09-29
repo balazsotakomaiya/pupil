@@ -111,62 +111,6 @@ jobs:
           RUN_KEYRING: "1"
         run: apps/app/e2e/run-linux.sh
 
-      # Starts the exe on its own, without any driver, so a crash at launch is told apart from an
-      # automation problem, and confirms the DevTools port is open. It wipes the app data afterwards
-      # so the E2E starts from a fresh profile.
-      - name: Launch check (Windows)
-        if: matrix.platform == 'windows'
-        shell: pwsh
-        continue-on-error: true
-        env:
-          PUPIL_BIN: ${{ github.workspace }}\apps\app\src-tauri\target\release\pupil-app.exe
-        run: |
-          New-Item -ItemType Directory -Force diagnostics | Out-Null
-          $key = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
-          Write-Host "WebView2 runtime: $((Get-ItemProperty $key).pv)"
-
-          function Probe($label, [switch]$Capture) {
-            Write-Host "=== $label"
-            $app = Start-Process $env:PUPIL_BIN -PassThru
-            Start-Sleep -Seconds 14
-            $app.Refresh()
-            if ($app.HasExited) {
-              Write-Host "APP EXITED EARLY with code $($app.ExitCode)"
-            } else {
-              Write-Host "APP RUNNING pid=$($app.Id) window='$($app.MainWindowTitle)' handle=$($app.MainWindowHandle)"
-            }
-            $webview = Get-CimInstance Win32_Process -Filter "Name='msedgewebview2.exe'"
-            Write-Host "WebView2 processes: $(($webview | Measure-Object).Count)"
-            $browser = $webview | Where-Object { $_.CommandLine -notmatch '--type=' } | Select-Object -First 1
-            if ($browser) { Write-Host "WebView2 browser cmdline: $($browser.CommandLine)" }
-            $ports = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue |
-              Where-Object { $webview.ProcessId -contains $_.OwningProcess } | ForEach-Object { $_.LocalPort }
-            Write-Host "ports WebView2 listens on: $($ports -join ',')"
-            try {
-              $version = Invoke-RestMethod http://127.0.0.1:9222/json/version
-              Write-Host "DevTools on 9222: OK ($($version.Browser))"
-            } catch {
-              Write-Host "DevTools on 9222: unreachable"
-            }
-            if ($Capture) {
-              Add-Type -AssemblyName System.Windows.Forms, System.Drawing
-              $screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
-              $bitmap = New-Object System.Drawing.Bitmap $screen.Width, $screen.Height
-              [System.Drawing.Graphics]::FromImage($bitmap).CopyFromScreen($screen.Location, [System.Drawing.Point]::Empty, $screen.Size)
-              $bitmap.Save("diagnostics\launch-check.png")
-              $data = "$env:APPDATA\com.pupil.desktop"
-              Write-Host "--- app data: $((Get-ChildItem $data -ErrorAction SilentlyContinue | ForEach-Object Name) -join ', ')"
-              Write-Host "--- app log"
-              Get-Content "$data\logs\*" -Tail 40 -ErrorAction SilentlyContinue
-              Copy-Item "$data\logs" diagnostics\app-logs -Recurse -ErrorAction SilentlyContinue
-            }
-            Get-Process pupil-app, msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force
-            Start-Sleep -Seconds 3
-            Remove-Item -Recurse -Force "$env:APPDATA\com.pupil.desktop", "$env:LOCALAPPDATA\com.pupil.desktop" -ErrorAction SilentlyContinue
-          }
-
-          Probe 'as built' -Capture
-
       - name: Run E2E (Windows)
         if: matrix.platform == 'windows'
         shell: bash
@@ -174,8 +118,11 @@ jobs:
           PUPIL_BIN: ${{ github.workspace }}\apps\app\src-tauri\target\release\pupil-app.exe
           E2E_OUT: ${{ github.workspace }}\e2e-out
           E2E_BACKEND: cdp
+          # The hosted runner starts empty and is thrown away, so the test may reset the app's data.
+          E2E_ISOLATED_PROFILE: "1"
         run: node apps/app/e2e/smoke.mjs
 
+      # On Linux, run-linux.sh copies the app's log into e2e-out itself before it deletes its sandbox.
       - name: Collect app logs
         if: always()
         shell: bash
@@ -190,9 +137,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-${{ matrix.platform }}
-          path: |
-            e2e-out
-            diagnostics
+          path: e2e-out
           if-no-files-found: warn
 
   # Builds the AppImage the way the release does (patched linuxdeploy GTK plugin), on the oldest
@@ -240,9 +185,11 @@ jobs:
       - name: Fetch and patch the AppImage GTK plugin
         run: |
           mkdir -p "${HOME}/.cache/tauri"
+          # Pinned to a commit so an unrelated upstream edit cannot break a release. Bump it deliberately:
+          # scripts/patch-linuxdeploy-gtk-plugin.sh fails loudly if the plugin's shape changed.
           curl --fail --location --retry 5 --retry-all-errors --retry-delay 5 \
             --output "${HOME}/.cache/tauri/linuxdeploy-plugin-gtk.sh" \
-            "https://raw.githubusercontent.com/tauri-apps/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh"
+            "https://raw.githubusercontent.com/tauri-apps/linuxdeploy-plugin-gtk/dda522bce37387f1b853d9095713bfaa924c8423/linuxdeploy-plugin-gtk.sh"
           chmod +x "${HOME}/.cache/tauri/linuxdeploy-plugin-gtk.sh"
           scripts/patch-linuxdeploy-gtk-plugin.sh "${HOME}/.cache/tauri/linuxdeploy-plugin-gtk.sh"
 

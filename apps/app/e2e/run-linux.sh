@@ -15,7 +15,18 @@ export E2E_OUT="${E2E_OUT:-$app_dir/e2e-out}"
 export E2E_SCRIPT="${E2E_SCRIPT:-$here/smoke.mjs}"
 
 sandbox="$(mktemp -d)"
-trap 'rm -rf "$sandbox"' EXIT
+cleanup() {
+  # The sandbox is deleted below, so keep the app's own log next to the screenshots first.
+  if [ -d "${XDG_DATA_HOME:-/nonexistent}/com.pupil.desktop/logs" ]; then
+    mkdir -p "$E2E_OUT/app-logs"
+    cp -r "$XDG_DATA_HOME/com.pupil.desktop/logs/." "$E2E_OUT/app-logs/" 2>/dev/null || true
+  fi
+  rm -rf "$sandbox"
+}
+trap cleanup EXIT
+# Everything the app writes (data, WebKit storage, keyring, downloads) lands under $sandbox, so the
+# test may reset it freely; smoke.mjs refuses to run without this assertion.
+export E2E_ISOLATED_PROFILE=1
 export HOME="$sandbox/home"
 export XDG_DATA_HOME="$sandbox/data" XDG_CONFIG_HOME="$sandbox/config" XDG_CACHE_HOME="$sandbox/cache"
 mkdir -p "$HOME" "$XDG_DATA_HOME" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
@@ -28,4 +39,6 @@ inner='
   fi
   exec node "$E2E_SCRIPT"
 '
-exec xvfb-run -a -s "-screen 0 1440x1000x24" dbus-run-session -- bash -c "$inner"
+# Not `exec`: that would replace this shell and skip the cleanup trap. `set -e` still passes the
+# test's exit status through.
+xvfb-run -a -s "-screen 0 1440x1000x24" dbus-run-session -- bash -c "$inner"

@@ -19,9 +19,9 @@ export { waitFor };
 const DEFAULT_PORT = Number(process.env.E2E_CDP_PORT ?? 9222);
 const SPECIAL_KEYS = {
   "\n": { key: "Enter", code: "Enter", keyCode: 13, text: "\r" },
-  "": { key: "Backspace", code: "Backspace", keyCode: 8 },
-  "": { key: "Escape", code: "Escape", keyCode: 27 },
-  "": { key: "Tab", code: "Tab", keyCode: 9 },
+  "\uE003": { key: "Backspace", code: "Backspace", keyCode: 8 },
+  "\uE00C": { key: "Escape", code: "Escape", keyCode: 27 },
+  "\uE004": { key: "Tab", code: "Tab", keyCode: 9 },
 };
 
 function keyDescriptor(char) {
@@ -106,11 +106,7 @@ export async function connect(port = DEFAULT_PORT, child) {
 }
 
 export async function startSession(application, { port = DEFAULT_PORT, args = [] } = {}) {
-  const env = {
-    ...process.env,
-    WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${port}`,
-  };
-  const child = spawn(application, args, { env, stdio: "ignore" });
+  const child = spawn(application, args, { stdio: "ignore" });
   child.on("error", (error) => console.error(`could not start ${application}: ${error.message}`));
   try {
     return await connect(port, child);
@@ -319,7 +315,7 @@ export class Element {
 
   async clear() {
     await this.run("el.focus(); if (el.select) el.select();");
-    await this.session.pressKey("");
+    await this.session.pressKey("\uE003");
   }
 
   text() {

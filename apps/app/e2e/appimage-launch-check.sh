@@ -89,4 +89,5 @@ inner='
 # Run the script from a file rather than `bash -c "$inner"`: the pgrep/pkill -f calls above match on
 # full command lines, and would otherwise match (and kill) this script's own text.
 printf '%s\n' "$inner" > "$sandbox/check.sh"
-exec xvfb-run -a -s "-screen 0 1280x900x24" dbus-run-session -- bash "$sandbox/check.sh"
+# Not `exec`: that would replace this shell and skip the cleanup trap above.
+xvfb-run -a -s "-screen 0 1280x900x24" dbus-run-session -- bash "$sandbox/check.sh"

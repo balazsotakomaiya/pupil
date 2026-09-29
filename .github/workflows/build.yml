@@ -183,9 +183,11 @@ jobs:
             "https://github.com/tauri-apps/binary-releases/releases/download/linuxdeploy/linuxdeploy-x86_64.AppImage"
           chmod +x "${HOME}/.cache/tauri/linuxdeploy-x86_64.AppImage"
 
+          # Pinned to a commit so an unrelated upstream edit cannot break a release. Bump it deliberately:
+          # scripts/patch-linuxdeploy-gtk-plugin.sh fails loudly if the plugin's shape changed.
           curl --fail --location --retry 5 --retry-all-errors --retry-delay 5 \
             --output "${HOME}/.cache/tauri/linuxdeploy-plugin-gtk.sh" \
-            "https://raw.githubusercontent.com/tauri-apps/linuxdeploy-plugin-gtk/master/linuxdeploy-plugin-gtk.sh"
+            "https://raw.githubusercontent.com/tauri-apps/linuxdeploy-plugin-gtk/dda522bce37387f1b853d9095713bfaa924c8423/linuxdeploy-plugin-gtk.sh"
           chmod +x "${HOME}/.cache/tauri/linuxdeploy-plugin-gtk.sh"
 
       # The AppImage bundles an old libwayland-client that shadows the host's and breaks WebKit on

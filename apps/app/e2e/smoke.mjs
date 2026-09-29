@@ -11,8 +11,16 @@
 //   webdriver (default)  tauri-driver + the platform WebDriver; used on Linux (WebKitWebDriver)
 //   cdp                  Chrome DevTools Protocol straight into WebView2; used on Windows
 //
+// SAFETY: the run ends by clicking Reset, which deletes every space, card, review and the stored
+// AI key. The app keeps its data in the user's real profile unless the caller redirects it, so the
+// test refuses to start unless E2E_ISOLATED_PROFILE=1 asserts that the profile is throwaway. On Linux
+// run-linux.sh does that for you (a temporary XDG tree). macOS and Windows cannot redirect the data
+// directory, so only set it on a disposable machine, VM or CI runner. As a second guard, the run
+// stops right after the first launch unless the app opens on the first-run screen (an empty profile).
+//
 // Environment:
-//   PUPIL_BIN        path to the built app binary (required)
+//   PUPIL_BIN            path to the built app binary (required)
+//   E2E_ISOLATED_PROFILE "1" to confirm the app's data is disposable (required, see SAFETY)
 //   E2E_BACKEND      "webdriver" (default) or "cdp"
 //   E2E_OUT          directory for screenshots and report.json (default ./e2e-out)
 //   TAURI_DRIVER     tauri-driver executable (default "tauri-driver")
@@ -28,6 +36,19 @@ const { startSession, waitFor } = await import(useDriverProcess ? "./webdriver.m
 const binary = process.env.PUPIL_BIN;
 if (!binary) {
   console.error("PUPIL_BIN must point at the built Pupil binary");
+  process.exit(2);
+}
+
+if (process.env.E2E_ISOLATED_PROFILE !== "1") {
+  console.error(
+    [
+      "Refusing to run: this test finishes by resetting ALL local Pupil data (spaces, cards,",
+      "review history and the stored AI key) in the app's profile.",
+      "",
+      "On Linux use e2e/run-linux.sh, which gives the app a throwaway profile.",
+      "On a disposable machine, VM or CI runner you can set E2E_ISOLATED_PROFILE=1 yourself.",
+    ].join("\n"),
+  );
   process.exit(2);
 }
 const outDir = resolve(process.env.E2E_OUT ?? "e2e-out");
@@ -184,6 +205,24 @@ async function expectExportedFile(pattern) {
 
 const closeDialog = () => clickText("[role=dialog] button", "Discard");
 
+// The run ends with Reset, so make sure the profile really was empty when it started.
+async function requireFreshProfile() {
+  const fresh = await waitFor(
+    "the first-run screen",
+    async () => (await session.bodyText()).includes("Create a space"),
+    { timeout: 10_000 },
+  ).then(
+    () => true,
+    () => false,
+  );
+  if (!fresh) {
+    throw new Error(
+      "The app did not open on the first-run screen, so its profile already holds data. Stopping " +
+        "before touching anything, because this test ends by resetting all local data. Use an empty profile.",
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 
 console.log("Phase 1: fresh profile");
@@ -191,6 +230,7 @@ await startDriver();
 
 try {
   await launch();
+  await requireFreshProfile();
 
   await step("first run shows onboarding and detects platform", async () => {
     await bodyIncludes("Create a space");
@@ -245,7 +285,7 @@ try {
     await waitFor("palette to list the space", async () =>
       session.findByText("[role=dialog][aria-label='Command palette'] *", SPACE),
     );
-    await session.sendKeys(""); // Escape
+    await session.sendKeys("\uE00C"); // Escape
     await waitFor(
       "palette to close",
       async () =>
@@ -418,6 +458,12 @@ try {
     if (placeholder.startsWith("Stored"))
       throw new Error("API key still marked as stored after reset");
   });
+} catch (error) {
+  // A launch or driver failure outside any step (for example a relaunch that never comes up) still
+  // has to show up in the report instead of killing the run before it is written.
+  results.push({ name: "run aborted", ok: false, ms: 0, error: error.message });
+  console.log(`  ABORT  ${error.message}`);
+  await shot("ABORTED");
 } finally {
   await quit();
   await stopDriver();
