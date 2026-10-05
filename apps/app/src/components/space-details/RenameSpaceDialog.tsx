@@ -7,6 +7,7 @@ import { Modal } from "../modal";
 
 type RenameSpaceDialogProps = {
   error: string | null;
+  isOpen: boolean;
   isSubmitting: boolean;
   onChange: (value: string) => void;
   onClose: () => void;
@@ -17,6 +18,7 @@ type RenameSpaceDialogProps = {
 
 export function RenameSpaceDialog({
   error,
+  isOpen,
   isSubmitting,
   onChange,
   onClose,
@@ -25,6 +27,11 @@ export function RenameSpaceDialog({
   value,
 }: RenameSpaceDialogProps) {
   const [shakeKey, setShakeKey] = useState(0);
+
+  // Stays mounted between opens; don't replay the last nudge on reopen.
+  if (!isOpen && shakeKey !== 0) {
+    setShakeKey(0);
+  }
 
   function handleBackdropClick() {
     if (value.trim() === originalName) {
@@ -40,7 +47,7 @@ export function RenameSpaceDialog({
       ariaDescribedBy={error ? "rename-space-error" : "rename-space-description"}
       ariaLabelledBy="rename-space-title"
       closeOnEscape={!isSubmitting}
-      isOpen
+      isOpen={isOpen}
       onBackdropClick={handleBackdropClick}
       onClose={onClose}
     >

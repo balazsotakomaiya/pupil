@@ -1,4 +1,13 @@
 .modalOverlay {
+  /* Quick expo-out settle on the way in. On the way out the panel starts
+     moving immediately while the dim lingers a beat, so the exit reads as
+     motion rather than the whole screen snapping back. */
+  --modal-enter-duration: 280ms;
+  --modal-exit-duration: 200ms;
+  --modal-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --modal-ease-exit: cubic-bezier(0.4, 0, 0.2, 1);
+  --modal-ease-in: cubic-bezier(0.4, 0, 1, 1);
+
   position: fixed;
   inset: 0;
   z-index: 200;
@@ -6,8 +15,8 @@
   place-items: center;
   padding: var(--space-6);
   background: var(--overlay-dark);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
 .modalPanel {
@@ -30,14 +39,60 @@
     inset 0 1px 0 color-mix(in srgb, var(--text-primary) 5%, transparent);
 }
 
-:global(:root[data-theme="light"]) .modalOverlay {
-  background: rgba(24, 24, 23, 0.3);
-}
-
 :global(:root[data-theme="light"]) .modalPanel {
   box-shadow:
     0 24px 64px rgba(24, 24, 23, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.modalOverlay[data-phase="opening"] {
+  animation: modalOverlayIn 200ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+.modalOverlay[data-phase="closing"] {
+  animation: modalOverlayOut var(--modal-exit-duration) var(--modal-ease-in) both;
+}
+
+.modalOverlay[data-phase="opening"] .modalPanel {
+  animation: modalPanelIn var(--modal-enter-duration) var(--modal-ease-out) both;
+}
+
+.modalOverlay[data-phase="closing"] .modalPanel {
+  animation: modalPanelOut var(--modal-exit-duration) var(--modal-ease-exit) both;
+}
+
+@keyframes modalOverlayIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes modalOverlayOut {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modalPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+
+  40% {
+    opacity: 1;
+  }
+}
+
+@keyframes modalPanelOut {
+  20% {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
 }
 
 .modalPanelMedium {

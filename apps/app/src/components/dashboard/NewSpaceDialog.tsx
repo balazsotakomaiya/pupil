@@ -6,6 +6,7 @@ import { Modal } from "../modal";
 
 type NewSpaceDialogProps = {
   error: string | null;
+  isOpen: boolean;
   isSubmitting: boolean;
   onChange: (value: string) => void;
   onClose: () => void;
@@ -15,6 +16,7 @@ type NewSpaceDialogProps = {
 
 export function NewSpaceDialog({
   error,
+  isOpen,
   isSubmitting,
   onChange,
   onClose,
@@ -22,6 +24,11 @@ export function NewSpaceDialog({
   value,
 }: NewSpaceDialogProps) {
   const [shakeKey, setShakeKey] = useState(0);
+
+  // Stays mounted between opens; don't replay the last nudge on reopen.
+  if (!isOpen && shakeKey !== 0) {
+    setShakeKey(0);
+  }
 
   function handleBackdropClick() {
     if (!value.trim()) {
@@ -36,7 +43,7 @@ export function NewSpaceDialog({
       ariaDescribedBy={error ? "new-space-error" : "new-space-description"}
       ariaLabelledBy="new-space-title"
       closeOnEscape={!isSubmitting}
-      isOpen
+      isOpen={isOpen}
       onBackdropClick={handleBackdropClick}
       onClose={onClose}
     >

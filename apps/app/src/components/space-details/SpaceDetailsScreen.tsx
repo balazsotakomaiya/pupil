@@ -301,26 +301,24 @@ export function SpaceDetailsScreen({
         spaceName={space.name}
       />
 
-      {isDeleteDialogOpen && (
-        <DeleteSpaceDialog
-          isDeleting={isDeleting}
-          onClose={() => setIsDeleteDialogOpen(false)}
-          onConfirm={() => void handleDeleteSpace()}
-          spaceName={space.name}
-        />
-      )}
+      <DeleteSpaceDialog
+        isDeleting={isDeleting}
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={() => void handleDeleteSpace()}
+        spaceName={space.name}
+      />
 
-      {isRenameDialogOpen && (
-        <RenameSpaceDialog
-          error={renameError}
-          isSubmitting={isRenaming}
-          onChange={setRenameName}
-          onClose={() => setIsRenameDialogOpen(false)}
-          onSubmit={(event) => void handleRenameSpaceSubmit(event)}
-          originalName={space.name}
-          value={renameName}
-        />
-      )}
+      <RenameSpaceDialog
+        error={renameError}
+        isOpen={isRenameDialogOpen}
+        isSubmitting={isRenaming}
+        onChange={setRenameName}
+        onClose={() => setIsRenameDialogOpen(false)}
+        onSubmit={(event) => void handleRenameSpaceSubmit(event)}
+        originalName={space.name}
+        value={renameName}
+      />
 
       <div className="page">
         <section className={styles.spaceHeader}>
