@@ -47,16 +47,15 @@ export function ShellActionsProvider({ children }: ShellActionsProviderProps) {
     <ShellActionsContext.Provider value={actions}>
       {children}
 
-      {newSpaceDialog.isOpen ? (
-        <NewSpaceDialog
-          error={newSpaceDialog.error}
-          isSubmitting={newSpaceDialog.isSubmitting}
-          onChange={newSpaceDialog.setName}
-          onClose={newSpaceDialog.close}
-          onSubmit={newSpaceDialog.submit}
-          value={newSpaceDialog.name}
-        />
-      ) : null}
+      <NewSpaceDialog
+        error={newSpaceDialog.error}
+        isOpen={newSpaceDialog.isOpen}
+        isSubmitting={newSpaceDialog.isSubmitting}
+        onChange={newSpaceDialog.setName}
+        onClose={newSpaceDialog.close}
+        onSubmit={newSpaceDialog.submit}
+        value={newSpaceDialog.name}
+      />
 
       {commandPalette.isOpen ? (
         <CommandPalette

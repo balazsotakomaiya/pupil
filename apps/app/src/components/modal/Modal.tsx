@@ -1,4 +1,12 @@
-import { type KeyboardEvent, type MouseEvent, type ReactNode, useEffect, useRef } from "react";
+import {
+  type AnimationEvent,
+  type KeyboardEvent,
+  type MouseEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import styles from "./Modal.module.css";
 
@@ -27,6 +35,21 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
+// Stays mounted through the exit animation; "opening"/"closing" drive the
+// keyframes in Modal.module.css and settle on the panel's animationend.
+type ModalPhase = "opening" | "open" | "closing" | "closed";
+
+// Safety net in case animationend never fires (hidden window, jsdom).
+const PHASE_FALLBACK_MS = 400;
+
+function settlePhase(phase: ModalPhase): ModalPhase {
+  if (phase === "opening") {
+    return "open";
+  }
+
+  return phase === "closing" ? "closed" : phase;
+}
+
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
@@ -46,6 +69,29 @@ export function Modal({
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
+  const [phase, setPhase] = useState<ModalPhase>(isOpen ? "opening" : "closed");
+  const [wasOpen, setWasOpen] = useState(isOpen);
+
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
+    setPhase(isOpen ? "opening" : "closing");
+  }
+
+  // Callers often clear the state behind the dialog's content as they close
+  // it; keep showing the last open render while the panel animates out.
+  const childrenRef = useRef(children);
+  if (isOpen) {
+    childrenRef.current = children;
+  }
+
+  useEffect(() => {
+    if (phase !== "opening" && phase !== "closing") {
+      return;
+    }
+
+    const fallbackTimer = window.setTimeout(() => setPhase(settlePhase), PHASE_FALLBACK_MS);
+    return () => window.clearTimeout(fallbackTimer);
+  }, [phase]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -75,12 +121,24 @@ export function Modal({
     };
   }, [isOpen]);
 
-  if (!isOpen) {
+  if (phase === "closed") {
     return null;
+  }
+
+  const isClosing = phase === "closing";
+
+  function handlePanelAnimationEnd(event: AnimationEvent<HTMLDivElement>) {
+    if (event.target === event.currentTarget) {
+      setPhase(settlePhase);
+    }
   }
 
   function handlePanelKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     event.stopPropagation();
+
+    if (isClosing) {
+      return;
+    }
 
     if (event.key === "Escape" && closeOnEscape) {
       event.preventDefault();
@@ -113,7 +171,7 @@ export function Modal({
   }
 
   function handleOverlayMouseDown(event: MouseEvent<HTMLDivElement>) {
-    if (event.target !== event.currentTarget) {
+    if (isClosing || event.target !== event.currentTarget) {
       return;
     }
 
@@ -123,6 +181,8 @@ export function Modal({
   return createPortal(
     <div
       className={`${styles.modalOverlay}${overlayClassName ? ` ${overlayClassName}` : ""}`}
+      data-phase={phase}
+      inert={isClosing}
       onMouseDown={handleOverlayMouseDown}
       role="presentation"
     >
@@ -132,12 +192,13 @@ export function Modal({
         aria-labelledby={ariaLabelledBy}
         aria-modal="true"
         className={`${styles.modalPanel} ${styles[`modalPanel${capitalize(size)}`]}${panelClassName ? ` ${panelClassName}` : ""}`}
+        onAnimationEnd={handlePanelAnimationEnd}
         onKeyDown={handlePanelKeyDown}
         ref={panelRef}
         role="dialog"
         tabIndex={-1}
       >
-        {children}
+        {childrenRef.current}
       </div>
     </div>,
     document.body,

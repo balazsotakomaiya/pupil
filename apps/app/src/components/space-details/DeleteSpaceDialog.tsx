@@ -4,6 +4,7 @@ import { Modal } from "../modal";
 
 type DeleteSpaceDialogProps = {
   isDeleting: boolean;
+  isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
   spaceName: string;
@@ -11,6 +12,7 @@ type DeleteSpaceDialogProps = {
 
 export function DeleteSpaceDialog({
   isDeleting,
+  isOpen,
   onClose,
   onConfirm,
   spaceName,
@@ -20,7 +22,7 @@ export function DeleteSpaceDialog({
       ariaDescribedBy="delete-space-description"
       ariaLabelledBy="delete-space-title"
       closeOnEscape={!isDeleting}
-      isOpen
+      isOpen={isOpen}
       onBackdropClick={onClose}
       onClose={onClose}
     >
