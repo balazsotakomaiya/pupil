@@ -9,9 +9,10 @@ import { withTimeout } from "./timeout";
 
 export type { ExplainCardPayload } from "./ai-explanation";
 
-// The backend may retry a transient provider failure, so this allows for more
-// than a single request while still bounding the spinner.
-const EXPLAIN_TIMEOUT_MS = 120000;
+// The backend may retry a transient provider failure, and a Claude Code run
+// can take up to 180s, so this allows for more than a single request while
+// still bounding the spinner.
+const EXPLAIN_TIMEOUT_MS = 200000;
 
 export type ExplainCardResult = {
   cached: boolean;
@@ -22,11 +23,16 @@ export type ExplainCardResult = {
 export async function explainCard(input: {
   cardId: string;
   force?: boolean;
+  requestId?: string;
 }): Promise<ExplainCardResult> {
   if (isTauriRuntime()) {
     const result = await withTimeout(
       invokeCommand<unknown>("explain_card", {
-        input: { cardId: input.cardId, force: input.force ?? false },
+        input: {
+          cardId: input.cardId,
+          force: input.force ?? false,
+          ...(input.requestId ? { requestId: input.requestId } : {}),
+        },
       }),
       EXPLAIN_TIMEOUT_MS,
       "Explaining this card",
@@ -34,7 +40,7 @@ export async function explainCard(input: {
     return normalizeExplainCardResult(result);
   }
 
-  throw new Error("AI explanations require the desktop app with an AI key configured.");
+  throw new Error("AI explanations require the desktop app with an AI connection set up.");
 }
 
 export function normalizeExplainCardResult(value: unknown): ExplainCardResult {

@@ -1,12 +1,15 @@
 import type { SpaceSummary } from "@pupil/core";
-import { useEffect, useState } from "react";
-import { DEFAULT_AI_BASE_URL, DEFAULT_AI_MODEL } from "../../lib/ai-providers";
+import { useEffect, useRef, useState } from "react";
+import { cancelAiRequest, newAiRequestId } from "../../lib/ai-connections";
 import {
   type AiSettings,
+  DEFAULT_AI_SETTINGS,
+  describeAiConnection,
   generateAiCards,
-  hasConfiguredAiKey,
+  isAiConnectionReady,
   loadAiSettings,
 } from "../../lib/ai-settings";
+import { type AiConnectionReason, isAiConnectionError } from "../../lib/errors";
 import { isTauriRuntime } from "../../lib/runtime";
 import { DesktopAiNotice } from "../DesktopAiNotice";
 import styles from "./AiGenerate.module.css";
@@ -32,16 +35,6 @@ type AiGenerateScreenProps = {
   spaces: SpaceSummary[];
 };
 
-const DEFAULT_AI_SETTINGS: AiSettings = {
-  apiKey: "",
-  hasApiKey: false,
-  baseUrl: DEFAULT_AI_BASE_URL,
-  model: DEFAULT_AI_MODEL,
-  maxTokens: "4096",
-  temperature: "0.7",
-  explainEnabled: true,
-};
-
 export function AiGenerateScreen({
   backLabel,
   initialSpaceId = null,
@@ -60,12 +53,30 @@ export function AiGenerateScreen({
   const [styleModalOpen, setStyleModalOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [runtimeError, setRuntimeError] = useState<string>("No generation attempt yet.");
+  const [runtimeErrorReason, setRuntimeErrorReason] = useState<AiConnectionReason | null>(null);
   const [generatedCards, setGeneratedCards] = useState<GeneratedCardCandidate[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [regeneratingCardId, setRegeneratingCardId] = useState<string | null>(null);
+  const [regeneratingCardIds, setRegeneratingCardIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
 
+  const activeRequestId = useRef<string | null>(null);
+  // In-flight single-card regenerations, by request ID. Several can run at
+  // once; leaving the screen cancels them all.
+  const regenerationRequests = useRef(new Map<string, string>());
   const targetSpaceName = getTargetSpaceName(draft, spaces);
-  const endpointHost = getEndpointHost(aiSettings.baseUrl);
+  const connectionLabel = describeAiConnection(aiSettings);
+
+  // Leaving the screen stops whatever is still generating.
+  useEffect(() => {
+    const regenerations = regenerationRequests.current;
+    return () => {
+      if (activeRequestId.current) void cancelAiRequest(activeRequestId.current);
+      activeRequestId.current = null;
+      for (const requestId of regenerations.keys()) void cancelAiRequest(requestId);
+      regenerations.clear();
+    };
+  }, []);
 
   useEffect(() => {
     if (!isTauriRuntime()) {
@@ -83,7 +94,7 @@ export function AiGenerateScreen({
         }
 
         setAiSettings(settings);
-        setMode(hasConfiguredAiKey(settings) ? "form" : "no-key");
+        setMode(isAiConnectionReady(settings) ? "form" : "no-key");
       } catch (error: unknown) {
         if (!cancelled) {
           setRuntimeError(error instanceof Error ? error.message : "Failed to load AI settings.");
@@ -147,6 +158,8 @@ export function AiGenerateScreen({
 
     setFormError(null);
     setMode("loading");
+    const requestId = newAiRequestId("generate");
+    activeRequestId.current = requestId;
 
     try {
       const cards = await generateAiCards({
@@ -154,7 +167,9 @@ export function AiGenerateScreen({
         difficulty: draft.difficulty,
         style: draft.style,
         topic: normalizedTopic,
+        requestId,
       });
+      if (activeRequestId.current !== requestId) return;
       setGeneratedCards(
         cards.map((card, index) => ({
           ...card,
@@ -165,9 +180,24 @@ export function AiGenerateScreen({
       );
       setMode("review");
     } catch (error: unknown) {
+      if (activeRequestId.current !== requestId) return;
+      if (isAiConnectionError(error, "cancelled")) {
+        setMode("form");
+        return;
+      }
       setRuntimeError(error instanceof Error ? error.message : "Generation failed.");
+      setRuntimeErrorReason(isAiConnectionError(error) ? error.reason : null);
       setMode("error");
+    } finally {
+      if (activeRequestId.current === requestId) activeRequestId.current = null;
     }
+  }
+
+  function handleCancelGeneration() {
+    const requestId = activeRequestId.current;
+    activeRequestId.current = null;
+    setMode("form");
+    if (requestId) void cancelAiRequest(requestId);
   }
 
   function handleRetryGeneration() {
@@ -187,8 +217,22 @@ export function AiGenerateScreen({
     );
   }
 
+  function setCardRegenerating(cardId: string, regenerating: boolean) {
+    setRegeneratingCardIds((current) => {
+      const next = new Set(current);
+      if (regenerating) next.add(cardId);
+      else next.delete(cardId);
+      return next;
+    });
+  }
+
   async function handleRegenerate(cardId: string) {
-    setRegeneratingCardId(cardId);
+    if ([...regenerationRequests.current.values()].includes(cardId)) return;
+    const requestId = newAiRequestId("regenerate");
+    regenerationRequests.current.set(requestId, cardId);
+    setCardRegenerating(cardId, true);
+    // A request cancelled on unmount is no longer tracked; its result is dropped.
+    const stillWanted = () => regenerationRequests.current.has(requestId);
 
     try {
       const [replacement] = await generateAiCards({
@@ -196,7 +240,9 @@ export function AiGenerateScreen({
         difficulty: draft.difficulty,
         style: draft.style,
         topic: draft.topic.trim(),
+        requestId,
       });
+      if (!stillWanted()) return;
 
       if (!replacement) {
         throw new Error("The provider did not return a replacement card.");
@@ -215,10 +261,15 @@ export function AiGenerateScreen({
         ),
       );
     } catch (error: unknown) {
+      if (!stillWanted() || isAiConnectionError(error, "cancelled")) return;
       setRuntimeError(error instanceof Error ? error.message : "Regeneration failed.");
+      setRuntimeErrorReason(isAiConnectionError(error) ? error.reason : null);
       setMode("error");
     } finally {
-      setRegeneratingCardId(null);
+      if (stillWanted()) {
+        regenerationRequests.current.delete(requestId);
+        setCardRegenerating(cardId, false);
+      }
     }
   }
 
@@ -276,17 +327,23 @@ export function AiGenerateScreen({
         ) : mode === "no-key" ? (
           <AiGenerateNoKey onOpenSettings={onOpenSettings} />
         ) : mode === "loading" ? (
-          <AiGenerateLoading model={aiSettings.model} topic={draft.topic} />
+          <AiGenerateLoading
+            model={`${connectionLabel.model} · ${connectionLabel.via}`}
+            onCancel={handleCancelGeneration}
+            topic={draft.topic}
+          />
         ) : mode === "error" ? (
           <AiGenerateError
             detail={runtimeError}
             onEditPrompt={() => setMode("form")}
+            onOpenSettings={onOpenSettings}
             onRetry={handleRetryGeneration}
+            reason={runtimeErrorReason}
           />
         ) : mode === "review" ? (
           <AiGenerateReviewList
             cards={generatedCards}
-            isRegenerating={regeneratingCardId}
+            regeneratingCardIds={regeneratingCardIds}
             isSaving={isSaving}
             onApprove={handleApprove}
             onBulkApprove={handleBulkApprove}
@@ -299,9 +356,9 @@ export function AiGenerateScreen({
         ) : (
           <AiGenerateForm
             draft={draft}
-            endpointHost={endpointHost}
+            endpointHost={connectionLabel.via}
             error={formError}
-            model={aiSettings.model}
+            model={connectionLabel.model}
             onChange={handleDraftChange}
             onGenerate={() => void handleGenerate()}
             onOpenSettings={onOpenSettings}
@@ -344,14 +401,6 @@ function getTargetSpaceName(draft: AiGenerateDraft, spaces: SpaceSummary[]) {
   }
 
   return spaces.find((space) => space.id === draft.spaceId)?.name ?? "selected space";
-}
-
-function getEndpointHost(baseUrl: string) {
-  try {
-    return new URL(baseUrl).host;
-  } catch {
-    return baseUrl.replace(/^https?:\/\//, "");
-  }
 }
 
 function buildGeneratedTags(draft: AiGenerateDraft, index: number, front: string) {

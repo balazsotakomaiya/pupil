@@ -545,6 +545,25 @@
   font-size: 11px;
 }
 
+.aiGenLoadingCancel {
+  margin-top: var(--space-5);
+  padding: var(--space-1-5) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.aiGenLoadingCancel:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
 .aiGenErrorSection {
   padding: var(--space-20) 0;
 }

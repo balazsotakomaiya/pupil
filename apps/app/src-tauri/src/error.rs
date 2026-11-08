@@ -26,10 +26,47 @@ pub(crate) enum AppError {
         message: String,
         detail: Option<String>,
     },
+    /// A subscription or local-tool connection problem the user can act on:
+    /// sign in again, wait for a usage limit, install a tool, pick a model.
+    #[error("AI connection error: {message}")]
+    AiConnection {
+        message: String,
+        reason: AiConnectionReason,
+        provider: String,
+    },
     #[error("Migration failed: {message}")]
     MigrationFailed { message: String },
     #[error("Internal error: {message}")]
     Internal { message: String },
+}
+
+/// Machine-readable cause of an [`AppError::AiConnection`], mirrored by the
+/// frontend so it can offer the right next step.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum AiConnectionReason {
+    /// The local tool Pupil relies on is not installed or could not start.
+    NotInstalled,
+    /// The provider account is not signed in.
+    SignedOut,
+    /// The saved sign-in expired or was revoked.
+    Expired,
+    /// The account or plan cannot use this connection.
+    NotEligible,
+    /// The user declined to grant plan usage.
+    Declined,
+    /// The local tool is signed in with API billing rather than a subscription.
+    ApiBilling,
+    /// The plan's usage or rate limit was reached.
+    UsageLimit,
+    /// The selected model does not exist or the plan cannot use it.
+    ModelUnavailable,
+    /// The user cancelled the request.
+    Cancelled,
+    /// The request ran past its time limit.
+    Timeout,
+    /// Any other provider-side failure.
+    Provider,
 }
 
 impl AppError {
@@ -102,6 +139,19 @@ impl AppError {
         Self::AiProvider {
             message: message.into(),
             detail: detail.map(Into::into),
+        }
+    }
+
+    /// Builds a connection error the frontend can route to a specific remedy.
+    pub(crate) fn ai_connection(
+        provider: &str,
+        reason: AiConnectionReason,
+        message: impl Into<String>,
+    ) -> Self {
+        Self::AiConnection {
+            message: message.into(),
+            reason,
+            provider: provider.to_string(),
         }
     }
 

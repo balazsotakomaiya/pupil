@@ -23,7 +23,7 @@ A local-first spaced-repetition desktop app. The user creates "spaces" (topic bu
 | Database | SQLite via `rusqlite` (bundled) |
 | Secrets storage | Tauri Stronghold (`tauri-plugin-stronghold`) |
 | FSRS scheduling | `ts-fsrs` — runs in the frontend, persisted by the backend |
-| AI generation | OpenAI-compatible or Anthropic API (user-configured) |
+| AI generation | API key (OpenAI-compatible / Anthropic), ChatGPT plan, or Claude plan via Claude Code |
 
 ---
 
@@ -141,14 +141,17 @@ When adding new secrets, follow the same pattern: `open_stronghold` → get/crea
 
 ## AI provider integration
 
-The app speaks two wire formats:
+Every AI request resolves to one **connection** (`ai.connection` in SQLite) and only that transport is used. Nothing falls back to another connection, so a subscription failure never becomes a paid API call. See [`docs/AI_SUBSCRIPTIONS.md`](../../docs/AI_SUBSCRIPTIONS.md) for the user-facing story and sources.
 
-- **OpenAI-compatible** — any base URL that does not contain `anthropic.com`. Posts to `{baseUrl}/chat/completions` with `Authorization: Bearer {key}`.
-- **Anthropic** — detected when the base URL contains `anthropic.com`. Posts to `{baseUrl}/messages` with `x-api-key: {key}` and `anthropic-version: 2023-06-01`.
+- **API key** (`api_key`, `ai/provider.rs`). Unchanged behaviour: an OpenAI-compatible base URL posts to `{baseUrl}/chat/completions` with a bearer key; a base URL containing `anthropic.com` posts to `{baseUrl}/messages` with `x-api-key`.
+- **ChatGPT plan** (`chatgpt`, `ai/chatgpt.rs` + `ai/chatgpt_session.rs`). OpenAI's documented plan-usage flow for open-source apps: dynamic client registration and PKCE over a `127.0.0.1` loopback, ID token verified against the JWKS, tokens in the `CHATGPT_CREDENTIALS_SLOT` secret, serialized refresh, streamed `/v1/responses` with `store: false`. Only display state (status, email, plan-usage flag, issued client ID, host ID) goes to SQLite.
+- **Claude plan** (`claude_code`, `ai/claude_code.rs`). Runs the user's own `claude -p --output-format json` with tools, MCP, slash commands and setting sources disabled. Prompts go via stdin plus a private temp file, API-billing env vars are stripped, and `claude auth status` must report a Claude subscription. Pupil never touches Claude credentials. Runs are bounded (180s, three concurrent) and killed on timeout or cancel.
 
-Card generation uses a fixed system prompt (`AI_SYSTEM_PROMPT`) and a per-request user prompt assembled by `build_generate_cards_prompt`. The model is expected to return a bare JSON array. `extract_json_array_candidate` strips markdown fences before parsing in case the model ignores the formatting instruction.
+`ai/connection.rs` dispatches a `ResolvedAiTarget`; `ai/settings.rs::resolve_ai_target` builds it. Long requests take an optional `requestId`; `cancel_ai_request` drops the future through `ai/cancellation.rs`, which aborts HTTP and kills the Claude Code child. Connection problems the user can act on are `AppError::AiConnection { reason, provider }` (code `AI_CONNECTION`), mirrored by `AiConnectionError` in `src/lib/errors.ts`.
 
----
+Card generation uses a fixed system prompt (`AI_SYSTEM_PROMPT`) and a per-request user prompt assembled by `build_generate_cards_prompt`. The model is expected to return a bare JSON array. `extract_json_array_candidate` strips markdown fences before parsing in case the model ignores the formatting instruction. The same parsing and validation apply to every connection.
+
+Live Claude Code checks are opt-in, because they use the developer's plan: `cargo test live_claude -- --ignored --nocapture` from `src-tauri`.
 
 ## Running the app in development
 
@@ -169,7 +172,7 @@ The Rust backend compiles with `cargo` under the hood. First build takes a while
 - Rust integration tests live in dedicated files under `src-tauri/src/tests/` and use in-memory SQLite plus migrations for storage behavior.
 - Keep tests out of production modules unless there is a compelling reason they must be co-located.
 - Before merging a production app change, maintain at least 80% line coverage independently in the TypeScript and Rust production-test scopes; run `bun run test:coverage` when touching either scope.
-- The coverage exclusions are limited to test/type/barrel files and native Tauri, OS-secret, or network glue outside this initiative. Rust coverage excludes only `main.rs`, `lib.rs`, `app.rs`, `commands.rs`, `ai/secrets.rs`, and `ai/provider.rs`; any new exclusion requires a written reason and maintainer approval.
+- The coverage exclusions are limited to test/type/barrel files and native Tauri, OS-secret, or network glue outside this initiative. Rust coverage excludes only `main.rs`, `lib.rs`, `app.rs`, `commands.rs`, `ai/secrets.rs`, and `ai/provider.rs`; any new exclusion requires a written reason and maintainer approval. The ChatGPT and Claude Code transports are covered through a loopback mock server (`tests/mock_http.rs`) and fake `claude` scripts rather than excluded.
 
 ## Git hooks
 
@@ -208,7 +211,7 @@ Rules:
 
 ## What to be careful about
 
-- **Never put the API key in SQLite.** It goes in Stronghold only.
+- **Never put the API key or ChatGPT tokens in SQLite.** They go in the OS secure store (via `ai/secrets.rs` slots) only.
 - **Normalize all frontend input** before it reaches a storage function. The `normalize_*` helpers in `src-tauri/src/normalize.rs` and `src-tauri/src/ai/validation.rs` are the pattern.
 - **Use transactions** for any write that touches more than one table (e.g., inserting a card and bumping the space's `updated_at`).
 - **Don't add scheduler logic to Rust.** Scheduling is the frontend's job; the backend is a dumb persistence layer for FSRS state.

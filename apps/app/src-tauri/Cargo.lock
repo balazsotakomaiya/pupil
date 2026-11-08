@@ -3856,10 +3856,12 @@ dependencies = [
 name = "pupil-app"
 version = "1.0.0-beta.3"
 dependencies = [
+ "base64 0.22.1",
  "getrandom 0.2.17",
  "keyring",
  "nanoid",
  "reqwest 0.12.28",
+ "ring",
  "rusqlite",
  "serde",
  "serde_json",
@@ -3871,6 +3873,7 @@ dependencies = [
  "tauri-plugin-stronghold",
  "tauri-plugin-updater",
  "thiserror 2.0.21",
+ "tokio",
  "tracing",
  "tracing-appender",
  "tracing-subscriber",

@@ -4,7 +4,7 @@ use crate::constants::{AI_EXPLAIN_RETRY_BUDGET_SECS, AI_EXPLAIN_SYSTEM_PROMPT};
 use crate::error::{AppError, AppResult};
 use crate::types::ExplainCardPayload;
 
-use super::provider::execute_ai_completion;
+use super::connection::{execute_ai_target, AiExecution, ResolvedAiTarget};
 
 pub(crate) fn parse_explain_card_response(response_text: &str) -> AppResult<ExplainCardPayload> {
     let candidate = extract_json_object_candidate(response_text);
@@ -66,7 +66,8 @@ pub(crate) fn build_explain_prose_fallback_prompt() -> &'static str {
 }
 
 pub(crate) async fn execute_explain_completion_with_retries(
-    settings: &crate::types::ResolvedAiSettings,
+    target: &ResolvedAiTarget,
+    execution: &AiExecution<'_>,
     user_prompt: &str,
 ) -> AppResult<String> {
     let started_at = Instant::now();
@@ -74,7 +75,14 @@ pub(crate) async fn execute_explain_completion_with_retries(
     let mut attempt = 0;
 
     loop {
-        match execute_ai_completion(settings, user_prompt, Some(AI_EXPLAIN_SYSTEM_PROMPT)).await {
+        match execute_ai_target(
+            target,
+            execution,
+            user_prompt,
+            Some(AI_EXPLAIN_SYSTEM_PROMPT),
+        )
+        .await
+        {
             Ok(response) => return Ok(response),
             Err(error)
                 if is_transient_ai_error(&error)
@@ -93,7 +101,7 @@ pub(crate) async fn execute_explain_completion_with_retries(
     }
 }
 
-fn is_transient_ai_error(error: &AppError) -> bool {
+pub(crate) fn is_transient_ai_error(error: &AppError) -> bool {
     match error {
         AppError::Network { .. } => true,
         AppError::AiProvider { detail, message } => {

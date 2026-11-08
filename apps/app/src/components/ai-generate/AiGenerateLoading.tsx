@@ -2,10 +2,12 @@ import styles from "./AiGenerate.module.css";
 
 type AiGenerateLoadingProps = {
   model: string;
+  /** Stops the request; omitted while settings are still loading. */
+  onCancel?: () => void;
   topic: string;
 };
 
-export function AiGenerateLoading({ model, topic }: AiGenerateLoadingProps) {
+export function AiGenerateLoading({ model, onCancel, topic }: AiGenerateLoadingProps) {
   return (
     <div className={styles.aiGenStateView}>
       <div className={styles.aiGenLoadingSection}>
@@ -18,6 +20,11 @@ export function AiGenerateLoading({ model, topic }: AiGenerateLoadingProps) {
           <span className={styles.aiGenModelDot} />
           {model}
         </div>
+        {onCancel ? (
+          <button className={styles.aiGenLoadingCancel} onClick={onCancel} type="button">
+            Cancel
+          </button>
+        ) : null}
       </div>
     </div>
   );
