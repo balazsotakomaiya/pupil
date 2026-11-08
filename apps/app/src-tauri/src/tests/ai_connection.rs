@@ -527,6 +527,7 @@ mod dispatch {
         let endpoints = ChatgptEndpoints::default();
         let execution = AiExecution {
             store: &store,
+            session: store.gate().pin(),
             endpoints: &endpoints,
             token: CancelToken::none(),
         };
@@ -563,6 +564,7 @@ mod dispatch {
         };
         let execution = AiExecution {
             store: &store,
+            session: store.gate().pin(),
             endpoints: &endpoints,
             token: CancelToken::none(),
         };
@@ -598,6 +600,7 @@ mod dispatch {
         let guard = registry.register(Some("generate-1".into()));
         let execution = AiExecution {
             store: &store,
+            session: store.gate().pin(),
             endpoints: &endpoints,
             token: guard.token.clone(),
         };

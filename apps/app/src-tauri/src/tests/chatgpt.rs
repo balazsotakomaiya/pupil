@@ -702,6 +702,7 @@ async fn a_rejected_access_token_is_refreshed_once_and_the_request_retried() {
     let text = execute_chatgpt_completion(
         &endpoints(&server),
         &store,
+        store.gate().pin(),
         "gpt-a",
         Some("sys"),
         "hi",
@@ -720,9 +721,17 @@ async fn a_session_without_plan_usage_is_refused_before_any_request() {
     let server = token_server(json!({}), 200);
     let store = MemoryStore::with(credentials(TEST_NOW + 3_600_000, &["openid", "email"]));
 
-    let error = execute_chatgpt_completion(&endpoints(&server), &store, "gpt-a", None, "hi", &now)
-        .await
-        .expect_err("declined");
+    let error = execute_chatgpt_completion(
+        &endpoints(&server),
+        &store,
+        store.gate().pin(),
+        "gpt-a",
+        None,
+        "hi",
+        &now,
+    )
+    .await
+    .expect_err("declined");
 
     assert_eq!(reason(&error), Some(AiConnectionReason::Declined));
     assert!(server.requests_to("/v1/responses").is_empty());
@@ -733,7 +742,7 @@ async fn account_models_come_from_the_plan_catalog() {
     let server = token_server(json!({}), 200);
     let store = MemoryStore::with(credentials(TEST_NOW + 3_600_000, &[PLAN_USAGE_SCOPE]));
 
-    let models = list_chatgpt_models(&endpoints(&server), &store, &now)
+    let models = list_chatgpt_models(&endpoints(&server), &store, store.gate().pin(), &now)
         .await
         .expect("models");
 
@@ -862,7 +871,7 @@ async fn a_registration_openai_rejects_is_dropped_and_the_next_sign_in_registers
         .await
         .expect_err("rejected");
     assert!(is_registration_rejected(&error));
-    note_chatgpt_failure(&connection, &error).expect("note");
+    note_chatgpt_failure(&connection, store.gate(), store.gate().pin(), &error).expect("note");
     let state = crate::ai::testing::load_ai_settings_rows(&connection).expect("state");
     assert_eq!(state.chatgpt.status, "expired");
     assert!(!state.chatgpt.saved_account);
@@ -959,6 +968,7 @@ async fn disconnecting_during_a_refresh_keeps_the_new_tokens_out_and_starts_no_r
         execute_chatgpt_completion(
             &request_endpoints,
             request_store.as_ref(),
+            request_store.gate().pin(),
             "gpt-a",
             None,
             "hi",
@@ -994,4 +1004,237 @@ async fn disconnecting_during_a_refresh_keeps_the_new_tokens_out_and_starts_no_r
         .collect();
     assert!(revoked_tokens.contains(&"refresh-old".to_string()));
     assert!(revoked_tokens.contains(&"refresh-late".to_string()));
+}
+
+/// Holds a mock reply until the test releases it.
+#[derive(Clone, Default)]
+struct Latch(Arc<(Mutex<bool>, std::sync::Condvar)>);
+
+impl Latch {
+    fn wait(&self) {
+        let (lock, ready) = &*self.0;
+        let mut released = lock.lock().unwrap();
+        while !*released {
+            released = ready.wait(released).unwrap();
+        }
+    }
+
+    fn release(&self) {
+        let (lock, ready) = &*self.0;
+        *lock.lock().unwrap() = true;
+        ready.notify_all();
+    }
+}
+
+/// A different account, as a second sign-in would save it.
+fn account_b() -> ChatgptCredentials {
+    let mut b = credentials(TEST_NOW + 3_600_000, &[PLAN_USAGE_SCOPE]);
+    b.subject = "user-b".into();
+    b.email = Some("other@example.com".into());
+    b.access_token = "access-b".into();
+    b.refresh_token = Some("refresh-b".into());
+    b
+}
+
+fn bearer(request: &super::mock_http::MockRequest) -> &str {
+    request
+        .headers
+        .get("authorization")
+        .map(String::as_str)
+        .unwrap_or_default()
+}
+
+async fn wait_for_request(server: &MockServer, path: &str) {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while server.requests_to(path).is_empty() {
+        assert!(Instant::now() < deadline, "{path} was never requested");
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+}
+
+/// OpenAI's discovery document and revocation endpoint, for disconnects
+/// and for revoking tokens that arrive after the session was replaced.
+fn discovery_or_revoke(request: &super::mock_http::MockRequest, base: &str) -> MockResponse {
+    match request.path_only() {
+        "/.well-known/openid-configuration" => MockResponse::json(
+            200,
+            json!({
+                "issuer": base, "jwks_uri": format!("{base}/jwks"),
+                "revocation_endpoint": format!("{base}/revoke"),
+            }),
+        ),
+        "/revoke" => MockResponse::json(200, json!({})),
+        _ => MockResponse::json(404, json!({})),
+    }
+}
+
+#[tokio::test]
+async fn a_401_that_arrives_after_another_account_signs_in_is_not_retried_on_that_account() {
+    let mut connection = open_test_connection();
+    let latch = Latch::default();
+    let held = latch.clone();
+    let server = MockServer::start(move |request| match request.path_only() {
+        "/v1/responses" if bearer(request) == "Bearer access-old" => {
+            held.wait();
+            MockResponse::json(401, json!({"error": {"message": "expired"}}))
+        }
+        "/v1/responses" => completed_stream("answered on account B"),
+        "/api/accounts/oauth/token" => MockResponse::json(
+            200,
+            json!({"access_token": "access-x", "refresh_token": "refresh-x", "expires_in": 3600}),
+        ),
+        _ => MockResponse::json(404, json!({})),
+    });
+    let store = Arc::new(MemoryStore::with(credentials(
+        TEST_NOW + 3_600_000,
+        &[PLAN_USAGE_SCOPE],
+    )));
+    let pin = store.gate().pin();
+    let request_store = Arc::clone(&store);
+    let request_endpoints = endpoints(&server);
+    let request = tokio::spawn(async move {
+        execute_chatgpt_completion(
+            &request_endpoints,
+            request_store.as_ref(),
+            pin,
+            "gpt-a",
+            None,
+            "account A's prompt",
+            &now,
+        )
+        .await
+    });
+    wait_for_request(&server, "/v1/responses").await;
+
+    record_sign_in(&mut connection, store.as_ref(), &account_b()).expect("sign in B");
+    latch.release();
+    let error = request.await.unwrap().expect_err("stopped");
+
+    assert_eq!(reason(&error), Some(AiConnectionReason::Cancelled));
+    let responses = server.requests_to("/v1/responses");
+    assert_eq!(responses.len(), 1, "the prompt was retried");
+    assert_eq!(bearer(&responses[0]), "Bearer access-old");
+    assert!(server.requests_to("/api/accounts/oauth/token").is_empty());
+    assert_eq!(store.current().unwrap().access_token, "access-b");
+}
+
+#[tokio::test]
+async fn a_request_queued_behind_a_refresh_does_not_adopt_a_newly_signed_in_account() {
+    let mut connection = open_test_connection();
+    let latch = Latch::default();
+    let held = latch.clone();
+    let base = Arc::new(Mutex::new(String::new()));
+    let server_base = Arc::clone(&base);
+    let server = MockServer::start(move |request| match request.path_only() {
+        "/api/accounts/oauth/token" => {
+            held.wait();
+            MockResponse::json(
+                200,
+                json!({"access_token": "access-late", "refresh_token": "refresh-late", "expires_in": 3600}),
+            )
+        }
+        "/v1/responses" => completed_stream("should not run"),
+        _ => discovery_or_revoke(request, &server_base.lock().unwrap()),
+    });
+    *base.lock().unwrap() = server.base.clone();
+    let store = Arc::new(MemoryStore::with(credentials(
+        TEST_NOW - 1,
+        &[PLAN_USAGE_SCOPE],
+    )));
+    let pin = store.gate().pin();
+    let spawn_request = |prompt: &'static str| {
+        let request_store = Arc::clone(&store);
+        let request_endpoints = endpoints(&server);
+        tokio::spawn(async move {
+            execute_chatgpt_completion(
+                &request_endpoints,
+                request_store.as_ref(),
+                pin,
+                "gpt-a",
+                None,
+                prompt,
+                &now,
+            )
+            .await
+        })
+    };
+
+    // The first request refreshes A's expired token; the second queues
+    // behind that refresh.
+    let refreshing = spawn_request("first");
+    wait_for_request(&server, "/api/accounts/oauth/token").await;
+    let queued = spawn_request("second");
+    tokio::time::sleep(Duration::from_millis(100)).await;
+
+    record_sign_in(&mut connection, store.as_ref(), &account_b()).expect("sign in B");
+    latch.release();
+    let first = refreshing.await.unwrap().expect_err("first stopped");
+    let second = queued.await.unwrap().expect_err("second stopped");
+
+    assert_eq!(reason(&first), Some(AiConnectionReason::Cancelled));
+    assert_eq!(reason(&second), Some(AiConnectionReason::Cancelled));
+    assert!(server.requests_to("/v1/responses").is_empty());
+    assert_eq!(server.requests_to("/api/accounts/oauth/token").len(), 1);
+    assert_eq!(store.current().unwrap().access_token, "access-b");
+}
+
+#[tokio::test]
+async fn a_late_catalog_401_from_the_old_account_leaves_the_new_one_connected() {
+    let mut connection = open_test_connection();
+    let latch = Latch::default();
+    let held = latch.clone();
+    let base = Arc::new(Mutex::new(String::new()));
+    let server_base = Arc::clone(&base);
+    let server = MockServer::start(move |request| match request.path_only() {
+        "/v1/models" if bearer(request) == "Bearer access-old" => {
+            held.wait();
+            MockResponse::json(401, json!({"error": {"message": "expired"}}))
+        }
+        "/v1/models" => MockResponse::json(200, json!({"data": []})),
+        _ => discovery_or_revoke(request, &server_base.lock().unwrap()),
+    });
+    *base.lock().unwrap() = server.base.clone();
+    let store = Arc::new(MemoryStore::default());
+    record_sign_in(
+        &mut connection,
+        store.as_ref(),
+        &credentials(TEST_NOW + 3_600_000, &[PLAN_USAGE_SCOPE]),
+    )
+    .expect("sign in A");
+    let pin = store.gate().pin();
+    let request_store = Arc::clone(&store);
+    let request_endpoints = endpoints(&server);
+    let listing = tokio::spawn(async move {
+        list_chatgpt_models(&request_endpoints, request_store.as_ref(), pin, &now).await
+    });
+    wait_for_request(&server, "/v1/models").await;
+
+    // Settings disconnects and connects another account meanwhile.
+    disconnect_chatgpt(&endpoints(&server), store.as_ref())
+        .await
+        .expect("disconnect");
+    record_chatgpt_status(&connection, ChatgptStatus::Disconnected).expect("status");
+    record_sign_in(&mut connection, store.as_ref(), &account_b()).expect("sign in B");
+    latch.release();
+    let error = listing.await.unwrap().expect_err("stopped");
+
+    assert_eq!(reason(&error), Some(AiConnectionReason::Cancelled));
+    note_chatgpt_failure(&connection, store.gate(), pin, &error).expect("note");
+    // Even a real "ended" failure from the old session can't mark B expired.
+    let ended = AppError::ai_connection(
+        crate::ai::CHATGPT_PROVIDER,
+        AiConnectionReason::Expired,
+        "ended",
+    );
+    note_chatgpt_failure(&connection, store.gate(), pin, &ended).expect("note stale");
+    let state = crate::ai::testing::load_ai_settings_rows(&connection).expect("state");
+    assert_eq!(state.chatgpt.status, "connected");
+    assert_eq!(state.chatgpt.email.as_deref(), Some("other@example.com"));
+    assert!(state.chatgpt.saved_account);
+
+    // The same failure from the current session still marks it expired.
+    note_chatgpt_failure(&connection, store.gate(), store.gate().pin(), &ended)
+        .expect("note current");
+    let state = crate::ai::testing::load_ai_settings_rows(&connection).expect("state");
+    assert_eq!(state.chatgpt.status, "expired");
 }

@@ -20,7 +20,7 @@ pub(crate) use chatgpt_session::{
     disconnect as disconnect_chatgpt, forget_registration as forget_chatgpt_registration,
     list_chatgpt_models, load_sign_in_inputs, note_session_failure as note_chatgpt_failure,
     record_sign_in, record_status as record_chatgpt_status, run_sign_in as run_chatgpt_sign_in,
-    sign_in_control, ChatgptStatus,
+    secure_store_gate as chatgpt_session_gate, sign_in_control, ChatgptStatus, SessionPin,
 };
 pub(crate) use claude_code::{probe_status as probe_claude_code_status, ClaudeCodeStatus};
 pub(crate) use connection::{execute_ai_target, AiConnectionKind, AiExecution, ResolvedAiTarget};

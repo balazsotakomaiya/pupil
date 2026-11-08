@@ -8,7 +8,7 @@ use serde::Serialize;
 
 use super::cancellation::{run_bounded, CancelToken};
 use super::chatgpt::{ChatgptEndpoints, CHATGPT_PROVIDER};
-use super::chatgpt_session::{execute_chatgpt_completion, CredentialStore};
+use super::chatgpt_session::{execute_chatgpt_completion, CredentialStore, SessionPin};
 use super::claude_code::{execute_claude_code_completion, ClaudeCodeTarget};
 use super::provider::execute_ai_completion;
 use crate::constants::AI_REQUEST_TIMEOUT_SECS;
@@ -75,9 +75,11 @@ impl ResolvedAiTarget {
 }
 
 /// What a request needs besides its target: the ChatGPT credential store,
-/// OpenAI's endpoints, and the cancellation token for this request.
+/// the ChatGPT session it started in, OpenAI's endpoints, and the
+/// cancellation token for this request.
 pub(crate) struct AiExecution<'a> {
     pub(crate) store: &'a dyn CredentialStore,
+    pub(crate) session: SessionPin,
     pub(crate) endpoints: &'a ChatgptEndpoints,
     pub(crate) token: CancelToken,
 }
@@ -114,6 +116,7 @@ pub(crate) async fn execute_ai_target(
                 execute_chatgpt_completion(
                     execution.endpoints,
                     execution.store,
+                    execution.session,
                     model,
                     system_prompt,
                     user_prompt,
