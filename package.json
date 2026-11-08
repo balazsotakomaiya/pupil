@@ -27,9 +27,9 @@
     "release:version": "bun ./scripts/desktop-release.mjs version"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.12",
-    "@evilmartians/lefthook": "^2.1.6",
-    "typescript": "^5.8.0"
+    "@biomejs/biome": "^2.6.6",
+    "@evilmartians/lefthook": "^2.2.2",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "bun": ">=1.1.0"
