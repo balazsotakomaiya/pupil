@@ -63,10 +63,11 @@ pub(crate) mod testing {
         SignInInputs,
     };
     pub(crate) use super::claude_code::{
-        build_run_args, candidate_paths, child_path_var, classify_run_error, discover_binary,
-        evaluate_auth, execute_claude_code_completion, parse_auth_status, parse_run_output,
-        parse_version, run_command, validate_binary_path, validate_model as validate_claude_model,
-        ClaudeAuthStatus, ClaudeCodeTarget, CommandOutput, DiscoveryEnv,
+        build_run_args, candidate_paths, check_binary_name, child_path_var, classify_run_error,
+        discover_binary, evaluate_auth, execute_claude_code_completion, parse_auth_status,
+        parse_run_output, parse_version, run_command, validate_binary_path,
+        validate_model as validate_claude_model, ClaudeAuthStatus, ClaudeCodeTarget, CommandOutput,
+        DiscoveryEnv,
     };
     pub(crate) use super::connection::AiConnectionKind;
     pub(crate) use super::explain::is_transient_ai_error;

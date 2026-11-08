@@ -71,7 +71,7 @@ Model choices are Claude Code's aliases (**Opus**, **Sonnet**, **Haiku**), which
 | | ChatGPT plan | Claude plan |
 | --- | --- | --- |
 | macOS | Supported. Tokens in Keychain. | Supported. Finds `~/.local/bin/claude`, `~/.claude/local`, Homebrew and npm installs. |
-| Windows | Supported. Tokens in Stronghold, password in Credential Manager. | Supported for `claude.exe` (native installer) and the npm `claude.cmd` shim. Runs without a console window. |
+| Windows | Supported. Tokens in Stronghold, password in Credential Manager. | Supported for the native `claude.exe` only, with no console window. The npm `claude.cmd` install is refused: stopping it would leave Claude running after Cancel or a timeout. Not yet tried on a real Windows machine. |
 | Linux | Supported. Tokens in Stronghold, password in Secret Service (a keyring daemon must be running). | Supported. Same discovery as macOS. |
 
 The loopback sign-in uses `127.0.0.1:1455` when it's free, and otherwise any free port.
