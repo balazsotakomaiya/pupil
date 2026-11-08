@@ -4,9 +4,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::ai::testing::{
-    build_run_args, candidate_paths, child_path_var, classify_run_error, discover_binary,
-    evaluate_auth, parse_auth_status, parse_run_output, parse_version, validate_binary_path,
-    ClaudeAuthStatus, CommandOutput, DiscoveryEnv,
+    build_run_args, candidate_paths, check_binary_name, child_path_var, classify_run_error,
+    discover_binary, evaluate_auth, parse_auth_status, parse_run_output, parse_version,
+    validate_binary_path, ClaudeAuthStatus, CommandOutput, DiscoveryEnv,
 };
 use crate::error::{AiConnectionReason, AppError};
 
@@ -220,6 +220,24 @@ fn binary_paths_must_be_absolute_and_name_the_claude_program() {
 }
 
 #[test]
+fn windows_accepts_only_the_native_claude_exe() {
+    assert!(check_binary_name("claude.exe", true).is_ok());
+    assert!(check_binary_name("CLAUDE.EXE", true).is_ok());
+    for shim in ["claude.cmd", "claude.bat", "claude.ps1"] {
+        let message = check_binary_name(shim, true).expect_err(shim);
+        assert!(message.contains("native Claude Code"), "{shim}: {message}");
+    }
+    assert!(check_binary_name("node.exe", true).is_err());
+}
+
+#[test]
+fn macos_and_linux_accept_only_a_program_named_claude() {
+    assert!(check_binary_name("claude", false).is_ok());
+    assert!(check_binary_name("claude.cmd", false).is_err());
+    assert!(check_binary_name("bash", false).is_err());
+}
+
+#[test]
 fn discovery_checks_common_install_folders_beyond_path() {
     let home = PathBuf::from(if cfg!(windows) {
         "C:\\Users\\learner"
@@ -403,6 +421,50 @@ esac
 
         assert_eq!(reason(&error), Some(AiConnectionReason::ApiBilling));
         assert!(!marker.exists());
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[tokio::test]
+    async fn switching_claude_code_to_console_billing_stops_the_next_run() {
+        // The sign-in is read from a file the "user" rewrites between runs,
+        // like `claude auth login --console` in a terminal would.
+        let dir = temp_dir("switch-billing");
+        let auth_file = dir.join("auth.json");
+        let runs = dir.join("runs");
+        std::fs::write(
+            &auth_file,
+            r#"{"loggedIn":true,"authMethod":"claude.ai","apiProvider":"firstParty","subscriptionType":"max"}"#,
+        )
+        .unwrap();
+        let path = dir.join("claude");
+        let script = format!(
+            "#!/bin/sh\ncase \"$1\" in\n  auth) cat '{auth}';;\n  -p) cat >/dev/null; echo run >> '{runs}'; echo '{{\"type\":\"result\",\"subtype\":\"success\",\"is_error\":false,\"result\":\"ok\"}}';;\nesac\n",
+            auth = auth_file.display(),
+            runs = runs.display(),
+        );
+        std::fs::write(&path, script).unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let target = target(path, &dir);
+
+        execute_claude_code_completion(&target, "hi", None, &CancelToken::none())
+            .await
+            .expect("first run on the plan");
+        std::fs::write(
+            &auth_file,
+            r#"{"loggedIn":true,"authMethod":"console","apiProvider":"firstParty"}"#,
+        )
+        .unwrap();
+        let error = execute_claude_code_completion(&target, "hi", None, &CancelToken::none())
+            .await
+            .expect_err("refused after the switch");
+
+        assert_eq!(reason(&error), Some(AiConnectionReason::ApiBilling));
+        let launched = std::fs::read_to_string(&runs).unwrap();
+        assert_eq!(
+            launched.lines().count(),
+            1,
+            "a second completion was launched"
+        );
         std::fs::remove_dir_all(dir).unwrap();
     }
 

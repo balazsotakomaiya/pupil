@@ -5,7 +5,7 @@ use tauri::{AppHandle, Manager};
 
 use super::chatgpt::CHATGPT_PROVIDER;
 use super::chatgpt_session::ChatgptStatus;
-use super::claude_code::{discover_binary, forget_cached_auth, ClaudeCodeTarget, DiscoveryEnv};
+use super::claude_code::{discover_binary, ClaudeCodeTarget, DiscoveryEnv};
 use super::connection::{AiConnectionKind, ResolvedAiTarget};
 use super::secrets::{clear_ai_api_key, load_ai_api_key, save_ai_api_key};
 use super::settings_store::{load_bool_setting, load_string_setting, upsert_setting_on};
@@ -168,7 +168,6 @@ pub(crate) fn persist_ai_settings_rows(
         if path != &previous_path {
             // A different binary has to pass its own status check.
             upsert_setting_on(&transaction, AI_SETTING_CLAUDE_CODE_READY_KEY, "0")?;
-            forget_cached_auth();
         }
     }
     transaction.commit()?;

@@ -10,8 +10,8 @@
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
-use std::sync::{Mutex, OnceLock};
-use std::time::{Duration, Instant};
+use std::sync::OnceLock;
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -41,8 +41,6 @@ const STRIPPED_ENV_VARS: &[&str] = &[
     "CLAUDE_CODE_USE_FOUNDRY",
     "CLAUDE_CODE_SIMPLE",
 ];
-
-const AUTH_CACHE_TTL: Duration = Duration::from_secs(300);
 
 /// How Pupil reaches Claude Code for one request.
 #[derive(Clone, Debug)]
@@ -116,9 +114,38 @@ impl DiscoveryEnv {
 
 fn binary_names() -> &'static [&'static str] {
     if cfg!(windows) {
-        &["claude.exe", "claude.cmd"]
+        &["claude.exe"]
     } else {
         &["claude"]
+    }
+}
+
+/// The npm shim on Windows. It runs Claude Code as a `node` grandchild of
+/// `cmd.exe`, and ending `cmd.exe` leaves that `node` running, so a
+/// cancelled or timed-out request would keep using the plan. Pupil only
+/// runs the native `claude.exe` there, which it can stop.
+const WINDOWS_SHIM_MESSAGE: &str = "Pupil needs the native Claude Code for Windows (claude.exe), not the npm install (claude.cmd). Install it with Anthropic's Windows installer, then check again.";
+
+fn is_windows_shim_name(name: &str) -> bool {
+    matches!(name, "claude.cmd" | "claude.bat" | "claude.ps1")
+}
+
+/// Checks the file name of a Claude Code path for the given platform.
+pub(crate) fn check_binary_name(name: &str, windows: bool) -> Result<(), String> {
+    let name = name.to_ascii_lowercase();
+    if windows {
+        if is_windows_shim_name(&name) {
+            return Err(WINDOWS_SHIM_MESSAGE.to_string());
+        }
+        if name == "claude.exe" {
+            return Ok(());
+        }
+        return Err("The path must point to the Claude Code program (claude.exe).".to_string());
+    }
+    if name == "claude" {
+        Ok(())
+    } else {
+        Err("The path must point to the Claude Code program (claude).".to_string())
     }
 }
 
@@ -173,14 +200,8 @@ pub(crate) fn validate_binary_path(raw: &str) -> Result<PathBuf, String> {
     let name = path
         .file_name()
         .and_then(|name| name.to_str())
-        .unwrap_or_default()
-        .to_ascii_lowercase();
-    if !binary_names().contains(&name.as_str()) {
-        return Err(format!(
-            "The path must point to the Claude Code program ({}).",
-            binary_names().join(" or ")
-        ));
-    }
+        .unwrap_or_default();
+    check_binary_name(name, cfg!(windows))?;
     Ok(path)
 }
 
@@ -210,10 +231,27 @@ pub(crate) fn discover_binary(custom: Option<&str>, env: &DiscoveryEnv) -> AppRe
         }
         return Ok(path);
     }
-    candidate_paths(env)
-        .into_iter()
-        .find(|path| is_runnable_file(path))
-        .ok_or_else(not_installed_error)
+    let candidates = candidate_paths(env);
+    if let Some(found) = candidates.iter().find(|path| is_runnable_file(path)) {
+        return Ok(found.clone());
+    }
+    if cfg!(windows) && has_windows_shim(&candidates) {
+        return Err(AppError::ai_connection(
+            CLAUDE_CODE_PROVIDER,
+            AiConnectionReason::NotInstalled,
+            WINDOWS_SHIM_MESSAGE,
+        ));
+    }
+    Err(not_installed_error())
+}
+
+/// Whether only the npm shim is installed, next to where `claude.exe` was
+/// looked for, so the message can say what to install instead.
+fn has_windows_shim(candidates: &[PathBuf]) -> bool {
+    candidates
+        .iter()
+        .filter_map(|path| path.parent())
+        .any(|dir| is_runnable_file(&dir.join("claude.cmd")))
 }
 
 fn not_installed_error() -> AppError {
@@ -596,7 +634,7 @@ pub(crate) async fn probe_status(custom_path: Option<&str>, workdir: &Path) -> C
         Err(error) => return fill_error(status, error),
     }
 
-    match check_auth(&binary, workdir, false).await {
+    match check_auth(&binary, workdir, &token).await {
         Ok(auth) => {
             status.logged_in = auth.logged_in;
             status.subscription_type = auth.subscription_type.clone();
@@ -644,32 +682,21 @@ fn title_case(value: &str) -> String {
     }
 }
 
-fn auth_cache() -> &'static Mutex<Option<(PathBuf, Instant, ClaudeAuthStatus)>> {
-    static CACHE: OnceLock<Mutex<Option<(PathBuf, Instant, ClaudeAuthStatus)>>> = OnceLock::new();
-    CACHE.get_or_init(|| Mutex::new(None))
-}
-
 type AuthCheckError = (Option<ClaudeAuthStatus>, AppError);
 
-/// Confirms Claude Code is signed in with a subscription. A good result is
-/// cached briefly so each generation doesn't pay for a second process.
+/// Confirms Claude Code is signed in with a subscription. This runs before
+/// every completion, never from a cache: the user can switch the shared
+/// Claude Code install to a Console (API-billed) login in a terminal at any
+/// time, and a stale "subscription" answer would let that run bill the API.
+/// It uses the same binary, working folder and environment as the run.
 async fn check_auth(
     binary: &Path,
     workdir: &Path,
-    use_cache: bool,
+    token: &CancelToken,
 ) -> Result<ClaudeAuthStatus, AuthCheckError> {
-    if use_cache {
-        if let Ok(cache) = auth_cache().lock() {
-            if let Some((path, at, status)) = cache.as_ref() {
-                if path == binary && at.elapsed() < AUTH_CACHE_TTL {
-                    return Ok(status.clone());
-                }
-            }
-        }
-    }
     let output = run_bounded(
         CLAUDE_CODE_PROVIDER,
-        &CancelToken::none(),
+        token,
         Duration::from_secs(CLAUDE_CODE_PROBE_TIMEOUT_SECS),
         "Claude Code didn't report its sign-in in time.".to_string(),
         run_command(
@@ -684,16 +711,7 @@ async fn check_auth(
     .map_err(|error| (None, error))?;
     let auth = parse_auth_status(&output.stdout).map_err(|error| (None, error))?;
     evaluate_auth(&auth).map_err(|error| (Some(auth.clone()), error))?;
-    if let Ok(mut cache) = auth_cache().lock() {
-        *cache = Some((binary.to_path_buf(), Instant::now(), auth.clone()));
-    }
     Ok(auth)
-}
-
-pub(crate) fn forget_cached_auth() {
-    if let Ok(mut cache) = auth_cache().lock() {
-        *cache = None;
-    }
 }
 
 /// Removes the per-run system prompt file however the run ends.
@@ -731,7 +749,7 @@ pub(crate) async fn execute_claude_code_completion(
         () = token.cancelled() => return Err(super::cancellation::cancelled_error(CLAUDE_CODE_PROVIDER)),
     };
     std::fs::create_dir_all(&target.workdir)?;
-    check_auth(&target.binary, &target.workdir, true)
+    check_auth(&target.binary, &target.workdir, token)
         .await
         .map_err(|(_, error)| error)?;
 
@@ -755,13 +773,5 @@ pub(crate) async fn execute_claude_code_completion(
         run_command(&target.binary, &args, user_prompt, &target.workdir, &extra_env),
     )
     .await?;
-    let result = parse_run_output(&output, &target.model);
-    if let Err(AppError::AiConnection {
-        reason: AiConnectionReason::Expired,
-        ..
-    }) = &result
-    {
-        forget_cached_auth();
-    }
-    result
+    parse_run_output(&output, &target.model)
 }
