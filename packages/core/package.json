@@ -16,10 +16,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "ts-fsrs": "^5.3.1"
+    "ts-fsrs": "^5.4.2"
   },
   "devDependencies": {
-    "typescript": "^5.8.0",
-    "vitest": "^4.1.4"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.12"
   }
 }

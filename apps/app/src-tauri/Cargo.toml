@@ -4,7 +4,7 @@ version = "1.0.0-beta.3"
 description = "Pupil desktop app"
 authors = ["Pupil"]
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.90"
 license = "MIT"
 
 [lib]
@@ -12,7 +12,7 @@ name = "pupil_app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.0.1", features = [] }
+tauri-build = { version = "2.7.4", features = [] }
 
 [features]
 default = []
@@ -24,35 +24,35 @@ mcp-bridge = ["dep:tauri-plugin-mcp-bridge"]
 
 [dependencies]
 base64 = "0.22"
-getrandom = "0.2"
+getrandom = "0.2.17"
 nanoid = "0.4.0"
-reqwest = { version = "0.12.24", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.12.28", default-features = false, features = ["json", "rustls-tls"] }
 ring = "0.17"
 rusqlite = { version = "0.32.1", features = ["bundled"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-tauri = { version = "2.4.1", features = ["tray-icon"] }
-tauri-plugin-mcp-bridge = { version = "0.11.0", optional = true }
-tauri-plugin-opener = "2"
-tauri-plugin-stronghold = "2.3.1"
-thiserror = "2.0.18"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+tauri = { version = "2.12.5", features = ["tray-icon"] }
+tauri-plugin-mcp-bridge = { version = "0.11.2", optional = true }
+tauri-plugin-opener = "2.7.2"
+tauri-plugin-stronghold = "2.4.0"
+thiserror = "2.0.21"
 tokio = { version = "1", features = ["io-util", "macros", "process", "rt", "sync", "time"] }
 tracing = "0.1.44"
 tracing-appender = "0.2.5"
 tracing-subscriber = "0.3.23"
 
 [target.'cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))'.dependencies]
-tauri-plugin-process = "2"
-tauri-plugin-updater = "2.4.0"
+tauri-plugin-process = "2.4.0"
+tauri-plugin-updater = "2.14.1"
 
 [target.'cfg(target_os = "macos")'.dependencies]
-keyring = { version = "3.6.2", features = ["apple-native"] }
+keyring = { version = "3.6.3", features = ["apple-native"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-keyring = { version = "3.6.2", features = ["windows-native"] }
+keyring = { version = "3.6.3", features = ["windows-native"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-keyring = { version = "3.6.2", features = ["sync-secret-service", "crypto-rust"] }
+keyring = { version = "3.6.3", features = ["sync-secret-service", "crypto-rust"] }
 
 [profile.dev.package.scrypt]
 opt-level = 3

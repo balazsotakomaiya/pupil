@@ -672,7 +672,7 @@ pub(crate) fn parse_models(value: &Value) -> Vec<ChatgptModel> {
                     model
                         .get("visibility")
                         .and_then(Value::as_str)
-                        .map_or(true, |visibility| visibility == "list")
+                        .is_none_or(|visibility| visibility == "list")
                 })
                 .filter_map(|model| {
                     let id = model.get("slug").and_then(Value::as_str)?.trim();
