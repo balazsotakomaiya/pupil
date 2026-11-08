@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { AiProviderError, InternalAppError, toAppError, ValidationError } from "./errors";
+import {
+  AiConnectionError,
+  AiProviderError,
+  InternalAppError,
+  isAiConnectionError,
+  isReportable,
+  toAppError,
+  ValidationError,
+} from "./errors";
 
 describe("toAppError", () => {
   it("maps top-level backend payloads", () => {
@@ -32,6 +40,26 @@ describe("toAppError", () => {
       detail: "upstream timeout",
       message: "Provider request failed.",
     });
+  });
+
+  it("maps connection errors with their reason and provider", () => {
+    const error = toAppError({
+      code: "AI_CONNECTION",
+      message: "You've reached your ChatGPT plan usage limit.",
+      provider: "chatgpt",
+      reason: "usageLimit",
+    });
+
+    expect(error).toBeInstanceOf(AiConnectionError);
+    expect(isAiConnectionError(error, "usageLimit")).toBe(true);
+    expect(isAiConnectionError(error, "expired")).toBe(false);
+    expect(error).toMatchObject({ provider: "chatgpt", severity: "domain" });
+    expect(isReportable(error)).toBe(false);
+  });
+
+  it("treats an unknown connection reason as a provider failure", () => {
+    const error = toAppError({ code: "AI_CONNECTION", message: "x", reason: "new-reason" });
+    expect(error).toMatchObject({ reason: "provider", provider: "unknown" });
   });
 
   it("falls back for unrelated objects", () => {

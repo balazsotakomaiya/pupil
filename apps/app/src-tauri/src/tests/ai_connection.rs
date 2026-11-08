@@ -451,3 +451,160 @@ fn connection_errors_serialize_with_a_reason_for_the_frontend() {
     assert_eq!(value["reason"], "usageLimit");
     assert_eq!(value["provider"], "chatgpt");
 }
+
+mod dispatch {
+    //! The transport dispatcher, end to end against a loopback server: the
+    //! API key path is unchanged, the ChatGPT path uses the plan token, and a
+    //! cancelled request stops waiting.
+    use std::sync::Mutex;
+    use std::time::{Duration, Instant};
+
+    use serde_json::json;
+
+    use super::super::mock_http::{MockResponse, MockServer};
+    use crate::ai::testing::{CancelToken, ChatgptCredentials, CredentialStore, PLAN_USAGE_SCOPE};
+    use crate::ai::{
+        execute_ai_target, AiExecution, AiRequestRegistry, ChatgptEndpoints, ResolvedAiTarget,
+    };
+    use crate::error::{AiConnectionReason, AppResult};
+    use crate::types::ResolvedAiSettings;
+
+    struct OneSession(Mutex<Option<ChatgptCredentials>>);
+
+    impl CredentialStore for OneSession {
+        fn load(&self) -> AppResult<Option<ChatgptCredentials>> {
+            Ok(self.0.lock().unwrap().clone())
+        }
+        fn save(&self, credentials: &ChatgptCredentials) -> AppResult<()> {
+            *self.0.lock().unwrap() = Some(credentials.clone());
+            Ok(())
+        }
+        fn clear(&self) -> AppResult<()> {
+            *self.0.lock().unwrap() = None;
+            Ok(())
+        }
+    }
+
+    fn session() -> OneSession {
+        OneSession(Mutex::new(Some(ChatgptCredentials {
+            client_id: "oaiapp_x".into(),
+            subject: "sub".into(),
+            email: None,
+            id_token: String::new(),
+            access_token: "plan-token".into(),
+            refresh_token: Some("refresh".into()),
+            token_type: "Bearer".into(),
+            expires_at_ms: crate::util::now_ms() + 3_600_000,
+            scopes: vec![PLAN_USAGE_SCOPE.into()],
+            saved_at_ms: 0,
+        })))
+    }
+
+    fn api_target(base: &str) -> ResolvedAiTarget {
+        ResolvedAiTarget::Api(ResolvedAiSettings {
+            api_key: "sk-test".into(),
+            base_url: format!("{base}/v1"),
+            model: "gpt-4.1".into(),
+            max_tokens: 256,
+            temperature: 0.5,
+        })
+    }
+
+    #[tokio::test]
+    async fn an_api_key_connection_still_posts_chat_completions_with_the_key() {
+        let server = MockServer::start(|_| {
+            MockResponse::json(200, json!({"choices": [{"message": {"content": "[]"}}]}))
+        });
+        let store = session();
+        let endpoints = ChatgptEndpoints::default();
+        let execution = AiExecution {
+            store: &store,
+            endpoints: &endpoints,
+            token: CancelToken::none(),
+        };
+
+        let text = execute_ai_target(
+            &api_target(&server.base),
+            &execution,
+            "user",
+            Some("system"),
+        )
+        .await
+        .expect("completion");
+
+        assert_eq!(text, "[]");
+        let request = &server.requests_to("/v1/chat/completions")[0];
+        assert_eq!(request.headers["authorization"], "Bearer sk-test");
+        let body: serde_json::Value = serde_json::from_str(&request.body).unwrap();
+        assert_eq!(body["messages"][0]["role"], "system");
+        assert_eq!(body["temperature"], 0.5);
+    }
+
+    #[tokio::test]
+    async fn a_chatgpt_connection_uses_the_plan_token_and_never_the_api_key() {
+        let server = MockServer::start(|_| {
+            MockResponse::sse(&[
+                json!({"type": "response.output_text.delta", "delta": "plan answer"}),
+                json!({"type": "response.completed", "response": {}}),
+            ])
+        });
+        let store = session();
+        let endpoints = ChatgptEndpoints {
+            auth_base: server.base.clone(),
+            api_base: format!("{}/v1", server.base),
+        };
+        let execution = AiExecution {
+            store: &store,
+            endpoints: &endpoints,
+            token: CancelToken::none(),
+        };
+
+        let text = execute_ai_target(
+            &ResolvedAiTarget::Chatgpt {
+                model: "gpt-a".into(),
+            },
+            &execution,
+            "user",
+            Some("system"),
+        )
+        .await
+        .expect("completion");
+
+        assert_eq!(text, "plan answer");
+        let request = &server.requests_to("/v1/responses")[0];
+        assert_eq!(request.headers["authorization"], "Bearer plan-token");
+        let body: serde_json::Value = serde_json::from_str(&request.body).unwrap();
+        assert_eq!(body["model"], "gpt-a");
+        assert_eq!(body["store"], false);
+    }
+
+    #[tokio::test]
+    async fn cancelling_stops_waiting_on_a_slow_provider() {
+        let server = MockServer::start(|_| {
+            std::thread::sleep(Duration::from_secs(3));
+            MockResponse::json(200, json!({"choices": [{"message": {"content": "late"}}]}))
+        });
+        let store = session();
+        let endpoints = ChatgptEndpoints::default();
+        let registry = std::sync::Arc::new(AiRequestRegistry::default());
+        let guard = registry.register(Some("generate-1".into()));
+        let execution = AiExecution {
+            store: &store,
+            endpoints: &endpoints,
+            token: guard.token.clone(),
+        };
+        let canceller = std::sync::Arc::clone(&registry);
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(150)).await;
+            canceller.cancel("generate-1");
+        });
+        let started = Instant::now();
+
+        let error = execute_ai_target(&api_target(&server.base), &execution, "user", None)
+            .await
+            .expect_err("cancelled");
+
+        assert_eq!(super::reason(&error), Some(AiConnectionReason::Cancelled));
+        assert!(started.elapsed() < Duration::from_secs(2));
+    }
+}

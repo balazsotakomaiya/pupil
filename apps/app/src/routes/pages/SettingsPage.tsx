@@ -52,6 +52,9 @@ export function SettingsPage({
   const content = (
     <SettingsScreen
       cardsCount={cards.length}
+      onAiSettingsChanged={() => {
+        void queryClient.invalidateQueries({ queryKey: appQueryKeys.aiSettings });
+      }}
       isSavingStudySettings={saveStudySettingsMutation.isPending}
       onResetAllData={async () => {
         await resetMutation.mutateAsync();

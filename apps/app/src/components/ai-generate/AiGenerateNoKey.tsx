@@ -12,17 +12,17 @@ export function AiGenerateNoKey({ onOpenSettings }: AiGenerateNoKeyProps) {
         <div className={styles.aiGenNoKeyIcon}>
           <KeyIcon />
         </div>
-        <div className={styles.aiGenNoKeyTitle}>API key required</div>
+        <div className={styles.aiGenNoKeyTitle}>Connect AI to generate cards</div>
         <div className={styles.aiGenNoKeyDesc}>
-          AI generation needs an API key from Anthropic, OpenAI, or any compatible provider. Your
-          key is stored locally on this device.
+          Use the ChatGPT or Claude plan you already pay for, or an API key from any compatible
+          provider. Set it up once in Settings.
         </div>
         <button className={styles.aiGenNoKeyBtn} onClick={onOpenSettings} type="button">
           <PlusIcon />
-          Add API key in Settings
+          Set up AI in Settings
         </button>
         <div className={styles.aiGenNoKeyHint}>
-          Supported: <code>api.anthropic.com</code> · <code>api.openai.com</code> · any
+          ChatGPT Plus or Pro · Claude Pro or Max with Claude Code · OpenAI, Anthropic, or any
           OpenAI-compatible endpoint
         </div>
       </div>

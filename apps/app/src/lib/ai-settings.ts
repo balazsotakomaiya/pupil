@@ -6,6 +6,22 @@ import { withTimeout } from "./timeout";
 export type AiDifficulty = "Beginner" | "Intermediate" | "Advanced";
 export type AiStyle = "Concept" | "Q&A" | "Cloze";
 
+/** How AI requests reach a model. Each is its own transport; none falls back to another. */
+export type AiConnectionKind = "apiKey" | "chatgpt" | "claudeCode";
+
+export type ChatgptConnectionState = {
+  status: "disconnected" | "connected" | "expired";
+  email: string | null;
+  planUsage: boolean;
+  model: string;
+};
+
+export type ClaudeCodeSettings = {
+  model: string;
+  path: string;
+  ready: boolean;
+};
+
 export type AiSettings = {
   apiKey: string;
   hasApiKey: boolean;
@@ -14,6 +30,9 @@ export type AiSettings = {
   maxTokens: string;
   temperature: string;
   explainEnabled: boolean;
+  connection: AiConnectionKind;
+  chatgpt: ChatgptConnectionState;
+  claudeCode: ClaudeCodeSettings;
 };
 
 export type AiConnectionTestResult = {
@@ -26,20 +45,27 @@ export type GeneratedAiCard = {
   front: string;
 };
 
-type PersistedAiSettings = Omit<AiSettings, "apiKey">;
+export type PersistedAiSettings = Omit<AiSettings, "apiKey"> & { aiReady?: boolean };
 
-type SaveAiSettingsInput = {
+export type SaveAiSettingsInput = {
   apiKey?: string;
   baseUrl: string;
   model: string;
   maxTokens: string;
   temperature: string;
   explainEnabled?: boolean;
+  connection?: AiConnectionKind;
+  chatgptModel?: string;
+  claudeCodeModel?: string;
+  claudeCodePath?: string;
 };
 
 const AI_SETTINGS_STORAGE_KEY = "pupil.ai.settings";
 
-const DEFAULT_AI_SETTINGS: AiSettings = {
+export const DEFAULT_CHATGPT_MODEL = "gpt-5.6-terra";
+export const DEFAULT_CLAUDE_CODE_MODEL = "opus";
+
+export const DEFAULT_AI_SETTINGS: AiSettings = {
   apiKey: "",
   hasApiKey: false,
   baseUrl: DEFAULT_AI_BASE_URL,
@@ -47,14 +73,32 @@ const DEFAULT_AI_SETTINGS: AiSettings = {
   maxTokens: "4096",
   temperature: "0.7",
   explainEnabled: true,
+  connection: "apiKey",
+  chatgpt: { status: "disconnected", email: null, planUsage: false, model: DEFAULT_CHATGPT_MODEL },
+  claudeCode: { model: DEFAULT_CLAUDE_CODE_MODEL, path: "", ready: false },
 };
+
+/** Fills in fields an older backend or stored preview might not send. */
+export function fromPersistedAiSettings(state: PersistedAiSettings, apiKey = ""): AiSettings {
+  return {
+    ...DEFAULT_AI_SETTINGS,
+    ...state,
+    apiKey,
+    connection: state.connection ?? "apiKey",
+    chatgpt: { ...DEFAULT_AI_SETTINGS.chatgpt, ...state.chatgpt },
+    claudeCode: { ...DEFAULT_AI_SETTINGS.claudeCode, ...state.claudeCode },
+  };
+}
 
 let pendingTauriAiSettings: Promise<AiSettings> | null = null;
 const SETTINGS_COMMAND_TIMEOUT_MS = 5000;
-const CONNECTION_TEST_TIMEOUT_MS = 15000;
-// Sits above the backend's own per-request timeout so the clearer backend
-// error normally wins the race; this only guarantees the UI cannot hang.
-const GENERATE_TIMEOUT_MS = 120000;
+// Claude Code starts a whole CLI session, so a test can take a few seconds
+// longer than an HTTP round trip.
+const CONNECTION_TEST_TIMEOUT_MS = 60000;
+// Sits above the backend's own limits (90s HTTP, 180s Claude Code) so the
+// clearer backend error normally wins the race; this only guarantees the UI
+// cannot hang.
+const GENERATE_TIMEOUT_MS = 200000;
 
 export async function loadAiSettings(): Promise<AiSettings> {
   if (isTauriRuntime()) {
@@ -65,7 +109,7 @@ export async function loadAiSettings(): Promise<AiSettings> {
         "Loading local AI settings",
         "Please restart the app and try again.",
       )
-        .then((state) => ({ ...state, apiKey: "" }))
+        .then((state) => fromPersistedAiSettings(state))
         .finally(() => {
           pendingTauriAiSettings = null;
         });
@@ -85,14 +129,14 @@ export async function saveAiSettings(input: SaveAiSettingsInput): Promise<AiSett
       "Saving local AI settings",
       "Please restart the app and try again.",
     );
-    return {
-      ...state,
-      apiKey: input.apiKey ?? "",
-    };
+    return fromPersistedAiSettings(state, input.apiKey ?? "");
   }
 
+  // The browser preview has no subscription connections; it keeps the API
+  // key form only.
   const current = readWebAiSettings();
   const nextSettings: AiSettings = {
+    ...current,
     apiKey: input.apiKey ?? current.apiKey,
     hasApiKey:
       typeof input.apiKey === "string" ? input.apiKey.trim().length > 0 : current.hasApiKey,
@@ -133,6 +177,8 @@ export async function generateAiCards(input: {
   difficulty: AiDifficulty;
   style: AiStyle;
   topic: string;
+  /** Lets the caller cancel the request with `cancelAiRequest`. */
+  requestId?: string;
 }): Promise<GeneratedAiCard[]> {
   if (isTauriRuntime()) {
     return withTimeout(
@@ -145,8 +191,55 @@ export async function generateAiCards(input: {
   return buildMockGeneratedCards(input);
 }
 
-export function hasConfiguredAiKey(settings: AiSettings): boolean {
+export function hasConfiguredAiKey(settings: Pick<AiSettings, "apiKey" | "hasApiKey">): boolean {
   return settings.apiKey.trim().length > 0 || settings.hasApiKey;
+}
+
+/**
+ * Whether the selected connection is set up enough to try a request. A
+ * subscription connection never counts a saved API key as ready, since
+ * requests would not fall back to it.
+ */
+export function isAiConnectionReady(settings: AiSettings): boolean {
+  switch (settings.connection) {
+    case "chatgpt":
+      return settings.chatgpt.status === "connected" && settings.chatgpt.planUsage;
+    case "claudeCode":
+      return settings.claudeCode.ready;
+    default:
+      return hasConfiguredAiKey(settings);
+  }
+}
+
+export const CLAUDE_CODE_MODELS: ReadonlyArray<{ id: string; label: string }> = [
+  { id: "opus", label: "Opus" },
+  { id: "sonnet", label: "Sonnet" },
+  { id: "haiku", label: "Haiku" },
+];
+
+/** The model and route shown next to AI actions, e.g. "opus · Claude plan". */
+export function describeAiConnection(settings: AiSettings): { model: string; via: string } {
+  switch (settings.connection) {
+    case "chatgpt":
+      return { model: settings.chatgpt.model, via: "ChatGPT plan" };
+    case "claudeCode":
+      return {
+        model:
+          CLAUDE_CODE_MODELS.find((model) => model.id === settings.claudeCode.model)?.label ??
+          settings.claudeCode.model,
+        via: "Claude plan",
+      };
+    default:
+      return { model: settings.model, via: endpointHost(settings.baseUrl) };
+  }
+}
+
+function endpointHost(baseUrl: string): string {
+  try {
+    return new URL(baseUrl).host;
+  } catch {
+    return baseUrl.replace(/^https?:\/\//, "");
+  }
 }
 
 export function describeAiSettingsError(error: unknown, fallback: string): string {
@@ -207,6 +300,7 @@ function readWebAiSettings(): AiSettings {
     const apiKey = typeof parsed.apiKey === "string" ? parsed.apiKey : DEFAULT_AI_SETTINGS.apiKey;
 
     return {
+      ...DEFAULT_AI_SETTINGS,
       apiKey,
       hasApiKey: apiKey.trim().length > 0,
       baseUrl: typeof parsed.baseUrl === "string" ? parsed.baseUrl : DEFAULT_AI_SETTINGS.baseUrl,
