@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- Use an AI plan you already pay for: Settings → AI now offers a ChatGPT plan connection (Plus or Pro, through OpenAI's plan-usage sign-in) and a Claude plan connection (through your own signed-in Claude Code), alongside API keys. Card generation, single-card regeneration and study explanations all work with either. See `docs/AI_SUBSCRIPTIONS.md`.
+- Cancel a card generation while it runs; leaving the screen also stops it.
+
+### Changed
+
+- AI errors now say what happened (usage limit reached, sign-in expired, Claude Code missing, model unavailable) and point to Settings when that's the fix. A subscription connection never falls back to a saved API key.
+
 ### Fixed
 
 - Linux AppImage: the app no longer aborts at startup ("Could not create default EGL display") on distros whose Mesa is newer than the Wayland library bundled in the AppImage, such as Fedora 44. The AppImage now prefers the system's `libwayland-client`.
