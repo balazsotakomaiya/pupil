@@ -77,6 +77,12 @@ Model choices are Claude Code's aliases (**Opus**, **Sonnet**, **Haiku**), which
 
 The loopback sign-in uses `127.0.0.1:1455` when it's free, and otherwise any free port.
 
+### What has been verified
+
+- **Claude plan:** live runs on macOS with a Claude Max plan: Opus generated valid cards, Sonnet produced an explanation, an unknown model got the right error.
+- **ChatGPT plan:** sign-in, refresh, retry, disconnect and re-registration were run against a local mock of OpenAI's endpoints, and OpenAI's live discovery and keys endpoints were checked. A real sign-in and request with a Plus or Pro account has not been run yet.
+- **Not yet run:** the full flow inside the native desktop window (Settings → generate → review and save → study explanation), and either connection on a real Windows or Linux machine. CI compiles both.
+
 ## Privacy
 
 Card text, topics and prompts go to the provider of the connection you choose (OpenAI, or Anthropic through Claude Code), under your account and subject to that provider's terms. Pupil adds no server in between. Nothing about subscriptions is written to logs, and IPC responses carry connection status, never tokens.
