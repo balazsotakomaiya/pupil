@@ -4,7 +4,7 @@ use rusqlite::Connection;
 use tauri::{AppHandle, Manager};
 
 use super::chatgpt::CHATGPT_PROVIDER;
-use super::chatgpt_session::ChatgptStatus;
+use super::chatgpt_session::{has_saved_registration, ChatgptStatus};
 use super::claude_code::{discover_binary, ClaudeCodeTarget, DiscoveryEnv};
 use super::connection::{AiConnectionKind, ResolvedAiTarget};
 use super::secrets::{clear_ai_api_key, load_ai_api_key, save_ai_api_key};
@@ -65,6 +65,7 @@ pub(crate) fn load_ai_settings_rows(connection: &Connection) -> AppResult<AiSett
             AI_SETTING_CHATGPT_MODEL_KEY,
             DEFAULT_CHATGPT_MODEL,
         )?,
+        saved_account: has_saved_registration(connection)?,
     };
     let claude_code = ClaudeCodeSettingsState {
         model: load_string_setting(

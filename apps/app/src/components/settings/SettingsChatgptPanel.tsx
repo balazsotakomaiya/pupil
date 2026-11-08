@@ -74,11 +74,11 @@ export function SettingsChatgptPanel({
     };
   }, [usable]);
 
-  async function handleSignIn() {
+  async function handleSignIn(newAccount = false) {
     setSigningIn(true);
     setNotice(null);
     try {
-      const settings = await startChatgptSignIn();
+      const settings = await startChatgptSignIn({ newAccount });
       onSettingsChanged(settings);
       setShowWelcome(settings.chatgpt.planUsage);
     } catch (error: unknown) {
@@ -231,7 +231,7 @@ export function SettingsChatgptPanel({
             <button
               className={styles.primaryBtn}
               disabled={busy}
-              onClick={() => void handleSignIn()}
+              onClick={() => void handleSignIn(false)}
               type="button"
             >
               {signingIn
@@ -247,6 +247,16 @@ export function SettingsChatgptPanel({
                 type="button"
               >
                 Cancel
+              </button>
+            ) : null}
+            {state.savedAccount && !signingIn ? (
+              <button
+                className={styles.linkBtn}
+                disabled={busy}
+                onClick={() => void handleSignIn(true)}
+                type="button"
+              >
+                Use a different account
               </button>
             ) : null}
             {state.status !== "disconnected" && !signingIn ? (

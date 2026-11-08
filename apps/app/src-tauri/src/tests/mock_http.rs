@@ -1,5 +1,6 @@
 //! A tiny loopback HTTP server for exercising provider clients end to end
-//! without the network. Each connection is one request/response.
+//! without the network. Each connection is one request/response, served on
+//! its own thread.
 
 use std::collections::HashMap;
 use std::io::{Read, Write};
@@ -92,23 +93,29 @@ impl MockServer {
             while !thread_stop.load(Ordering::SeqCst) {
                 match listener.accept() {
                     Ok((mut stream, _)) => {
-                        stream.set_nonblocking(false).ok();
-                        stream.set_read_timeout(Some(Duration::from_secs(5))).ok();
-                        let Some(request) = read_request(&mut stream) else {
-                            continue;
-                        };
-                        thread_requests.lock().unwrap().push(request.clone());
-                        let response = handler(&request);
-                        let reason = if response.status < 400 { "OK" } else { "Error" };
-                        let _ = write!(
-                            stream,
-                            "HTTP/1.1 {} {reason}\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
-                            response.status,
-                            response.content_type,
-                            response.body.len(),
-                            response.body
-                        );
-                        let _ = stream.flush();
+                        // Each connection gets its own thread, so a test can
+                        // hold one response while other requests go through.
+                        let requests = Arc::clone(&thread_requests);
+                        let handler = Arc::clone(&handler);
+                        std::thread::spawn(move || {
+                            stream.set_nonblocking(false).ok();
+                            stream.set_read_timeout(Some(Duration::from_secs(5))).ok();
+                            let Some(request) = read_request(&mut stream) else {
+                                return;
+                            };
+                            requests.lock().unwrap().push(request.clone());
+                            let response = handler(&request);
+                            let reason = if response.status < 400 { "OK" } else { "Error" };
+                            let _ = write!(
+                                stream,
+                                "HTTP/1.1 {} {reason}\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                                response.status,
+                                response.content_type,
+                                response.body.len(),
+                                response.body
+                            );
+                            let _ = stream.flush();
+                        });
                     }
                     Err(_) => std::thread::sleep(Duration::from_millis(5)),
                 }

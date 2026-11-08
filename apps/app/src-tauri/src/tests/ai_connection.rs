@@ -462,14 +462,16 @@ mod dispatch {
     use serde_json::json;
 
     use super::super::mock_http::{MockResponse, MockServer};
-    use crate::ai::testing::{CancelToken, ChatgptCredentials, CredentialStore, PLAN_USAGE_SCOPE};
+    use crate::ai::testing::{
+        CancelToken, ChatgptCredentials, CredentialStore, SessionGate, PLAN_USAGE_SCOPE,
+    };
     use crate::ai::{
         execute_ai_target, AiExecution, AiRequestRegistry, ChatgptEndpoints, ResolvedAiTarget,
     };
     use crate::error::{AiConnectionReason, AppResult};
     use crate::types::ResolvedAiSettings;
 
-    struct OneSession(Mutex<Option<ChatgptCredentials>>);
+    struct OneSession(Mutex<Option<ChatgptCredentials>>, SessionGate);
 
     impl CredentialStore for OneSession {
         fn load(&self) -> AppResult<Option<ChatgptCredentials>> {
@@ -483,21 +485,27 @@ mod dispatch {
             *self.0.lock().unwrap() = None;
             Ok(())
         }
+        fn gate(&self) -> &SessionGate {
+            &self.1
+        }
     }
 
     fn session() -> OneSession {
-        OneSession(Mutex::new(Some(ChatgptCredentials {
-            client_id: "oaiapp_x".into(),
-            subject: "sub".into(),
-            email: None,
-            id_token: String::new(),
-            access_token: "plan-token".into(),
-            refresh_token: Some("refresh".into()),
-            token_type: "Bearer".into(),
-            expires_at_ms: crate::util::now_ms() + 3_600_000,
-            scopes: vec![PLAN_USAGE_SCOPE.into()],
-            saved_at_ms: 0,
-        })))
+        OneSession(
+            Mutex::new(Some(ChatgptCredentials {
+                client_id: "oaiapp_x".into(),
+                subject: "sub".into(),
+                email: None,
+                id_token: String::new(),
+                access_token: "plan-token".into(),
+                refresh_token: Some("refresh".into()),
+                token_type: "Bearer".into(),
+                expires_at_ms: crate::util::now_ms() + 3_600_000,
+                scopes: vec![PLAN_USAGE_SCOPE.into()],
+                saved_at_ms: 0,
+            })),
+            SessionGate::default(),
+        )
     }
 
     fn api_target(base: &str) -> ResolvedAiTarget {

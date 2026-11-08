@@ -33,6 +33,7 @@ const connected: ChatgptConnectionState = {
   email: "learner@example.com",
   planUsage: true,
   model: "gpt-a",
+  savedAccount: true,
 };
 
 function renderPanel(state: ChatgptConnectionState, overrides = {}) {
@@ -82,6 +83,29 @@ it("offers Cancel while the browser sign-in is open, without showing an error", 
 
   expect(await screen.findByRole("button", { name: "Continue with ChatGPT" })).toBeEnabled();
   expect(screen.queryByText("Not connected", { selector: "[role=status] *" })).toBeNull();
+});
+
+it("signs in a different account with a fresh registration", async () => {
+  vi.mocked(startChatgptSignIn).mockResolvedValue({
+    ...DEFAULT_AI_SETTINGS,
+    connection: "chatgpt",
+    chatgpt: connected,
+  });
+  renderPanel({ ...disconnected, savedAccount: true });
+
+  await userEvent.click(screen.getByRole("button", { name: "Use a different account" }));
+
+  expect(startChatgptSignIn).toHaveBeenCalledWith({ newAccount: true });
+  expect(await screen.findByText("You're using your ChatGPT plan")).toBeInTheDocument();
+});
+
+it("reauthorizes the saved account by default and hides the switch on first sign-in", async () => {
+  vi.mocked(startChatgptSignIn).mockResolvedValue({ ...DEFAULT_AI_SETTINGS });
+  renderPanel(disconnected);
+
+  expect(screen.queryByRole("button", { name: "Use a different account" })).toBeNull();
+  await userEvent.click(screen.getByRole("button", { name: "Continue with ChatGPT" }));
+  expect(startChatgptSignIn).toHaveBeenCalledWith({ newAccount: false });
 });
 
 it("shows why a sign-in failed", async () => {

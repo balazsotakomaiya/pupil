@@ -13,11 +13,14 @@ mod settings_store;
 mod validation;
 
 pub(crate) use cancellation::AiRequestRegistry;
-pub(crate) use chatgpt::{ChatgptEndpoints, ChatgptModel, CHATGPT_PROVIDER};
+pub(crate) use chatgpt::{
+    is_registration_rejected, ChatgptEndpoints, ChatgptModel, CHATGPT_PROVIDER,
+};
 pub(crate) use chatgpt_session::{
-    disconnect as disconnect_chatgpt, list_chatgpt_models, load_sign_in_inputs, record_sign_in,
-    record_status as record_chatgpt_status, run_sign_in as run_chatgpt_sign_in, sign_in_control,
-    ChatgptStatus,
+    disconnect as disconnect_chatgpt, forget_registration as forget_chatgpt_registration,
+    list_chatgpt_models, load_sign_in_inputs, note_session_failure as note_chatgpt_failure,
+    record_sign_in, record_status as record_chatgpt_status, run_sign_in as run_chatgpt_sign_in,
+    sign_in_control, ChatgptStatus,
 };
 pub(crate) use claude_code::{probe_status as probe_claude_code_status, ClaudeCodeStatus};
 pub(crate) use connection::{execute_ai_target, AiConnectionKind, AiExecution, ResolvedAiTarget};
@@ -59,8 +62,8 @@ pub(crate) mod testing {
         ChatgptCredentials, PendingAuthorization, PLAN_USAGE_SCOPE,
     };
     pub(crate) use super::chatgpt_session::{
-        ensure_fresh_credentials, execute_chatgpt_completion, CredentialStore, SignInControl,
-        SignInInputs,
+        ensure_fresh_credentials, execute_chatgpt_completion, CredentialStore, SessionGate,
+        SignInControl, SignInInputs,
     };
     pub(crate) use super::claude_code::{
         build_run_args, candidate_paths, check_binary_name, child_path_var, classify_run_error,

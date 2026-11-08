@@ -19,7 +19,13 @@ const persistedChatgpt = {
   temperature: "0.7",
   explainEnabled: true,
   connection: "chatgpt",
-  chatgpt: { status: "connected", email: "learner@example.com", planUsage: true, model: "gpt-a" },
+  chatgpt: {
+    status: "connected",
+    email: "learner@example.com",
+    planUsage: true,
+    model: "gpt-a",
+    savedAccount: true,
+  },
   claudeCode: { model: "opus", path: "", ready: false },
   aiReady: true,
 };
@@ -49,7 +55,7 @@ describe("subscription connections in the desktop app", () => {
     enableTauriRuntime();
     invokeMock.mockResolvedValue(persistedChatgpt);
     const settings = await startChatgptSignIn();
-    expect(invokeMock).toHaveBeenCalledWith("start_chatgpt_sign_in", undefined);
+    expect(invokeMock).toHaveBeenCalledWith("start_chatgpt_sign_in", { newAccount: false });
     expect(settings.chatgpt).toEqual(persistedChatgpt.chatgpt);
     expect(settings.apiKey).toBe("");
     expect(JSON.stringify(settings)).not.toMatch(/(access|refresh|id)_?token/i);

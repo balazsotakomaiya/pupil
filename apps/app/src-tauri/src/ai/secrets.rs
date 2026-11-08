@@ -298,4 +298,8 @@ impl super::chatgpt_session::CredentialStore for SecureCredentialStore<'_> {
     fn clear(&self) -> AppResult<()> {
         clear_secret(self.0, CHATGPT_CREDENTIALS_SLOT)
     }
+
+    fn gate(&self) -> &super::chatgpt_session::SessionGate {
+        super::chatgpt_session::secure_store_gate()
+    }
 }

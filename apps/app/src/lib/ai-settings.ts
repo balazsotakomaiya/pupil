@@ -14,6 +14,8 @@ export type ChatgptConnectionState = {
   email: string | null;
   planUsage: boolean;
   model: string;
+  /** An earlier sign-in's registration is kept, so a different account can sign in instead. */
+  savedAccount: boolean;
 };
 
 export type ClaudeCodeSettings = {
@@ -74,7 +76,13 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
   temperature: "0.7",
   explainEnabled: true,
   connection: "apiKey",
-  chatgpt: { status: "disconnected", email: null, planUsage: false, model: DEFAULT_CHATGPT_MODEL },
+  chatgpt: {
+    status: "disconnected",
+    email: null,
+    planUsage: false,
+    model: DEFAULT_CHATGPT_MODEL,
+    savedAccount: false,
+  },
   claudeCode: { model: DEFAULT_CLAUDE_CODE_MODEL, path: "", ready: false },
 };
 

@@ -205,6 +205,24 @@ fn sign_in_error(reason: AiConnectionReason, message: impl Into<String>) -> AppE
     AppError::ai_connection(CHATGPT_PROVIDER, reason, message)
 }
 
+const REGISTRATION_REJECTED_MESSAGE: &str =
+    "OpenAI no longer recognizes Pupil's earlier registration. Connect ChatGPT again and Pupil will register afresh.";
+
+/// OpenAI rejected the issued client ID Pupil saved. The session is over and
+/// the saved registration must be dropped, or every later sign-in would
+/// reuse the rejected ID.
+pub(crate) fn registration_rejected() -> AppError {
+    sign_in_error(AiConnectionReason::Expired, REGISTRATION_REJECTED_MESSAGE)
+}
+
+pub(crate) fn is_registration_rejected(error: &AppError) -> bool {
+    matches!(
+        error,
+        AppError::AiConnection { message, provider, .. }
+            if provider == CHATGPT_PROVIDER && message == REGISTRATION_REJECTED_MESSAGE
+    )
+}
+
 /// Validates the redirect the browser sent back to the loopback listener.
 pub(crate) fn parse_callback(
     request_target: &str,
@@ -228,6 +246,11 @@ pub(crate) fn parse_callback(
         ));
     }
     if let Some(error) = param("error") {
+        if pending.client_id.is_some()
+            && matches!(error.as_str(), "invalid_client" | "unauthorized_client")
+        {
+            return Err(registration_rejected());
+        }
         return Err(if error == "access_denied" {
             sign_in_error(
                 AiConnectionReason::Declined,
@@ -316,15 +339,16 @@ pub(crate) fn classify_token_error(status: u16, body: &str) -> AppError {
         })
         .unwrap_or_default();
     match code.as_str() {
-        "invalid_grant" | "invalid_refresh_token" | "token_expired" | "refresh_token_expired"
-        | "refresh_token_invalidated" | "refresh_token_reused" => sign_in_error(
+        "invalid_grant"
+        | "invalid_refresh_token"
+        | "token_expired"
+        | "refresh_token_expired"
+        | "refresh_token_invalidated"
+        | "refresh_token_reused" => sign_in_error(
             AiConnectionReason::Expired,
             "Your ChatGPT connection has ended. Reconnect in Settings to keep using your plan.",
         ),
-        "invalid_client" => sign_in_error(
-            AiConnectionReason::Expired,
-            "OpenAI no longer recognizes Pupil's registration. Disconnect and connect ChatGPT again.",
-        ),
+        "invalid_client" => registration_rejected(),
         _ => AppError::ai_provider(
             "OpenAI's sign-in service rejected the request.",
             Some(format!("HTTP {status} {}", sanitize_code(&code))),

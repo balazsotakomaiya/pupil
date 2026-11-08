@@ -3,7 +3,7 @@
 //! so the whole flow runs against a mock OpenAI in tests.
 
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 use rusqlite::Connection;
@@ -11,9 +11,10 @@ use tokio::sync::Mutex as AsyncMutex;
 
 use super::chatgpt::{
     bind_loopback, build_authorize_url, exchange_code, execute_responses, fetch_discovery,
-    fetch_jwks, is_valid_host_id, list_models, new_host_id, parse_callback, refresh_tokens, revoke,
-    split_scopes, validate_id_claims, verify_rs256, wait_for_callback, ChatgptCredentials,
-    ChatgptEndpoints, ChatgptModel, PendingAuthorization, TokenResponse, CHATGPT_PROVIDER,
+    fetch_jwks, is_registration_rejected, is_valid_host_id, list_models, new_host_id,
+    parse_callback, refresh_tokens, revoke, split_scopes, validate_id_claims, verify_rs256,
+    wait_for_callback, ChatgptCredentials, ChatgptEndpoints, ChatgptModel, PendingAuthorization,
+    TokenResponse, CHATGPT_PROVIDER,
 };
 use super::settings_store::{delete_setting, load_string_setting, upsert_setting_on};
 use crate::constants::{
@@ -27,6 +28,58 @@ pub(crate) trait CredentialStore: Sync {
     fn load(&self) -> AppResult<Option<ChatgptCredentials>>;
     fn save(&self, credentials: &ChatgptCredentials) -> AppResult<()>;
     fn clear(&self) -> AppResult<()>;
+    /// The gate that orders changes to this store's session.
+    fn gate(&self) -> &SessionGate;
+}
+
+/// Orders everything that changes the stored session. Refreshes are
+/// serialized, because refresh tokens rotate. Each sign-in or disconnect
+/// starts a new generation, and a refresh or request that began in an
+/// earlier generation can't save tokens or start inference after it.
+#[derive(Default)]
+pub(crate) struct SessionGate {
+    refresh: AsyncMutex<()>,
+    generation: Mutex<u64>,
+}
+
+impl SessionGate {
+    fn lock_generation(&self) -> std::sync::MutexGuard<'_, u64> {
+        self.generation
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    pub(crate) fn generation(&self) -> u64 {
+        *self.lock_generation()
+    }
+
+    /// Runs `change` only if the session is still the one seen at
+    /// `generation`. Returns whether it ran.
+    fn commit_if_current(
+        &self,
+        generation: u64,
+        change: impl FnOnce() -> AppResult<()>,
+    ) -> AppResult<bool> {
+        let current = self.lock_generation();
+        if *current != generation {
+            return Ok(false);
+        }
+        change()?;
+        Ok(true)
+    }
+
+    /// Starts a new session generation and makes `change` under it.
+    fn replace<T>(&self, change: impl FnOnce() -> AppResult<T>) -> AppResult<T> {
+        let mut current = self.lock_generation();
+        *current += 1;
+        change()
+    }
+}
+
+/// The gate for the session in the OS secure store.
+pub(crate) fn secure_store_gate() -> &'static SessionGate {
+    static GATE: OnceLock<SessionGate> = OnceLock::new();
+    GATE.get_or_init(SessionGate::default)
 }
 
 /// Connection status kept in SQLite. It is display state only; the tokens
@@ -107,7 +160,13 @@ pub(crate) struct SignInInputs {
     pub(crate) saved_client_id: Option<String>,
 }
 
-pub(crate) fn load_sign_in_inputs(connection: &Connection) -> AppResult<SignInInputs> {
+/// `new_account` starts a fresh registration, which is how a different
+/// ChatGPT account or workspace signs in; otherwise the saved registration
+/// is reused, as OpenAI asks for a returning account.
+pub(crate) fn load_sign_in_inputs(
+    connection: &Connection,
+    new_account: bool,
+) -> AppResult<SignInInputs> {
     let mut host_id = load_string_setting(connection, AI_SETTING_CHATGPT_HOST_ID_KEY, "")?;
     if !is_valid_host_id(&host_id) {
         // Chosen and persisted once, before the first sign-in, as OpenAI asks.
@@ -119,7 +178,7 @@ pub(crate) fn load_sign_in_inputs(connection: &Connection) -> AppResult<SignInIn
         AI_SETTING_CHATGPT_CLIENT_ID_KEY,
         "",
     )?)
-    .filter(|id| !id.trim().is_empty());
+    .filter(|id| !id.trim().is_empty() && !new_account);
     Ok(SignInInputs {
         host_id,
         saved_client_id,
@@ -219,7 +278,7 @@ pub(crate) fn record_sign_in(
     store: &dyn CredentialStore,
     credentials: &ChatgptCredentials,
 ) -> AppResult<()> {
-    store.save(credentials)?;
+    store.gate().replace(|| store.save(credentials))?;
     let transaction = connection.transaction()?;
     upsert_setting_on(
         &transaction,
@@ -258,9 +317,38 @@ pub(crate) fn record_status(connection: &Connection, status: ChatgptStatus) -> A
     Ok(())
 }
 
-fn refresh_lock() -> &'static AsyncMutex<()> {
-    static LOCK: OnceLock<AsyncMutex<()>> = OnceLock::new();
-    LOCK.get_or_init(|| AsyncMutex::new(()))
+/// Drops the saved registration, so the next sign-in registers afresh.
+pub(crate) fn forget_registration(connection: &Connection) -> AppResult<()> {
+    delete_setting(connection, AI_SETTING_CHATGPT_CLIENT_ID_KEY)?;
+    Ok(())
+}
+
+/// Keeps SQLite honest after a request found the ChatGPT session over:
+/// marks it expired so Settings offers Reconnect, and drops a registration
+/// OpenAI rejected so reconnecting registers afresh.
+pub(crate) fn note_session_failure(connection: &Connection, error: &AppError) -> AppResult<()> {
+    if is_registration_rejected(error) {
+        forget_registration(connection)?;
+    }
+    if matches!(
+        error,
+        AppError::AiConnection {
+            reason: AiConnectionReason::Expired,
+            provider,
+            ..
+        } if provider == CHATGPT_PROVIDER
+    ) {
+        record_status(connection, ChatgptStatus::Expired)?;
+    }
+    Ok(())
+}
+
+pub(crate) fn has_saved_registration(connection: &Connection) -> AppResult<bool> {
+    Ok(
+        !load_string_setting(connection, AI_SETTING_CHATGPT_CLIENT_ID_KEY, "")?
+            .trim()
+            .is_empty(),
+    )
 }
 
 fn connection_ended() -> AppError {
@@ -271,24 +359,52 @@ fn connection_ended() -> AppError {
     )
 }
 
+/// The user disconnected, or signed in again, while this request ran. It is
+/// reported like a cancellation: nothing is recorded as expired.
+fn session_changed() -> AppError {
+    AppError::ai_connection(
+        CHATGPT_PROVIDER,
+        AiConnectionReason::Cancelled,
+        "ChatGPT was disconnected or reconnected while this request was running.",
+    )
+}
+
 /// Returns credentials with a live access token, refreshing when it is near
 /// expiry (or when `force` is set after a 401). Refreshes are serialized
 /// because refresh tokens rotate and a race would invalidate the session.
+#[cfg(test)]
 pub(crate) async fn ensure_fresh_credentials(
     endpoints: &ChatgptEndpoints,
     store: &dyn CredentialStore,
     force: bool,
     now_ms: &(dyn Fn() -> i64 + Sync),
 ) -> AppResult<ChatgptCredentials> {
+    fresh_session(endpoints, store, force, now_ms)
+        .await
+        .map(|(credentials, _)| credentials)
+}
+
+/// Like [`ensure_fresh_credentials`], also returning the session generation
+/// the credentials belong to.
+async fn fresh_session(
+    endpoints: &ChatgptEndpoints,
+    store: &dyn CredentialStore,
+    force: bool,
+    now_ms: &(dyn Fn() -> i64 + Sync),
+) -> AppResult<(ChatgptCredentials, u64)> {
+    let gate = store.gate();
+    let generation = gate.generation();
     let current = store.load()?.ok_or_else(connection_ended)?;
     if !force && !current.needs_refresh(now_ms()) {
-        return Ok(current);
+        return Ok((current, generation));
     }
-    let _guard = refresh_lock().lock().await;
-    // Another request may have refreshed while this one waited.
+    let _guard = gate.refresh.lock().await;
+    // Another request may have refreshed, or the user disconnected, while
+    // this one waited.
+    let generation = gate.generation();
     let current = store.load()?.ok_or_else(connection_ended)?;
     if !current.needs_refresh(now_ms()) && (!force || current.saved_at_ms > now_ms() - 5_000) {
-        return Ok(current);
+        return Ok((current, generation));
     }
     match refresh_tokens(endpoints, &current).await {
         Ok(tokens) => {
@@ -300,8 +416,13 @@ pub(crate) async fn ensure_fresh_credentials(
                 Some(&current),
                 now_ms(),
             );
-            store.save(&next)?;
-            Ok(next)
+            if !gate.commit_if_current(generation, || store.save(&next))? {
+                // Disconnected mid-refresh: don't keep, or leave usable,
+                // the tokens that just arrived.
+                let _ = revoke(endpoints, &next).await;
+                return Err(session_changed());
+            }
+            Ok((next, generation))
         }
         Err(
             error @ AppError::AiConnection {
@@ -309,11 +430,24 @@ pub(crate) async fn ensure_fresh_credentials(
                 ..
             },
         ) => {
-            // The refresh token is unusable: clear it so nothing retries it.
-            store.clear()?;
+            // The refresh token is unusable: clear it so nothing retries it,
+            // unless a newer session has already replaced it.
+            if !gate.commit_if_current(generation, || store.clear())? {
+                return Err(session_changed());
+            }
             Err(error)
         }
         Err(error) => Err(error),
+    }
+}
+
+/// Fails if the session changed since `generation`, so a request never
+/// starts on tokens from a session the user ended.
+fn ensure_same_session(store: &dyn CredentialStore, generation: u64) -> AppResult<()> {
+    if store.gate().generation() == generation {
+        Ok(())
+    } else {
+        Err(session_changed())
     }
 }
 
@@ -335,16 +469,18 @@ pub(crate) async fn execute_chatgpt_completion(
     user: &str,
     now_ms: &(dyn Fn() -> i64 + Sync),
 ) -> AppResult<String> {
-    let credentials = ensure_fresh_credentials(endpoints, store, false, now_ms).await?;
+    let (credentials, generation) = fresh_session(endpoints, store, false, now_ms).await?;
     if !credentials.has_plan_usage() {
         return Err(plan_usage_declined());
     }
+    ensure_same_session(store, generation)?;
     match execute_responses(endpoints, &credentials.access_token, model, system, user).await {
         Err(AppError::AiConnection {
             reason: AiConnectionReason::Expired,
             ..
         }) => {
-            let refreshed = ensure_fresh_credentials(endpoints, store, true, now_ms).await?;
+            let (refreshed, generation) = fresh_session(endpoints, store, true, now_ms).await?;
+            ensure_same_session(store, generation)?;
             execute_responses(endpoints, &refreshed.access_token, model, system, user).await
         }
         other => other,
@@ -356,20 +492,26 @@ pub(crate) async fn list_chatgpt_models(
     store: &dyn CredentialStore,
     now_ms: &(dyn Fn() -> i64 + Sync),
 ) -> AppResult<Vec<ChatgptModel>> {
-    let credentials = ensure_fresh_credentials(endpoints, store, false, now_ms).await?;
+    let (credentials, generation) = fresh_session(endpoints, store, false, now_ms).await?;
+    ensure_same_session(store, generation)?;
     list_models(endpoints, &credentials.access_token).await
 }
 
-/// Revokes and forgets the session. Local tokens are cleared even if OpenAI
-/// can't be reached; the return value says whether revocation was confirmed.
+/// Forgets the session, then revokes it. Local tokens are cleared first,
+/// under a new session generation, so a refresh already in flight can't
+/// write them back and no new request can start on them. The return value
+/// says whether OpenAI confirmed the revocation.
 pub(crate) async fn disconnect(
     endpoints: &ChatgptEndpoints,
     store: &dyn CredentialStore,
 ) -> AppResult<bool> {
-    let revoked = match store.load()? {
+    let previous = store.gate().replace(|| {
+        let previous = store.load()?;
+        store.clear()?;
+        Ok(previous)
+    })?;
+    Ok(match previous {
         Some(credentials) => revoke(endpoints, &credentials).await,
         None => true,
-    };
-    store.clear()?;
-    Ok(revoked)
+    })
 }

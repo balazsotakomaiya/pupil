@@ -10,14 +10,15 @@ use tauri_plugin_opener::OpenerExt;
 use crate::ai::{
     build_explain_card_prompt, build_explain_prose_fallback_prompt, build_explain_repair_prompt,
     build_generate_cards_prompt, claude_code_workdir, disconnect_chatgpt, execute_ai_target,
-    execute_explain_completion_with_retries, fetch_model_catalog, list_chatgpt_models,
-    load_ai_settings_state, load_resolved_ai_target, load_sign_in_inputs,
-    normalize_ai_settings_input, normalize_generate_cards_input, parse_explain_card_response,
-    parse_generated_cards_response, probe_claude_code_status, record_chatgpt_status,
-    record_claude_code_ready, record_sign_in, resolve_ai_target_for_test,
-    resolve_model_catalog_credentials, run_chatgpt_sign_in, save_ai_settings_rows, sign_in_control,
-    AiExecution, AiModelCatalog, AiRequestRegistry, ChatgptEndpoints, ChatgptModel, ChatgptStatus,
-    ClaudeCodeStatus, ListAiModelsInput, ResolvedAiTarget, SecureCredentialStore, CHATGPT_PROVIDER,
+    execute_explain_completion_with_retries, fetch_model_catalog, forget_chatgpt_registration,
+    is_registration_rejected, list_chatgpt_models, load_ai_settings_state, load_resolved_ai_target,
+    load_sign_in_inputs, normalize_ai_settings_input, normalize_generate_cards_input,
+    note_chatgpt_failure, parse_explain_card_response, parse_generated_cards_response,
+    probe_claude_code_status, record_chatgpt_status, record_claude_code_ready, record_sign_in,
+    resolve_ai_target_for_test, resolve_model_catalog_credentials, run_chatgpt_sign_in,
+    save_ai_settings_rows, sign_in_control, AiExecution, AiModelCatalog, AiRequestRegistry,
+    ChatgptEndpoints, ChatgptModel, ChatgptStatus, ClaudeCodeStatus, ListAiModelsInput,
+    ResolvedAiTarget, SecureCredentialStore, CHATGPT_PROVIDER,
 };
 use crate::analytics::{list_space_stats_rows, load_dashboard_stats};
 use crate::app::{
@@ -295,18 +296,16 @@ fn ai_registry(app: &AppHandle) -> Arc<AiRequestRegistry> {
 /// has ended, so Settings and the AI gates offer Reconnect.
 async fn note_ai_failure(app: &AppHandle, error: &AppError) {
     if let AppError::AiConnection {
-        reason: AiConnectionReason::Expired,
+        reason: reason @ AiConnectionReason::Expired,
         provider,
-        ..
+        message,
     } = error
     {
         if provider == CHATGPT_PROVIDER {
             let app = app.clone();
-            let _ = run_blocking(move || {
-                let connection = open_app_connection(&app)?;
-                record_chatgpt_status(&connection, ChatgptStatus::Expired)
-            })
-            .await;
+            let error = AppError::ai_connection(provider, *reason, message.clone());
+            let _ = run_blocking(move || note_chatgpt_failure(&open_app_connection(&app)?, &error))
+                .await;
         }
     }
 }
@@ -447,14 +446,18 @@ pub(crate) async fn get_claude_code_status(
 }
 
 /// Opens the system browser for OpenAI's ChatGPT plan-usage sign-in and
-/// waits (bounded) for the loopback redirect.
+/// waits (bounded) for the loopback redirect. `new_account` registers
+/// afresh instead of reauthorizing the saved account.
 #[tauri::command]
 #[tracing::instrument(skip(app))]
-pub(crate) async fn start_chatgpt_sign_in(app: AppHandle) -> Result<AiSettingsState, AppError> {
+pub(crate) async fn start_chatgpt_sign_in(
+    app: AppHandle,
+    new_account: Option<bool>,
+) -> Result<AiSettingsState, AppError> {
     let load_app = app.clone();
     let inputs = run_blocking(move || {
         let connection = open_app_connection(&load_app)?;
-        load_sign_in_inputs(&connection)
+        load_sign_in_inputs(&connection, new_account.unwrap_or(false))
     })
     .await?;
     let endpoints = ChatgptEndpoints::default();
@@ -472,7 +475,20 @@ pub(crate) async fn start_chatgpt_sign_in(app: AppHandle) -> Result<AiSettingsSt
         Duration::from_secs(CHATGPT_SIGN_IN_TIMEOUT_SECS),
         now_ms,
     )
-    .await?;
+    .await;
+    let credentials = match credentials {
+        Ok(credentials) => credentials,
+        Err(error) => {
+            if is_registration_rejected(&error) {
+                let forget_app = app.clone();
+                run_blocking(move || {
+                    forget_chatgpt_registration(&open_app_connection(&forget_app)?)
+                })
+                .await?;
+            }
+            return Err(error);
+        }
+    };
     run_blocking(move || {
         let mut connection = open_app_connection(&app)?;
         record_sign_in(&mut connection, &SecureCredentialStore(&app), &credentials)?;

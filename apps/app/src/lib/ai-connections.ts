@@ -45,11 +45,18 @@ export async function getClaudeCodeStatus(path?: string): Promise<ClaudeCodeStat
   );
 }
 
-/** Opens the browser for ChatGPT sign-in and resolves once it completes. */
-export async function startChatgptSignIn(): Promise<AiSettings> {
+/**
+ * Opens the browser for ChatGPT sign-in and resolves once it completes.
+ * `newAccount` registers afresh instead of reauthorizing the saved account.
+ */
+export async function startChatgptSignIn(
+  options: { newAccount?: boolean } = {},
+): Promise<AiSettings> {
   requireDesktop("ChatGPT plan usage");
   const state = await withTimeout(
-    invokeCommand<PersistedAiSettings>("start_chatgpt_sign_in"),
+    invokeCommand<PersistedAiSettings>("start_chatgpt_sign_in", {
+      newAccount: options.newAccount ?? false,
+    }),
     SIGN_IN_TIMEOUT_MS,
     "Connecting ChatGPT",
   );

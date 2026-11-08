@@ -221,6 +221,9 @@ pub(crate) struct ChatgptSettingsState {
     pub(crate) email: Option<String>,
     pub(crate) plan_usage: bool,
     pub(crate) model: String,
+    /// Whether a ChatGPT registration from an earlier sign-in is kept, so
+    /// Settings can offer signing in with a different account instead.
+    pub(crate) saved_account: bool,
 }
 
 #[derive(Serialize, Clone, Debug, PartialEq)]

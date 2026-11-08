@@ -14,7 +14,13 @@ const savedApiKeySettings = {
   temperature: "0.7",
   explainEnabled: true,
   connection: "apiKey",
-  chatgpt: { status: "disconnected", email: null, planUsage: false, model: "gpt-5.6-terra" },
+  chatgpt: {
+    status: "disconnected",
+    email: null,
+    planUsage: false,
+    model: "gpt-5.6-terra",
+    savedAccount: false,
+  },
   claudeCode: { model: "opus", path: "", ready: false },
   aiReady: true,
 };
