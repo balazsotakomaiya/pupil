@@ -206,6 +206,29 @@ pub(crate) struct AiSettingsState {
     pub(crate) temperature: String,
     pub(crate) has_api_key: bool,
     pub(crate) explain_enabled: bool,
+    pub(crate) connection: crate::ai::AiConnectionKind,
+    pub(crate) chatgpt: ChatgptSettingsState,
+    pub(crate) claude_code: ClaudeCodeSettingsState,
+    /// Whether the selected connection is set up enough to try a request.
+    pub(crate) ai_ready: bool,
+}
+
+/// Display state for the ChatGPT connection. Tokens are never part of it.
+#[derive(Serialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ChatgptSettingsState {
+    pub(crate) status: String,
+    pub(crate) email: Option<String>,
+    pub(crate) plan_usage: bool,
+    pub(crate) model: String,
+}
+
+#[derive(Serialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ClaudeCodeSettingsState {
+    pub(crate) model: String,
+    pub(crate) path: String,
+    pub(crate) ready: bool,
 }
 
 #[derive(Deserialize)]
@@ -217,6 +240,23 @@ pub(crate) struct SaveAiSettingsInput {
     pub(crate) max_tokens: String,
     pub(crate) temperature: String,
     pub(crate) explain_enabled: Option<bool>,
+    #[serde(default)]
+    pub(crate) connection: Option<String>,
+    #[serde(default)]
+    pub(crate) chatgpt_model: Option<String>,
+    #[serde(default)]
+    pub(crate) claude_code_model: Option<String>,
+    #[serde(default)]
+    pub(crate) claude_code_path: Option<String>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ChatgptDisconnectResult {
+    /// Whether OpenAI confirmed the sign-in was revoked. Local tokens are
+    /// removed either way.
+    pub(crate) remote_revoked: bool,
+    pub(crate) settings: AiSettingsState,
 }
 
 #[derive(Serialize)]
@@ -233,6 +273,9 @@ pub(crate) struct GenerateCardsInput {
     pub(crate) count: Option<i64>,
     pub(crate) difficulty: String,
     pub(crate) style: String,
+    /// Lets the frontend cancel this request with `cancel_ai_request`.
+    #[serde(default)]
+    pub(crate) request_id: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -247,6 +290,9 @@ pub(crate) struct GeneratedCardPayload {
 pub(crate) struct ExplainCardInput {
     pub(crate) card_id: String,
     pub(crate) force: Option<bool>,
+    /// Lets the frontend cancel this request with `cancel_ai_request`.
+    #[serde(default)]
+    pub(crate) request_id: Option<String>,
 }
 
 /// A log record forwarded from the renderer so frontend failures land in the
@@ -662,8 +708,13 @@ pub(crate) struct NormalizedAiSettingsInput {
     pub(crate) max_tokens: i64,
     pub(crate) temperature: f64,
     pub(crate) explain_enabled: Option<bool>,
+    pub(crate) connection: Option<crate::ai::AiConnectionKind>,
+    pub(crate) chatgpt_model: Option<String>,
+    pub(crate) claude_code_model: Option<String>,
+    pub(crate) claude_code_path: Option<String>,
 }
 
+#[derive(Clone)]
 pub(crate) struct ResolvedAiSettings {
     pub(crate) api_key: String,
     pub(crate) base_url: String,

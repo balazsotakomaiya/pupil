@@ -11,6 +11,7 @@ fn generate_card_input_normalizes_the_user_request() {
         count: Some(2),
         difficulty: "Advanced".to_string(),
         style: "Cloze".to_string(),
+        request_id: None,
     })
     .expect("normalize generation input");
     assert_eq!(input.topic, "Rust ownership");
@@ -23,7 +24,8 @@ fn generate_card_input_rejects_a_count_above_the_limit() {
         topic: "Topic".to_string(),
         count: Some(31),
         difficulty: "Beginner".to_string(),
-        style: "Concept".to_string()
+        style: "Concept".to_string(),
+        request_id: None,
     })
     .is_err());
 }
@@ -35,6 +37,7 @@ fn generate_cards_prompt_describes_the_requested_options() {
         count: Some(2),
         difficulty: "Advanced".to_string(),
         style: "Cloze".to_string(),
+        request_id: None,
     })
     .expect("normalize generation input");
     assert!(build_generate_cards_prompt(
@@ -76,6 +79,10 @@ fn ai_settings_validation_normalizes_values_and_rejects_invalid_provider_inputs(
         max_tokens: " 512 ".to_string(),
         temperature: " 1.50 ".to_string(),
         explain_enabled: Some(false),
+        connection: None,
+        chatgpt_model: None,
+        claude_code_model: None,
+        claude_code_path: None,
     })
     .expect("normalize settings");
     assert_eq!(normalized.base_url, "https://api.openai.com/v1");
@@ -93,7 +100,11 @@ fn ai_settings_validation_normalizes_values_and_rejects_invalid_provider_inputs(
         model: "model".to_string(),
         max_tokens: "0".to_string(),
         temperature: "3".to_string(),
-        explain_enabled: None
+        explain_enabled: None,
+        connection: None,
+        chatgpt_model: None,
+        claude_code_model: None,
+        claude_code_path: None,
     })
     .is_err());
     for (base_url, model, max_tokens, temperature) in [
@@ -109,6 +120,10 @@ fn ai_settings_validation_normalizes_values_and_rejects_invalid_provider_inputs(
             max_tokens: max_tokens.to_string(),
             temperature: temperature.to_string(),
             explain_enabled: None,
+            connection: None,
+            chatgpt_model: None,
+            claude_code_model: None,
+            claude_code_path: None,
         })
         .is_err());
     }

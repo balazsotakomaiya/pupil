@@ -2,13 +2,22 @@ use std::fs;
 
 use tauri::{AppHandle, Manager};
 
+use std::sync::Arc;
+use std::time::Duration;
+
+use tauri_plugin_opener::OpenerExt;
+
 use crate::ai::{
     build_explain_card_prompt, build_explain_prose_fallback_prompt, build_explain_repair_prompt,
-    build_generate_cards_prompt, execute_ai_completion, execute_explain_completion_with_retries,
-    fetch_model_catalog, load_ai_settings_state, load_resolved_ai_settings,
+    build_generate_cards_prompt, claude_code_workdir, disconnect_chatgpt, execute_ai_target,
+    execute_explain_completion_with_retries, fetch_model_catalog, list_chatgpt_models,
+    load_ai_settings_state, load_resolved_ai_target, load_sign_in_inputs,
     normalize_ai_settings_input, normalize_generate_cards_input, parse_explain_card_response,
-    parse_generated_cards_response, resolve_ai_settings_for_test,
-    resolve_model_catalog_credentials, save_ai_settings_rows, AiModelCatalog, ListAiModelsInput,
+    parse_generated_cards_response, probe_claude_code_status, record_chatgpt_status,
+    record_claude_code_ready, record_sign_in, resolve_ai_target_for_test,
+    resolve_model_catalog_credentials, run_chatgpt_sign_in, save_ai_settings_rows, sign_in_control,
+    AiExecution, AiModelCatalog, AiRequestRegistry, ChatgptEndpoints, ChatgptModel, ChatgptStatus,
+    ClaudeCodeStatus, ListAiModelsInput, ResolvedAiTarget, SecureCredentialStore, CHATGPT_PROVIDER,
 };
 use crate::analytics::{list_space_stats_rows, load_dashboard_stats};
 use crate::app::{
@@ -19,9 +28,11 @@ use crate::cards::{
     review_card_row, save_card_explanation, suspend_card_row, undo_review_card_row,
     update_card_row,
 };
+use crate::constants::CHATGPT_SIGN_IN_TIMEOUT_SECS;
 use crate::constants::{
     AI_SYSTEM_PROMPT, FRONTEND_LOG_MAX_CONTEXT_CHARS, FRONTEND_LOG_MAX_MESSAGE_CHARS,
 };
+use crate::error::AiConnectionReason;
 use crate::error::{AppError, AppResult};
 use crate::imports::import_anki_cards_row;
 use crate::migration_runner::{
@@ -40,10 +51,10 @@ use crate::spaces::{create_space_row, delete_space_row, list_space_summaries, re
 use crate::study_queue::load_study_queue_snapshot;
 use crate::tray;
 use crate::types::{
-    AiConnectionTestResult, AiSettingsState, BootstrapState, CardSummary, CreateCardInput,
-    DashboardStats, ExplainCardInput, ExplainCardPayload, ExplainCardResult, ExportDataResult,
-    FrontendLogInput, GenerateCardsInput, GeneratedCardPayload, ImportAnkiInput, ImportAnkiResult,
-    RecentActivityEntry, ResolvedAiSettings, ReviewCardInput, SaveAiSettingsInput,
+    AiConnectionTestResult, AiSettingsState, BootstrapState, CardSummary, ChatgptDisconnectResult,
+    CreateCardInput, DashboardStats, ExplainCardInput, ExplainCardPayload, ExplainCardResult,
+    ExportDataResult, FrontendLogInput, GenerateCardsInput, GeneratedCardPayload, ImportAnkiInput,
+    ImportAnkiResult, RecentActivityEntry, ReviewCardInput, SaveAiSettingsInput,
     SettingsDataSummary, SpaceStats, SpaceSummary, StudyQueueSnapshot, StudySettingsState,
     SuspendCardInput, UndoReviewCardInput, UpdateCardInput,
 };
@@ -276,6 +287,30 @@ pub(crate) async fn list_ai_models(
     fetch_model_catalog(&base_url, api_key.as_deref()).await
 }
 
+fn ai_registry(app: &AppHandle) -> Arc<AiRequestRegistry> {
+    Arc::clone(app.state::<Arc<AiRequestRegistry>>().inner())
+}
+
+/// Keeps the saved ChatGPT status honest when a request finds the session
+/// has ended, so Settings and the AI gates offer Reconnect.
+async fn note_ai_failure(app: &AppHandle, error: &AppError) {
+    if let AppError::AiConnection {
+        reason: AiConnectionReason::Expired,
+        provider,
+        ..
+    } = error
+    {
+        if provider == CHATGPT_PROVIDER {
+            let app = app.clone();
+            let _ = run_blocking(move || {
+                let connection = open_app_connection(&app)?;
+                record_chatgpt_status(&connection, ChatgptStatus::Expired)
+            })
+            .await;
+        }
+    }
+}
+
 #[tauri::command]
 #[tracing::instrument(skip(app, input))]
 pub(crate) async fn test_ai_provider_connection(
@@ -283,24 +318,52 @@ pub(crate) async fn test_ai_provider_connection(
     input: SaveAiSettingsInput,
 ) -> Result<AiConnectionTestResult, AppError> {
     let normalized = normalize_ai_settings_input(input).map_err(AppError::validation)?;
-    let settings = run_blocking(move || {
-        let connection = open_app_connection(&app)?;
+    let resolve_app = app.clone();
+    let target = run_blocking(move || {
+        let connection = open_app_connection(&resolve_app)?;
 
-        resolve_ai_settings_for_test(&app, &connection, normalized)
+        resolve_ai_target_for_test(&resolve_app, &connection, normalized)
     })
     .await?;
     let started_at = now_ms();
+    let store = SecureCredentialStore(&app);
+    let endpoints = ChatgptEndpoints::default();
+    let guard = ai_registry(&app).register(Some("connection-test".to_string()));
+    let execution = AiExecution {
+        store: &store,
+        endpoints: &endpoints,
+        token: guard.token.clone(),
+    };
 
-    execute_ai_completion(
-        &settings,
+    let result = execute_ai_target(
+        &target,
+        &execution,
         "Reply with the single word ok.",
         Some("You are validating provider connectivity. Reply with the single word ok."),
     )
-    .await?;
+    .await;
+    if let ResolvedAiTarget::ClaudeCode(_) = &target {
+        let ready = result.is_ok();
+        let record_app = app.clone();
+        let _ = run_blocking(move || {
+            let connection = open_app_connection(&record_app)?;
+            record_claude_code_ready(&connection, ready)
+        })
+        .await;
+    }
+    if let Err(error) = &result {
+        note_ai_failure(&app, error).await;
+    }
+    result?;
 
+    let label = match &target {
+        ResolvedAiTarget::Api(_) => "Connected",
+        ResolvedAiTarget::Chatgpt { .. } => "Using ChatGPT plan",
+        ResolvedAiTarget::ClaudeCode(_) => "Using Claude plan",
+    };
     Ok(AiConnectionTestResult {
-        detail: format!("{} · {}ms", settings.model, now_ms() - started_at),
-        label: "Connected".to_string(),
+        detail: format!("{} · {}ms", target.model(), now_ms() - started_at),
+        label: label.to_string(),
     })
 }
 
@@ -310,11 +373,13 @@ pub(crate) async fn generate_cards(
     app: AppHandle,
     input: GenerateCardsInput,
 ) -> Result<Vec<GeneratedCardPayload>, AppError> {
+    let request_id = input.request_id.clone();
     let normalized = normalize_generate_cards_input(input).map_err(AppError::validation)?;
-    let settings = run_blocking(move || {
-        let connection = open_app_connection(&app)?;
+    let resolve_app = app.clone();
+    let target = run_blocking(move || {
+        let connection = open_app_connection(&resolve_app)?;
 
-        load_resolved_ai_settings(&app, &connection)
+        load_resolved_ai_target(&resolve_app, &connection)
     })
     .await?;
     let prompt = build_generate_cards_prompt(
@@ -323,9 +388,136 @@ pub(crate) async fn generate_cards(
         &normalized.difficulty,
         &normalized.style,
     );
-    let response_text = execute_ai_completion(&settings, &prompt, Some(AI_SYSTEM_PROMPT)).await?;
+    let store = SecureCredentialStore(&app);
+    let endpoints = ChatgptEndpoints::default();
+    let guard = ai_registry(&app).register(request_id);
+    let execution = AiExecution {
+        store: &store,
+        endpoints: &endpoints,
+        token: guard.token.clone(),
+    };
+    let response_text =
+        match execute_ai_target(&target, &execution, &prompt, Some(AI_SYSTEM_PROMPT)).await {
+            Ok(text) => text,
+            Err(error) => {
+                note_ai_failure(&app, &error).await;
+                return Err(error);
+            }
+        };
 
     parse_generated_cards_response(&response_text, normalized.count)
+}
+
+/// Cancels a running generation or explanation by the ID the frontend gave
+/// it. Returns whether something was running under that ID.
+#[tauri::command]
+#[tracing::instrument(skip(app))]
+pub(crate) fn cancel_ai_request(app: AppHandle, request_id: String) -> bool {
+    ai_registry(&app).cancel(&request_id)
+}
+
+/// Checks the local Claude Code install and its sign-in. With no path, the
+/// saved one (or automatic discovery) is used and the result is remembered
+/// for the AI gates.
+#[tauri::command]
+#[tracing::instrument(skip(app))]
+pub(crate) async fn get_claude_code_status(
+    app: AppHandle,
+    path: Option<String>,
+) -> Result<ClaudeCodeStatus, AppError> {
+    let load_app = app.clone();
+    let (saved_path, workdir) = run_blocking(move || {
+        let connection = open_app_connection(&load_app)?;
+        let state = load_ai_settings_state(&load_app, &connection)?;
+        Ok((state.claude_code.path, claude_code_workdir(&load_app)?))
+    })
+    .await?;
+    let use_saved = path.is_none();
+    let probe_path = path.unwrap_or(saved_path);
+    let status = probe_claude_code_status(Some(&probe_path), &workdir).await;
+    if use_saved {
+        let usable = status.usable;
+        run_blocking(move || {
+            let connection = open_app_connection(&app)?;
+            record_claude_code_ready(&connection, usable)
+        })
+        .await?;
+    }
+    Ok(status)
+}
+
+/// Opens the system browser for OpenAI's ChatGPT plan-usage sign-in and
+/// waits (bounded) for the loopback redirect.
+#[tauri::command]
+#[tracing::instrument(skip(app))]
+pub(crate) async fn start_chatgpt_sign_in(app: AppHandle) -> Result<AiSettingsState, AppError> {
+    let load_app = app.clone();
+    let inputs = run_blocking(move || {
+        let connection = open_app_connection(&load_app)?;
+        load_sign_in_inputs(&connection)
+    })
+    .await?;
+    let endpoints = ChatgptEndpoints::default();
+    let browser_app = app.clone();
+    let credentials = run_chatgpt_sign_in(
+        &endpoints,
+        sign_in_control(),
+        inputs,
+        move |url| {
+            browser_app
+                .opener()
+                .open_url(url, None::<&str>)
+                .map_err(|_| AppError::internal_message("Couldn't open your web browser."))
+        },
+        Duration::from_secs(CHATGPT_SIGN_IN_TIMEOUT_SECS),
+        now_ms,
+    )
+    .await?;
+    run_blocking(move || {
+        let mut connection = open_app_connection(&app)?;
+        record_sign_in(&mut connection, &SecureCredentialStore(&app), &credentials)?;
+        load_ai_settings_state(&app, &connection)
+    })
+    .await
+}
+
+#[tauri::command]
+#[tracing::instrument]
+pub(crate) fn cancel_chatgpt_sign_in() -> bool {
+    sign_in_control().cancel()
+}
+
+#[tauri::command]
+#[tracing::instrument(skip(app))]
+pub(crate) async fn disconnect_chatgpt_account(
+    app: AppHandle,
+) -> Result<ChatgptDisconnectResult, AppError> {
+    let endpoints = ChatgptEndpoints::default();
+    let remote_revoked = disconnect_chatgpt(&endpoints, &SecureCredentialStore(&app)).await?;
+    let settings = run_blocking(move || {
+        let connection = open_app_connection(&app)?;
+        record_chatgpt_status(&connection, ChatgptStatus::Disconnected)?;
+        load_ai_settings_state(&app, &connection)
+    })
+    .await?;
+    Ok(ChatgptDisconnectResult {
+        remote_revoked,
+        settings,
+    })
+}
+
+/// The models the signed-in ChatGPT account can use, from OpenAI's catalog.
+#[tauri::command]
+#[tracing::instrument(skip(app))]
+pub(crate) async fn list_chatgpt_account_models(
+    app: AppHandle,
+) -> Result<Vec<ChatgptModel>, AppError> {
+    let endpoints = ChatgptEndpoints::default();
+    let result = list_chatgpt_models(&endpoints, &SecureCredentialStore(&app), &now_ms).await;
+    if let Err(error) = &result {
+        note_ai_failure(&app, error).await;
+    }
+    result
 }
 
 enum ExplainPrep {
@@ -336,7 +528,7 @@ enum ExplainPrep {
     NeedsGeneration {
         front: String,
         back: String,
-        settings: ResolvedAiSettings,
+        target: ResolvedAiTarget,
     },
 }
 
@@ -356,6 +548,7 @@ pub(crate) async fn explain_card(
     }
 
     let force = input.force.unwrap_or(false);
+    let request_id = input.request_id.clone();
     let prep_card_id = card_id.clone();
     let prep_app = app.clone();
 
@@ -379,17 +572,17 @@ pub(crate) async fn explain_card(
             }
         }
 
-        let settings = load_resolved_ai_settings(&prep_app, &connection)?;
+        let target = load_resolved_ai_target(&prep_app, &connection)?;
 
         Ok(ExplainPrep::NeedsGeneration {
             front: source.front,
             back: source.back,
-            settings,
+            target,
         })
     })
     .await?;
 
-    let (front, back, settings) = match prep {
+    let (front, back, target) = match prep {
         ExplainPrep::Cached {
             payload,
             generated_at,
@@ -403,22 +596,41 @@ pub(crate) async fn explain_card(
         ExplainPrep::NeedsGeneration {
             front,
             back,
-            settings,
-        } => (front, back, settings),
+            target,
+        } => (front, back, target),
     };
 
+    let store = SecureCredentialStore(&app);
+    let endpoints = ChatgptEndpoints::default();
+    let guard = ai_registry(&app).register(request_id);
+    let execution = AiExecution {
+        store: &store,
+        endpoints: &endpoints,
+        token: guard.token.clone(),
+    };
+    let settings = (&target, &execution);
     let user_prompt = build_explain_card_prompt(&front, &back);
-    let response_text = execute_explain_completion_with_retries(&settings, &user_prompt).await?;
+    let response_text =
+        match execute_explain_completion_with_retries(settings.0, settings.1, &user_prompt).await {
+            Ok(text) => text,
+            Err(error) => {
+                note_ai_failure(&app, &error).await;
+                return Err(error);
+            }
+        };
     let payload = match parse_explain_card_response(&response_text) {
         Ok(payload) => payload,
         Err(first_error) => {
             let repair_prompt = build_explain_repair_prompt(&response_text, &first_error);
-            match execute_explain_completion_with_retries(&settings, &repair_prompt).await {
+            match execute_explain_completion_with_retries(settings.0, settings.1, &repair_prompt)
+                .await
+            {
                 Ok(repaired) => match parse_explain_card_response(&repaired) {
                     Ok(payload) => payload,
                     Err(_) => {
                         let fallback = execute_explain_completion_with_retries(
-                            &settings,
+                            settings.0,
+                            settings.1,
                             build_explain_prose_fallback_prompt(),
                         )
                         .await?;
@@ -429,7 +641,8 @@ pub(crate) async fn explain_card(
                 },
                 Err(_) => {
                     let fallback = execute_explain_completion_with_retries(
-                        &settings,
+                        settings.0,
+                        settings.1,
                         build_explain_prose_fallback_prompt(),
                     )
                     .await?;
