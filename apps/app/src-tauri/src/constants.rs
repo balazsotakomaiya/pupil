@@ -13,8 +13,31 @@ pub(crate) const AI_SETTING_HAS_API_KEY_KEY: &str = "ai.has_api_key";
 pub(crate) const AI_SETTING_EXPLAIN_ENABLED_KEY: &str = "ai.explain_enabled";
 #[cfg(target_os = "macos")]
 pub(crate) const AI_SECRET_SERVICE_NAME: &str = "com.pupil.desktop.ai";
-#[cfg(target_os = "macos")]
 pub(crate) const AI_SECRET_ACCOUNT_NAME: &str = "api_key";
+pub(crate) const AI_CHATGPT_SECRET_ACCOUNT_NAME: &str = "chatgpt_oauth";
+/// Which transport AI requests use: `api_key`, `chatgpt` or `claude_code`.
+pub(crate) const AI_SETTING_CONNECTION_KEY: &str = "ai.connection";
+pub(crate) const AI_SETTING_CHATGPT_MODEL_KEY: &str = "ai.chatgpt.model";
+pub(crate) const AI_SETTING_CHATGPT_STATUS_KEY: &str = "ai.chatgpt.status";
+pub(crate) const AI_SETTING_CHATGPT_EMAIL_KEY: &str = "ai.chatgpt.email";
+pub(crate) const AI_SETTING_CHATGPT_PLAN_USAGE_KEY: &str = "ai.chatgpt.plan_usage";
+/// The issued (non-secret) OAuth client ID, reused for later sign-ins.
+pub(crate) const AI_SETTING_CHATGPT_CLIENT_ID_KEY: &str = "ai.chatgpt.client_id";
+/// Opaque per-install host identifier OpenAI requires before the first sign-in.
+pub(crate) const AI_SETTING_CHATGPT_HOST_ID_KEY: &str = "ai.chatgpt.host_id";
+pub(crate) const AI_SETTING_CLAUDE_CODE_MODEL_KEY: &str = "ai.claude_code.model";
+pub(crate) const AI_SETTING_CLAUDE_CODE_PATH_KEY: &str = "ai.claude_code.path";
+/// Set after a status check finds Claude Code signed in with a subscription.
+pub(crate) const AI_SETTING_CLAUDE_CODE_READY_KEY: &str = "ai.claude_code.ready";
+pub(crate) const DEFAULT_CHATGPT_MODEL: &str = "gpt-5.6-terra";
+pub(crate) const DEFAULT_CLAUDE_CODE_MODEL: &str = "opus";
+/// A Claude Code run spawns a whole CLI session, so it gets longer than an
+/// HTTP request, but is still bounded so a stuck process is killed.
+pub(crate) const CLAUDE_CODE_TIMEOUT_SECS: u64 = 180;
+pub(crate) const CLAUDE_CODE_PROBE_TIMEOUT_SECS: u64 = 20;
+pub(crate) const CLAUDE_CODE_MAX_CONCURRENT_RUNS: usize = 3;
+pub(crate) const CLAUDE_CODE_MAX_OUTPUT_BYTES: usize = 4 * 1024 * 1024;
+pub(crate) const CHATGPT_SIGN_IN_TIMEOUT_SECS: u64 = 300;
 pub(crate) const FRONTEND_LOG_MAX_MESSAGE_CHARS: usize = 2_000;
 pub(crate) const FRONTEND_LOG_MAX_CONTEXT_CHARS: usize = 4_000;
 pub(crate) const RECENT_ACTIVITY_SESSION_GAP_MS: i64 = 30 * 60 * 1000;
@@ -44,6 +67,8 @@ pub(crate) const STRONGHOLD_SNAPSHOT_FILE_NAME: &str = "pupil.hold";
 pub(crate) const STRONGHOLD_CLIENT_NAME: &[u8] = b"pupil";
 #[cfg_attr(target_os = "macos", allow(dead_code))]
 pub(crate) const STRONGHOLD_AI_API_KEY_RECORD_KEY: &[u8] = b"ai.api_key";
+#[cfg_attr(target_os = "macos", allow(dead_code))]
+pub(crate) const STRONGHOLD_CHATGPT_RECORD_KEY: &[u8] = b"ai.chatgpt_oauth";
 #[cfg_attr(target_os = "macos", allow(dead_code))]
 pub(crate) const STRONGHOLD_PASSWORD_SERVICE_NAME: &str = "com.pupil.desktop.stronghold";
 #[cfg_attr(target_os = "macos", allow(dead_code))]

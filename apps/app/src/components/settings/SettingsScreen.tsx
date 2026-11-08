@@ -1,6 +1,7 @@
 import type { StudySettings } from "@pupil/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useEffect, useRef, useState } from "react";
+import { disconnectChatgpt } from "../../lib/ai-connections";
 import {
   DEFAULT_AI_BASE_URL,
   DEFAULT_AI_MODEL,
@@ -9,8 +10,13 @@ import {
   supportsCustomTemperature,
 } from "../../lib/ai-providers";
 import {
+  type AiConnectionKind,
+  type AiSettings,
+  type ChatgptConnectionState,
+  DEFAULT_AI_SETTINGS,
   describeAiSettingsError,
   loadAiSettings,
+  type SaveAiSettingsInput,
   saveAiSettings,
   testAiProviderConnection,
 } from "../../lib/ai-settings";
@@ -33,6 +39,9 @@ import {
 import { AppearanceSettingsCard } from "./AppearanceSettingsCard";
 import styles from "./Settings.module.css";
 import { SettingsAboutCard } from "./SettingsAboutCard";
+import { SettingsAiConnectionPicker } from "./SettingsAiConnectionPicker";
+import { SettingsChatgptPanel } from "./SettingsChatgptPanel";
+import { SettingsClaudeCodePanel } from "./SettingsClaudeCodePanel";
 import { SettingsConnectionStatus } from "./SettingsConnectionStatus";
 import { SettingsDataCard } from "./SettingsDataCard";
 import { SettingsModelPicker } from "./SettingsModelPicker";
@@ -42,6 +51,8 @@ import { StudySettingsCard } from "./StudySettingsCard";
 
 type SettingsScreenProps = {
   cardsCount: number;
+  /** Lets the page refresh AI gates elsewhere after a connection change. */
+  onAiSettingsChanged?: () => void;
   isSavingStudySettings: boolean;
   onResetAllData: () => Promise<void>;
   onSaveStudySettings: (newCardsLimit: number | null) => Promise<void>;
@@ -57,6 +68,29 @@ type SavedSettingsSnapshot = {
   model: string;
   temperature: string;
 };
+
+function snapshotOf(settings: AiSettings): SavedSettingsSnapshot {
+  return {
+    baseUrl: settings.baseUrl,
+    explainEnabled: settings.explainEnabled,
+    hasApiKey: settings.hasApiKey,
+    maxTokens: settings.maxTokens,
+    model: settings.model,
+    temperature: settings.temperature,
+  };
+}
+
+function idleStatusFor(settings: AiSettings): { detail: string; kind: "idle"; label: string } {
+  const detail =
+    settings.connection === "chatgpt"
+      ? "Test to check your ChatGPT plan and model."
+      : settings.connection === "claudeCode"
+        ? "Test to check Claude Code and your plan's model."
+        : settings.hasApiKey
+          ? "API key saved on this device."
+          : "Add an API key to connect your provider.";
+  return { detail, kind: "idle", label: "Not tested" };
+}
 
 const SHORTCUTS = [
   { keys: ["Space"], label: "Reveal card" },
@@ -87,6 +121,7 @@ function detectModelFromUrl(url: string): string | null {
 
 export function SettingsScreen({
   cardsCount,
+  onAiSettingsChanged,
   isSavingStudySettings,
   onResetAllData,
   onSaveStudySettings,
@@ -108,6 +143,12 @@ export function SettingsScreen({
   const [maxTokens, setMaxTokens] = useState("4096");
   const [temperature, setTemperature] = useState("0.7");
   const [explainEnabled, setExplainEnabled] = useState(true);
+  const [connection, setConnection] = useState<AiConnectionKind>("apiKey");
+  const [chatgptState, setChatgptState] = useState<ChatgptConnectionState>(
+    DEFAULT_AI_SETTINGS.chatgpt,
+  );
+  const [claudeCode, setClaudeCode] = useState(DEFAULT_AI_SETTINGS.claudeCode);
+  const [isAiLoaded, setIsAiLoaded] = useState(false);
   const [savedSettings, setSavedSettings] = useState<SavedSettingsSnapshot>({
     baseUrl: DEFAULT_AI_BASE_URL,
     explainEnabled: true,
@@ -164,14 +205,11 @@ export function SettingsScreen({
 
         setHasStoredApiKey(settings.hasApiKey);
         setLoadedBaseUrl(settings.baseUrl);
-        setSavedSettings({
-          baseUrl: settings.baseUrl,
-          explainEnabled: settings.explainEnabled,
-          hasApiKey: settings.hasApiKey,
-          maxTokens: settings.maxTokens,
-          model: settings.model,
-          temperature: settings.temperature,
-        });
+        setSavedSettings(snapshotOf(settings));
+        setConnection(settings.connection);
+        setChatgptState(settings.chatgpt);
+        setClaudeCode(settings.claudeCode);
+        setIsAiLoaded(true);
 
         if (!hasUserEditedSettings.current) {
           setApiKey("");
@@ -184,13 +222,7 @@ export function SettingsScreen({
         }
 
         if (!_connectionStatusCache) {
-          setConnectionStatus({
-            detail: settings.hasApiKey
-              ? "API key saved on this device."
-              : "Add an API key to connect your provider.",
-            kind: "idle",
-            label: "Not tested",
-          });
+          setConnectionStatus(idleStatusFor(settings));
         }
       } catch (error: unknown) {
         if (!cancelled) {
@@ -308,31 +340,44 @@ export function SettingsScreen({
     }
   }
 
-  async function persistSettings(options?: { announceSaved?: boolean }) {
+  function buildSaveInput(overrides?: Partial<SaveAiSettingsInput>): SaveAiSettingsInput {
+    return {
+      apiKey: apiKeyEdited ? apiKey : undefined,
+      baseUrl,
+      model,
+      maxTokens,
+      temperature,
+      explainEnabled,
+      connection,
+      chatgptModel: chatgptState.model,
+      claudeCodeModel: claudeCode.model,
+      claudeCodePath: claudeCode.path,
+      ...overrides,
+    };
+  }
+
+  function applySubscriptionState(settings: AiSettings) {
+    setConnection(settings.connection);
+    setChatgptState(settings.chatgpt);
+    setClaudeCode(settings.claudeCode);
+    onAiSettingsChanged?.();
+  }
+
+  async function persistSettings(options?: {
+    announceSaved?: boolean;
+    overrides?: Partial<SaveAiSettingsInput>;
+  }) {
     setIsSavingSettings(true);
 
     try {
-      const saved = await saveAiSettings({
-        apiKey: apiKeyEdited ? apiKey : undefined,
-        baseUrl,
-        model,
-        maxTokens,
-        temperature,
-        explainEnabled,
-      });
+      const saved = await saveAiSettings(buildSaveInput(options?.overrides));
 
       setApiKey("");
       setApiKeyEdited(false);
       hasUserEditedSettings.current = false;
       setHasStoredApiKey(saved.hasApiKey);
-      setSavedSettings({
-        baseUrl: saved.baseUrl,
-        explainEnabled: saved.explainEnabled,
-        hasApiKey: saved.hasApiKey,
-        maxTokens: saved.maxTokens,
-        model: saved.model,
-        temperature: saved.temperature,
-      });
+      setSavedSettings(snapshotOf(saved));
+      applySubscriptionState(saved);
 
       if (options?.announceSaved ?? true) {
         setRecentlySaved(true);
@@ -359,6 +404,22 @@ export function SettingsScreen({
     }
   }
 
+  /** Saves one subscription-side choice right away (connection, model, path). */
+  async function saveSubscriptionChoice(overrides: Partial<SaveAiSettingsInput>) {
+    markSettingsEdited();
+    try {
+      await persistSettings({ announceSaved: false, overrides });
+    } catch {
+      // persistSettings already shows the failure.
+    }
+  }
+
+  function handleConnectionChange(next: AiConnectionKind) {
+    if (next === connection) return;
+    setConnection(next);
+    void saveSubscriptionChoice({ connection: next });
+  }
+
   async function handleTestConnection() {
     setIsTestingConnection(true);
 
@@ -367,14 +428,12 @@ export function SettingsScreen({
         await persistSettings({ announceSaved: false });
       }
 
-      const result = await testAiProviderConnection({
-        apiKey: apiKeyEdited ? apiKey : undefined,
-        baseUrl,
-        model,
-        maxTokens,
-        temperature,
-        explainEnabled,
-      });
+      const result = await testAiProviderConnection(buildSaveInput());
+      if (connection === "claudeCode") {
+        // A passing test is what marks Claude Code ready for the AI gates.
+        setClaudeCode((current) => ({ ...current, ready: true }));
+        onAiSettingsChanged?.();
+      }
       const nextStatus = {
         detail: result.detail,
         kind: "success" as const,
@@ -441,7 +500,7 @@ export function SettingsScreen({
   async function handleReset() {
     if (
       !window.confirm(
-        "Reset all local data? This removes spaces, cards, review history, saved AI settings, and the stored API key.",
+        "Reset all local data? This removes spaces, cards, review history, saved AI settings, the stored API key, and the ChatGPT connection.",
       )
     ) {
       return;
@@ -450,6 +509,10 @@ export function SettingsScreen({
     setIsResettingData(true);
 
     try {
+      if (chatgptState.status !== "disconnected") {
+        // Revoke with OpenAI first; the reset below would only forget it locally.
+        await disconnectChatgpt().catch(() => undefined);
+      }
       await onResetAllData();
       const nextSettings = await loadAiSettings();
       await refreshDataSummary();
@@ -462,22 +525,10 @@ export function SettingsScreen({
       setMaxTokens(nextSettings.maxTokens);
       setTemperature(nextSettings.temperature);
       setExplainEnabled(nextSettings.explainEnabled);
-      setSavedSettings({
-        baseUrl: nextSettings.baseUrl,
-        explainEnabled: nextSettings.explainEnabled,
-        hasApiKey: nextSettings.hasApiKey,
-        maxTokens: nextSettings.maxTokens,
-        model: nextSettings.model,
-        temperature: nextSettings.temperature,
-      });
+      setSavedSettings(snapshotOf(nextSettings));
+      applySubscriptionState(nextSettings);
       _connectionStatusCache = null;
-      setConnectionStatus({
-        detail: nextSettings.hasApiKey
-          ? "API key stored safely on this device."
-          : "No saved API key yet",
-        kind: "idle",
-        label: "Not tested",
-      });
+      setConnectionStatus(idleStatusFor(nextSettings));
       setDataStatus({
         detail: "Local study data and saved AI settings were cleared.",
         kind: "success",
@@ -520,6 +571,10 @@ export function SettingsScreen({
     temperature !== savedSettings.temperature ||
     explainEnabled !== savedSettings.explainEnabled;
   const isSettingsBusy = isSavingSettings || isTestingConnection;
+  const canTestConnection =
+    connection === "apiKey" ||
+    (connection === "chatgpt" && chatgptState.status === "connected" && chatgptState.planUsage) ||
+    (connection === "claudeCode" && claudeCode.ready);
   const areSettingsActionsBusy = isSavingSettings || isTestingConnection;
 
   return (
@@ -585,122 +640,170 @@ export function SettingsScreen({
       >
         <section className={styles.settingsSection} id="ai">
           <div className={styles.settingsSectionHead}>
-            <div className={styles.settingsSectionTitle}>AI Provider</div>
+            <div className={styles.settingsSectionTitle}>AI Connection</div>
             <div className={styles.settingsSectionDesc}>
               {isTauriRuntime()
-                ? "Connect a provider for card generation and study explanations."
+                ? "Choose how Pupil reaches a model for card generation and study explanations."
                 : "Generation and explanations run in Pupil for desktop."}
             </div>
           </div>
 
           {isTauriRuntime() ? (
             <div className={styles.settingsFieldGroup}>
-              <div className={styles.settingsField}>
-                <label className={styles.settingsFieldLabel} htmlFor="settings-base-url">
-                  Base URL
-                  {recentlySaved && lastSavedField === "baseUrl" && (
-                    <span className={styles.settingsAutosaveBadge}>Saved</span>
-                  )}
-                </label>
-                <input
-                  className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
+              <SettingsAiConnectionPicker
+                disabled={isSettingsBusy || !isAiLoaded}
+                onChange={handleConnectionChange}
+                value={connection}
+              />
+              {connection === "chatgpt" ? (
+                <SettingsChatgptPanel
                   disabled={isSettingsBusy}
-                  id="settings-base-url"
-                  onChange={(event) => {
-                    markSettingsEdited();
-                    const value = event.target.value;
-                    setBaseUrl(value);
-                    const detectedModel = detectModelFromUrl(value);
-                    if (
-                      detectedModel &&
-                      getProviderForBaseUrl(value)?.id !== getProviderForBaseUrl(baseUrl)?.id
-                    )
-                      setModel(detectedModel);
-                    scheduleAutoSave("baseUrl");
+                  model={chatgptState.model}
+                  onModelChange={(nextModel) => {
+                    setChatgptState((current) => ({ ...current, model: nextModel }));
+                    void saveSubscriptionChoice({ chatgptModel: nextModel });
                   }}
-                  placeholder={DEFAULT_AI_BASE_URL}
-                  type="text"
-                  value={baseUrl}
+                  onOpenUrl={(url) => void openUrl(url)}
+                  onSettingsChanged={(settings) => {
+                    markSettingsEdited();
+                    applySubscriptionState(settings);
+                  }}
+                  state={chatgptState}
                 />
-                <div className={styles.settingsFieldHint}>
-                  OpenAI-compatible or Anthropic. Custom and local endpoints work too.
-                </div>
-              </div>
-              <div className={styles.settingsField}>
-                <label className={styles.settingsFieldLabel} htmlFor="settings-api-key">
-                  API Key
-                  <span className={styles.settingsLabelBadge}>Stored safely</span>
-                </label>
-                <div className={styles.settingsKeyInputWrap}>
-                  <div className={styles.settingsKeyFieldWrap}>
+              ) : null}
+              {connection === "claudeCode" ? (
+                <SettingsClaudeCodePanel
+                  disabled={isSettingsBusy}
+                  model={claudeCode.model}
+                  onModelChange={(nextModel) => {
+                    setClaudeCode((current) => ({ ...current, model: nextModel }));
+                    void saveSubscriptionChoice({ claudeCodeModel: nextModel });
+                  }}
+                  onOpenUrl={(url) => void openUrl(url)}
+                  onPathChange={(nextPath) =>
+                    void saveSubscriptionChoice({ claudeCodePath: nextPath })
+                  }
+                  onReadyChange={(ready) => {
+                    setClaudeCode((current) =>
+                      current.ready === ready ? current : { ...current, ready },
+                    );
+                    onAiSettingsChanged?.();
+                  }}
+                  path={claudeCode.path}
+                />
+              ) : null}
+              {connection === "apiKey" ? (
+                <>
+                  <div className={styles.settingsField}>
+                    <label className={styles.settingsFieldLabel} htmlFor="settings-base-url">
+                      Base URL
+                      {recentlySaved && lastSavedField === "baseUrl" && (
+                        <span className={styles.settingsAutosaveBadge}>Saved</span>
+                      )}
+                    </label>
                     <input
                       className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
                       disabled={isSettingsBusy}
-                      id="settings-api-key"
+                      id="settings-base-url"
                       onChange={(event) => {
                         markSettingsEdited();
                         const value = event.target.value;
-                        setApiKey(value);
-                        setApiKeyEdited(true);
-                        const provider = detectProviderFromKey(value);
+                        setBaseUrl(value);
+                        const detectedModel = detectModelFromUrl(value);
                         if (
-                          provider &&
-                          provider.baseUrl !== baseUrl &&
-                          baseUrl === DEFAULT_AI_BASE_URL &&
-                          !hasStoredApiKey
-                        ) {
-                          setBaseUrl(provider.baseUrl);
-                          setModel(provider.model);
-                        }
+                          detectedModel &&
+                          getProviderForBaseUrl(value)?.id !== getProviderForBaseUrl(baseUrl)?.id
+                        )
+                          setModel(detectedModel);
+                        scheduleAutoSave("baseUrl");
                       }}
-                      placeholder={hasStoredApiKey ? "Stored — enter to replace" : "sk-..."}
-                      type={showApiKey ? "text" : "password"}
-                      value={apiKey}
+                      placeholder={DEFAULT_AI_BASE_URL}
+                      type="text"
+                      value={baseUrl}
                     />
-                    <button
-                      aria-label={showApiKey ? "Hide API key" : "Show API key"}
-                      className={styles.settingsKeyReveal}
-                      disabled={isSettingsBusy}
-                      onClick={() => setShowApiKey((current) => !current)}
-                      type="button"
-                    >
-                      {showApiKey ? <EyeClosedIcon /> : <EyeOpenIcon />}
-                    </button>
+                    <div className={styles.settingsFieldHint}>
+                      OpenAI-compatible or Anthropic. Custom and local endpoints work too.
+                    </div>
                   </div>
-                </div>
-                <div className={styles.settingsFieldHint}>{apiKeyHint}</div>
-              </div>
-              <SettingsModelPicker
-                baseUrl={baseUrl}
-                apiKey={apiKeyEdited ? apiKey : undefined}
-                autoDiscover={
-                  activeSection === "ai" &&
-                  baseUrl === loadedBaseUrl &&
-                  !hasUnsavedChanges &&
-                  hasStoredApiKey
-                }
-                disabled={isSettingsBusy}
-                model={model}
-                saved={recentlySaved && lastSavedField === "model"}
-                onChange={(nextModel) => {
-                  markSettingsEdited();
-                  setModel(nextModel);
-                  scheduleAutoSave("model");
-                }}
-              />
+                  <div className={styles.settingsField}>
+                    <label className={styles.settingsFieldLabel} htmlFor="settings-api-key">
+                      API Key
+                      <span className={styles.settingsLabelBadge}>Stored safely</span>
+                    </label>
+                    <div className={styles.settingsKeyInputWrap}>
+                      <div className={styles.settingsKeyFieldWrap}>
+                        <input
+                          className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
+                          disabled={isSettingsBusy}
+                          id="settings-api-key"
+                          onChange={(event) => {
+                            markSettingsEdited();
+                            const value = event.target.value;
+                            setApiKey(value);
+                            setApiKeyEdited(true);
+                            const provider = detectProviderFromKey(value);
+                            if (
+                              provider &&
+                              provider.baseUrl !== baseUrl &&
+                              baseUrl === DEFAULT_AI_BASE_URL &&
+                              !hasStoredApiKey
+                            ) {
+                              setBaseUrl(provider.baseUrl);
+                              setModel(provider.model);
+                            }
+                          }}
+                          placeholder={hasStoredApiKey ? "Stored — enter to replace" : "sk-..."}
+                          type={showApiKey ? "text" : "password"}
+                          value={apiKey}
+                        />
+                        <button
+                          aria-label={showApiKey ? "Hide API key" : "Show API key"}
+                          className={styles.settingsKeyReveal}
+                          disabled={isSettingsBusy}
+                          onClick={() => setShowApiKey((current) => !current)}
+                          type="button"
+                        >
+                          {showApiKey ? <EyeClosedIcon /> : <EyeOpenIcon />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className={styles.settingsFieldHint}>{apiKeyHint}</div>
+                  </div>
+                  <SettingsModelPicker
+                    baseUrl={baseUrl}
+                    apiKey={apiKeyEdited ? apiKey : undefined}
+                    autoDiscover={
+                      activeSection === "ai" &&
+                      baseUrl === loadedBaseUrl &&
+                      !hasUnsavedChanges &&
+                      hasStoredApiKey
+                    }
+                    disabled={isSettingsBusy}
+                    model={model}
+                    saved={recentlySaved && lastSavedField === "model"}
+                    onChange={(nextModel) => {
+                      markSettingsEdited();
+                      setModel(nextModel);
+                      scheduleAutoSave("model");
+                    }}
+                  />
+                </>
+              ) : null}
               <div className={styles.settingsConnectionActions}>
                 <div className={styles.settingsKeyActions}>
-                  <button
-                    className={styles.settingsKeySaveBtn}
-                    disabled={areSettingsActionsBusy || !hasUnsavedChanges}
-                    onClick={() => void handleSaveSettings()}
-                    type="button"
-                  >
-                    {isSavingSettings ? "Saving…" : "Save settings"}
-                  </button>
+                  {connection === "apiKey" ? (
+                    <button
+                      className={styles.settingsKeySaveBtn}
+                      disabled={areSettingsActionsBusy || !hasUnsavedChanges}
+                      onClick={() => void handleSaveSettings()}
+                      type="button"
+                    >
+                      {isSavingSettings ? "Saving…" : "Save settings"}
+                    </button>
+                  ) : null}
                   <button
                     className={styles.settingsKeyTestBtn}
-                    disabled={areSettingsActionsBusy}
+                    disabled={areSettingsActionsBusy || !canTestConnection}
                     onClick={() => void handleTestConnection()}
                     type="button"
                   >
@@ -751,75 +854,84 @@ export function SettingsScreen({
                   type="button"
                 />
               </div>
-              <div>
-                <button
-                  className={`${styles.settingsAdvancedToggle}${advancedOpen ? ` ${styles.open}` : ""}`}
-                  aria-expanded={advancedOpen}
-                  aria-controls="settings-generation-options"
-                  onClick={() => setAdvancedOpen((current) => !current)}
-                  type="button"
-                >
-                  <ChevronRightIcon />
-                  Generation options
-                </button>
+              {connection !== "chatgpt" ? (
+                <div>
+                  <button
+                    className={`${styles.settingsAdvancedToggle}${advancedOpen ? ` ${styles.open}` : ""}`}
+                    aria-expanded={advancedOpen}
+                    aria-controls="settings-generation-options"
+                    onClick={() => setAdvancedOpen((current) => !current)}
+                    type="button"
+                  >
+                    <ChevronRightIcon />
+                    Generation options
+                  </button>
 
-                <div
-                  id="settings-generation-options"
-                  className={`${styles.settingsAdvancedFields}${advancedOpen ? ` ${styles.open}` : ""}`}
-                >
-                  <div className={styles.settingsFieldRow}>
-                    <div className={styles.settingsField}>
-                      <label className={styles.settingsFieldLabel} htmlFor="settings-max-tokens">
-                        Max Tokens
-                        {recentlySaved && lastSavedField === "maxTokens" && (
-                          <span className={styles.settingsAutosaveBadge}>Saved</span>
-                        )}
-                      </label>
-                      <input
-                        className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
-                        disabled={isSettingsBusy}
-                        id="settings-max-tokens"
-                        onChange={(event) => {
-                          markSettingsEdited();
-                          setMaxTokens(event.target.value);
-                          scheduleAutoSave("maxTokens");
-                        }}
-                        placeholder="4096"
-                        type="text"
-                        value={maxTokens}
-                      />
+                  <div
+                    id="settings-generation-options"
+                    className={`${styles.settingsAdvancedFields}${advancedOpen ? ` ${styles.open}` : ""}`}
+                  >
+                    <div className={styles.settingsFieldRow}>
+                      <div className={styles.settingsField}>
+                        <label className={styles.settingsFieldLabel} htmlFor="settings-max-tokens">
+                          Max Tokens
+                          {recentlySaved && lastSavedField === "maxTokens" && (
+                            <span className={styles.settingsAutosaveBadge}>Saved</span>
+                          )}
+                        </label>
+                        <input
+                          className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
+                          disabled={isSettingsBusy}
+                          id="settings-max-tokens"
+                          onChange={(event) => {
+                            markSettingsEdited();
+                            setMaxTokens(event.target.value);
+                            scheduleAutoSave("maxTokens");
+                          }}
+                          placeholder="4096"
+                          type="text"
+                          value={maxTokens}
+                        />
+                      </div>
+
+                      {connection === "apiKey" ? (
+                        <div className={styles.settingsField}>
+                          <label
+                            className={styles.settingsFieldLabel}
+                            htmlFor="settings-temperature"
+                          >
+                            Temperature
+                            {recentlySaved && lastSavedField === "temperature" && (
+                              <span className={styles.settingsAutosaveBadge}>Saved</span>
+                            )}
+                          </label>
+                          <input
+                            className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
+                            disabled={isSettingsBusy || !supportsCustomTemperature(model)}
+                            id="settings-temperature"
+                            onChange={(event) => {
+                              markSettingsEdited();
+                              setTemperature(event.target.value);
+                              scheduleAutoSave("temperature");
+                            }}
+                            placeholder="0.0 – 2.0"
+                            type="text"
+                            value={temperature}
+                          />
+                        </div>
+                      ) : null}
                     </div>
 
-                    <div className={styles.settingsField}>
-                      <label className={styles.settingsFieldLabel} htmlFor="settings-temperature">
-                        Temperature
-                        {recentlySaved && lastSavedField === "temperature" && (
-                          <span className={styles.settingsAutosaveBadge}>Saved</span>
-                        )}
-                      </label>
-                      <input
-                        className={`${styles.settingsTextInput} ${styles.settingsTextInputMono}`}
-                        disabled={isSettingsBusy || !supportsCustomTemperature(model)}
-                        id="settings-temperature"
-                        onChange={(event) => {
-                          markSettingsEdited();
-                          setTemperature(event.target.value);
-                          scheduleAutoSave("temperature");
-                        }}
-                        placeholder="0.0 – 2.0"
-                        type="text"
-                        value={temperature}
-                      />
+                    <div className={styles.settingsFieldHint}>
+                      {connection === "claudeCode"
+                        ? "Claude Code chooses its own sampling; only the output limit is sent."
+                        : supportsCustomTemperature(model)
+                          ? "Lower temperature produces more predictable cards. Higher adds variety."
+                          : "This model controls its own sampling; temperature is not sent."}
                     </div>
-                  </div>
-
-                  <div className={styles.settingsFieldHint}>
-                    {supportsCustomTemperature(model)
-                      ? "Lower temperature produces more predictable cards. Higher adds variety."
-                      : "This model controls its own sampling; temperature is not sent."}
                   </div>
                 </div>
-              </div>
+              ) : null}
             </div>
           ) : (
             <DesktopAiNotice layout="section" />
@@ -920,7 +1032,7 @@ export function SettingsScreen({
                     {isResettingData ? "Resetting…" : "Reset"}
                   </button>
                 }
-                description="Delete all spaces, cards, review history, saved AI settings, and the stored API key from this device."
+                description="Delete all spaces, cards, review history, saved AI settings, the stored API key, and the ChatGPT connection from this device."
                 title="Reset this device"
                 tone="danger"
               />

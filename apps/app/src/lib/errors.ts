@@ -129,6 +129,58 @@ export class AiProviderError extends InfraError implements Reportable {
   }
 }
 
+/** Why a subscription or local-tool connection failed; mirrors the backend. */
+export type AiConnectionReason =
+  | "notInstalled"
+  | "signedOut"
+  | "expired"
+  | "notEligible"
+  | "declined"
+  | "apiBilling"
+  | "usageLimit"
+  | "modelUnavailable"
+  | "cancelled"
+  | "timeout"
+  | "provider";
+
+const AI_CONNECTION_REASONS: readonly AiConnectionReason[] = [
+  "notInstalled",
+  "signedOut",
+  "expired",
+  "notEligible",
+  "declined",
+  "apiBilling",
+  "usageLimit",
+  "modelUnavailable",
+  "cancelled",
+  "timeout",
+  "provider",
+];
+
+/**
+ * A connection problem the user can act on (sign in again, wait for a usage
+ * limit, install a tool). These are expected states, not bugs, so they are
+ * not reported as crashes.
+ */
+export class AiConnectionError extends DomainError {
+  readonly code = "AI_CONNECTION" as const;
+
+  constructor(
+    message: string,
+    readonly reason: AiConnectionReason,
+    readonly provider: string,
+  ) {
+    super(message);
+  }
+}
+
+export function isAiConnectionError(
+  error: unknown,
+  reason?: AiConnectionReason,
+): error is AiConnectionError {
+  return error instanceof AiConnectionError && (!reason || error.reason === reason);
+}
+
 export class MigrationFailedError extends FatalError implements Reportable {
   readonly code = "MIGRATION_FAILED" as const;
   readonly reportable = true as const;
@@ -165,6 +217,8 @@ type BackendErrorPayload = {
   entity?: string;
   field?: string | null;
   message?: string;
+  provider?: string;
+  reason?: string;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -209,6 +263,8 @@ function toPayload(error: unknown): BackendErrorPayload | null {
     entity: readOptionalString(payload.entity),
     field: readOptionalStringOrNull(payload.field),
     message: readOptionalString(payload.message),
+    provider: readOptionalString(payload.provider),
+    reason: readOptionalString(payload.reason),
   };
 }
 
@@ -233,6 +289,14 @@ export function toAppError(error: unknown, fallbackMessage = "Something went wro
       return new NetworkError(payload?.message ?? fallbackMessage);
     case "AI_PROVIDER":
       return new AiProviderError(payload?.message ?? fallbackMessage, payload?.detail);
+    case "AI_CONNECTION": {
+      const reason = AI_CONNECTION_REASONS.find((value) => value === payload?.reason) ?? "provider";
+      return new AiConnectionError(
+        payload?.message ?? fallbackMessage,
+        reason,
+        payload?.provider ?? "unknown",
+      );
+    }
     case "MIGRATION_FAILED":
       return new MigrationFailedError(payload?.message ?? fallbackMessage);
     case "INTERNAL":

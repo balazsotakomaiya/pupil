@@ -85,8 +85,8 @@ export function OnboardingScreen({
 
         <div className={styles.welcomeBottom}>
           <p className={styles.welcomeApiHint}>
-            AI generation requires an API key from Anthropic, OpenAI, or any compatible provider.
-            You can add one later in{" "}
+            AI generation uses your ChatGPT or Claude plan, or an API key from any compatible
+            provider. You can connect one later in{" "}
             <button className={styles.welcomeInlineLink} onClick={onOpenSettings} type="button">
               Settings
             </button>

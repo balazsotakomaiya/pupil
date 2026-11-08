@@ -26,6 +26,32 @@ pub(super) fn normalize_ai_settings_input(
         return Err("Temperature must be a number between 0.0 and 2.0.".to_string());
     }
 
+    let connection = input
+        .connection
+        .as_deref()
+        .map(super::connection::AiConnectionKind::from_input)
+        .transpose()?;
+    let chatgpt_model = input
+        .chatgpt_model
+        .as_deref()
+        .map(super::chatgpt::validate_model)
+        .transpose()?;
+    let claude_code_model = input
+        .claude_code_model
+        .as_deref()
+        .map(super::claude_code::validate_model)
+        .transpose()?;
+    // An empty path means "find it automatically".
+    let claude_code_path = match input.claude_code_path.as_deref().map(str::trim) {
+        None => None,
+        Some("") => Some(String::new()),
+        Some(path) => Some(
+            super::claude_code::validate_binary_path(path)?
+                .display()
+                .to_string(),
+        ),
+    };
+
     Ok(crate::types::NormalizedAiSettingsInput {
         api_key: input.api_key.map(|value| value.trim().to_string()),
         base_url,
@@ -33,6 +59,10 @@ pub(super) fn normalize_ai_settings_input(
         max_tokens,
         temperature,
         explain_enabled: input.explain_enabled,
+        connection,
+        chatgpt_model,
+        claude_code_model,
+        claude_code_path,
     })
 }
 

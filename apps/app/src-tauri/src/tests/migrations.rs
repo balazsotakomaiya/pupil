@@ -230,6 +230,7 @@ fn explanation_cache_migration_converts_preserves_clears_and_is_idempotent() {
             "0004_add_card_explanation",
             "0005_add_card_explanation_payload",
             "0006_migrate_card_explanation_payloads",
+            "0007_add_ai_connection",
         ]
     );
 }

@@ -6,7 +6,7 @@ use rusqlite::Connection;
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Manager};
 
-use crate::ai::clear_ai_api_key;
+use crate::ai::{clear_ai_api_key, clear_chatgpt_credentials};
 use crate::app::app_data_dir;
 use crate::constants::{
     MIN_RECENT_ACTIVITY_FETCH_LIMIT, RECENT_ACTIVITY_FETCH_MULTIPLIER,
@@ -201,6 +201,7 @@ pub(crate) fn load_today_new_card_count(connection: &Connection) -> rusqlite::Re
 
 pub(crate) fn reset_all_data_rows(app: &AppHandle, connection: &mut Connection) -> AppResult<()> {
     clear_ai_api_key(app)?;
+    clear_chatgpt_credentials(app)?;
 
     let transaction = connection.transaction()?;
     transaction.execute_batch(

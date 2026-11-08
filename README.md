@@ -122,7 +122,7 @@ Windows installers are unsigned. Microsoft's own signing service is not availabl
 
 Linux needs glibc 2.35+ (Ubuntu 22.04, Debian 12, Fedora, Arch, and similar). Alpine, ARM, and older Ubuntu/Debian are not supported. If an AppImage fails to mount, run it with `--appimage-extract-and-run`.
 
-Your cards, review history, and settings stay on your device. If you use AI generation, add your own OpenAI-compatible or Anthropic API key in Settings; it is stored securely on your machine.
+Your cards, review history, and settings stay on your device. For AI generation and explanations you can use a plan you already pay for, either ChatGPT Plus/Pro or a Claude plan through Claude Code, or your own OpenAI-compatible or Anthropic API key. Sign-in tokens and keys are stored in your OS's secure storage. See [Using an AI subscription](docs/AI_SUBSCRIPTIONS.md) for what each option needs, where your data goes, and current limits.
 
 ## Why Pupil
 
@@ -141,7 +141,7 @@ It is also designed to be more present in your day than Anki typically is — su
 - Organize knowledge into named spaces
 - Create cards manually with a desktop-first editor
 - Import `.apkg` decks from Anki
-- Generate cards from a topic using any OpenAI-compatible or Anthropic model
+- Generate cards from a topic with your ChatGPT or Claude plan, or any OpenAI-compatible or Anthropic API key
 - Review AI-generated cards before they land in your library
 - Study per-space or across your full collection
 - Schedule reviews with FSRS
