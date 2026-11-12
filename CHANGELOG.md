@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [1.0.0-beta.3] - 2026-11-12
+
+Prerelease. The in-app updater still follows the stable channel only, so install this build from the GitHub release.
+
 ### Added
 
 - Use an AI plan you already pay for: Settings → AI now offers a ChatGPT plan connection (Plus or Pro, through OpenAI's plan-usage sign-in) and a Claude plan connection (through your own signed-in Claude Code), alongside API keys. Card generation, single-card regeneration and study explanations all work with either. See `docs/AI_SUBSCRIPTIONS.md`.
@@ -13,11 +17,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- Dialogs and modals now animate in and out, with a lighter backdrop.
+- Routine JavaScript and Rust dependency upgrades across the workspace (Tauri crate, JS API and plugins on 2.12). The Tauri CLI is pinned to 2.11.5 so prerelease versions still bundle as `.rpm` on Linux.
 - AI errors now say what happened (usage limit reached, sign-in expired, Claude Code missing, model unavailable) and point to Settings when that's the fix. A subscription connection never falls back to a saved API key.
 
 ### Fixed
 
 - Linux AppImage: the app no longer aborts at startup ("Could not create default EGL display") on distros whose Mesa is newer than the Wayland library bundled in the AppImage, such as Fedora 44. The AppImage now prefers the system's `libwayland-client`.
+
+## [1.0.0-beta.2] - 2026-09-27
+
+### Changed
+
+- macOS release builds are signed and notarized when Apple signing secrets are configured for the publish workflow; otherwise they ship unsigned as before.
 
 ## [1.0.0-beta.1] - 2026-09-25
 
